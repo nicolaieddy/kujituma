@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,12 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { X, Calendar } from "lucide-react";
-import { CreateGoalData, GoalTimeframe } from "@/types/goals";
+import { CreateGoalData, GoalTimeframe, Goal } from "@/types/goals";
 
 interface GoalFormProps {
   onSubmit: (data: CreateGoalData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  initialData?: Goal | null;
 }
 
 const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
@@ -24,7 +25,7 @@ const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
   'Custom Date'
 ];
 
-export const GoalForm = ({ onSubmit, onCancel, isLoading }: GoalFormProps) => {
+export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
   const [formData, setFormData] = useState<CreateGoalData>({
     title: '',
     description: '',
@@ -33,6 +34,30 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading }: GoalFormProps) => {
     category: '',
     notes: ''
   });
+
+  // Initialize form data when initialData changes (for editing)
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        title: initialData.title || '',
+        description: initialData.description || '',
+        timeframe: initialData.timeframe || '1 Month',
+        target_date: initialData.target_date || '',
+        category: initialData.category || '',
+        notes: initialData.notes || ''
+      });
+    } else {
+      // Reset form for new goal
+      setFormData({
+        title: '',
+        description: '',
+        timeframe: '1 Month',
+        target_date: '',
+        category: '',
+        notes: ''
+      });
+    }
+  }, [initialData]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +82,9 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading }: GoalFormProps) => {
   return (
     <Card className="w-full max-w-2xl mx-auto bg-white/10 backdrop-blur-lg border-white/20">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-white">Create New Goal</CardTitle>
+        <CardTitle className="text-white">
+          {initialData ? 'Edit Goal' : 'Create New Goal'}
+        </CardTitle>
         <Button
           variant="ghost"
           size="sm"
@@ -159,7 +186,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading }: GoalFormProps) => {
               disabled={!formData.title.trim() || isLoading}
               className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
             >
-              {isLoading ? 'Creating...' : 'Create Goal'}
+              {isLoading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Goal' : 'Create Goal')}
             </Button>
             <Button
               type="button"
