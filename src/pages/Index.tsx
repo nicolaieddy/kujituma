@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,7 +9,6 @@ const Index = () => {
 
   const handleLaunch = () => {
     setIsLaunching(true);
-    // Navigate to dashboard after animation completes
     setTimeout(() => {
       navigate('/dashboard');
     }, 3000);
