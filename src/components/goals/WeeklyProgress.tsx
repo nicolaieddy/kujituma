@@ -6,6 +6,7 @@ import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { AddObjectiveForm } from "./AddObjectiveForm";
 import { ObjectivesList } from "./ObjectivesList";
 import { ProgressNotes } from "./ProgressNotes";
+import { PreviousWeekSummary } from "./PreviousWeekSummary";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
@@ -36,13 +37,17 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
   const handlePreviousWeek = () => {
     const currentDate = new Date(currentWeekStart);
     currentDate.setDate(currentDate.getDate() - 7);
-    setCurrentWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
+    setCurrentWeekStart(newWeekStart);
   };
 
   const handleNextWeek = () => {
     const currentDate = new Date(currentWeekStart);
     currentDate.setDate(currentDate.getDate() + 7);
-    setCurrentWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
+    setCurrentWeekStart(newWeekStart);
   };
 
   const handleCreateObjective = (text: string, goalId?: string) => {
@@ -67,6 +72,10 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
 
   const completedCount = objectives.filter(obj => obj.is_completed).length;
   const totalCount = objectives.length;
+
+  // Check if this is the current week
+  const currentWeek = WeeklyProgressService.getWeekStart();
+  const isCurrentWeek = currentWeekStart === currentWeek;
 
   return (
     <div className="space-y-6">
@@ -95,6 +104,8 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
+
+      <PreviousWeekSummary currentWeekStart={currentWeekStart} />
 
       <AddObjectiveForm
         goals={goals}

@@ -10,6 +10,7 @@ import { Plus, X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { PreviousWeekSummary } from "@/components/goals/PreviousWeekSummary";
 
 interface WeeklyProgressFormProps {
   onCancel: () => void;
@@ -42,13 +43,17 @@ const WeeklyProgressForm = ({ onCancel }: WeeklyProgressFormProps) => {
   const handlePreviousWeek = () => {
     const currentDate = new Date(selectedWeekStart);
     currentDate.setDate(currentDate.getDate() - 7);
-    setSelectedWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    console.log('Previous week navigation (form):', selectedWeekStart, '->', newWeekStart);
+    setSelectedWeekStart(newWeekStart);
   };
 
   const handleNextWeek = () => {
     const currentDate = new Date(selectedWeekStart);
     currentDate.setDate(currentDate.getDate() + 7);
-    setSelectedWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    console.log('Next week navigation (form):', selectedWeekStart, '->', newWeekStart);
+    setSelectedWeekStart(newWeekStart);
   };
 
   const handleAddObjective = () => {
@@ -127,6 +132,8 @@ const WeeklyProgressForm = ({ onCancel }: WeeklyProgressFormProps) => {
       </CardHeader>
       
       <CardContent className="space-y-6">
+        <PreviousWeekSummary currentWeekStart={selectedWeekStart} />
+
         {/* Weekly Objectives Section */}
         <div>
           <Label className="text-white font-medium text-lg">
