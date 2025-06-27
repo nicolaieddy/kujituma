@@ -10,14 +10,19 @@ const Index = () => {
   const handleLaunch = () => {
     setIsLaunching(true);
     setTimeout(() => {
-      navigate('/dashboard');
+      navigate('/auth');
     }, 3000);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-blue-900 to-purple-900 flex flex-col items-center justify-center relative overflow-hidden">
       {/* Navigation */}
-      <div className="absolute top-4 right-4 z-30">
+      <div className="absolute top-4 right-4 z-30 flex space-x-2">
+        <Link to="/auth">
+          <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+            Sign In
+          </Button>
+        </Link>
         <Link to="/dashboard">
           <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
             Dashboard

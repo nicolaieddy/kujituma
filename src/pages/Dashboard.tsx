@@ -1,43 +1,63 @@
 
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Plus } from "lucide-react";
+import { Home, Plus, LogOut, User } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePosts } from "@/hooks/usePosts";
 import ProgressForm from "@/components/ProgressForm";
 import ProgressPost from "@/components/ProgressPost";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Dashboard = () => {
+  const navigate = useNavigate();
+  const { user, session, loading: authLoading, signOut } = useAuth();
+  const { posts, loading: postsLoading, createPost, addComment } = usePosts();
   const [showForm, setShowForm] = useState(false);
-  const [posts, setPosts] = useState<ProgressPostType[]>([]);
 
-  const handleSubmitPost = (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => {
-    const newPost: ProgressPostType = {
-      ...data,
-      id: crypto.randomUUID(),
-      timestamp: Date.now(),
-      comments: []
-    };
-    setPosts(prev => [newPost, ...prev]);
-    setShowForm(false);
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  const handleSubmitPost = async (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => {
+    try {
+      await createPost(data);
+      setShowForm(false);
+    } catch (error) {
+      console.error('Error creating post:', error);
+    }
   };
 
-  const handleAddComment = (postId: string, commentData: { name: string; message: string }) => {
-    setPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        const newComment = {
-          id: crypto.randomUUID(),
-          ...commentData,
-          timestamp: Date.now()
-        };
-        return {
-          ...post,
-          comments: [...post.comments, newComment]
-        };
-      }
-      return post;
-    }));
+  const handleAddComment = async (postId: string, commentData: { name: string; message: string }) => {
+    try {
+      await addComment(postId, commentData);
+    } catch (error) {
+      console.error('Error adding comment:', error);
+    }
   };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
@@ -56,13 +76,36 @@ const Dashboard = () => {
                 Kujituma
               </h1>
             </div>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Share Progress
-            </Button>
+            
+            <div className="flex items-center space-x-4">
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Share Progress
+              </Button>
+              
+              <div className="flex items-center space-x-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-white text-sm hidden sm:block">
+                  {user.user_metadata?.full_name || user.email}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="text-white hover:bg-white/20"
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -87,7 +130,9 @@ const Dashboard = () => {
 
             {/* Posts Section */}
             <div className="space-y-6">
-              {posts.length === 0 ? (
+              {postsLoading ? (
+                <div className="text-center text-white">Loading posts...</div>
+              ) : posts.length === 0 ? (
                 <div className="bg-white/10 backdrop-blur-lg rounded-lg p-8 max-w-md mx-auto text-center">
                   <div className="text-6xl mb-4">🚀</div>
                   <h3 className="text-xl font-semibold text-white mb-2">Ready to Share?</h3>
