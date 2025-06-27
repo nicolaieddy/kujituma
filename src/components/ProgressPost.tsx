@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { MessageCircle, User, Send } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { MessageCircle, User, Send, Clock, History } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { useNavigate } from "react-router-dom";
@@ -14,10 +15,11 @@ import { useAuth } from "@/contexts/AuthContext";
 interface ProgressPostProps {
   post: ProgressPostType;
   onAddComment: (commentData: { name: string; message: string }) => void;
+  onViewUserPosts: (userId: string) => void;
   isAuthenticated?: boolean;
 }
 
-const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressPostProps) => {
+const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = false }: ProgressPostProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showCommentForm, setShowCommentForm] = useState(false);
@@ -78,26 +80,45 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
     setShowCommentForm(!showCommentForm);
   };
 
+  const handleViewUserHistory = () => {
+    // For now we'll use the post ID as userId - in a real app you'd have actual user IDs
+    onViewUserPosts(post.id);
+  };
+
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2 px-4 pt-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-full w-8 h-8 flex items-center justify-center">
-              <User className="h-4 w-4 text-white" />
-            </div>
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">
+                <User className="h-3 w-3" />
+              </AvatarFallback>
+            </Avatar>
             <div>
-              <h3 className="text-white font-semibold text-base">{post.name}</h3>
-              <p className="text-white/60 text-xs">
-                {formatTimeAgo(post.timestamp)}
-              </p>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-white font-semibold text-sm">{post.name}</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleViewUserHistory}
+                  className="text-white/60 hover:bg-white/20 text-xs h-5 px-1"
+                >
+                  <History className="h-3 w-3" />
+                </Button>
+              </div>
+              <div className="flex items-center space-x-1 text-white/60 text-xs">
+                <Clock className="h-3 w-3" />
+                <span>{formatTimeAgo(post.timestamp)}</span>
+              </div>
             </div>
           </div>
           <Button
             variant="ghost"
             size="sm"
             onClick={handleCommentClick}
-            className="text-white/80 hover:bg-white/20 text-xs h-7 px-2"
+            className="text-white/80 hover:bg-white/20 text-xs h-6 px-2"
           >
             <MessageCircle className="h-3 w-3 mr-1" />
             {post.comments.length > 0 ? `${post.comments.length}` : 'Comment'}
@@ -105,32 +126,32 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-3 pt-0">
+      <CardContent className="space-y-2 pt-0 px-4 pb-3">
         {/* Accomplishments */}
         {post.accomplishments && (
           <div>
-            <h4 className="text-white font-medium mb-1 flex items-center text-sm">
+            <h4 className="text-white font-medium mb-1 flex items-center text-xs">
               🎉 Accomplishments
             </h4>
-            <p className="text-white/80 whitespace-pre-wrap text-sm">{post.accomplishments}</p>
+            <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.accomplishments}</p>
           </div>
         )}
 
         {post.priorities && (
           <div>
-            <h4 className="text-white font-medium mb-1 flex items-center text-sm">
+            <h4 className="text-white font-medium mb-1 flex items-center text-xs">
               🎯 Priorities
             </h4>
-            <p className="text-white/80 whitespace-pre-wrap text-sm">{post.priorities}</p>
+            <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.priorities}</p>
           </div>
         )}
 
         {post.help && (
           <div>
-            <h4 className="text-white font-medium mb-1 flex items-center text-sm">
+            <h4 className="text-white font-medium mb-1 flex items-center text-xs">
               🤝 Help Needed
             </h4>
-            <p className="text-white/80 whitespace-pre-wrap text-sm">{post.help}</p>
+            <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.help}</p>
           </div>
         )}
 
@@ -140,14 +161,22 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
             <Separator className="bg-white/20 my-2" />
             <div className="space-y-2">
               {post.comments.map((comment) => (
-                <div key={comment.id} className="bg-white/5 rounded-lg p-3">
+                <div key={comment.id} className="bg-white/5 rounded-lg p-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-white font-medium text-sm">{comment.name}</span>
+                    <div className="flex items-center space-x-2">
+                      <Avatar className="h-4 w-4">
+                        <AvatarImage src={user?.user_metadata?.avatar_url} />
+                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                          <User className="h-2 w-2" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-white font-medium text-xs">{comment.name}</span>
+                    </div>
                     <span className="text-white/60 text-xs">
                       {formatTimeAgo(comment.timestamp)}
                     </span>
                   </div>
-                  <p className="text-white/80 whitespace-pre-wrap text-sm">{comment.message}</p>
+                  <p className="text-white/80 whitespace-pre-wrap text-xs ml-6">{comment.message}</p>
                 </div>
               ))}
             </div>
@@ -158,12 +187,12 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
         {showCommentForm && isAuthenticated && (
           <div>
             {post.comments.length > 0 || <Separator className="bg-white/20 my-2" />}
-            <form onSubmit={handleCommentSubmit} className="space-y-3">
+            <form onSubmit={handleCommentSubmit} className="space-y-2">
               <Input
                 placeholder="Your name"
                 value={commentData.name}
                 onChange={(e) => handleCommentChange("name", e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-8 text-sm"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-7 text-xs"
                 readOnly={!!user}
               />
               {commentErrors.name && (
@@ -174,7 +203,7 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
                 placeholder="Write a supportive comment..."
                 value={commentData.message}
                 onChange={(e) => handleCommentChange("message", e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 text-sm min-h-[60px]"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs min-h-[50px]"
               />
               {commentErrors.message && (
                 <p className="text-red-400 text-xs">{commentErrors.message}</p>
@@ -184,7 +213,7 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
                 <Button
                   type="submit"
                   size="sm"
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 h-7 text-xs"
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 h-6 text-xs"
                 >
                   <Send className="h-3 w-3 mr-1" />
                   Send
@@ -194,7 +223,7 @@ const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressP
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowCommentForm(false)}
-                  className="text-white/80 hover:bg-white/20 h-7 text-xs"
+                  className="text-white/80 hover:bg-white/20 h-6 text-xs"
                 >
                   Cancel
                 </Button>

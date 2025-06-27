@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Home, Plus, LogOut, User } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Home, Plus, LogOut, User, Search } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
 import ProgressForm from "@/components/ProgressForm";
 import ProgressPost from "@/components/ProgressPost";
+import UserPostsModal from "@/components/UserPostsModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Dashboard = () => {
@@ -15,6 +17,16 @@ const Dashboard = () => {
   const { user, session, loading: authLoading, signOut } = useAuth();
   const { posts, loading: postsLoading, createPost, addComment } = usePosts();
   const [showForm, setShowForm] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [showUserPosts, setShowUserPosts] = useState(false);
+
+  const filteredPosts = posts.filter(post =>
+    post.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.accomplishments.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.priorities.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    post.help.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const handleSubmitPost = async (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => {
     if (!user) {
@@ -57,6 +69,11 @@ const Dashboard = () => {
       return;
     }
     setShowForm(true);
+  };
+
+  const handleViewUserPosts = (userId: string) => {
+    setSelectedUserId(userId);
+    setShowUserPosts(true);
   };
 
   if (authLoading) {
@@ -153,24 +170,59 @@ const Dashboard = () => {
               )}
             </div>
 
+            {/* Search Bar */}
+            {posts.length > 0 && (
+              <div className="mb-6 max-w-md mx-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
+                  <Input
+                    placeholder="Search posts..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Posts Section */}
-            <div className="space-y-6">
+            <div className="space-y-4">
               {postsLoading ? (
                 <div className="text-center text-white">Loading posts...</div>
-              ) : posts.length === 0 ? (
+              ) : filteredPosts.length === 0 ? (
                 <div className="bg-white/10 backdrop-blur-lg rounded-lg p-8 max-w-md mx-auto text-center">
-                  <div className="text-6xl mb-4">🚀</div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Ready to Share?</h3>
-                  <p className="text-white/70 mb-4">
-                    No progress posts yet. {user ? 'Click "Share Progress" to get started!' : 'Sign in to share your first progress post!'}
-                  </p>
+                  {searchQuery ? (
+                    <>
+                      <div className="text-4xl mb-4">🔍</div>
+                      <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
+                      <p className="text-white/70 mb-4">
+                        Try different keywords or clear your search.
+                      </p>
+                      <Button
+                        variant="ghost"
+                        onClick={() => setSearchQuery("")}
+                        className="text-white hover:bg-white/20"
+                      >
+                        Clear Search
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <div className="text-6xl mb-4">🚀</div>
+                      <h3 className="text-xl font-semibold text-white mb-2">Ready to Share?</h3>
+                      <p className="text-white/70 mb-4">
+                        No progress posts yet. {user ? 'Click "Share Progress" to get started!' : 'Sign in to share your first progress post!'}
+                      </p>
+                    </>
+                  )}
                 </div>
               ) : (
-                posts.map((post) => (
+                filteredPosts.map((post) => (
                   <ProgressPost
                     key={post.id}
                     post={post}
                     onAddComment={(commentData) => handleAddComment(post.id, commentData)}
+                    onViewUserPosts={handleViewUserPosts}
                     isAuthenticated={!!user}
                   />
                 ))
@@ -179,6 +231,17 @@ const Dashboard = () => {
           </>
         )}
       </div>
+
+      {/* User Posts Modal */}
+      {showUserPosts && selectedUserId && (
+        <UserPostsModal
+          userId={selectedUserId}
+          onClose={() => {
+            setShowUserPosts(false);
+            setSelectedUserId(null);
+          }}
+        />
+      )}
     </div>
   );
 };
