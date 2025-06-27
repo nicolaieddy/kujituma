@@ -28,14 +28,14 @@ export const WeeklyProgressHeader = ({
   const handlePreviousClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Previous button clicked - calling onPreviousWeek');
+    console.log('Previous button clicked in header');
     onPreviousWeek();
   };
 
   const handleNextClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Next button clicked - calling onNextWeek');
+    console.log('Next button clicked in header');
     onNextWeek();
   };
 

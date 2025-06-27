@@ -6,20 +6,22 @@ import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateW
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-export const useWeeklyProgress = (initialWeekStart?: string) => {
+export const useWeeklyProgress = (weekStart?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  
+  // Single source of truth for current week
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
-    initialWeekStart || WeeklyProgressService.getWeekStart()
+    weekStart || WeeklyProgressService.getWeekStart()
   );
 
-  // Update currentWeekStart when initialWeekStart changes
+  // Update current week when prop changes
   useEffect(() => {
-    if (initialWeekStart && initialWeekStart !== currentWeekStart) {
-      console.log('useWeeklyProgress: updating currentWeekStart from', currentWeekStart, 'to', initialWeekStart);
-      setCurrentWeekStart(initialWeekStart);
+    if (weekStart && weekStart !== currentWeekStart) {
+      console.log('useWeeklyProgress: prop changed, updating week from', currentWeekStart, 'to', weekStart);
+      setCurrentWeekStart(weekStart);
     }
-  }, [initialWeekStart, currentWeekStart]);
+  }, [weekStart]);
 
   const { data: objectives = [], isLoading: objectivesLoading } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
@@ -145,6 +147,20 @@ export const useWeeklyProgress = (initialWeekStart?: string) => {
     },
   });
 
+  // Navigation functions
+  const navigateToWeek = (direction: 'previous' | 'next') => {
+    console.log(`Navigating ${direction} from week:`, currentWeekStart);
+    
+    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
+    const targetDate = new Date(currentDate);
+    targetDate.setUTCDate(targetDate.getUTCDate() + (direction === 'next' ? 7 : -7));
+    
+    const newWeekStart = WeeklyProgressService.getWeekStart(targetDate);
+    console.log('Navigation result:', currentWeekStart, '->', newWeekStart);
+    
+    setCurrentWeekStart(newWeekStart);
+  };
+
   const createObjective = (data: CreateWeeklyObjectiveData) => {
     createObjectiveMutation.mutate({ ...data, week_start: currentWeekStart });
   };
@@ -179,6 +195,7 @@ export const useWeeklyProgress = (initialWeekStart?: string) => {
     updateProgressNotes,
     completeWeek,
     uncompleteWeek,
+    navigateToWeek,
     weekStart: currentWeekStart,
     weekRange: WeeklyProgressService.formatWeekRange(currentWeekStart),
     weekNumber: WeeklyProgressService.getWeekNumber(currentWeekStart),

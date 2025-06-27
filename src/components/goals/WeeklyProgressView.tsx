@@ -10,13 +10,8 @@ import { WeeklyProgressNotesSection } from "./WeeklyProgressNotesSection";
 import { WeeklyProgressActions } from "./WeeklyProgressActions";
 
 export const WeeklyProgressView = () => {
-  const [selectedWeekStart, setSelectedWeekStart] = useState<string>(
-    WeeklyProgressService.getWeekStart()
-  );
   const [progressNotes, setProgressNotes] = useState("");
   
-  console.log('WeeklyProgressView render - selectedWeekStart:', selectedWeekStart);
-
   const {
     objectives,
     progressPost,
@@ -26,13 +21,15 @@ export const WeeklyProgressView = () => {
     updateProgressNotes,
     completeWeek,
     uncompleteWeek,
+    navigateToWeek,
+    weekStart,
     weekRange,
     weekNumber,
     isCreating,
     isSavingNotes,
     isCompletingWeek,
     isUncompletingWeek,
-  } = useWeeklyProgress(selectedWeekStart);
+  } = useWeeklyProgress();
 
   // Initialize progress notes when progressPost changes
   useEffect(() => {
@@ -40,54 +37,11 @@ export const WeeklyProgressView = () => {
     setProgressNotes(progressPost?.notes || "");
   }, [progressPost]);
 
-  const navigateToWeek = (direction: 'previous' | 'next') => {
-    console.log(`Navigating to ${direction} week from:`, selectedWeekStart);
-    
-    try {
-      // Parse current week start as a proper date
-      const currentDate = new Date(selectedWeekStart + 'T00:00:00.000Z');
-      console.log('Current date parsed:', currentDate.toISOString());
-      
-      // Calculate the target date
-      const targetDate = new Date(currentDate);
-      const daysToAdd = direction === 'next' ? 7 : -7;
-      targetDate.setUTCDate(targetDate.getUTCDate() + daysToAdd);
-      console.log('Target date calculated:', targetDate.toISOString());
-      
-      // Get the week start for the target date
-      const newWeekStart = WeeklyProgressService.getWeekStart(targetDate);
-      console.log('New week start:', newWeekStart);
-      
-      // Update state
-      setSelectedWeekStart(newWeekStart);
-      console.log('Week navigation completed:', selectedWeekStart, '->', newWeekStart);
-      
-    } catch (error) {
-      console.error('Error in week navigation:', error);
-      // Fallback to simple date arithmetic
-      const fallbackDate = new Date(selectedWeekStart);
-      fallbackDate.setDate(fallbackDate.getDate() + (direction === 'next' ? 7 : -7));
-      const fallbackWeekStart = WeeklyProgressService.getWeekStart(fallbackDate);
-      setSelectedWeekStart(fallbackWeekStart);
-      console.log('Fallback navigation used:', fallbackWeekStart);
-    }
-  };
-
-  const handlePreviousWeek = () => {
-    console.log('Previous week button clicked');
-    navigateToWeek('previous');
-  };
-
-  const handleNextWeek = () => {
-    console.log('Next week button clicked');
-    navigateToWeek('next');
-  };
-
   const handleAddObjective = (text: string) => {
     console.log('Adding objective:', text);
     createObjective({
       text,
-      week_start: selectedWeekStart,
+      week_start: weekStart,
     });
   };
 
@@ -112,12 +66,12 @@ export const WeeklyProgressView = () => {
   };
 
   const handleCompleteWeek = () => {
-    console.log('Completing week:', selectedWeekStart);
+    console.log('Completing week:', weekStart);
     completeWeek();
   };
 
   const handleEditWeek = () => {
-    console.log('Editing week:', selectedWeekStart);
+    console.log('Editing week:', weekStart);
     uncompleteWeek();
   };
 
@@ -136,13 +90,13 @@ export const WeeklyProgressView = () => {
           completedCount={completedCount}
           totalCount={totalCount}
           completionPercentage={completionPercentage}
-          onPreviousWeek={handlePreviousWeek}
-          onNextWeek={handleNextWeek}
+          onPreviousWeek={() => navigateToWeek('previous')}
+          onNextWeek={() => navigateToWeek('next')}
         />
       </CardHeader>
       
       <CardContent className="space-y-6">
-        <PreviousWeekSummary currentWeekStart={selectedWeekStart} />
+        <PreviousWeekSummary currentWeekStart={weekStart} />
 
         <WeeklyObjectivesList
           objectives={objectives}
