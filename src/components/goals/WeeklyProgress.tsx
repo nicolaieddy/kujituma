@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +22,7 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
     deleteObjective,
     updateProgressNotes,
     weekRange,
+    weekStart,
     isCreating,
     isUpdating,
     isSavingNotes,
@@ -38,6 +38,7 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
     createObjective({
       text: newObjectiveText,
       goal_id: selectedGoalId || undefined,
+      week_start: weekStart,
     });
 
     setNewObjectiveText("");

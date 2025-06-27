@@ -100,7 +100,6 @@ const Goals = () => {
             {showForm ? (
               <div className="mb-8">
                 <GoalForm
-                  goal={editingGoal}
                   onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
                   onCancel={handleCancelForm}
                 />
