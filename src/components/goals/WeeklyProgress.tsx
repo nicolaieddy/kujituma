@@ -33,22 +33,6 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
     isSavingNotes,
   } = useWeeklyProgress(currentWeekStart);
 
-  const handlePreviousWeek = () => {
-    const currentDate = new Date(currentWeekStart);
-    currentDate.setDate(currentDate.getDate() - 7);
-    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
-    console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
-    setCurrentWeekStart(newWeekStart);
-  };
-
-  const handleNextWeek = () => {
-    const currentDate = new Date(currentWeekStart);
-    currentDate.setDate(currentDate.getDate() + 7);
-    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
-    console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
-    setCurrentWeekStart(newWeekStart);
-  };
-
   const handleCreateObjective = (text: string, goalId?: string) => {
     createObjective({
       text,
@@ -87,8 +71,6 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
         completedCount={completedCount}
         totalCount={totalCount}
         completionPercentage={completionPercentage}
-        onPreviousWeek={handlePreviousWeek}
-        onNextWeek={handleNextWeek}
       />
 
       <PreviousWeekSummary currentWeekStart={currentWeekStart} />
