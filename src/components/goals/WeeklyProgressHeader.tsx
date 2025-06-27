@@ -1,6 +1,7 @@
 
 import { CardTitle } from "@/components/ui/card";
-import { Calendar, CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, CheckCircle, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface WeeklyProgressHeaderProps {
   weekRange: string;
@@ -9,6 +10,8 @@ interface WeeklyProgressHeaderProps {
   completedCount: number;
   totalCount: number;
   completionPercentage: number;
+  onPreviousWeek: () => void;
+  onNextWeek: () => void;
 }
 
 export const WeeklyProgressHeader = ({
@@ -18,10 +21,37 @@ export const WeeklyProgressHeader = ({
   completedCount,
   totalCount,
   completionPercentage,
+  onPreviousWeek,
+  onNextWeek,
 }: WeeklyProgressHeaderProps) => {
   return (
     <div className="text-center">
-      <CardTitle className="text-white text-2xl">Weekly Progress</CardTitle>
+      <div className="flex items-center justify-between mb-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onPreviousWeek}
+          className="text-white/80 hover:text-white hover:bg-white/10"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Previous
+        </Button>
+        
+        <div className="flex-1">
+          <CardTitle className="text-white text-2xl">Weekly Progress</CardTitle>
+        </div>
+        
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onNextWeek}
+          className="text-white/80 hover:text-white hover:bg-white/10"
+        >
+          Next
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
+      
       <div className="flex items-center justify-center gap-2 text-white/80 mt-2">
         <Calendar className="h-4 w-4" />
         <span>{weekRange}</span>
