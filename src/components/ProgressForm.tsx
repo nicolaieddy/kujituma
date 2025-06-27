@@ -1,11 +1,12 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { ProgressPostType } from "@/types/progress";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface ProgressFormProps {
   onSubmit: (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => void;
@@ -13,6 +14,7 @@ interface ProgressFormProps {
 }
 
 const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
+  const { user } = useAuth();
   const [formData, setFormData] = useState({
     name: "",
     accomplishments: "",
@@ -20,6 +22,14 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
     help: ""
   });
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  // Auto-populate name from authenticated user
+  useEffect(() => {
+    if (user) {
+      const userName = user.user_metadata?.full_name || user.email || "";
+      setFormData(prev => ({ ...prev, name: userName }));
+    }
+  }, [user]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +45,7 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
     if (Object.keys(newErrors).length === 0) {
       onSubmit(formData);
       setFormData({
-        name: "",
+        name: user?.user_metadata?.full_name || user?.email || "",
         accomplishments: "",
         priorities: "",
         help: ""
@@ -68,6 +78,7 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
               onChange={(e) => handleChange("name", e.target.value)}
               className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60"
               placeholder="Enter your name"
+              readOnly={!!user}
             />
             {errors.name && (
               <p className="text-red-400 text-sm mt-1">{errors.name}</p>
