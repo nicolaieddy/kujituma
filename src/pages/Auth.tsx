@@ -4,25 +4,31 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { user, signInWithGoogle, loading } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    console.log('Auth page mounted, user:', user, 'loading:', loading);
     if (user) {
+      console.log('User detected, redirecting to dashboard');
       navigate('/dashboard');
     }
   }, [user, navigate]);
 
   const handleGoogleSignIn = async () => {
     try {
+      console.log('Starting Google sign in...');
       setSigningIn(true);
+      setError(null);
       await signInWithGoogle();
     } catch (error) {
       console.error('Sign in error:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred during sign in');
       setSigningIn(false);
     }
   };
@@ -30,7 +36,10 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-white" />
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin text-white mx-auto mb-4" />
+          <p className="text-white">Loading authentication...</p>
+        </div>
       </div>
     );
   }
@@ -47,6 +56,13 @@ const Auth = () => {
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 text-red-400" />
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+          )}
+          
           <Button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
@@ -78,6 +94,12 @@ const Auth = () => {
               </>
             )}
           </Button>
+
+          <div className="text-center mt-4">
+            <p className="text-white/60 text-sm">
+              You can also <a href="/dashboard" className="text-blue-400 hover:underline">browse without signing in</a>
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
