@@ -6,21 +6,31 @@ import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateW
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-export const useWeeklyProgress = (weekStart?: string) => {
+export const useWeeklyProgress = (initialWeekStart?: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const currentWeekStart = weekStart || WeeklyProgressService.getWeekStart();
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
+    initialWeekStart || WeeklyProgressService.getWeekStart()
+  );
+
+  // Update currentWeekStart when initialWeekStart changes
+  useEffect(() => {
+    if (initialWeekStart && initialWeekStart !== currentWeekStart) {
+      console.log('useWeeklyProgress: updating currentWeekStart from', currentWeekStart, 'to', initialWeekStart);
+      setCurrentWeekStart(initialWeekStart);
+    }
+  }, [initialWeekStart, currentWeekStart]);
 
   const { data: objectives = [], isLoading: objectivesLoading } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
     queryFn: () => WeeklyProgressService.getWeeklyObjectives(currentWeekStart),
-    enabled: !!user,
+    enabled: !!user && !!currentWeekStart,
   });
 
   const { data: progressPost = null, isLoading: progressPostLoading } = useQuery({
     queryKey: ['weekly-progress-post', user?.id, currentWeekStart],
     queryFn: () => WeeklyProgressService.getWeeklyProgressPost(currentWeekStart),
-    enabled: !!user,
+    enabled: !!user && !!currentWeekStart,
   });
 
   const createObjectiveMutation = useMutation({

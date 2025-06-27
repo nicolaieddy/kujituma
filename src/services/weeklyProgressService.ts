@@ -1,16 +1,20 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
+    console.log('Fetching objectives for week:', weekStart);
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
       .select('*')
       .eq('week_start', weekStart)
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching objectives:', error);
+      throw error;
+    }
+    console.log('Fetched objectives:', objectives?.length || 0);
     return (objectives || []) as WeeklyObjective[];
   }
 
@@ -18,6 +22,7 @@ export class WeeklyProgressService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    console.log('Creating objective:', data);
     const { data: objective, error } = await supabase
       .from('weekly_objectives')
       .insert({
@@ -29,11 +34,16 @@ export class WeeklyProgressService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error creating objective:', error);
+      throw error;
+    }
+    console.log('Created objective:', objective);
     return objective as WeeklyObjective;
   }
 
   static async updateWeeklyObjective(id: string, data: UpdateWeeklyObjectiveData): Promise<WeeklyObjective> {
+    console.log('Updating objective:', id, data);
     const { data: objective, error } = await supabase
       .from('weekly_objectives')
       .update(data)
@@ -41,27 +51,41 @@ export class WeeklyProgressService {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error updating objective:', error);
+      throw error;
+    }
+    console.log('Updated objective:', objective);
     return objective as WeeklyObjective;
   }
 
   static async deleteWeeklyObjective(id: string): Promise<void> {
+    console.log('Deleting objective:', id);
     const { error } = await supabase
       .from('weekly_objectives')
       .delete()
       .eq('id', id);
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error deleting objective:', error);
+      throw error;
+    }
+    console.log('Deleted objective:', id);
   }
 
   static async getWeeklyProgressPost(weekStart: string): Promise<WeeklyProgressPost | null> {
+    console.log('Fetching progress post for week:', weekStart);
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .select('*')
       .eq('week_start', weekStart)
       .single();
 
-    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "not found"
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching progress post:', error);
+      throw error;
+    }
+    console.log('Fetched progress post:', post ? 'found' : 'not found');
     return post as WeeklyProgressPost | null;
   }
 
@@ -121,26 +145,51 @@ export class WeeklyProgressService {
     return post as WeeklyProgressPost;
   }
 
+  /**
+   * Get the start of the week (Sunday) for a given date
+   * Returns date in YYYY-MM-DD format
+   */
   static getWeekStart(date: Date = new Date()): string {
+    console.log('Getting week start for date:', date.toISOString());
+    
+    // Create a new date to avoid mutating the input
     const startOfWeek = new Date(date);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day;
-    startOfWeek.setDate(diff);
+    
+    // Get the day of the week (0 = Sunday, 6 = Saturday)
+    const dayOfWeek = startOfWeek.getDay();
+    
+    // Calculate how many days to subtract to get to Sunday
+    const daysToSubtract = dayOfWeek;
+    
+    // Set to the start of the week (Sunday)
+    startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
+    
+    // Set to start of day (00:00:00)
     startOfWeek.setHours(0, 0, 0, 0);
-    return startOfWeek.toISOString().split('T')[0];
+    
+    // Return in YYYY-MM-DD format
+    const result = startOfWeek.toISOString().split('T')[0];
+    console.log('Week start calculated:', result);
+    return result;
   }
 
   static formatWeekRange(weekStart: string): string {
-    const start = new Date(weekStart);
+    const start = new Date(weekStart + 'T00:00:00.000Z');
     const end = new Date(start);
-    end.setDate(start.getDate() + 6);
+    end.setUTCDate(start.getUTCDate() + 6);
     
-    return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+    const formatOptions: Intl.DateTimeFormatOptions = { 
+      month: 'short', 
+      day: 'numeric',
+      timeZone: 'UTC'
+    };
+    
+    return `${start.toLocaleDateString('en-US', formatOptions)} - ${end.toLocaleDateString('en-US', formatOptions)}`;
   }
 
   static getWeekNumber(weekStart: string): number {
-    const start = new Date(weekStart);
-    const startOfYear = new Date(start.getFullYear(), 0, 1);
+    const start = new Date(weekStart + 'T00:00:00.000Z');
+    const startOfYear = new Date(start.getUTCFullYear(), 0, 1);
     const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
     return Math.ceil((days + startOfYear.getDay() + 1) / 7);
   }
