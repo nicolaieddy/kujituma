@@ -63,13 +63,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const currentUrl = window.location.origin;
       console.log('Current URL origin:', currentUrl);
       
-      // For production, use the current origin directly
-      // For localhost, ensure we don't have protocol issues
+      // Determine the correct redirect URL based on environment
       let redirectUrl;
-      if (currentUrl.includes('localhost')) {
+      
+      if (currentUrl.includes('kujituma.com')) {
+        // Production domain - always use HTTPS
+        redirectUrl = 'https://kujituma.com/dashboard';
+      } else if (currentUrl.includes('lovable.app')) {
+        // Lovable preview domain
+        redirectUrl = `${currentUrl}/dashboard`;
+      } else if (currentUrl.includes('localhost')) {
+        // Local development
         redirectUrl = `${currentUrl}/dashboard`;
       } else {
-        // Production - ensure HTTPS
+        // Fallback - ensure HTTPS for custom domains
         redirectUrl = currentUrl.startsWith('https://') 
           ? `${currentUrl}/dashboard`
           : `https://${currentUrl.replace(/^https?:\/\//, '')}/dashboard`;
