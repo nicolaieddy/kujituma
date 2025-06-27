@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Home, Plus, LogOut, User, Search, Shield } from "lucide-react";
+import { Home, Plus, LogOut, User, Search, Shield, Calendar } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
@@ -16,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, session, loading: authLoading, signOut } = useAuth();
-  const { posts, loading: postsLoading, createPost, addComment } = usePosts();
+  const { posts, loading: postsLoading, createPost, addComment, togglePostLike, toggleCommentLike } = usePosts();
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -30,7 +29,7 @@ const Dashboard = () => {
     post.help.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubmitPost = async (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => {
+  const handleSubmitPost = async (data: Omit<ProgressPostType, "id" | "timestamp" | "comments" | "likes" | "user_liked">) => {
     if (!user) {
       navigate('/auth');
       return;
@@ -54,6 +53,32 @@ const Dashboard = () => {
       await addComment(postId, commentData);
     } catch (error) {
       console.error('Error adding comment:', error);
+    }
+  };
+
+  const handleTogglePostLike = async (postId: string) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      await togglePostLike(postId);
+    } catch (error) {
+      console.error('Error toggling post like:', error);
+    }
+  };
+
+  const handleToggleCommentLike = async (commentId: string) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
+    try {
+      await toggleCommentLike(commentId);
+    } catch (error) {
+      console.error('Error toggling comment like:', error);
     }
   };
 
@@ -212,23 +237,31 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            {/* Search Bar */}
+            {/* Filter Info and Search Bar */}
             {posts.length > 0 && (
-              <div className="mb-6 max-w-md mx-auto px-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
-                  <Input
-                    placeholder="Search posts..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                  />
+              <div className="mb-6 space-y-4">
+                <div className="text-center">
+                  <div className="inline-flex items-center space-x-2 bg-white/10 backdrop-blur-lg rounded-lg px-4 py-2 text-white/80 text-sm">
+                    <Calendar className="h-4 w-4" />
+                    <span>Showing posts from the last 14 days</span>
+                  </div>
+                </div>
+                <div className="max-w-md mx-auto px-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
+                    <Input
+                      placeholder="Search posts..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                    />
+                  </div>
                 </div>
               </div>
             )}
 
             {/* Posts Section */}
-            <div className="space-y-4 px-2 sm:px-0">
+            <div className="space-y-3 px-2 sm:px-0">
               {postsLoading ? (
                 <div className="text-center text-white">Loading posts...</div>
               ) : filteredPosts.length === 0 ? (
@@ -253,7 +286,7 @@ const Dashboard = () => {
                       <div className="text-5xl sm:text-6xl mb-4">🚀</div>
                       <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Ready to Share?</h3>
                       <p className="text-white/70 mb-4 text-sm sm:text-base">
-                        No progress posts yet. {user ? 'Click "Share Progress" to get started!' : 'Sign in to share your first progress post!'}
+                        No progress posts in the last 14 days. {user ? 'Click "Share Progress" to get started!' : 'Sign in to share your first progress post!'}
                       </p>
                     </>
                   )}
@@ -265,6 +298,8 @@ const Dashboard = () => {
                     post={post}
                     onAddComment={(commentData) => handleAddComment(post.id, commentData)}
                     onViewUserPosts={handleViewUserPosts}
+                    onTogglePostLike={handleTogglePostLike}
+                    onToggleCommentLike={handleToggleCommentLike}
                     isAuthenticated={!!user}
                   />
                 ))

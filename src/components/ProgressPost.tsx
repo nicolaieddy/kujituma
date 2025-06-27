@@ -16,10 +16,19 @@ interface ProgressPostProps {
   post: ProgressPostType;
   onAddComment: (commentData: { name: string; message: string }) => void;
   onViewUserPosts: (userId: string) => void;
+  onTogglePostLike: (postId: string) => void;
+  onToggleCommentLike: (commentId: string) => void;
   isAuthenticated?: boolean;
 }
 
-const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = false }: ProgressPostProps) => {
+const ProgressPost = ({ 
+  post, 
+  onAddComment, 
+  onViewUserPosts, 
+  onTogglePostLike,
+  onToggleCommentLike,
+  isAuthenticated = false 
+}: ProgressPostProps) => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [showCommentForm, setShowCommentForm] = useState(false);
@@ -84,53 +93,79 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
     onViewUserPosts(post.user_id || post.id);
   };
 
+  const handlePostLike = () => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    onTogglePostLike(post.id);
+  };
+
+  const handleCommentLike = (commentId: string) => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    onToggleCommentLike(commentId);
+  };
+
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300">
-      <CardHeader className="pb-2 px-4 pt-3">
+      <CardHeader className="pb-1 px-3 pt-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Avatar className="h-6 w-6">
+            <Avatar className="h-5 w-5">
               <AvatarImage src={post.avatar_url} />
               <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">
-                <User className="h-3 w-3" />
+                <User className="h-2 w-2" />
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="flex items-center space-x-2">
-                <h3 className="text-white font-semibold text-sm">{post.name}</h3>
+              <div className="flex items-center space-x-1">
+                <h3 className="text-white font-semibold text-xs">{post.name}</h3>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={handleViewUserHistory}
-                  className="text-white/60 hover:bg-white/20 text-xs h-5 px-1"
+                  className="text-white/60 hover:bg-white/20 text-xs h-4 px-1"
                 >
-                  <History className="h-3 w-3" />
+                  <History className="h-2 w-2" />
                 </Button>
               </div>
               <div className="flex items-center space-x-1 text-white/60 text-xs">
-                <Clock className="h-3 w-3" />
+                <Clock className="h-2 w-2" />
                 <span>{formatTimeAgo(post.timestamp)}</span>
               </div>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleCommentClick}
-            className="text-white/80 hover:bg-white/20 text-xs h-6 px-2"
-          >
-            <MessageCircle className="h-3 w-3 mr-1" />
-            {post.comments.length > 0 ? `${post.comments.length}` : 'Comment'}
-          </Button>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePostLike}
+              className={`text-xs h-5 px-1 ${post.user_liked ? 'text-orange-400 hover:bg-orange-500/20' : 'text-white/80 hover:bg-white/20'}`}
+            >
+              🚀 {post.likes || 0}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCommentClick}
+              className="text-white/80 hover:bg-white/20 text-xs h-5 px-1"
+            >
+              <MessageCircle className="h-2 w-2 mr-1" />
+              {post.comments.length > 0 ? `${post.comments.length}` : ''}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       
-      <CardContent className="space-y-2 pt-0 px-4 pb-3">
+      <CardContent className="space-y-1 pt-0 px-3 pb-2">
         {/* Accomplishments */}
         {post.accomplishments && (
           <div>
             <h4 className="text-white font-medium mb-1 flex items-center text-xs">
-              🎉 Accomplishments
+              🎉 Wins
             </h4>
             <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.accomplishments}</p>
           </div>
@@ -139,7 +174,7 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
         {post.priorities && (
           <div>
             <h4 className="text-white font-medium mb-1 flex items-center text-xs">
-              🎯 Priorities
+              🎯 Focus
             </h4>
             <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.priorities}</p>
           </div>
@@ -148,7 +183,7 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
         {post.help && (
           <div>
             <h4 className="text-white font-medium mb-1 flex items-center text-xs">
-              🤝 Help Needed
+              🤝 Help
             </h4>
             <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.help}</p>
           </div>
@@ -157,25 +192,35 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
         {/* Comments Section */}
         {post.comments.length > 0 && (
           <div>
-            <Separator className="bg-white/20 my-2" />
-            <div className="space-y-2">
+            <Separator className="bg-white/20 my-1" />
+            <div className="space-y-1">
               {post.comments.map((comment) => (
                 <div key={comment.id} className="bg-white/5 rounded-lg p-2">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="h-4 w-4">
+                    <div className="flex items-center space-x-1">
+                      <Avatar className="h-3 w-3">
                         <AvatarImage src={comment.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                          <User className="h-2 w-2" />
+                          <User className="h-1 w-1" />
                         </AvatarFallback>
                       </Avatar>
                       <span className="text-white font-medium text-xs">{comment.name}</span>
                     </div>
-                    <span className="text-white/60 text-xs">
-                      {formatTimeAgo(comment.timestamp)}
-                    </span>
+                    <div className="flex items-center space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleCommentLike(comment.id)}
+                        className={`text-xs h-4 px-1 ${comment.user_liked ? 'text-orange-400 hover:bg-orange-500/20' : 'text-white/60 hover:bg-white/20'}`}
+                      >
+                        🚀 {comment.likes || 0}
+                      </Button>
+                      <span className="text-white/60 text-xs">
+                        {formatTimeAgo(comment.timestamp)}
+                      </span>
+                    </div>
                   </div>
-                  <p className="text-white/80 whitespace-pre-wrap text-xs ml-6">{comment.message}</p>
+                  <p className="text-white/80 whitespace-pre-wrap text-xs ml-4">{comment.message}</p>
                 </div>
               ))}
             </div>
@@ -185,13 +230,13 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
         {/* Comment Form */}
         {showCommentForm && isAuthenticated && (
           <div>
-            {post.comments.length > 0 || <Separator className="bg-white/20 my-2" />}
-            <form onSubmit={handleCommentSubmit} className="space-y-2">
+            {post.comments.length > 0 || <Separator className="bg-white/20 my-1" />}
+            <form onSubmit={handleCommentSubmit} className="space-y-1">
               <Input
                 placeholder="Your name"
                 value={commentData.name}
                 onChange={(e) => handleCommentChange("name", e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-7 text-xs"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-6 text-xs"
                 readOnly={!!user}
               />
               {commentErrors.name && (
@@ -202,19 +247,19 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
                 placeholder="Write a supportive comment..."
                 value={commentData.message}
                 onChange={(e) => handleCommentChange("message", e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs min-h-[50px]"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs min-h-[40px]"
               />
               {commentErrors.message && (
                 <p className="text-red-400 text-xs">{commentErrors.message}</p>
               )}
               
-              <div className="flex space-x-2">
+              <div className="flex space-x-1">
                 <Button
                   type="submit"
                   size="sm"
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 h-6 text-xs"
+                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 h-5 text-xs"
                 >
-                  <Send className="h-3 w-3 mr-1" />
+                  <Send className="h-2 w-2 mr-1" />
                   Send
                 </Button>
                 <Button
@@ -222,7 +267,7 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowCommentForm(false)}
-                  className="text-white/80 hover:bg-white/20 h-6 text-xs"
+                  className="text-white/80 hover:bg-white/20 h-5 text-xs"
                 >
                   Cancel
                 </Button>

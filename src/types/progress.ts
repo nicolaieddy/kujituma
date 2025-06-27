@@ -5,6 +5,8 @@ export interface CommentType {
   message: string;
   timestamp: number;
   avatar_url?: string;
+  likes: number;
+  user_liked?: boolean;
 }
 
 export interface ProgressPostType {
@@ -17,4 +19,6 @@ export interface ProgressPostType {
   comments: CommentType[];
   avatar_url?: string;
   user_id?: string;
+  likes: number;
+  user_liked?: boolean;
 }

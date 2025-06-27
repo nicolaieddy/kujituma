@@ -9,6 +9,12 @@ export const usePosts = () => {
 
   const fetchPosts = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Get posts from the last 14 days
+      const fourteenDaysAgo = new Date();
+      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
       const { data: postsData, error: postsError } = await supabase
         .from('posts')
         .select(`
@@ -23,11 +29,25 @@ export const usePosts = () => {
               full_name,
               avatar_url
             )
+          ),
+          post_likes!post_likes_post_id_fkey (
+            user_id
           )
         `)
+        .gte('created_at', fourteenDaysAgo.toISOString())
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
+
+      // Get comment likes for the user if authenticated
+      let commentLikesData: any[] = [];
+      if (user) {
+        const { data: commentLikes } = await supabase
+          .from('comment_likes')
+          .select('comment_id')
+          .eq('user_id', user.id);
+        commentLikesData = commentLikes || [];
+      }
 
       const formattedPosts: ProgressPostType[] = postsData?.map(post => ({
         id: post.id,
@@ -38,12 +58,16 @@ export const usePosts = () => {
         timestamp: new Date(post.created_at).getTime(),
         avatar_url: post.profiles?.avatar_url,
         user_id: post.user_id,
+        likes: post.likes || 0,
+        user_liked: user ? post.post_likes?.some((like: any) => like.user_id === user.id) : false,
         comments: post.comments?.map((comment: any) => ({
           id: comment.id,
           name: comment.profiles?.full_name || comment.name,
           message: comment.message,
           timestamp: new Date(comment.created_at).getTime(),
-          avatar_url: comment.profiles?.avatar_url
+          avatar_url: comment.profiles?.avatar_url,
+          likes: comment.likes || 0,
+          user_liked: user ? commentLikesData.some(like => like.comment_id === comment.id) : false
         })) || []
       })) || [];
 
@@ -55,7 +79,7 @@ export const usePosts = () => {
     }
   };
 
-  const createPost = async (postData: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => {
+  const createPost = async (postData: Omit<ProgressPostType, "id" | "timestamp" | "comments" | "likes" | "user_liked">) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -107,6 +131,48 @@ export const usePosts = () => {
     }
   };
 
+  const togglePostLike = async (postId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase.rpc('toggle_post_like', {
+        _user_id: user.id,
+        _post_id: postId
+      });
+
+      if (error) throw error;
+
+      // Refresh posts after toggling like
+      await fetchPosts();
+      return data;
+    } catch (error) {
+      console.error('Error toggling post like:', error);
+      throw error;
+    }
+  };
+
+  const toggleCommentLike = async (commentId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase.rpc('toggle_comment_like', {
+        _user_id: user.id,
+        _comment_id: commentId
+      });
+
+      if (error) throw error;
+
+      // Refresh posts after toggling like
+      await fetchPosts();
+      return data;
+    } catch (error) {
+      console.error('Error toggling comment like:', error);
+      throw error;
+    }
+  };
+
   useEffect(() => {
     fetchPosts();
   }, []);
@@ -116,6 +182,8 @@ export const usePosts = () => {
     loading,
     createPost,
     addComment,
+    togglePostLike,
+    toggleCommentLike,
     refetch: fetchPosts
   };
 };
