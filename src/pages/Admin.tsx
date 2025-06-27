@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -36,6 +35,10 @@ interface AdminUser {
   created_at: string;
   posts_count: number;
   role?: string;
+}
+
+interface UserRole {
+  role: string;
 }
 
 const Admin = () => {
@@ -104,15 +107,31 @@ const Admin = () => {
 
   const fetchUsers = async () => {
     try {
+      console.log('Fetching users...');
+      
+      // First, get all profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          *,
-          user_roles (role)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
+
+      console.log('Profiles data:', profilesData);
+
+      // Get user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+      }
+
+      console.log('Roles data:', rolesData);
 
       // Get post counts for each user
       const { data: postCounts, error: postCountsError } = await supabase
@@ -120,12 +139,21 @@ const Admin = () => {
         .select('user_id')
         .not('user_id', 'is', null);
 
-      if (postCountsError) throw postCountsError;
+      if (postCountsError) {
+        console.error('Error fetching post counts:', postCountsError);
+      }
 
-      const postCountMap = postCounts.reduce((acc: Record<string, number>, post) => {
+      console.log('Post counts data:', postCounts);
+
+      const postCountMap = postCounts?.reduce((acc: Record<string, number>, post) => {
         acc[post.user_id] = (acc[post.user_id] || 0) + 1;
         return acc;
-      }, {});
+      }, {}) || {};
+
+      const roleMap = rolesData?.reduce((acc: Record<string, string>, role) => {
+        acc[role.user_id] = role.role;
+        return acc;
+      }, {}) || {};
 
       const usersWithCounts = profilesData?.map(profile => ({
         id: profile.id,
@@ -134,9 +162,10 @@ const Admin = () => {
         avatar_url: profile.avatar_url,
         created_at: profile.created_at,
         posts_count: postCountMap[profile.id] || 0,
-        role: profile.user_roles && profile.user_roles.length > 0 ? profile.user_roles[0].role : 'user'
+        role: roleMap[profile.id] || 'user'
       })) || [];
 
+      console.log('Final users data:', usersWithCounts);
       setUsers(usersWithCounts);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -344,59 +373,65 @@ const Admin = () => {
                 <CardTitle className="text-white">Users Overview</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="border-white/20">
-                        <TableHead className="text-white/80">User</TableHead>
-                        <TableHead className="text-white/80">Email</TableHead>
-                        <TableHead className="text-white/80">Role</TableHead>
-                        <TableHead className="text-white/80">Posts</TableHead>
-                        <TableHead className="text-white/80">Joined</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {users.map((user) => (
-                        <TableRow key={user.id} className="border-white/20">
-                          <TableCell>
-                            <div className="flex items-center space-x-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarImage src={user.avatar_url} />
-                                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                                  <User className="h-4 w-4" />
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="text-white font-medium">{user.full_name}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-white/80">{user.email}</span>
-                          </TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={user.role === 'admin' ? "destructive" : "default"}
-                              className={
-                                user.role === 'admin' 
-                                  ? "bg-purple-500/20 text-purple-400" 
-                                  : "bg-blue-500/20 text-blue-400"
-                              }
-                            >
-                              {user.role}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-white/80">{user.posts_count}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-white/60 text-sm">
-                              {formatTimeAgo(new Date(user.created_at).getTime())}
-                            </span>
-                          </TableCell>
+                {users.length === 0 ? (
+                  <div className="text-center text-white/80 py-8">
+                    <p>No users found. Check the console for debugging information.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="border-white/20">
+                          <TableHead className="text-white/80">User</TableHead>
+                          <TableHead className="text-white/80">Email</TableHead>
+                          <TableHead className="text-white/80">Role</TableHead>
+                          <TableHead className="text-white/80">Posts</TableHead>
+                          <TableHead className="text-white/80">Joined</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
+                      </TableHeader>
+                      <TableBody>
+                        {users.map((user) => (
+                          <TableRow key={user.id} className="border-white/20">
+                            <TableCell>
+                              <div className="flex items-center space-x-2">
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={user.avatar_url} />
+                                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                                    <User className="h-4 w-4" />
+                                  </AvatarFallback>
+                                </Avatar>
+                                <span className="text-white font-medium">{user.full_name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-white/80">{user.email}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge 
+                                variant={user.role === 'admin' ? "destructive" : "default"}
+                                className={
+                                  user.role === 'admin' 
+                                    ? "bg-purple-500/20 text-purple-400" 
+                                    : "bg-blue-500/20 text-blue-400"
+                                }
+                              >
+                                {user.role}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-white/80">{user.posts_count}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-white/60 text-sm">
+                                {formatTimeAgo(new Date(user.created_at).getTime())}
+                              </span>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
