@@ -63,26 +63,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const currentUrl = window.location.origin;
       console.log('Current URL origin:', currentUrl);
       
-      // Determine the correct redirect URL based on environment
-      let redirectUrl;
+      // Use a simpler redirect URL approach
+      const redirectUrl = `${currentUrl}/dashboard`;
       
-      if (currentUrl.includes('kujituma.com')) {
-        // Production domain - always use HTTPS
-        redirectUrl = 'https://kujituma.com/dashboard';
-      } else if (currentUrl.includes('lovable.app')) {
-        // Lovable preview domain
-        redirectUrl = `${currentUrl}/dashboard`;
-      } else if (currentUrl.includes('localhost')) {
-        // Local development
-        redirectUrl = `${currentUrl}/dashboard`;
-      } else {
-        // Fallback - ensure HTTPS for custom domains
-        redirectUrl = currentUrl.startsWith('https://') 
-          ? `${currentUrl}/dashboard`
-          : `https://${currentUrl.replace(/^https?:\/\//, '')}/dashboard`;
-      }
-      
-      console.log('Final redirect URL:', redirectUrl);
+      console.log('Redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
