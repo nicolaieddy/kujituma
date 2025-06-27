@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
-import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSimplePosts } from "@/hooks/useSimplePosts";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
@@ -15,21 +14,12 @@ import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { SearchAndFilter } from "@/components/dashboard/SearchAndFilter";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 
-interface WeeklyProgressData {
-  name: string;
-  weekNumber: number;
-  year: number;
-  lastWeekAccomplishments: string;
-  thisWeekObjectives: string[];
-  blockers: string;
-}
-
 const Dashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("14days");
-  const { posts, loading: postsLoading, createPost, addComment, togglePostLike, toggleCommentLike } = useSimplePosts({ filterPeriod });
+  const { posts, loading: postsLoading, addComment, togglePostLike, toggleCommentLike } = useSimplePosts({ filterPeriod });
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -41,28 +31,6 @@ const Dashboard = () => {
     post.priorities.toLowerCase().includes(searchQuery.toLowerCase()) ||
     post.help.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const handleSubmitWeeklyProgress = async (data: WeeklyProgressData) => {
-    if (!user) {
-      navigate('/auth');
-      return;
-    }
-
-    // Convert weekly progress data to the existing post format
-    const postData: Omit<ProgressPostType, "id" | "timestamp" | "comments" | "likes" | "user_liked"> = {
-      name: data.name,
-      accomplishments: data.lastWeekAccomplishments,
-      priorities: `Week ${data.weekNumber}, ${data.year} Objectives:\n• ${data.thisWeekObjectives.join('\n• ')}`,
-      help: data.blockers
-    };
-
-    try {
-      await createPost(postData);
-      setShowForm(false);
-    } catch (error) {
-      console.error('Error creating weekly progress post:', error);
-    }
-  };
 
   const handleAddComment = async (postId: string, commentData: { name: string; message: string }) => {
     if (!user) {
@@ -143,7 +111,6 @@ const Dashboard = () => {
         {showForm ? (
           <div className="mb-8">
             <WeeklyProgressForm
-              onSubmit={handleSubmitWeeklyProgress}
               onCancel={() => setShowForm(false)}
             />
           </div>
@@ -169,7 +136,7 @@ const Dashboard = () => {
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-base px-6 py-3"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Share Weekly Progress
+                Manage Weekly Progress
               </Button>
             </div>
 

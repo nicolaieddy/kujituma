@@ -6,197 +6,219 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, X, Calendar } from "lucide-react";
+import { Plus, X, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 interface WeeklyProgressFormProps {
-  onSubmit: (data: WeeklyProgressData) => void;
   onCancel: () => void;
 }
 
-interface WeeklyProgressData {
-  name: string;
-  weekNumber: number;
-  year: number;
-  lastWeekAccomplishments: string;
-  thisWeekObjectives: string[];
-  blockers: string;
-}
-
-const WeeklyProgressForm = ({ onSubmit, onCancel }: WeeklyProgressFormProps) => {
+const WeeklyProgressForm = ({ onCancel }: WeeklyProgressFormProps) => {
   const { user } = useAuth();
-  const [formData, setFormData] = useState<WeeklyProgressData>({
-    name: "",
-    weekNumber: 0,
-    year: 0,
-    lastWeekAccomplishments: "",
-    thisWeekObjectives: [""],
-    blockers: ""
-  });
+  const [selectedWeekStart, setSelectedWeekStart] = useState<string>(WeeklyProgressService.getWeekStart());
+  const [newObjective, setNewObjective] = useState("");
+  const [progressNotes, setProgressNotes] = useState("");
+  
+  const {
+    objectives,
+    progressPost,
+    createObjective,
+    updateObjective,
+    deleteObjective,
+    updateProgressNotes,
+    weekRange,
+    isCreating,
+    isUpdating,
+    isSavingNotes,
+  } = useWeeklyProgress(selectedWeekStart);
 
-  // Calculate current week number
+  // Initialize progress notes when progressPost changes
   useEffect(() => {
-    const now = new Date();
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-    const daysSinceStart = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    const weekNumber = Math.ceil((daysSinceStart + startOfYear.getDay() + 1) / 7);
-    
-    setFormData(prev => ({
-      ...prev,
-      weekNumber,
-      year: now.getFullYear(),
-      name: user?.user_metadata?.full_name || user?.email || ""
-    }));
-  }, [user]);
+    setProgressNotes(progressPost?.notes || "");
+  }, [progressPost]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Filter out empty objectives
-    const filteredObjectives = formData.thisWeekObjectives.filter(obj => obj.trim() !== "");
-    
-    if (!formData.name.trim() || filteredObjectives.length === 0) {
-      return;
+  const handlePreviousWeek = () => {
+    const currentDate = new Date(selectedWeekStart);
+    currentDate.setDate(currentDate.getDate() - 7);
+    setSelectedWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+  };
+
+  const handleNextWeek = () => {
+    const currentDate = new Date(selectedWeekStart);
+    currentDate.setDate(currentDate.getDate() + 7);
+    setSelectedWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+  };
+
+  const handleAddObjective = () => {
+    if (newObjective.trim()) {
+      createObjective({
+        text: newObjective.trim(),
+        week_start: selectedWeekStart,
+      });
+      setNewObjective("");
     }
-    
-    onSubmit({
-      ...formData,
-      thisWeekObjectives: filteredObjectives
-    });
   };
 
-  const addObjective = () => {
-    setFormData(prev => ({
-      ...prev,
-      thisWeekObjectives: [...prev.thisWeekObjectives, ""]
-    }));
+  const handleToggleObjective = (id: string, isCompleted: boolean) => {
+    updateObjective(id, { is_completed: !isCompleted });
   };
 
-  const removeObjective = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      thisWeekObjectives: prev.thisWeekObjectives.filter((_, i) => i !== index)
-    }));
+  const handleUpdateObjectiveText = (id: string, text: string) => {
+    updateObjective(id, { text });
   };
 
-  const updateObjective = (index: number, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      thisWeekObjectives: prev.thisWeekObjectives.map((obj, i) => i === index ? value : obj)
-    }));
+  const handleDeleteObjective = (id: string) => {
+    deleteObjective(id);
   };
+
+  const handleSaveNotes = () => {
+    updateProgressNotes(progressNotes);
+  };
+
+  const completedCount = objectives.filter(obj => obj.is_completed).length;
+  const totalCount = objectives.length;
+  const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
       <CardHeader>
-        <CardTitle className="text-white text-2xl">Share Your Weekly Progress</CardTitle>
-        <div className="flex items-center gap-2 text-white/80">
-          <Calendar className="h-4 w-4" />
-          <span>Week {formData.weekNumber}, {formData.year}</span>
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handlePreviousWeek}
+            className="text-white/60 hover:text-white hover:bg-white/20"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          
+          <div className="text-center">
+            <CardTitle className="text-white text-2xl">Weekly Progress</CardTitle>
+            <div className="flex items-center justify-center gap-2 text-white/80 mt-2">
+              <Calendar className="h-4 w-4" />
+              <span>{weekRange}</span>
+            </div>
+            {totalCount > 0 && (
+              <div className="mt-2">
+                <div className="bg-white/10 backdrop-blur-lg rounded-full h-2 w-full max-w-xs mx-auto">
+                  <div 
+                    className="bg-gradient-to-r from-green-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
+                <p className="text-white/60 text-sm mt-1">
+                  {completedCount} of {totalCount} objectives completed ({completionPercentage}%)
+                </p>
+              </div>
+            )}
+          </div>
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleNextWeek}
+            className="text-white/60 hover:text-white hover:bg-white/20"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <Label htmlFor="name" className="text-white font-medium">
-              Your Name *
-            </Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-              placeholder="Enter your name"
-              readOnly={!!user}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="lastWeek" className="text-white font-medium">
-              🎉 What did you get done last week?
-            </Label>
-            <Textarea
-              id="lastWeek"
-              value={formData.lastWeekAccomplishments}
-              onChange={(e) => setFormData(prev => ({ ...prev, lastWeekAccomplishments: e.target.value }))}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
-              placeholder="Share your accomplishments from last week..."
-            />
-          </div>
-
-          <div>
-            <Label className="text-white font-medium">
-              🎯 What are you getting done this week?
-            </Label>
-            <div className="mt-2 space-y-3">
-              {formData.thisWeekObjectives.map((objective, index) => (
-                <div key={index} className="flex items-center gap-3">
-                  <Checkbox 
-                    disabled 
-                    className="border-white/40 data-[state=checked]:bg-purple-500 data-[state=checked]:border-purple-500"
-                  />
-                  <Input
-                    value={objective}
-                    onChange={(e) => updateObjective(index, e.target.value)}
-                    className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                    placeholder="Enter an objective for this week..."
-                  />
-                  {formData.thisWeekObjectives.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeObjective(index)}
-                      className="text-white/60 hover:text-white hover:bg-white/20"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              ))}
+      
+      <CardContent className="space-y-6">
+        {/* Weekly Objectives Section */}
+        <div>
+          <Label className="text-white font-medium text-lg">
+            🎯 This Week's Objectives
+          </Label>
+          <div className="mt-3 space-y-3">
+            {objectives.map((objective) => (
+              <div key={objective.id} className="flex items-center gap-3 group">
+                <Checkbox
+                  checked={objective.is_completed}
+                  onCheckedChange={() => handleToggleObjective(objective.id, objective.is_completed)}
+                  className="border-white/40 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                />
+                <Input
+                  value={objective.text}
+                  onChange={(e) => handleUpdateObjectiveText(objective.id, e.target.value)}
+                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                  placeholder="Enter an objective..."
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteObjective(objective.id)}
+                  className="text-white/60 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            
+            {/* Add new objective */}
+            <div className="flex items-center gap-3">
+              <Checkbox 
+                disabled 
+                className="border-white/40 opacity-50"
+              />
+              <Input
+                value={newObjective}
+                onChange={(e) => setNewObjective(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddObjective()}
+                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                placeholder="Add a new objective..."
+              />
               <Button
                 type="button"
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={addObjective}
-                className="border-white/20 text-white hover:bg-white/20"
+                onClick={handleAddObjective}
+                disabled={!newObjective.trim() || isCreating}
+                className="text-white/60 hover:text-white hover:bg-white/20"
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Another Objective
+                <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
+        </div>
 
-          <div>
-            <Label htmlFor="blockers" className="text-white font-medium">
-              🤝 Any blockers or requests for help?
-            </Label>
-            <Textarea
-              id="blockers"
-              value={formData.blockers}
-              onChange={(e) => setFormData(prev => ({ ...prev, blockers: e.target.value }))}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
-              placeholder="Any challenges or areas where you need support?"
-            />
-          </div>
+        {/* Progress Notes Section */}
+        <div>
+          <Label className="text-white font-medium text-lg">
+            📝 Progress Notes & Reflections
+          </Label>
+          <p className="text-white/60 text-sm mt-1 mb-3">
+            What did you accomplish? Any blockers or areas where you need help?
+          </p>
+          <Textarea
+            value={progressNotes}
+            onChange={(e) => setProgressNotes(e.target.value)}
+            className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[120px]"
+            placeholder="Share your progress, accomplishments, challenges, and any help you need..."
+          />
+        </div>
 
-          <div className="flex space-x-4">
-            <Button
-              type="submit"
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex-1"
-            >
-              Share Progress
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onCancel}
-              className="border-white/20 text-black hover:bg-white/10 bg-white"
-            >
-              Cancel
-            </Button>
-          </div>
-        </form>
+        {/* Action Buttons */}
+        <div className="flex space-x-4">
+          <Button
+            onClick={handleSaveNotes}
+            disabled={isSavingNotes}
+            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex-1"
+          >
+            {isSavingNotes ? "Saving..." : "Save Progress"}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            className="border-white/20 text-black hover:bg-white/10 bg-white"
+          >
+            Close
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

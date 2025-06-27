@@ -1,10 +1,14 @@
 
+import { useState } from "react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { AddObjectiveForm } from "./AddObjectiveForm";
 import { ObjectivesList } from "./ObjectivesList";
 import { ProgressNotes } from "./ProgressNotes";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 interface WeeklyProgressProps {
   selectedWeek?: string;
@@ -12,6 +16,10 @@ interface WeeklyProgressProps {
 
 export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
   const { goals } = useGoals();
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
+    selectedWeek || WeeklyProgressService.getWeekStart()
+  );
+  
   const {
     objectives,
     progressPost,
@@ -20,17 +28,28 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
     deleteObjective,
     updateProgressNotes,
     weekRange,
-    weekStart,
     isCreating,
     isUpdating,
     isSavingNotes,
-  } = useWeeklyProgress(selectedWeek);
+  } = useWeeklyProgress(currentWeekStart);
+
+  const handlePreviousWeek = () => {
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() - 7);
+    setCurrentWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+  };
+
+  const handleNextWeek = () => {
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() + 7);
+    setCurrentWeekStart(WeeklyProgressService.getWeekStart(currentDate));
+  };
 
   const handleCreateObjective = (text: string, goalId?: string) => {
     createObjective({
       text,
       goal_id: goalId,
-      week_start: weekStart,
+      week_start: currentWeekStart,
     });
   };
 
@@ -51,11 +70,31 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
 
   return (
     <div className="space-y-6">
-      <WeeklyProgressHeader 
-        weekRange={weekRange}
-        completedCount={completedCount}
-        totalCount={totalCount}
-      />
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handlePreviousWeek}
+          className="text-white/60 hover:text-white hover:bg-white/20"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        
+        <WeeklyProgressHeader 
+          weekRange={weekRange}
+          completedCount={completedCount}
+          totalCount={totalCount}
+        />
+
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleNextWeek}
+          className="text-white/60 hover:text-white hover:bg-white/20"
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      </div>
 
       <AddObjectiveForm
         goals={goals}
