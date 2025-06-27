@@ -29,6 +29,7 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
     deleteObjective,
     updateProgressNotes,
     weekRange,
+    weekNumber,
     isCreating,
     isUpdating,
     isSavingNotes,
@@ -72,6 +73,8 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
 
   const completedCount = objectives.filter(obj => obj.is_completed).length;
   const totalCount = objectives.length;
+  const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isWeekCompleted = progressPost?.is_completed || false;
 
   // Check if this is the current week
   const currentWeek = WeeklyProgressService.getWeekStart();
@@ -91,8 +94,13 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
         
         <WeeklyProgressHeader 
           weekRange={weekRange}
+          weekNumber={weekNumber}
+          isWeekCompleted={isWeekCompleted}
           completedCount={completedCount}
           totalCount={totalCount}
+          completionPercentage={completionPercentage}
+          onPreviousWeek={handlePreviousWeek}
+          onNextWeek={handleNextWeek}
         />
 
         <Button
