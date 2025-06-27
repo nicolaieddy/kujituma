@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -10,7 +9,7 @@ const Index = () => {
   const handleLaunch = () => {
     setIsLaunching(true);
     setTimeout(() => {
-      navigate('/auth');
+      navigate('/dashboard');
     }, 3000);
   };
 
