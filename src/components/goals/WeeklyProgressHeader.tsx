@@ -24,12 +24,27 @@ export const WeeklyProgressHeader = ({
   onPreviousWeek,
   onNextWeek,
 }: WeeklyProgressHeaderProps) => {
+  
+  const handlePreviousClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Previous button clicked');
+    onPreviousWeek();
+  };
+
+  const handleNextClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Next button clicked');
+    onNextWeek();
+  };
+
   return (
     <div className="flex items-center justify-between">
       <Button
         variant="ghost"
         size="sm"
-        onClick={onPreviousWeek}
+        onClick={handlePreviousClick}
         className="text-white/60 hover:text-white hover:bg-white/20"
       >
         <ChevronLeft className="h-4 w-4" />
@@ -65,7 +80,7 @@ export const WeeklyProgressHeader = ({
       <Button
         variant="ghost"
         size="sm"
-        onClick={onNextWeek}
+        onClick={handleNextClick}
         className="text-white/60 hover:text-white hover:bg-white/20"
       >
         <ChevronRight className="h-4 w-4" />

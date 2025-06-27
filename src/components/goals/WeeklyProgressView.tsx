@@ -36,7 +36,7 @@ export const WeeklyProgressView = () => {
   }, [progressPost]);
 
   const handlePreviousWeek = () => {
-    const currentDate = new Date(selectedWeekStart);
+    const currentDate = new Date(selectedWeekStart + 'T00:00:00');
     currentDate.setDate(currentDate.getDate() - 7);
     const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
     console.log('Previous week navigation:', selectedWeekStart, '->', newWeekStart);
@@ -44,7 +44,7 @@ export const WeeklyProgressView = () => {
   };
 
   const handleNextWeek = () => {
-    const currentDate = new Date(selectedWeekStart);
+    const currentDate = new Date(selectedWeekStart + 'T00:00:00');
     currentDate.setDate(currentDate.getDate() + 7);
     const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
     console.log('Next week navigation:', selectedWeekStart, '->', newWeekStart);
