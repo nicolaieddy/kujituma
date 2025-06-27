@@ -1,16 +1,16 @@
-
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const [isLaunching, setIsLaunching] = useState(false);
+  const navigate = useNavigate();
 
   const handleLaunch = () => {
     setIsLaunching(true);
-    // Reset after animation completes
+    // Navigate to dashboard after animation completes
     setTimeout(() => {
-      setIsLaunching(false);
+      navigate('/dashboard');
     }, 3000);
   };
 
