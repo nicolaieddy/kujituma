@@ -61,6 +61,25 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, field: string) => {
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      const textarea = e.currentTarget;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const value = textarea.value;
+      
+      // Add bullet point
+      const newValue = value.substring(0, start) + '\n• ' + value.substring(end);
+      handleChange(field, newValue);
+      
+      // Set cursor position after the bullet
+      setTimeout(() => {
+        textarea.selectionStart = textarea.selectionEnd = start + 3;
+      }, 0);
+    }
+  };
+
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
       <CardHeader>
@@ -89,10 +108,14 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
             <Label htmlFor="accomplishments" className="text-white font-medium">
               🎉 This Week's Accomplishments
             </Label>
+            <p className="text-white/60 text-xs mt-1 mb-2">
+              Press Ctrl+Enter (Cmd+Enter on Mac) to add bullet points
+            </p>
             <Textarea
               id="accomplishments"
               value={formData.accomplishments}
               onChange={(e) => handleChange("accomplishments", e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, "accomplishments")}
               className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
               placeholder="What did you achieve this week? Share your wins, big or small..."
             />
@@ -102,10 +125,14 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
             <Label htmlFor="priorities" className="text-white font-medium">
               🎯 Next Week's Priorities
             </Label>
+            <p className="text-white/60 text-xs mt-1 mb-2">
+              Press Ctrl+Enter (Cmd+Enter on Mac) to add bullet points
+            </p>
             <Textarea
               id="priorities"
               value={formData.priorities}
               onChange={(e) => handleChange("priorities", e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, "priorities")}
               className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
               placeholder="What are your main goals for next week?"
             />
@@ -115,10 +142,14 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
             <Label htmlFor="help" className="text-white font-medium">
               🤝 Where You Need Help
             </Label>
+            <p className="text-white/60 text-xs mt-1 mb-2">
+              Press Ctrl+Enter (Cmd+Enter on Mac) to add bullet points
+            </p>
             <Textarea
               id="help"
               value={formData.help}
               onChange={(e) => handleChange("help", e.target.value)}
+              onKeyDown={(e) => handleKeyDown(e, "help")}
               className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
               placeholder="Any blockers or areas where you could use support or advice?"
             />
@@ -135,7 +166,7 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="border-white/20 text-white hover:bg-white/10"
+              className="border-white/20 text-black hover:bg-white/10 bg-white"
             >
               Cancel
             </Button>
