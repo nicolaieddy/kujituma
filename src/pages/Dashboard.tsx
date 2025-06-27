@@ -201,18 +201,16 @@ const Dashboard = () => {
               )}
             </div>
 
-            {/* Share Progress Button - Moved to main content */}
-            {user && (
-              <div className="text-center mb-8">
-                <Button
-                  onClick={handleShareProgress}
-                  className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-base px-6 py-3"
-                >
-                  <Plus className="h-5 w-5 mr-2" />
-                  Share Progress
-                </Button>
-              </div>
-            )}
+            {/* Share Progress Button - Always visible */}
+            <div className="text-center mb-8">
+              <Button
+                onClick={handleShareProgress}
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-base px-6 py-3"
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Share Progress
+              </Button>
+            </div>
 
             {/* Search Bar */}
             {posts.length > 0 && (

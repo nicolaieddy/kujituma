@@ -81,8 +81,7 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
   };
 
   const handleViewUserHistory = () => {
-    // For now we'll use the post ID as userId - in a real app you'd have actual user IDs
-    onViewUserPosts(post.id);
+    onViewUserPosts(post.user_id || post.id);
   };
 
   return (
@@ -91,7 +90,7 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Avatar className="h-6 w-6">
-              <AvatarImage src={user?.user_metadata?.avatar_url} />
+              <AvatarImage src={post.avatar_url} />
               <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">
                 <User className="h-3 w-3" />
               </AvatarFallback>
@@ -165,7 +164,7 @@ const ProgressPost = ({ post, onAddComment, onViewUserPosts, isAuthenticated = f
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-4 w-4">
-                        <AvatarImage src={user?.user_metadata?.avatar_url} />
+                        <AvatarImage src={comment.avatar_url} />
                         <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
                           <User className="h-2 w-2" />
                         </AvatarFallback>

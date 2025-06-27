@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProgressPostType, CommentType } from '@/types/progress';
@@ -35,11 +36,14 @@ export const usePosts = () => {
         priorities: post.priorities,
         help: post.help,
         timestamp: new Date(post.created_at).getTime(),
+        avatar_url: post.profiles?.avatar_url,
+        user_id: post.user_id,
         comments: post.comments?.map((comment: any) => ({
           id: comment.id,
           name: comment.profiles?.full_name || comment.name,
           message: comment.message,
-          timestamp: new Date(comment.created_at).getTime()
+          timestamp: new Date(comment.created_at).getTime(),
+          avatar_url: comment.profiles?.avatar_url
         })) || []
       })) || [];
 

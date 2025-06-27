@@ -4,6 +4,7 @@ export interface CommentType {
   name: string;
   message: string;
   timestamp: number;
+  avatar_url?: string;
 }
 
 export interface ProgressPostType {
@@ -14,4 +15,6 @@ export interface ProgressPostType {
   help: string;
   timestamp: number;
   comments: CommentType[];
+  avatar_url?: string;
+  user_id?: string;
 }
