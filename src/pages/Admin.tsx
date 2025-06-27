@@ -3,12 +3,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminHeader from "@/components/admin/AdminHeader";
 import PostsManagement from "@/components/admin/PostsManagement";
 import UsersOverview from "@/components/admin/UsersOverview";
+import AnalyticsMetrics from "@/components/admin/AnalyticsMetrics";
 import { useAdminData } from "@/hooks/useAdminData";
 
 const Admin = () => {
   const {
     posts,
     users,
+    analytics,
     loading,
     isAdmin,
     togglePostVisibility,
@@ -54,7 +56,8 @@ const Admin = () => {
             />
           </TabsContent>
 
-          <TabsContent value="users" className="mt-6">
+          <TabsContent value="users" className="mt-6 space-y-6">
+            <AnalyticsMetrics {...analytics} />
             <UsersOverview users={users} />
           </TabsContent>
         </Tabs>

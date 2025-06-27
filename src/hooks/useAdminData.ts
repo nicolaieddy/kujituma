@@ -30,11 +30,32 @@ interface AdminUser {
   role?: string;
 }
 
+interface AnalyticsData {
+  totalUsers: number;
+  totalPosts: number;
+  totalComments: number;
+  newUsersThisWeek: number;
+  activeUsersThisWeek: number;
+  postsThisWeek: number;
+  commentsThisWeek: number;
+  averagePostsPerUser: number;
+}
+
 export const useAdminData = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [posts, setPosts] = useState<AdminPost[]>([]);
   const [users, setUsers] = useState<AdminUser[]>([]);
+  const [analytics, setAnalytics] = useState<AnalyticsData>({
+    totalUsers: 0,
+    totalPosts: 0,
+    totalComments: 0,
+    newUsersThisWeek: 0,
+    activeUsersThisWeek: 0,
+    postsThisWeek: 0,
+    commentsThisWeek: 0,
+    averagePostsPerUser: 0
+  });
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -64,7 +85,7 @@ export const useAdminData = () => {
       }
 
       setIsAdmin(true);
-      await Promise.all([fetchPosts(), fetchUsers()]);
+      await Promise.all([fetchPosts(), fetchUsers(), fetchAnalytics()]);
     } catch (error) {
       console.error('Error checking admin status:', error);
       navigate('/dashboard');
@@ -161,6 +182,75 @@ export const useAdminData = () => {
     }
   };
 
+  const fetchAnalytics = async () => {
+    try {
+      const now = new Date();
+      const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      // Get total counts
+      const [
+        { count: totalUsers },
+        { count: totalPosts },
+        { count: totalComments }
+      ] = await Promise.all([
+        supabase.from('profiles').select('*', { count: 'exact', head: true }),
+        supabase.from('posts').select('*', { count: 'exact', head: true }),
+        supabase.from('comments').select('*', { count: 'exact', head: true })
+      ]);
+
+      // Get this week's data
+      const [
+        { count: newUsersThisWeek },
+        { count: postsThisWeek },
+        { count: commentsThisWeek }
+      ] = await Promise.all([
+        supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', oneWeekAgo.toISOString()),
+        supabase
+          .from('posts')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', oneWeekAgo.toISOString()),
+        supabase
+          .from('comments')
+          .select('*', { count: 'exact', head: true })
+          .gte('created_at', oneWeekAgo.toISOString())
+      ]);
+
+      // Get active users this week (users who posted or commented)
+      const { data: activeUserPosts } = await supabase
+        .from('posts')
+        .select('user_id')
+        .gte('created_at', oneWeekAgo.toISOString());
+
+      const { data: activeUserComments } = await supabase
+        .from('comments')
+        .select('user_id')
+        .gte('created_at', oneWeekAgo.toISOString());
+
+      const activeUserIds = new Set([
+        ...(activeUserPosts?.map(p => p.user_id) || []),
+        ...(activeUserComments?.map(c => c.user_id) || [])
+      ]);
+
+      const averagePostsPerUser = totalUsers > 0 ? totalPosts / totalUsers : 0;
+
+      setAnalytics({
+        totalUsers: totalUsers || 0,
+        totalPosts: totalPosts || 0,
+        totalComments: totalComments || 0,
+        newUsersThisWeek: newUsersThisWeek || 0,
+        activeUsersThisWeek: activeUserIds.size,
+        postsThisWeek: postsThisWeek || 0,
+        commentsThisWeek: commentsThisWeek || 0,
+        averagePostsPerUser
+      });
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    }
+  };
+
   const togglePostVisibility = async (postId: string, currentlyHidden: boolean) => {
     try {
       const { error } = await supabase
@@ -202,6 +292,7 @@ export const useAdminData = () => {
   return {
     posts,
     users,
+    analytics,
     loading: authLoading || loading,
     isAdmin,
     togglePostVisibility,
