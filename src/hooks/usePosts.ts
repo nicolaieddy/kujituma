@@ -13,13 +13,13 @@ export const usePosts = () => {
         .from('posts')
         .select(`
           *,
-          profiles (
+          profiles!posts_user_id_profiles_fkey (
             full_name,
             avatar_url
           ),
           comments (
             *,
-            profiles (
+            profiles!comments_user_id_profiles_fkey (
               full_name,
               avatar_url
             )
@@ -29,20 +29,20 @@ export const usePosts = () => {
 
       if (postsError) throw postsError;
 
-      const formattedPosts: ProgressPostType[] = postsData.map(post => ({
+      const formattedPosts: ProgressPostType[] = postsData?.map(post => ({
         id: post.id,
         name: post.profiles?.full_name || post.name,
         accomplishments: post.accomplishments,
         priorities: post.priorities,
         help: post.help,
         timestamp: new Date(post.created_at).getTime(),
-        comments: post.comments.map((comment: any) => ({
+        comments: post.comments?.map((comment: any) => ({
           id: comment.id,
           name: comment.profiles?.full_name || comment.name,
           message: comment.message,
           timestamp: new Date(comment.created_at).getTime()
-        }))
-      }));
+        })) || []
+      })) || [];
 
       setPosts(formattedPosts);
     } catch (error) {
