@@ -19,7 +19,7 @@ export class GoalsService {
       .single();
 
     if (error) throw error;
-    return goal;
+    return goal as Goal;
   }
 
   static async getGoals(): Promise<Goal[]> {
@@ -31,7 +31,7 @@ export class GoalsService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return goals || [];
+    return (goals || []) as Goal[];
   }
 
   static async updateGoal(id: string, data: UpdateGoalData): Promise<Goal> {
@@ -43,7 +43,7 @@ export class GoalsService {
       .single();
 
     if (error) throw error;
-    return goal;
+    return goal as Goal;
   }
 
   static async deleteGoal(id: string): Promise<void> {
@@ -63,7 +63,7 @@ export class GoalsService {
       .order('changed_at', { ascending: false });
 
     if (error) throw error;
-    return history || [];
+    return (history || []) as GoalStatusHistory[];
   }
 
   static async updateGoalOrder(goalId: string, newOrderIndex: number): Promise<void> {
