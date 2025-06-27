@@ -97,6 +97,44 @@ export const useWeeklyProgress = (weekStart?: string) => {
     },
   });
 
+  const completeWeekMutation = useMutation({
+    mutationFn: WeeklyProgressService.completeWeek,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+      toast({
+        title: "Success",
+        description: "Week completed successfully!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error completing week:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete week. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const uncompleteWeekMutation = useMutation({
+    mutationFn: WeeklyProgressService.uncompleteWeek,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+      toast({
+        title: "Success",
+        description: "Week reopened for editing!",
+      });
+    },
+    onError: (error) => {
+      console.error('Error uncompleting week:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reopen week. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createObjective = (data: CreateWeeklyObjectiveData) => {
     createObjectiveMutation.mutate({ ...data, week_start: currentWeekStart });
   };
@@ -113,6 +151,14 @@ export const useWeeklyProgress = (weekStart?: string) => {
     updateProgressPostMutation.mutate({ weekStart: currentWeekStart, notes });
   };
 
+  const completeWeek = () => {
+    completeWeekMutation.mutate(currentWeekStart);
+  };
+
+  const uncompleteWeek = () => {
+    uncompleteWeekMutation.mutate(currentWeekStart);
+  };
+
   return {
     objectives,
     progressPost,
@@ -121,11 +167,16 @@ export const useWeeklyProgress = (weekStart?: string) => {
     updateObjective,
     deleteObjective,
     updateProgressNotes,
+    completeWeek,
+    uncompleteWeek,
     weekStart: currentWeekStart,
     weekRange: WeeklyProgressService.formatWeekRange(currentWeekStart),
+    weekNumber: WeeklyProgressService.getWeekNumber(currentWeekStart),
     isCreating: createObjectiveMutation.isPending,
     isUpdating: updateObjectiveMutation.isPending,
     isDeleting: deleteObjectiveMutation.isPending,
     isSavingNotes: updateProgressPostMutation.isPending,
+    isCompletingWeek: completeWeekMutation.isPending,
+    isUncompletingWeek: uncompleteWeekMutation.isPending,
   };
 };

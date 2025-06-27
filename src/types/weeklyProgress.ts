@@ -15,6 +15,8 @@ export interface WeeklyProgressPost {
   user_id: string;
   week_start: string;
   notes: string;
+  is_completed: boolean;
+  completed_at: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -351,24 +351,30 @@ export type Database = {
       }
       weekly_progress_posts: {
         Row: {
+          completed_at: string | null
           created_at: string
           id: string
+          is_completed: boolean
           notes: string | null
           updated_at: string
           user_id: string
           week_start: string
         }
         Insert: {
+          completed_at?: string | null
           created_at?: string
           id?: string
+          is_completed?: boolean
           notes?: string | null
           updated_at?: string
           user_id: string
           week_start: string
         }
         Update: {
+          completed_at?: string | null
           created_at?: string
           id?: string
+          is_completed?: boolean
           notes?: string | null
           updated_at?: string
           user_id?: string

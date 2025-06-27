@@ -83,6 +83,44 @@ export class WeeklyProgressService {
     return post as WeeklyProgressPost;
   }
 
+  static async completeWeek(weekStart: string): Promise<WeeklyProgressPost> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: post, error } = await supabase
+      .from('weekly_progress_posts')
+      .upsert({
+        user_id: user.id,
+        week_start: weekStart,
+        is_completed: true,
+        completed_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return post as WeeklyProgressPost;
+  }
+
+  static async uncompleteWeek(weekStart: string): Promise<WeeklyProgressPost> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: post, error } = await supabase
+      .from('weekly_progress_posts')
+      .update({
+        is_completed: false,
+        completed_at: null,
+      })
+      .eq('user_id', user.id)
+      .eq('week_start', weekStart)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return post as WeeklyProgressPost;
+  }
+
   static getWeekStart(date: Date = new Date()): string {
     const startOfWeek = new Date(date);
     const day = startOfWeek.getDay();
@@ -98,5 +136,12 @@ export class WeeklyProgressService {
     end.setDate(start.getDate() + 6);
     
     return `${start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+  }
+
+  static getWeekNumber(weekStart: string): number {
+    const start = new Date(weekStart);
+    const startOfYear = new Date(start.getFullYear(), 0, 1);
+    const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
   }
 }
