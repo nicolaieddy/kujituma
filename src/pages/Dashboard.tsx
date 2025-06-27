@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Home, Plus, LogOut, User, Search } from "lucide-react";
+import { Home, Plus, LogOut, User, Search, Shield } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { usePosts } from "@/hooks/usePosts";
@@ -20,6 +19,7 @@ const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showUserPosts, setShowUserPosts] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const filteredPosts = posts.filter(post =>
     post.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,6 +76,31 @@ const Dashboard = () => {
     setShowUserPosts(true);
   };
 
+  // Check if user is admin
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      if (!user) return;
+      
+      try {
+        const { data } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .eq('role', 'admin')
+          .single();
+        
+        setIsAdmin(!!data);
+      } catch (error) {
+        // User is not admin, ignore error
+        setIsAdmin(false);
+      }
+    };
+
+    if (user) {
+      checkAdminStatus();
+    }
+  }, [user]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -113,6 +138,18 @@ const Dashboard = () => {
               
               {user ? (
                 <div className="flex items-center space-x-2">
+                  {isAdmin && (
+                    <Link to="/admin">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-purple-400 hover:bg-purple-500/20"
+                      >
+                        <Shield className="h-4 w-4 mr-2" />
+                        Admin
+                      </Button>
+                    </Link>
+                  )}
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={user.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
