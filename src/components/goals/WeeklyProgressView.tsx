@@ -7,9 +7,13 @@ import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
 import { WeeklyProgressNotesSection } from "./WeeklyProgressNotesSection";
 import { WeeklyProgressActions } from "./WeeklyProgressActions";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 export const WeeklyProgressView = () => {
   const [progressNotes, setProgressNotes] = useState("");
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
+    WeeklyProgressService.getWeekStart()
+  );
   
   const {
     objectives,
@@ -27,7 +31,7 @@ export const WeeklyProgressView = () => {
     isSavingNotes,
     isCompletingWeek,
     isUncompletingWeek,
-  } = useWeeklyProgress();
+  } = useWeeklyProgress(currentWeekStart);
 
   // Initialize progress notes when progressPost changes
   useEffect(() => {
@@ -35,11 +39,27 @@ export const WeeklyProgressView = () => {
     setProgressNotes(progressPost?.notes || "");
   }, [progressPost]);
 
+  const handlePreviousWeek = () => {
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() - 7);
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
+    setCurrentWeekStart(newWeekStart);
+  };
+
+  const handleNextWeek = () => {
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() + 7);
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
+    setCurrentWeekStart(newWeekStart);
+  };
+
   const handleAddObjective = (text: string) => {
     console.log('Adding objective:', text);
     createObjective({
       text,
-      week_start: weekStart,
+      week_start: currentWeekStart,
     });
   };
 
@@ -88,11 +108,13 @@ export const WeeklyProgressView = () => {
           completedCount={completedCount}
           totalCount={totalCount}
           completionPercentage={completionPercentage}
+          onPreviousWeek={handlePreviousWeek}
+          onNextWeek={handleNextWeek}
         />
       </CardHeader>
       
       <CardContent className="space-y-6">
-        <PreviousWeekSummary currentWeekStart={weekStart} />
+        <PreviousWeekSummary currentWeekStart={currentWeekStart} />
 
         <WeeklyObjectivesList
           objectives={objectives}
