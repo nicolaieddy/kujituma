@@ -7,13 +7,22 @@ import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSimplePosts } from "@/hooks/useSimplePosts";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
-import ProgressForm from "@/components/ProgressForm";
+import WeeklyProgressForm from "@/components/dashboard/WeeklyProgressForm";
 import ProgressPost from "@/components/ProgressPost";
 import UserPostsModal from "@/components/UserPostsModal";
 import { FilterPeriod } from "@/components/FilterDropdown";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { SearchAndFilter } from "@/components/dashboard/SearchAndFilter";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+
+interface WeeklyProgressData {
+  name: string;
+  weekNumber: number;
+  year: number;
+  lastWeekAccomplishments: string;
+  thisWeekObjectives: string[];
+  blockers: string;
+}
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -33,17 +42,25 @@ const Dashboard = () => {
     post.help.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSubmitPost = async (data: Omit<ProgressPostType, "id" | "timestamp" | "comments" | "likes" | "user_liked">) => {
+  const handleSubmitWeeklyProgress = async (data: WeeklyProgressData) => {
     if (!user) {
       navigate('/auth');
       return;
     }
 
+    // Convert weekly progress data to the existing post format
+    const postData: Omit<ProgressPostType, "id" | "timestamp" | "comments" | "likes" | "user_liked"> = {
+      name: data.name,
+      accomplishments: data.lastWeekAccomplishments,
+      priorities: `Week ${data.weekNumber}, ${data.year} Objectives:\n• ${data.thisWeekObjectives.join('\n• ')}`,
+      help: data.blockers
+    };
+
     try {
-      await createPost(data);
+      await createPost(postData);
       setShowForm(false);
     } catch (error) {
-      console.error('Error creating post:', error);
+      console.error('Error creating weekly progress post:', error);
     }
   };
 
@@ -125,8 +142,8 @@ const Dashboard = () => {
       <div className="container mx-auto px-4 py-6">
         {showForm ? (
           <div className="mb-8">
-            <ProgressForm
-              onSubmit={handleSubmitPost}
+            <WeeklyProgressForm
+              onSubmit={handleSubmitWeeklyProgress}
               onCancel={() => setShowForm(false)}
             />
           </div>
@@ -136,7 +153,7 @@ const Dashboard = () => {
             <div className="text-center mb-8">
               <h2 className="text-3xl sm:text-4xl font-bold text-white mb-6">Welcome to Your Dashboard</h2>
               <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto mb-8 px-4">
-                Your journey has begun! Share your progress and connect with others on their growth adventure.
+                Your journey has begun! Share your weekly progress and connect with others on their growth adventure.
               </p>
               {!user && (
                 <p className="text-white/60 text-sm px-4">
@@ -152,7 +169,7 @@ const Dashboard = () => {
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-base px-6 py-3"
               >
                 <Plus className="h-5 w-5 mr-2" />
-                Share Progress
+                Share Weekly Progress
               </Button>
             </div>
 
