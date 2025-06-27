@@ -61,7 +61,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Attempting Google sign in...');
       const currentUrl = window.location.origin;
-      const redirectUrl = `${currentUrl}/dashboard`;
+      // Ensure we use HTTPS for the redirect URL
+      const redirectUrl = currentUrl.replace('http://', 'https://') + '/dashboard';
       
       console.log('Redirect URL:', redirectUrl);
       
