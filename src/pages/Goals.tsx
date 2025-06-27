@@ -8,7 +8,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { GoalsKanban } from "@/components/goals/GoalsKanban";
-import { WeeklyProgress } from "@/components/goals/WeeklyProgress";
+import { WeeklyProgressView } from "@/components/goals/WeeklyProgressView";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -132,7 +132,7 @@ const Goals = () => {
           </TabsContent>
 
           <TabsContent value="weekly" className="mt-6">
-            <WeeklyProgress />
+            <WeeklyProgressView />
           </TabsContent>
         </Tabs>
       </div>
