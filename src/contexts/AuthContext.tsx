@@ -61,10 +61,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('Attempting Google sign in...');
       const currentUrl = window.location.origin;
-      // Ensure we use HTTPS for the redirect URL
-      const redirectUrl = currentUrl.replace('http://', 'https://') + '/dashboard';
+      console.log('Current URL origin:', currentUrl);
       
-      console.log('Redirect URL:', redirectUrl);
+      // For production, use the current origin directly
+      // For localhost, ensure we don't have protocol issues
+      let redirectUrl;
+      if (currentUrl.includes('localhost')) {
+        redirectUrl = `${currentUrl}/dashboard`;
+      } else {
+        // Production - ensure HTTPS
+        redirectUrl = currentUrl.startsWith('https://') 
+          ? `${currentUrl}/dashboard`
+          : `https://${currentUrl.replace(/^https?:\/\//, '')}/dashboard`;
+      }
+      
+      console.log('Final redirect URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
