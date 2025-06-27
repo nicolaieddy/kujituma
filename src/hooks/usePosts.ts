@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProgressPostType, CommentType } from '@/types/progress';
@@ -13,13 +12,13 @@ export const usePosts = () => {
         .from('posts')
         .select(`
           *,
-          profiles:user_id (
+          profiles!posts_user_id_fkey (
             full_name,
             avatar_url
           ),
           comments (
             *,
-            profiles:user_id (
+            profiles!comments_user_id_fkey (
               full_name,
               avatar_url
             )
