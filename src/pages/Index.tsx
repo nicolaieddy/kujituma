@@ -1,4 +1,3 @@
-
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
@@ -74,7 +73,7 @@ const Index = () => {
         </Button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes launchPerson {
           0% {
             transform: translateY(0) scale(1);
