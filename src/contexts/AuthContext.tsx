@@ -60,18 +60,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGoogle = async () => {
     try {
       console.log('Attempting Google sign in...');
-      const currentUrl = window.location.origin;
-      console.log('Current URL origin:', currentUrl);
       
-      // Use a simpler redirect URL approach
-      const redirectUrl = `${currentUrl}/dashboard`;
+      // Get the Supabase project URL for the callback
+      const supabaseUrl = 'https://yyidkpmrqvgvzbjvtnjy.supabase.co';
+      const redirectUrl = `${supabaseUrl}/auth/v1/callback`;
       
-      console.log('Redirect URL:', redirectUrl);
+      console.log('Using Supabase callback URL:', redirectUrl);
       
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl
+          redirectTo: `${window.location.origin}/dashboard`
         }
       });
       
