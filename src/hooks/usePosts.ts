@@ -13,13 +13,13 @@ export const usePosts = () => {
         .from('posts')
         .select(`
           *,
-          profiles!posts_user_id_profiles_fkey (
+          profiles:user_id (
             full_name,
             avatar_url
           ),
           comments (
             *,
-            profiles!comments_user_id_profiles_fkey (
+            profiles:user_id (
               full_name,
               avatar_url
             )
