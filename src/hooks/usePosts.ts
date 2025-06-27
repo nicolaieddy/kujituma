@@ -1,21 +1,42 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ProgressPostType, CommentType } from '@/types/progress';
 
-export const usePosts = () => {
+export type FilterPeriod = "1day" | "3days" | "7days" | "14days" | "30days" | "all";
+
+interface UsePostsOptions {
+  filterPeriod?: FilterPeriod;
+}
+
+export const usePosts = (options: UsePostsOptions = {}) => {
+  const { filterPeriod = "14days" } = options;
   const [posts, setPosts] = useState<ProgressPostType[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const getDateFilter = (period: FilterPeriod) => {
+    if (period === "all") return null;
+    
+    const now = new Date();
+    const daysMap = {
+      "1day": 1,
+      "3days": 3,
+      "7days": 7,
+      "14days": 14,
+      "30days": 30
+    };
+    
+    const daysAgo = new Date();
+    daysAgo.setDate(now.getDate() - daysMap[period]);
+    return daysAgo;
+  };
 
   const fetchPosts = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      // Get posts from the last 14 days
-      const fourteenDaysAgo = new Date();
-      fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-      const { data: postsData, error: postsError } = await supabase
+      const dateFilter = getDateFilter(filterPeriod);
+      
+      let query = supabase
         .from('posts')
         .select(`
           *,
@@ -30,8 +51,13 @@ export const usePosts = () => {
               avatar_url
             )
           )
-        `)
-        .gte('created_at', fourteenDaysAgo.toISOString())
+        `);
+
+      if (dateFilter) {
+        query = query.gte('created_at', dateFilter.toISOString());
+      }
+
+      const { data: postsData, error: postsError } = await query
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
@@ -182,7 +208,7 @@ export const usePosts = () => {
 
   useEffect(() => {
     fetchPosts();
-  }, []);
+  }, [filterPeriod]);
 
   return {
     posts,
