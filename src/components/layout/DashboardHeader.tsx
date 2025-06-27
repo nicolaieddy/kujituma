@@ -2,7 +2,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Home, LogOut, User, Shield } from "lucide-react";
+import { Home, LogOut, User, Shield, Target } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface DashboardHeaderProps {
@@ -22,6 +22,12 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
                 <Home className="h-4 w-4 mr-1 sm:mr-2" />
                 <span className="hidden sm:inline">Home</span>
+              </Button>
+            </Link>
+            <Link to="/goals">
+              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                <Target className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">Goals</span>
               </Button>
             </Link>
             <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">

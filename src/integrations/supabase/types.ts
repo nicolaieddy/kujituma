@@ -83,6 +83,104 @@ export type Database = {
           },
         ]
       }
+      goal_status_history: {
+        Row: {
+          changed_at: string
+          goal_id: string
+          id: string
+          new_status: string
+          old_status: string | null
+          user_id: string
+        }
+        Insert: {
+          changed_at?: string
+          goal_id: string
+          id?: string
+          new_status: string
+          old_status?: string | null
+          user_id: string
+        }
+        Update: {
+          changed_at?: string
+          goal_id?: string
+          id?: string
+          new_status?: string
+          old_status?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_status_history_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_status_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goals: {
+        Row: {
+          category: string | null
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          id: string
+          notes: string | null
+          order_index: number | null
+          status: string
+          target_date: string | null
+          timeframe: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          order_index?: number | null
+          status?: string
+          target_date?: string | null
+          timeframe: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string | null
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          notes?: string | null
+          order_index?: number | null
+          status?: string
+          target_date?: string | null
+          timeframe?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string | null
