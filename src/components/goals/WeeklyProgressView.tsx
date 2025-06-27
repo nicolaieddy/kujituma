@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
@@ -36,19 +35,45 @@ export const WeeklyProgressView = () => {
   }, [progressPost]);
 
   const handlePreviousWeek = () => {
-    const currentDate = new Date(selectedWeekStart + 'T00:00:00');
-    currentDate.setDate(currentDate.getDate() - 7);
-    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
-    console.log('Previous week navigation:', selectedWeekStart, '->', newWeekStart);
+    console.log('handlePreviousWeek called, current selectedWeekStart:', selectedWeekStart);
+    
+    // Parse the current week start date properly
+    const currentDate = new Date(selectedWeekStart);
+    console.log('Parsed current date:', currentDate);
+    
+    // Go back 7 days
+    const previousDate = new Date(currentDate);
+    previousDate.setDate(previousDate.getDate() - 7);
+    console.log('Previous date calculated:', previousDate);
+    
+    // Get the week start for the previous week
+    const newWeekStart = WeeklyProgressService.getWeekStart(previousDate);
+    console.log('New week start:', newWeekStart);
+    
+    // Update state
     setSelectedWeekStart(newWeekStart);
+    console.log('State updated to:', newWeekStart);
   };
 
   const handleNextWeek = () => {
-    const currentDate = new Date(selectedWeekStart + 'T00:00:00');
-    currentDate.setDate(currentDate.getDate() + 7);
-    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
-    console.log('Next week navigation:', selectedWeekStart, '->', newWeekStart);
+    console.log('handleNextWeek called, current selectedWeekStart:', selectedWeekStart);
+    
+    // Parse the current week start date properly
+    const currentDate = new Date(selectedWeekStart);
+    console.log('Parsed current date:', currentDate);
+    
+    // Go forward 7 days
+    const nextDate = new Date(currentDate);
+    nextDate.setDate(nextDate.getDate() + 7);
+    console.log('Next date calculated:', nextDate);
+    
+    // Get the week start for the next week
+    const newWeekStart = WeeklyProgressService.getWeekStart(nextDate);
+    console.log('New week start:', newWeekStart);
+    
+    // Update state
     setSelectedWeekStart(newWeekStart);
+    console.log('State updated to:', newWeekStart);
   };
 
   const handleAddObjective = (text: string) => {
@@ -86,6 +111,8 @@ export const WeeklyProgressView = () => {
   const totalCount = objectives.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isWeekCompleted = progressPost?.is_completed || false;
+
+  console.log('WeeklyProgressView render - selectedWeekStart:', selectedWeekStart, 'weekRange:', weekRange);
 
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
