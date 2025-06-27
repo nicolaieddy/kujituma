@@ -134,7 +134,7 @@ const Admin = () => {
         avatar_url: profile.avatar_url,
         created_at: profile.created_at,
         posts_count: postCountMap[profile.id] || 0,
-        role: profile.user_roles?.[0]?.role || 'user'
+        role: profile.user_roles && profile.user_roles.length > 0 ? profile.user_roles[0].role : 'user'
       })) || [];
 
       setUsers(usersWithCounts);
