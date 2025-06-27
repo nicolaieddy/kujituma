@@ -1,6 +1,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const Index = () => {
   const [isLaunching, setIsLaunching] = useState(false);
@@ -15,6 +16,15 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-blue-900 to-purple-900 flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Navigation */}
+      <div className="absolute top-4 right-4 z-30">
+        <Link to="/dashboard">
+          <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+            Dashboard
+          </Button>
+        </Link>
+      </div>
+
       {/* Stars background */}
       <div className="absolute inset-0">
         {[...Array(100)].map((_, i) => (
