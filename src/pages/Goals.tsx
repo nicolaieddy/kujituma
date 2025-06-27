@@ -102,6 +102,7 @@ const Goals = () => {
                 <GoalForm
                   onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
                   onCancel={handleCancelForm}
+                  initialData={editingGoal}
                 />
               </div>
             ) : (
