@@ -9,7 +9,7 @@ import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface ProgressFormProps {
-  onSubmit: (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => void;
+  onSubmit: (data: Omit<ProgressPostType, "id" | "timestamp" | "comments" | "likes" | "user_liked">) => void;
   onCancel: () => void;
 }
 

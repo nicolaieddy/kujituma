@@ -29,15 +29,22 @@ export const usePosts = () => {
               full_name,
               avatar_url
             )
-          ),
-          post_likes!post_likes_post_id_fkey (
-            user_id
           )
         `)
         .gte('created_at', fourteenDaysAgo.toISOString())
         .order('created_at', { ascending: false });
 
       if (postsError) throw postsError;
+
+      // Get post likes for the user if authenticated
+      let postLikesData: any[] = [];
+      if (user) {
+        const { data: postLikes } = await supabase
+          .from('post_likes')
+          .select('post_id')
+          .eq('user_id', user.id);
+        postLikesData = postLikes || [];
+      }
 
       // Get comment likes for the user if authenticated
       let commentLikesData: any[] = [];
@@ -59,7 +66,7 @@ export const usePosts = () => {
         avatar_url: post.profiles?.avatar_url,
         user_id: post.user_id,
         likes: post.likes || 0,
-        user_liked: user ? post.post_likes?.some((like: any) => like.user_id === user.id) : false,
+        user_liked: user ? postLikesData.some((like: any) => like.post_id === post.id) : false,
         comments: post.comments?.map((comment: any) => ({
           id: comment.id,
           name: comment.profiles?.full_name || comment.name,
