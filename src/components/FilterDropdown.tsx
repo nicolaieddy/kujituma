@@ -13,22 +13,15 @@ interface FilterDropdownProps {
 
 const FilterDropdown = ({ selectedPeriod, onPeriodChange }: FilterDropdownProps) => {
   const getFilterLabel = (period: FilterPeriod) => {
-    switch (period) {
-      case "1day":
-        return "Last 24 hours";
-      case "3days":
-        return "Last 3 days";
-      case "7days":
-        return "Last 7 days";
-      case "14days":
-        return "Last 14 days";
-      case "30days":
-        return "Last 30 days";
-      case "all":
-        return "All time";
-      default:
-        return "Last 14 days";
-    }
+    const labels: Record<FilterPeriod, string> = {
+      "1day": "Last 24 hours",
+      "3days": "Last 3 days", 
+      "7days": "Last 7 days",
+      "14days": "Last 14 days",
+      "30days": "Last 30 days",
+      "all": "All time"
+    };
+    return labels[period] || "Last 14 days";
   };
 
   return (

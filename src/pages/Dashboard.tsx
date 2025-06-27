@@ -1,28 +1,30 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Home, Plus, LogOut, User, Search, Shield } from "lucide-react";
+import { Plus } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { useAuth } from "@/contexts/AuthContext";
-import { usePosts } from "@/hooks/usePosts";
+import { useSimplePosts } from "@/hooks/useSimplePosts";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
 import ProgressForm from "@/components/ProgressForm";
 import ProgressPost from "@/components/ProgressPost";
 import UserPostsModal from "@/components/UserPostsModal";
-import FilterDropdown, { FilterPeriod } from "@/components/FilterDropdown";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { supabase } from "@/integrations/supabase/client";
+import { FilterPeriod } from "@/components/FilterDropdown";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { SearchAndFilter } from "@/components/dashboard/SearchAndFilter";
+import { EmptyState } from "@/components/dashboard/EmptyState";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, session, loading: authLoading, signOut } = useAuth();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin } = useAdminStatus();
   const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("14days");
-  const { posts, loading: postsLoading, createPost, addComment, togglePostLike, toggleCommentLike } = usePosts({ filterPeriod });
+  const { posts, loading: postsLoading, createPost, addComment, togglePostLike, toggleCommentLike } = useSimplePosts({ filterPeriod });
   const [showForm, setShowForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [showUserPosts, setShowUserPosts] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const filteredPosts = posts.filter(post =>
     post.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -105,31 +107,6 @@ const Dashboard = () => {
     setShowUserPosts(true);
   };
 
-  // Check if user is admin
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!user) return;
-      
-      try {
-        const { data } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .single();
-        
-        setIsAdmin(!!data);
-      } catch (error) {
-        // User is not admin, ignore error
-        setIsAdmin(false);
-      }
-    };
-
-    if (user) {
-      checkAdminStatus();
-    }
-  }, [user]);
-
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -140,70 +117,10 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/10 backdrop-blur-lg border-b border-white/20">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <Link to="/">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                  <Home className="h-4 w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Home</span>
-                </Button>
-              </Link>
-              <h1 className="text-lg sm:text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                Kujituma
-              </h1>
-            </div>
-            
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              {user ? (
-                <div className="flex items-center space-x-2">
-                  {isAdmin && (
-                    <Link to="/admin">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-purple-400 hover:bg-purple-500/20"
-                      >
-                        <Shield className="h-4 w-4 mr-1 sm:mr-2" />
-                        <span className="hidden sm:inline">Admin</span>
-                      </Button>
-                    </Link>
-                  )}
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.user_metadata?.avatar_url} />
-                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                      <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="text-white text-sm hidden md:block max-w-24 lg:max-w-none truncate">
-                    {user.user_metadata?.full_name || user.email}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSignOut}
-                    className="text-white hover:bg-white/20"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Link to="/auth">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="border-white/20 text-black bg-white hover:bg-white/90"
-                  >
-                    Sign In
-                  </Button>
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <DashboardHeader 
+        isAdmin={isAdmin}
+        onSignOut={handleSignOut}
+      />
 
       <div className="container mx-auto px-4 py-6">
         {showForm ? (
@@ -223,12 +140,12 @@ const Dashboard = () => {
               </p>
               {!user && (
                 <p className="text-white/60 text-sm px-4">
-                  <Link to="/auth" className="text-blue-400 hover:underline">Sign in</Link> to share your progress and comment on posts.
+                  <a href="/auth" className="text-blue-400 hover:underline">Sign in</a> to share your progress and comment on posts.
                 </p>
               )}
             </div>
 
-            {/* Share Progress Button - Always visible */}
+            {/* Share Progress Button */}
             <div className="text-center mb-8">
               <Button
                 onClick={handleShareProgress}
@@ -239,58 +156,24 @@ const Dashboard = () => {
               </Button>
             </div>
 
-            {/* Filter and Search Bar */}
-            {posts.length > 0 && (
-              <div className="mb-6 space-y-4">
-                <FilterDropdown
-                  selectedPeriod={filterPeriod}
-                  onPeriodChange={setFilterPeriod}
-                />
-                <div className="max-w-md mx-auto px-4">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4" />
-                    <Input
-                      placeholder="Search posts..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
+            <SearchAndFilter
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              filterPeriod={filterPeriod}
+              onFilterChange={setFilterPeriod}
+              showFilters={posts.length > 0}
+            />
 
             {/* Posts Section */}
             <div className="space-y-3 px-2 sm:px-0">
               {postsLoading ? (
                 <div className="text-center text-white">Loading posts...</div>
               ) : filteredPosts.length === 0 ? (
-                <div className="bg-white/10 backdrop-blur-lg rounded-lg p-6 sm:p-8 max-w-md mx-auto text-center">
-                  {searchQuery ? (
-                    <>
-                      <div className="text-4xl mb-4">🔍</div>
-                      <h3 className="text-xl font-semibold text-white mb-2">No Results Found</h3>
-                      <p className="text-white/70 mb-4 text-sm sm:text-base">
-                        Try different keywords or clear your search.
-                      </p>
-                      <Button
-                        variant="ghost"
-                        onClick={() => setSearchQuery("")}
-                        className="text-white hover:bg-white/20"
-                      >
-                        Clear Search
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <div className="text-5xl sm:text-6xl mb-4">🚀</div>
-                      <h3 className="text-lg sm:text-xl font-semibold text-white mb-2">Ready to Share?</h3>
-                      <p className="text-white/70 mb-4 text-sm sm:text-base">
-                        No progress posts in the selected time period. {user ? 'Click "Share Progress" to get started!' : 'Sign in to share your first progress post!'}
-                      </p>
-                    </>
-                  )}
-                </div>
+                <EmptyState
+                  searchQuery={searchQuery}
+                  onClearSearch={() => setSearchQuery("")}
+                  isAuthenticated={!!user}
+                />
               ) : (
                 filteredPosts.map((post) => (
                   <ProgressPost
