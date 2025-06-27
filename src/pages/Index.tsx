@@ -1,134 +1,126 @@
 
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { useState } from 'react';
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Users, Target, MessageCircle, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Index = () => {
-  const navigate = useNavigate();
-  const [isLaunching, setIsLaunching] = useState(false);
+  const { user, loading } = useAuth();
 
-  const handleLaunch = () => {
-    setIsLaunching(true);
-    // Navigate after animation completes
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 3000);
-  };
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-blue-900 to-purple-900 flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Stars background */}
-      <div className="absolute inset-0">
-        {[...Array(100)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-60"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-between">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+            Kujituma
+          </h1>
+          {!user ? (
+            <Link to="/auth">
+              <Button variant="ghost" className="text-white hover:bg-white/20">
+                <User className="h-4 w-4 mr-2" />
+                Sign In
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/dashboard">
+              <Button className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600">
+                Go to Dashboard
+              </Button>
+            </Link>
+          )}
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h2 className="text-5xl md:text-6xl font-bold text-white mb-6">
+          Share Your
+          <span className="bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent block">
+            Weekly Progress
+          </span>
+        </h2>
+        
+        <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+          Connect with others on their growth journey. Share accomplishments, set priorities, 
+          and get support from a community that celebrates progress.
+        </p>
+
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link to="/dashboard">
+            <Button size="lg" className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-lg px-8 py-3">
+              Get Started
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </Link>
+          {!user && (
+            <Link to="/auth">
+              <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-lg px-8 py-3">
+                Sign In with Google
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
-      {/* Launching Astronaut Animation */}
-      {isLaunching && (
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div 
-            className="relative transform transition-all duration-3000 ease-out"
-            style={{
-              animation: 'launchAstronaut 3s ease-out forwards'
-            }}
-          >
-            {/* Astronaut Figure */}
-            <div className="flex flex-col items-center">
-              {/* Helmet */}
-              <div className="w-12 h-12 bg-gradient-to-b from-gray-300 to-gray-400 rounded-full mb-1 relative">
-                <div className="w-8 h-8 bg-gradient-to-b from-gray-200 to-gray-300 rounded-full absolute top-1 left-2 opacity-80"></div>
-              </div>
-              
-              {/* Arms */}
-              <div className="flex items-center justify-between w-16 mb-1">
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full transform -rotate-12"></div>
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full transform rotate-12"></div>
-              </div>
-              
-              {/* Body */}
-              <div className="w-10 h-12 bg-gradient-to-b from-orange-500 to-orange-700 rounded-lg mb-1"></div>
-              
-              {/* Legs */}
-              <div className="flex space-x-1">
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full"></div>
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full"></div>
-              </div>
+      {/* Features Section */}
+      <div className="container mx-auto px-4 py-20">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="text-center p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Target className="h-8 w-8 text-white" />
             </div>
-            
-            {/* Rocket Fire */}
-            <div className="flex justify-center space-x-1 mt-2">
-              <div className="w-2 h-12 bg-gradient-to-t from-red-500 via-orange-500 to-yellow-400 rounded-full animate-pulse"></div>
-              <div className="w-3 h-16 bg-gradient-to-t from-red-600 via-orange-600 to-yellow-500 rounded-full animate-pulse animation-delay-100"></div>
-              <div className="w-2 h-12 bg-gradient-to-t from-red-500 via-orange-500 to-yellow-400 rounded-full animate-pulse animation-delay-200"></div>
+            <h3 className="text-xl font-semibold text-white mb-3">Track Progress</h3>
+            <p className="text-white/70">
+              Share your weekly accomplishments and set clear priorities for the week ahead.
+            </p>
+          </div>
+
+          <div className="text-center p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Users className="h-8 w-8 text-white" />
             </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Build Community</h3>
+            <p className="text-white/70">
+              Connect with like-minded individuals who are also focused on growth and improvement.
+            </p>
+          </div>
+
+          <div className="text-center p-6 rounded-lg bg-white/5 backdrop-blur-sm border border-white/10">
+            <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <MessageCircle className="h-8 w-8 text-white" />
+            </div>
+            <h3 className="text-xl font-semibold text-white mb-3">Get Support</h3>
+            <p className="text-white/70">
+              Ask for help when you need it and receive encouragement from the community.
+            </p>
           </div>
         </div>
-      )}
-
-      <div className="text-center relative z-10">
-        {/* Title */}
-        <h1 className="text-7xl md:text-9xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent mb-8 animate-pulse">
-          Kujituma
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-gray-300 text-xl mb-16 opacity-80">Launch into your journey of growth</p>
-
-        {/* Button */}
-        <Button 
-          onClick={handleLaunch}
-          size="lg"
-          disabled={isLaunching}
-          className="bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 hover:from-purple-600 hover:via-blue-600 hover:to-purple-700 text-white px-12 py-6 text-xl font-bold rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 relative overflow-hidden group disabled:opacity-50"
-        >
-          <span className="relative z-10 flex items-center">
-            {isLaunching ? '🚀 LAUNCHING...' : 'Begin Your Journey'}
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-        </Button>
       </div>
 
-      <style>{`
-        @keyframes launchAstronaut {
-          0% {
-            transform: translateY(0) scale(1) rotate(0deg);
-            opacity: 1;
-          }
-          20% {
-            transform: translateY(-10vh) scale(0.95) rotate(-5deg);
-            opacity: 1;
-          }
-          60% {
-            transform: translateY(-40vh) scale(0.7) rotate(-10deg);
-            opacity: 0.8;
-          }
-          100% {
-            transform: translateY(-120vh) scale(0.2) rotate(-15deg);
-            opacity: 0;
-          }
-        }
-        
-        .animation-delay-100 {
-          animation-delay: 0.1s;
-        }
-        
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-        
-        .duration-3000 {
-          transition-duration: 3000ms;
-        }
-      `}</style>
+      {/* CTA Section */}
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h3 className="text-3xl font-bold text-white mb-4">
+          Ready to start your journey?
+        </h3>
+        <p className="text-white/80 mb-8 max-w-xl mx-auto">
+          Join our community today and start sharing your progress with others who care about growth.
+        </p>
+        <Link to="/dashboard">
+          <Button size="lg" className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-lg px-8 py-3">
+            Join the Community
+            <ArrowRight className="ml-2 h-5 w-5" />
+          </Button>
+        </Link>
+      </div>
     </div>
   );
 };
