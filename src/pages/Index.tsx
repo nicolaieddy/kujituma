@@ -1,17 +1,15 @@
 
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 const Index = () => {
-  const navigate = useNavigate();
   const [isLaunching, setIsLaunching] = useState(false);
 
   const handleLaunch = () => {
     setIsLaunching(true);
-    // Navigate after animation completes
+    // Reset after animation completes
     setTimeout(() => {
-      navigate('/dashboard');
+      setIsLaunching(false);
     }, 3000);
   };
 
