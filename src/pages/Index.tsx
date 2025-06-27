@@ -1,3 +1,4 @@
+
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -9,7 +10,7 @@ const Index = () => {
   const handleLaunch = () => {
     setIsLaunching(true);
     setTimeout(() => {
-      navigate('/dashboard');
+      navigate('/goals');
     }, 3000);
   };
 
@@ -22,9 +23,9 @@ const Index = () => {
             Sign In
           </Button>
         </Link>
-        <Link to="/dashboard">
+        <Link to="/goals">
           <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-            Dashboard
+            Goals
           </Button>
         </Link>
       </div>

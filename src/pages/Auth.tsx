@@ -15,8 +15,8 @@ const Auth = () => {
   useEffect(() => {
     console.log('Auth page mounted, user:', user, 'loading:', loading);
     if (user) {
-      console.log('User detected, redirecting to dashboard');
-      navigate('/dashboard');
+      console.log('User detected, redirecting to goals');
+      navigate('/goals');
     }
   }, [user, navigate]);
 
@@ -52,7 +52,7 @@ const Auth = () => {
             Welcome to Kujituma
           </CardTitle>
           <p className="text-white/80 mt-2">
-            Sign in to share your progress and connect with others
+            Sign in to track your goals and manage your progress
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -97,7 +97,7 @@ const Auth = () => {
 
           <div className="text-center mt-4">
             <p className="text-white/60 text-sm">
-              You can also <a href="/dashboard" className="text-blue-400 hover:underline">browse without signing in</a>
+              You can also <a href="/goals" className="text-blue-400 hover:underline">browse goals without signing in</a>
             </p>
           </div>
         </CardContent>
