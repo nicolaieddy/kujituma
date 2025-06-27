@@ -16,13 +16,12 @@ const Dashboard = () => {
   const { posts, loading: postsLoading, createPost, addComment } = usePosts();
   const [showForm, setShowForm] = useState(false);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [user, authLoading, navigate]);
-
   const handleSubmitPost = async (data: Omit<ProgressPostType, "id" | "timestamp" | "comments">) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
     try {
       await createPost(data);
       setShowForm(false);
@@ -32,6 +31,11 @@ const Dashboard = () => {
   };
 
   const handleAddComment = async (postId: string, commentData: { name: string; message: string }) => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+
     try {
       await addComment(postId, commentData);
     } catch (error) {
@@ -47,16 +51,20 @@ const Dashboard = () => {
     }
   };
 
+  const handleShareProgress = () => {
+    if (!user) {
+      navigate('/auth');
+      return;
+    }
+    setShowForm(true);
+  };
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white">Loading...</div>
       </div>
     );
-  }
-
-  if (!user) {
-    return null;
   }
 
   return (
@@ -79,32 +87,44 @@ const Dashboard = () => {
             
             <div className="flex items-center space-x-4">
               <Button
-                onClick={() => setShowForm(true)}
+                onClick={handleShareProgress}
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Share Progress
               </Button>
               
-              <div className="flex items-center space-x-2">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.user_metadata?.avatar_url} />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                    <User className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <span className="text-white text-sm hidden sm:block">
-                  {user.user_metadata?.full_name || user.email}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleSignOut}
-                  className="text-white hover:bg-white/20"
-                >
-                  <LogOut className="h-4 w-4" />
-                </Button>
-              </div>
+              {user ? (
+                <div className="flex items-center space-x-2">
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user.user_metadata?.avatar_url} />
+                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-white text-sm hidden sm:block">
+                    {user.user_metadata?.full_name || user.email}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleSignOut}
+                    className="text-white hover:bg-white/20"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Link to="/auth">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="border-white/20 text-white hover:bg-white/10"
+                  >
+                    Sign In
+                  </Button>
+                </Link>
+              )}
             </div>
           </div>
         </div>
@@ -126,6 +146,11 @@ const Dashboard = () => {
               <p className="text-white/80 text-lg max-w-2xl mx-auto mb-8">
                 Your journey has begun! Share your progress and connect with others on their growth adventure.
               </p>
+              {!user && (
+                <p className="text-white/60 text-sm">
+                  <Link to="/auth" className="text-blue-400 hover:underline">Sign in</Link> to share your progress and comment on posts.
+                </p>
+              )}
             </div>
 
             {/* Posts Section */}
@@ -137,7 +162,7 @@ const Dashboard = () => {
                   <div className="text-6xl mb-4">🚀</div>
                   <h3 className="text-xl font-semibold text-white mb-2">Ready to Share?</h3>
                   <p className="text-white/70 mb-4">
-                    No progress posts yet. Click "Share Progress" to get started!
+                    No progress posts yet. {user ? 'Click "Share Progress" to get started!' : 'Sign in to share your first progress post!'}
                   </p>
                 </div>
               ) : (
@@ -146,6 +171,7 @@ const Dashboard = () => {
                     key={post.id}
                     post={post}
                     onAddComment={(commentData) => handleAddComment(post.id, commentData)}
+                    isAuthenticated={!!user}
                   />
                 ))
               )}

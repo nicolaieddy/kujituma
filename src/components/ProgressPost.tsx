@@ -8,13 +8,16 @@ import { Separator } from "@/components/ui/separator";
 import { MessageCircle, User, Send } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { formatTimeAgo } from "@/utils/timeUtils";
+import { useNavigate } from "react-router-dom";
 
 interface ProgressPostProps {
   post: ProgressPostType;
   onAddComment: (commentData: { name: string; message: string }) => void;
+  isAuthenticated?: boolean;
 }
 
-const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
+const ProgressPost = ({ post, onAddComment, isAuthenticated = false }: ProgressPostProps) => {
+  const navigate = useNavigate();
   const [showCommentForm, setShowCommentForm] = useState(false);
   const [commentData, setCommentData] = useState({
     name: "",
@@ -24,6 +27,11 @@ const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
     
     const newErrors: { [key: string]: string } = {};
     if (!commentData.name.trim()) {
@@ -49,6 +57,14 @@ const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
     }
   };
 
+  const handleCommentClick = () => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+    setShowCommentForm(!showCommentForm);
+  };
+
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300">
       <CardHeader className="pb-3">
@@ -67,7 +83,7 @@ const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setShowCommentForm(!showCommentForm)}
+            onClick={handleCommentClick}
             className="text-white/80 hover:bg-white/20 text-xs h-7 px-2"
           >
             <MessageCircle className="h-3 w-3 mr-1" />
@@ -87,7 +103,6 @@ const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
           </div>
         )}
 
-        {/* Priorities */}
         {post.priorities && (
           <div>
             <h4 className="text-white font-medium mb-1 flex items-center text-sm">
@@ -97,7 +112,6 @@ const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
           </div>
         )}
 
-        {/* Help Needed */}
         {post.help && (
           <div>
             <h4 className="text-white font-medium mb-1 flex items-center text-sm">
@@ -128,7 +142,7 @@ const ProgressPost = ({ post, onAddComment }: ProgressPostProps) => {
         )}
 
         {/* Comment Form */}
-        {showCommentForm && (
+        {showCommentForm && isAuthenticated && (
           <div>
             {post.comments.length > 0 || <Separator className="bg-white/20 my-2" />}
             <form onSubmit={handleCommentSubmit} className="space-y-3">
