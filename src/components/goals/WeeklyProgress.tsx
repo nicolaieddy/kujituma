@@ -7,8 +7,6 @@ import { AddObjectiveForm } from "./AddObjectiveForm";
 import { ObjectivesList } from "./ObjectivesList";
 import { ProgressNotes } from "./ProgressNotes";
 import { PreviousWeekSummary } from "./PreviousWeekSummary";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 interface WeeklyProgressProps {
@@ -82,36 +80,16 @@ export const WeeklyProgress = ({ selectedWeek }: WeeklyProgressProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handlePreviousWeek}
-          className="text-white/60 hover:text-white hover:bg-white/20"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        
-        <WeeklyProgressHeader 
-          weekRange={weekRange}
-          weekNumber={weekNumber}
-          isWeekCompleted={isWeekCompleted}
-          completedCount={completedCount}
-          totalCount={totalCount}
-          completionPercentage={completionPercentage}
-          onPreviousWeek={handlePreviousWeek}
-          onNextWeek={handleNextWeek}
-        />
-
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleNextWeek}
-          className="text-white/60 hover:text-white hover:bg-white/20"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <WeeklyProgressHeader 
+        weekRange={weekRange}
+        weekNumber={weekNumber}
+        isWeekCompleted={isWeekCompleted}
+        completedCount={completedCount}
+        totalCount={totalCount}
+        completionPercentage={completionPercentage}
+        onPreviousWeek={handlePreviousWeek}
+        onNextWeek={handleNextWeek}
+      />
 
       <PreviousWeekSummary currentWeekStart={currentWeekStart} />
 
