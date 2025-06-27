@@ -147,20 +147,6 @@ export const useWeeklyProgress = (weekStart?: string) => {
     },
   });
 
-  // Navigation functions
-  const navigateToWeek = (direction: 'previous' | 'next') => {
-    console.log(`Navigating ${direction} from week:`, currentWeekStart);
-    
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    const targetDate = new Date(currentDate);
-    targetDate.setUTCDate(targetDate.getUTCDate() + (direction === 'next' ? 7 : -7));
-    
-    const newWeekStart = WeeklyProgressService.getWeekStart(targetDate);
-    console.log('Navigation result:', currentWeekStart, '->', newWeekStart);
-    
-    setCurrentWeekStart(newWeekStart);
-  };
-
   const createObjective = (data: CreateWeeklyObjectiveData) => {
     createObjectiveMutation.mutate({ ...data, week_start: currentWeekStart });
   };
@@ -195,7 +181,6 @@ export const useWeeklyProgress = (weekStart?: string) => {
     updateProgressNotes,
     completeWeek,
     uncompleteWeek,
-    navigateToWeek,
     weekStart: currentWeekStart,
     weekRange: WeeklyProgressService.formatWeekRange(currentWeekStart),
     weekNumber: WeeklyProgressService.getWeekNumber(currentWeekStart),

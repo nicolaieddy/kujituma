@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
-import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { PreviousWeekSummary } from "./PreviousWeekSummary";
 import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
@@ -21,7 +20,6 @@ export const WeeklyProgressView = () => {
     updateProgressNotes,
     completeWeek,
     uncompleteWeek,
-    navigateToWeek,
     weekStart,
     weekRange,
     weekNumber,
@@ -90,8 +88,6 @@ export const WeeklyProgressView = () => {
           completedCount={completedCount}
           totalCount={totalCount}
           completionPercentage={completionPercentage}
-          onPreviousWeek={() => navigateToWeek('previous')}
-          onNextWeek={() => navigateToWeek('next')}
         />
       </CardHeader>
       
