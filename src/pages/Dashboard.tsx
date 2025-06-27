@@ -76,7 +76,7 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Sticky Header */}
       <header className="sticky top-0 z-50 bg-white/10 backdrop-blur-lg border-b border-white/20">
-        <div className="container mx-auto px-4 py-4">
+        <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link to="/">
@@ -85,7 +85,7 @@ const Dashboard = () => {
                   Home
                 </Button>
               </Link>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                 Kujituma
               </h1>
             </div>
@@ -97,12 +97,12 @@ const Dashboard = () => {
                   placeholder="Search posts..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 w-64"
+                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 w-64 h-9"
                 />
               </div>
               <Button
                 onClick={() => setShowForm(!showForm)}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 h-9 text-sm"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 New Post
@@ -112,18 +112,18 @@ const Dashboard = () => {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-4 py-6">
         {/* Welcome Banner */}
-        <div className="text-center mb-8">
-          <h2 className="text-4xl font-bold text-white mb-4">Weekly Progress Dashboard</h2>
-          <p className="text-white/80 text-lg max-w-2xl mx-auto">
+        <div className="text-center mb-6">
+          <h2 className="text-3xl font-bold text-white mb-3">Weekly Progress Dashboard</h2>
+          <p className="text-white/80 text-base max-w-2xl mx-auto">
             Share your accomplishments, set priorities, and connect with others on their growth journey
           </p>
         </div>
 
         {/* Progress Form */}
         {showForm && (
-          <div className="mb-8">
+          <div className="mb-6">
             <ProgressForm 
               onSubmit={handleAddPost}
               onCancel={() => setShowForm(false)}
@@ -132,10 +132,10 @@ const Dashboard = () => {
         )}
 
         {/* Posts List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredPosts.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-white/60 text-lg">
+            <div className="text-center py-8">
+              <p className="text-white/60 text-base">
                 {searchTerm ? "No posts match your search." : "No posts yet. Be the first to share your progress!"}
               </p>
             </div>
