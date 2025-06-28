@@ -21,9 +21,13 @@ const Goals = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
+  console.log('Goals component render - user:', user, 'authLoading:', authLoading);
+
   // Handle navigation in useEffect to prevent render-time navigation
   useEffect(() => {
+    console.log('Goals useEffect - authLoading:', authLoading, 'user:', user);
     if (!authLoading && !user) {
+      console.log('Redirecting to /auth');
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
@@ -64,6 +68,7 @@ const Goals = () => {
   };
 
   if (authLoading) {
+    console.log('Showing loading screen');
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
         <div className="text-white">Loading...</div>
@@ -73,8 +78,11 @@ const Goals = () => {
 
   // Don't render anything while redirecting
   if (!user) {
+    console.log('No user, returning null');
     return null;
   }
+
+  console.log('Rendering main Goals component');
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">

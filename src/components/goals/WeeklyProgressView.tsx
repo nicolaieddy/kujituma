@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
@@ -14,6 +15,8 @@ export const WeeklyProgressView = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
+  
+  console.log('WeeklyProgressView render - currentWeekStart:', currentWeekStart);
   
   const { goals } = useGoals();
   
@@ -35,6 +38,8 @@ export const WeeklyProgressView = () => {
     isUncompletingWeek,
   } = useWeeklyProgress(currentWeekStart);
 
+  console.log('WeeklyProgressView - weekStart:', weekStart, 'weekRange:', weekRange);
+
   // Initialize progress notes when progressPost changes
   useEffect(() => {
     console.log('Progress post changed:', progressPost);
@@ -42,31 +47,39 @@ export const WeeklyProgressView = () => {
   }, [progressPost]);
 
   const handlePreviousWeek = () => {
-    // Parse the current week start date properly
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    console.log('Current date for previous week calc:', currentDate.toISOString());
-    
-    // Subtract 7 days to get previous week
-    const previousWeekDate = new Date(currentDate.getTime() - (7 * 24 * 60 * 60 * 1000));
-    console.log('Previous week date:', previousWeekDate.toISOString());
-    
-    const newWeekStart = WeeklyProgressService.getWeekStart(previousWeekDate);
-    console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
-    setCurrentWeekStart(newWeekStart);
+    try {
+      // Parse the current week start date properly
+      const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
+      console.log('Current date for previous week calc:', currentDate.toISOString());
+      
+      // Subtract 7 days to get previous week
+      const previousWeekDate = new Date(currentDate.getTime() - (7 * 24 * 60 * 60 * 1000));
+      console.log('Previous week date:', previousWeekDate.toISOString());
+      
+      const newWeekStart = WeeklyProgressService.getWeekStart(previousWeekDate);
+      console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
+      setCurrentWeekStart(newWeekStart);
+    } catch (error) {
+      console.error('Error in handlePreviousWeek:', error);
+    }
   };
 
   const handleNextWeek = () => {
-    // Parse the current week start date properly
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    console.log('Current date for next week calc:', currentDate.toISOString());
-    
-    // Add 7 days to get next week
-    const nextWeekDate = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-    console.log('Next week date:', nextWeekDate.toISOString());
-    
-    const newWeekStart = WeeklyProgressService.getWeekStart(nextWeekDate);
-    console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
-    setCurrentWeekStart(newWeekStart);
+    try {
+      // Parse the current week start date properly
+      const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
+      console.log('Current date for next week calc:', currentDate.toISOString());
+      
+      // Add 7 days to get next week
+      const nextWeekDate = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
+      console.log('Next week date:', nextWeekDate.toISOString());
+      
+      const newWeekStart = WeeklyProgressService.getWeekStart(nextWeekDate);
+      console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
+      setCurrentWeekStart(newWeekStart);
+    } catch (error) {
+      console.error('Error in handleNextWeek:', error);
+    }
   };
 
   const handleAddObjective = (text: string) => {
@@ -116,6 +129,8 @@ export const WeeklyProgressView = () => {
   const totalCount = objectives.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isWeekCompleted = progressPost?.is_completed || false;
+
+  console.log('WeeklyProgressView about to render - objectives:', objectives.length, 'completed:', completedCount);
 
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
