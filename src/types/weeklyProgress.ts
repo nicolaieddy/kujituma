@@ -30,6 +30,7 @@ export interface CreateWeeklyObjectiveData {
 export interface UpdateWeeklyObjectiveData {
   text?: string;
   is_completed?: boolean;
+  goal_id?: string | null;
 }
 
 export interface WeeklyProgressData {

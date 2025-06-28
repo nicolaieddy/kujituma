@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
+import { useGoals } from "@/hooks/useGoals";
 import { PreviousWeekSummary } from "./PreviousWeekSummary";
 import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
@@ -14,6 +14,8 @@ export const WeeklyProgressView = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
+  
+  const { goals } = useGoals();
   
   const {
     objectives,
@@ -85,6 +87,11 @@ export const WeeklyProgressView = () => {
     updateObjective(id, { text });
   };
 
+  const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
+    console.log('Updating objective goal link:', id, goalId);
+    updateObjective(id, { goal_id: goalId });
+  };
+
   const handleDeleteObjective = (id: string) => {
     console.log('Deleting objective:', id);
     deleteObjective(id);
@@ -130,10 +137,12 @@ export const WeeklyProgressView = () => {
 
         <WeeklyObjectivesList
           objectives={objectives}
+          goals={goals}
           isWeekCompleted={isWeekCompleted}
           isCreating={isCreating}
           onToggleObjective={handleToggleObjective}
           onUpdateObjectiveText={handleUpdateObjectiveText}
+          onUpdateObjectiveGoal={handleUpdateObjectiveGoal}
           onDeleteObjective={handleDeleteObjective}
           onAddObjective={handleAddObjective}
         />
