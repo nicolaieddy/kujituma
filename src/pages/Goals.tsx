@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Plus, Calendar, Target } from "lucide-react";
@@ -20,6 +20,13 @@ const Goals = () => {
   const { goalsByStatus, isLoading, createGoal, updateGoal, deleteGoal } = useGoals();
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+
+  // Handle navigation in useEffect to prevent render-time navigation
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
 
   const handleSignOut = async () => {
     try {
@@ -64,8 +71,8 @@ const Goals = () => {
     );
   }
 
+  // Don't render anything while redirecting
   if (!user) {
-    navigate('/auth');
     return null;
   }
 
