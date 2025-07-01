@@ -17,6 +17,7 @@ export const WeeklyProgressView = () => {
   const { user } = useAuth();
   const { goals } = useGoals();
   const [progressNotes, setProgressNotes] = useState("");
+  const [isPostingToFeed, setIsPostingToFeed] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
@@ -108,15 +109,8 @@ export const WeeklyProgressView = () => {
 
   const handlePostToFeed = async () => {
     console.log('Posting week to feed:', weekStart);
+    setIsPostingToFeed(true);
     
-    // First complete the week
-    await completeWeek();
-    
-    // Then create a feed post
-    await createFeedPost();
-  };
-
-  const createFeedPost = async () => {
     try {
       if (!user) {
         toast({
@@ -126,6 +120,9 @@ export const WeeklyProgressView = () => {
         });
         return;
       }
+
+      // First complete the week
+      await completeWeek();
 
       // Get user profile for name
       const { data: profile } = await supabase
@@ -138,15 +135,37 @@ export const WeeklyProgressView = () => {
       const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
 
+      // Create detailed accomplishments with completed objectives
+      const completedObjectives = objectives.filter(obj => obj.is_completed);
+      const pendingObjectives = objectives.filter(obj => !obj.is_completed);
+      
+      let accomplishments = '';
+      if (completedObjectives.length > 0) {
+        accomplishments += '✅ Completed Objectives:\n';
+        accomplishments += completedObjectives.map(obj => `• ${obj.text}`).join('\n');
+        accomplishments += '\n\n';
+      }
+      
+      if (progressPost?.notes) {
+        accomplishments += '📝 Weekly Reflections:\n';
+        accomplishments += progressPost.notes;
+      }
+
+      let priorities = '';
+      if (pendingObjectives.length > 0) {
+        priorities = 'Remaining objectives for next week:\n';
+        priorities += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
+      }
+
       // Create the feed post
       const { error } = await supabase
         .from('posts')
         .insert({
           user_id: user.id,
           name: profile?.full_name || 'Anonymous',
-          accomplishments: progressPost?.notes || '',
-          priorities: '', // Could be extracted from objectives
-          help: '', // Could be a separate field
+          accomplishments: accomplishments || 'No specific accomplishments recorded.',
+          priorities: priorities,
+          help: '', // Could be enhanced to extract help requests from notes
           week_start: currentWeekStart,
           week_end: weekEnd.toISOString().split('T')[0],
           objectives_completed: completedCount,
@@ -168,12 +187,14 @@ export const WeeklyProgressView = () => {
         });
       }
     } catch (error) {
-      console.error('Error creating feed post:', error);
+      console.error('Error posting to feed:', error);
       toast({
         title: "Error",
         description: "Failed to post to feed. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsPostingToFeed(false);
     }
   };
 
@@ -237,7 +258,7 @@ export const WeeklyProgressView = () => {
           isWeekCompleted={isWeekCompleted}
           weekNumber={weekNumber}
           isSavingNotes={isSavingNotes}
-          isCompletingWeek={isCompletingWeek}
+          isCompletingWeek={isPostingToFeed}
           isUncompletingWeek={isUncompletingWeek}
           onSaveNotes={handleSaveNotes}
           onPostToFeed={handlePostToFeed}
