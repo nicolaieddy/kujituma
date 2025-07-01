@@ -40,29 +40,17 @@ export const WeeklyProgressView = () => {
   }, [progressPost]);
 
   const handlePreviousWeek = () => {
-    // Parse the current week start date properly
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    console.log('Current date for previous week calc:', currentDate.toISOString());
-    
-    // Subtract 7 days to get previous week
-    const previousWeekDate = new Date(currentDate.getTime() - (7 * 24 * 60 * 60 * 1000));
-    console.log('Previous week date:', previousWeekDate.toISOString());
-    
-    const newWeekStart = WeeklyProgressService.getWeekStart(previousWeekDate);
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() - 7);
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
     console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
     setCurrentWeekStart(newWeekStart);
   };
 
   const handleNextWeek = () => {
-    // Parse the current week start date properly
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    console.log('Current date for next week calc:', currentDate.toISOString());
-    
-    // Add 7 days to get next week
-    const nextWeekDate = new Date(currentDate.getTime() + (7 * 24 * 60 * 60 * 1000));
-    console.log('Next week date:', nextWeekDate.toISOString());
-    
-    const newWeekStart = WeeklyProgressService.getWeekStart(nextWeekDate);
+    const currentDate = new Date(currentWeekStart);
+    currentDate.setDate(currentDate.getDate() + 7);
+    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
     console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
     setCurrentWeekStart(newWeekStart);
   };
