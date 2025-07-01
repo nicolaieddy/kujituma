@@ -166,7 +166,7 @@ export class WeeklyProgressService {
   }
 
   /**
-   * Get the start of the week (Sunday) for a given date
+   * Get the start of the week (Monday) for a given date
    * Returns date in YYYY-MM-DD format
    */
   static getWeekStart(date: Date = new Date()): string {
@@ -175,13 +175,16 @@ export class WeeklyProgressService {
     // Create a new date to avoid mutating the input
     const startOfWeek = new Date(date);
     
-    // Get the day of the week (0 = Sunday, 6 = Saturday)
+    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
     const dayOfWeek = startOfWeek.getDay();
     
-    // Calculate how many days to subtract to get to Sunday
-    const daysToSubtract = dayOfWeek;
+    // Calculate how many days to subtract to get to Monday
+    // If it's Sunday (0), we need to go back 6 days to get to Monday
+    // If it's Monday (1), we need to go back 0 days
+    // If it's Tuesday (2), we need to go back 1 day, etc.
+    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     
-    // Set to the start of the week (Sunday)
+    // Set to the start of the week (Monday)
     startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
     
     // Return in YYYY-MM-DD format
