@@ -9,6 +9,7 @@ import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
 import { WeeklyProgressNotesSection } from "./WeeklyProgressNotesSection";
 import { WeeklyProgressActions } from "./WeeklyProgressActions";
 import { IncompleteObjectivesModal } from "./IncompleteObjectivesModal";
+import { IncompleteObjectiveReflections } from "./IncompleteObjectiveReflections";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -151,7 +152,18 @@ export const WeeklyProgressView = () => {
         return;
       }
 
-      // First complete the week directly using the service
+      // First save the reflections to the progress post if provided
+      if (incompleteReflections && Object.keys(incompleteReflections).length > 0) {
+        await WeeklyProgressService.upsertWeeklyProgressPostWithReflections(
+          currentWeekStart, 
+          progressNotes, 
+          incompleteReflections
+        );
+        // Invalidate queries to get the updated data
+        queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+      }
+
+      // Complete the week directly using the service
       await WeeklyProgressService.completeWeek(currentWeekStart);
       
       // Invalidate queries to ensure UI updates immediately
@@ -319,6 +331,11 @@ export const WeeklyProgressView = () => {
             onUpdateObjectiveText={handleUpdateObjectiveText}
             onDeleteObjective={handleDeleteObjective}
             onAddObjective={handleAddObjective}
+          />
+
+          <IncompleteObjectiveReflections
+            objectives={objectives}
+            progressPost={progressPost}
           />
 
           <WeeklyProgressNotesSection

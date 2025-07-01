@@ -127,6 +127,33 @@ export class WeeklyProgressService {
     return post as WeeklyProgressPost;
   }
 
+  static async upsertWeeklyProgressPostWithReflections(
+    weekStart: string, 
+    notes: string, 
+    incompleteReflections?: Record<string, string>
+  ): Promise<WeeklyProgressPost> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    const { data: post, error } = await supabase
+      .from('weekly_progress_posts')
+      .upsert({
+        user_id: user.id,
+        week_start: weekStart,
+        notes: notes,
+        incomplete_reflections: incompleteReflections || {},
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error upserting progress post with reflections:', error);
+      throw error;
+    }
+    return post as WeeklyProgressPost;
+  }
+
   static async completeWeek(weekStart: string): Promise<WeeklyProgressPost> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');

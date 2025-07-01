@@ -369,6 +369,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           id: string
+          incomplete_reflections: Json | null
           is_completed: boolean
           notes: string | null
           updated_at: string
@@ -379,6 +380,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          incomplete_reflections?: Json | null
           is_completed?: boolean
           notes?: string | null
           updated_at?: string
@@ -389,6 +391,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           id?: string
+          incomplete_reflections?: Json | null
           is_completed?: boolean
           notes?: string | null
           updated_at?: string

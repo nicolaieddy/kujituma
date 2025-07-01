@@ -17,6 +17,7 @@ export interface WeeklyProgressPost {
   notes: string;
   is_completed: boolean;
   completed_at: string | null;
+  incomplete_reflections?: Record<string, string>;
   created_at: string;
   updated_at: string;
 }
