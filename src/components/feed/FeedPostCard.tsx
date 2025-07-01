@@ -105,15 +105,81 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
       <CardContent className="space-y-4">
         {post.accomplishments && (
           <div>
-            <h4 className="text-white font-medium mb-2">🎉 Weekly Summary</h4>
-            <div className="text-white/80 whitespace-pre-line">{post.accomplishments}</div>
+            <h4 className="text-white font-medium mb-3">🎉 Weekly Summary</h4>
+            <div className="space-y-2">
+              {post.accomplishments.split('\n').map((line, index) => {
+                if (line.trim() === '') return null;
+                
+                // Handle section headers
+                if (line.includes('✅ Completed Objectives:') || line.includes('❌ Incomplete Objectives:') || line.includes('📝 Weekly Reflections:')) {
+                  return (
+                    <div key={index} className="text-white font-medium mt-4 mb-2">
+                      {line}
+                    </div>
+                  );
+                }
+                
+                // Handle objective items (starting with •)
+                if (line.startsWith('• ')) {
+                  const isCompleted = post.accomplishments.indexOf(line) < post.accomplishments.indexOf('❌ Incomplete Objectives:') || 
+                                    !post.accomplishments.includes('❌ Incomplete Objectives:');
+                  const objectiveText = line.substring(2); // Remove the "• " prefix
+                  
+                  return (
+                    <div key={index} className="flex items-start gap-3 text-white/80">
+                      <div className={`flex-shrink-0 w-5 h-5 rounded border-2 flex items-center justify-center mt-0.5 ${
+                        isCompleted 
+                          ? 'bg-green-500 border-green-500' 
+                          : 'border-white/40 bg-transparent'
+                      }`}>
+                        {isCompleted && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className={isCompleted ? 'text-white/90' : 'text-white/60'}>
+                        {objectiveText}
+                      </span>
+                    </div>
+                  );
+                }
+                
+                // Handle reflection content
+                return (
+                  <div key={index} className="text-white/80 ml-2">
+                    {line}
+                  </div>
+                );
+              }).filter(Boolean)}
+            </div>
           </div>
         )}
 
         {post.priorities && (
           <div>
             <h4 className="text-white font-medium mb-2">🎯 Next Priorities</h4>
-            <div className="text-white/80 whitespace-pre-line">{post.priorities}</div>
+            <div className="space-y-2">
+              {post.priorities.split('\n').map((line, index) => {
+                if (line.trim() === '' || line.includes('Remaining objectives for next week:')) return null;
+                
+                if (line.startsWith('• ')) {
+                  const objectiveText = line.substring(2);
+                  return (
+                    <div key={index} className="flex items-start gap-3 text-white/80">
+                      <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-white/40 bg-transparent mt-0.5" />
+                      <span className="text-white/60">{objectiveText}</span>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div key={index} className="text-white/80">
+                    {line}
+                  </div>
+                );
+              }).filter(Boolean)}
+            </div>
           </div>
         )}
 
