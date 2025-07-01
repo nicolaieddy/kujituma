@@ -43,10 +43,15 @@ export const WeeklyObjectivesList = ({
 
   // Helper function to get goal name by ID
   const getGoalName = (goalId: string | null) => {
-    if (!goalId) return null;
+    if (!goalId || !goals) return null;
     const goal = goals.find(g => g.id === goalId);
     return goal?.title || null;
   };
+
+  // Don't render if goals are not loaded yet
+  if (!goals) {
+    return <div className="text-white">Loading objectives...</div>;
+  }
 
   return (
     <div>

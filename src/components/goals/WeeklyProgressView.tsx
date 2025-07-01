@@ -107,10 +107,21 @@ export const WeeklyProgressView = () => {
     uncompleteWeek();
   };
 
-  const completedCount = objectives.filter(obj => obj.is_completed).length;
-  const totalCount = objectives.length;
+  const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
+  const totalCount = objectives?.length || 0;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isWeekCompleted = progressPost?.is_completed || false;
+
+  // Don't render if essential data is still loading
+  if (!objectives || !goals) {
+    return (
+      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+        <CardContent className="p-6">
+          <div className="text-center text-white">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
