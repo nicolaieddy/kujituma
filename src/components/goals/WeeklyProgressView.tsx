@@ -51,6 +51,11 @@ export const WeeklyProgressView = () => {
     console.log('WeeklyProgressView - Progress post:', progressPost ? 'exists' : 'null');
   }, [currentWeekStart, objectives, progressPost]);
 
+  // Debug modal state
+  useEffect(() => {
+    console.log('Modal state changed:', showIncompleteModal);
+  }, [showIncompleteModal]);
+
   // Initialize progress notes when progressPost changes
   useEffect(() => {
     console.log('Progress post changed:', progressPost);
@@ -113,14 +118,20 @@ export const WeeklyProgressView = () => {
 
   const handlePostToFeed = () => {
     console.log('Attempting to post week to feed:', weekStart);
+    console.log('Current objectives:', objectives);
+    console.log('Objectives count:', objectives?.length || 0);
     
     // Check for incomplete objectives
     const incompleteObjectives = objectives?.filter(obj => !obj.is_completed) || [];
+    console.log('Incomplete objectives:', incompleteObjectives);
+    console.log('Incomplete objectives count:', incompleteObjectives.length);
     
     if (incompleteObjectives.length > 0) {
+      console.log('Should show modal - setting showIncompleteModal to true');
       // Show modal for reflection on incomplete objectives
       setShowIncompleteModal(true);
     } else {
+      console.log('All objectives complete, proceeding to post');
       // Proceed directly to posting
       performPostToFeed();
     }
