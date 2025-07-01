@@ -9,8 +9,12 @@ import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
 import { WeeklyProgressNotesSection } from "./WeeklyProgressNotesSection";
 import { WeeklyProgressActions } from "./WeeklyProgressActions";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "@/hooks/use-toast";
 
 export const WeeklyProgressView = () => {
+  const { user } = useAuth();
   const { goals } = useGoals();
   const [progressNotes, setProgressNotes] = useState("");
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
@@ -102,6 +106,77 @@ export const WeeklyProgressView = () => {
     completeWeek();
   };
 
+  const handlePostToFeed = async () => {
+    console.log('Posting week to feed:', weekStart);
+    
+    // First complete the week
+    await completeWeek();
+    
+    // Then create a feed post
+    await createFeedPost();
+  };
+
+  const createFeedPost = async () => {
+    try {
+      if (!user) {
+        toast({
+          title: "Error",
+          description: "You must be logged in to post to feed",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get user profile for name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      // Calculate week end date
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+
+      // Create the feed post
+      const { error } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          name: profile?.full_name || 'Anonymous',
+          accomplishments: progressPost?.notes || '',
+          priorities: '', // Could be extracted from objectives
+          help: '', // Could be a separate field
+          week_start: currentWeekStart,
+          week_end: weekEnd.toISOString().split('T')[0],
+          objectives_completed: completedCount,
+          total_objectives: totalCount,
+          completion_percentage: completionPercentage,
+        });
+
+      if (error) {
+        console.error('Error creating feed post:', error);
+        toast({
+          title: "Error",
+          description: "Failed to post to feed. Please try again.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Your weekly progress has been posted to the feed!",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating feed post:', error);
+      toast({
+        title: "Error",
+        description: "Failed to post to feed. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleEditWeek = () => {
     console.log('Editing week:', weekStart);
     uncompleteWeek();
@@ -165,7 +240,7 @@ export const WeeklyProgressView = () => {
           isCompletingWeek={isCompletingWeek}
           isUncompletingWeek={isUncompletingWeek}
           onSaveNotes={handleSaveNotes}
-          onCompleteWeek={handleCompleteWeek}
+          onPostToFeed={handlePostToFeed}
           onEditWeek={handleEditWeek}
         />
       </CardContent>

@@ -1,6 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Edit } from "lucide-react";
+import { CheckCircle, Edit, Save, Share } from "lucide-react";
 
 interface WeeklyProgressActionsProps {
   isWeekCompleted: boolean;
@@ -9,7 +9,7 @@ interface WeeklyProgressActionsProps {
   isCompletingWeek: boolean;
   isUncompletingWeek: boolean;
   onSaveNotes: () => void;
-  onCompleteWeek: () => void;
+  onPostToFeed: () => void;
   onEditWeek: () => void;
 }
 
@@ -20,7 +20,7 @@ export const WeeklyProgressActions = ({
   isCompletingWeek,
   isUncompletingWeek,
   onSaveNotes,
-  onCompleteWeek,
+  onPostToFeed,
   onEditWeek,
 }: WeeklyProgressActionsProps) => {
   return (
@@ -42,15 +42,16 @@ export const WeeklyProgressActions = ({
             variant="outline"
             className="border-white/20 text-white hover:bg-white/10 bg-transparent px-6"
           >
+            <Save className="h-4 w-4 mr-2" />
             {isSavingNotes ? "Saving..." : "Save Progress"}
           </Button>
           <Button
-            onClick={onCompleteWeek}
+            onClick={onPostToFeed}
             disabled={isCompletingWeek}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 px-6"
+            className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6"
           >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            {isCompletingWeek ? "Completing..." : `Complete Week ${weekNumber}`}
+            <Share className="h-4 w-4 mr-2" />
+            {isCompletingWeek ? "Posting..." : `Post Week ${weekNumber} to Feed`}
           </Button>
         </div>
       )}

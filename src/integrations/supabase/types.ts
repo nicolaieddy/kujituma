@@ -213,39 +213,54 @@ export type Database = {
       posts: {
         Row: {
           accomplishments: string
+          completion_percentage: number | null
           created_at: string
           help: string
           hidden: boolean
           id: string
           likes: number | null
           name: string
+          objectives_completed: number | null
           priorities: string
+          total_objectives: number | null
           updated_at: string
           user_id: string
+          week_end: string | null
+          week_start: string | null
         }
         Insert: {
           accomplishments?: string
+          completion_percentage?: number | null
           created_at?: string
           help?: string
           hidden?: boolean
           id?: string
           likes?: number | null
           name: string
+          objectives_completed?: number | null
           priorities?: string
+          total_objectives?: number | null
           updated_at?: string
           user_id: string
+          week_end?: string | null
+          week_start?: string | null
         }
         Update: {
           accomplishments?: string
+          completion_percentage?: number | null
           created_at?: string
           help?: string
           hidden?: boolean
           id?: string
           likes?: number | null
           name?: string
+          objectives_completed?: number | null
           priorities?: string
+          total_objectives?: number | null
           updated_at?: string
           user_id?: string
+          week_end?: string | null
+          week_start?: string | null
         }
         Relationships: [
           {
