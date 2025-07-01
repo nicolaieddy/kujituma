@@ -21,7 +21,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
       console.log('useWeeklyProgress: prop changed, updating week from', currentWeekStart, 'to', weekStart);
       setCurrentWeekStart(weekStart);
     }
-  }, [weekStart]); // Remove currentWeekStart to prevent infinite loop
+  }, [weekStart]);
 
   const { data: objectives = [], isLoading: objectivesLoading } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
