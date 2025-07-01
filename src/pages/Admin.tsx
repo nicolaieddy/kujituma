@@ -1,6 +1,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AdminHeader from "@/components/admin/AdminHeader";
+import { MainNavigation } from "@/components/layout/MainNavigation";
 import PostsManagement from "@/components/admin/PostsManagement";
 import UsersOverview from "@/components/admin/UsersOverview";
 import AnalyticsMetrics from "@/components/admin/AnalyticsMetrics";
@@ -38,6 +39,14 @@ const Admin = () => {
       <AdminHeader />
 
       <div className="container mx-auto px-4 py-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Admin Dashboard</h1>
+          <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto">
+            Manage posts, users, and platform analytics.
+          </p>
+        </div>
+
+        <MainNavigation isAdmin={isAdmin} />
         <Tabs defaultValue="posts" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg">
             <TabsTrigger value="posts" className="text-white data-[state=active]:bg-white/20">

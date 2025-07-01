@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { MainNavigation } from "@/components/layout/MainNavigation";
 import { FeedView } from "@/components/feed/FeedView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, User } from "lucide-react";
@@ -47,6 +48,8 @@ const Feed = () => {
             Share your weekly progress and celebrate achievements with the community.
           </p>
         </div>
+
+        <MainNavigation isAdmin={isAdmin} />
 
         <Tabs defaultValue="all" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg border-white/20 mb-6">

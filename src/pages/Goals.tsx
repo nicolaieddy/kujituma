@@ -10,6 +10,7 @@ import { GoalForm } from "@/components/goals/GoalForm";
 import { GoalsKanban } from "@/components/goals/GoalsKanban";
 import { WeeklyProgressView } from "@/components/goals/WeeklyProgressView";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { MainNavigation } from "@/components/layout/MainNavigation";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -83,6 +84,8 @@ const Goals = () => {
             Track your goals and manage your weekly progress in one place.
           </p>
         </div>
+
+        <MainNavigation isAdmin={isAdmin} />
 
         <Tabs defaultValue="goals" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg border-white/20">
