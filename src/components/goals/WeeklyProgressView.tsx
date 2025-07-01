@@ -8,6 +8,7 @@ import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
 import { WeeklyProgressNotesSection } from "./WeeklyProgressNotesSection";
 import { WeeklyProgressActions } from "./WeeklyProgressActions";
+import { IncompleteObjectivesModal } from "./IncompleteObjectivesModal";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -20,6 +21,7 @@ export const WeeklyProgressView = () => {
   const queryClient = useQueryClient();
   const [progressNotes, setProgressNotes] = useState("");
   const [isPostingToFeed, setIsPostingToFeed] = useState(false);
+  const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
@@ -109,7 +111,22 @@ export const WeeklyProgressView = () => {
     completeWeek();
   };
 
-  const handlePostToFeed = async () => {
+  const handlePostToFeed = () => {
+    console.log('Attempting to post week to feed:', weekStart);
+    
+    // Check for incomplete objectives
+    const incompleteObjectives = objectives?.filter(obj => !obj.is_completed) || [];
+    
+    if (incompleteObjectives.length > 0) {
+      // Show modal for reflection on incomplete objectives
+      setShowIncompleteModal(true);
+    } else {
+      // Proceed directly to posting
+      performPostToFeed();
+    }
+  };
+
+  const performPostToFeed = async (incompleteReflections?: Record<string, string>) => {
     console.log('Posting week to feed:', weekStart);
     setIsPostingToFeed(true);
     
@@ -158,6 +175,17 @@ export const WeeklyProgressView = () => {
       if (pendingObjectives.length > 0) {
         accomplishments += '❌ Incomplete Objectives:\n';
         accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
+        
+        // Add reflections for incomplete objectives if provided
+        if (incompleteReflections) {
+          accomplishments += '\n\n🤔 Reflections on Incomplete Objectives:\n';
+          pendingObjectives.forEach(obj => {
+            if (incompleteReflections[obj.id]) {
+              accomplishments += `• ${obj.text}: ${incompleteReflections[obj.id]}\n`;
+            }
+          });
+        }
+        
         accomplishments += '\n\n';
       }
       
@@ -215,7 +243,12 @@ export const WeeklyProgressView = () => {
       });
     } finally {
       setIsPostingToFeed(false);
+      setShowIncompleteModal(false);
     }
+  };
+
+  const handleConfirmPostWithReflections = (reflections: Record<string, string>) => {
+    performPostToFeed(reflections);
   };
 
   const handleEditWeek = () => {
@@ -240,51 +273,61 @@ export const WeeklyProgressView = () => {
   }
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-      <CardHeader>
-        <WeeklyProgressHeader
-          weekRange={weekRange}
-          weekNumber={weekNumber}
-          isWeekCompleted={isWeekCompleted}
-          completedCount={completedCount}
-          totalCount={totalCount}
-          completionPercentage={completionPercentage}
-          onPreviousWeek={handlePreviousWeek}
-          onNextWeek={handleNextWeek}
-        />
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        <PreviousWeekSummary currentWeekStart={currentWeekStart} />
+    <>
+      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+        <CardHeader>
+          <WeeklyProgressHeader
+            weekRange={weekRange}
+            weekNumber={weekNumber}
+            isWeekCompleted={isWeekCompleted}
+            completedCount={completedCount}
+            totalCount={totalCount}
+            completionPercentage={completionPercentage}
+            onPreviousWeek={handlePreviousWeek}
+            onNextWeek={handleNextWeek}
+          />
+        </CardHeader>
+        
+        <CardContent className="space-y-6">
+          <PreviousWeekSummary currentWeekStart={currentWeekStart} />
 
-        <WeeklyObjectivesList
-          objectives={objectives}
-          goals={goals}
-          isWeekCompleted={isWeekCompleted}
-          isCreating={isCreating}
-          onToggleObjective={handleToggleObjective}
-          onUpdateObjectiveText={handleUpdateObjectiveText}
-          onDeleteObjective={handleDeleteObjective}
-          onAddObjective={handleAddObjective}
-        />
+          <WeeklyObjectivesList
+            objectives={objectives}
+            goals={goals}
+            isWeekCompleted={isWeekCompleted}
+            isCreating={isCreating}
+            onToggleObjective={handleToggleObjective}
+            onUpdateObjectiveText={handleUpdateObjectiveText}
+            onDeleteObjective={handleDeleteObjective}
+            onAddObjective={handleAddObjective}
+          />
 
-        <WeeklyProgressNotesSection
-          progressNotes={progressNotes}
-          isWeekCompleted={isWeekCompleted}
-          onNotesChange={setProgressNotes}
-        />
+          <WeeklyProgressNotesSection
+            progressNotes={progressNotes}
+            isWeekCompleted={isWeekCompleted}
+            onNotesChange={setProgressNotes}
+          />
 
-        <WeeklyProgressActions
-          isWeekCompleted={isWeekCompleted}
-          weekNumber={weekNumber}
-          isSavingNotes={isSavingNotes}
-          isCompletingWeek={isPostingToFeed}
-          isUncompletingWeek={isUncompletingWeek}
-          onSaveNotes={handleSaveNotes}
-          onPostToFeed={handlePostToFeed}
-          onEditWeek={handleEditWeek}
-        />
-      </CardContent>
-    </Card>
+          <WeeklyProgressActions
+            isWeekCompleted={isWeekCompleted}
+            weekNumber={weekNumber}
+            isSavingNotes={isSavingNotes}
+            isCompletingWeek={isPostingToFeed}
+            isUncompletingWeek={isUncompletingWeek}
+            onSaveNotes={handleSaveNotes}
+            onPostToFeed={handlePostToFeed}
+            onEditWeek={handleEditWeek}
+          />
+        </CardContent>
+      </Card>
+
+      <IncompleteObjectivesModal
+        open={showIncompleteModal}
+        onOpenChange={setShowIncompleteModal}
+        incompleteObjectives={objectives?.filter(obj => !obj.is_completed) || []}
+        onConfirmPost={handleConfirmPostWithReflections}
+        isPosting={isPostingToFeed}
+      />
+    </>
   );
 };
