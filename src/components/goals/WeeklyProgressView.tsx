@@ -141,8 +141,12 @@ export const WeeklyProgressView = () => {
       weekEnd.setDate(weekEnd.getDate() + 6);
 
       // Create detailed accomplishments with completed objectives
-      const completedObjectives = objectives.filter(obj => obj.is_completed);
-      const pendingObjectives = objectives.filter(obj => !obj.is_completed);
+      console.log('Objectives for feed post:', objectives);
+      const completedObjectives = objectives?.filter(obj => obj.is_completed) || [];
+      const pendingObjectives = objectives?.filter(obj => !obj.is_completed) || [];
+      
+      console.log('Completed objectives:', completedObjectives);
+      console.log('Pending objectives:', pendingObjectives);
       
       let accomplishments = '';
       if (completedObjectives.length > 0) {
@@ -151,9 +155,20 @@ export const WeeklyProgressView = () => {
         accomplishments += '\n\n';
       }
       
+      if (pendingObjectives.length > 0) {
+        accomplishments += '❌ Incomplete Objectives:\n';
+        accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
+        accomplishments += '\n\n';
+      }
+      
       if (progressPost?.notes) {
         accomplishments += '📝 Weekly Reflections:\n';
         accomplishments += progressPost.notes;
+      }
+
+      // If no objectives or reflections, show a different message
+      if (accomplishments.trim() === '') {
+        accomplishments = 'No objectives or reflections recorded for this week.';
       }
 
       let priorities = '';
