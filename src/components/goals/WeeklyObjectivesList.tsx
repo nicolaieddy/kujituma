@@ -87,12 +87,21 @@ export const WeeklyObjectivesList = ({
           return (
             <div key={objective.id} className="space-y-2">
               <div className="flex items-center gap-3 group">
-                <Checkbox
-                  checked={objective.is_completed}
-                  onCheckedChange={() => onToggleObjective(objective.id, objective.is_completed)}
-                  disabled={isWeekCompleted}
-                  className="border-white/40 data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
-                />
+                <div className="relative">
+                  <Checkbox
+                    checked={objective.is_completed}
+                    onCheckedChange={() => onToggleObjective(objective.id, objective.is_completed)}
+                    disabled={isWeekCompleted}
+                    className={`border-white/40 transition-all duration-300 ${
+                      objective.is_completed 
+                        ? 'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 shadow-lg shadow-green-500/30' 
+                        : 'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500'
+                    }`}
+                  />
+                  {objective.is_completed && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-bounce opacity-75"></div>
+                  )}
+                </div>
                 
                 {isEditing ? (
                   <Input
@@ -110,8 +119,23 @@ export const WeeklyObjectivesList = ({
                     autoFocus
                   />
                 ) : (
-                  <div className="flex-1 bg-white/5 border border-white/10 rounded-md px-3 py-2 text-white">
-                    {objective.text}
+                  <div className={`flex-1 border rounded-md px-3 py-2 transition-all duration-300 ${
+                    objective.is_completed 
+                      ? 'bg-green-500/20 border-green-400/40 text-green-100' 
+                      : 'bg-white/5 border-white/10 text-white'
+                  }`}>
+                    <span className={`${
+                      objective.is_completed 
+                        ? 'line-through decoration-2 decoration-green-400' 
+                        : ''
+                    } transition-all duration-300`}>
+                      {objective.text}
+                    </span>
+                    {objective.is_completed && (
+                      <span className="ml-2 text-green-400 font-medium animate-pulse">
+                        ✨ Complete!
+                      </span>
+                    )}
                   </div>
                 )}
                 
@@ -164,9 +188,12 @@ export const WeeklyObjectivesList = ({
                 )}
               </div>
               {goalName && (
-                <div className="ml-8 flex items-center gap-2 text-xs text-white/60">
+                <div className={`ml-8 flex items-center gap-2 text-xs transition-all duration-300 ${
+                  objective.is_completed ? 'text-green-300/80' : 'text-white/60'
+                }`}>
                   <Target className="h-3 w-3" />
                   <span>Linked to goal: {goalName}</span>
+                  {objective.is_completed && <span className="text-green-400">🎯</span>}
                 </div>
               )}
             </div>
