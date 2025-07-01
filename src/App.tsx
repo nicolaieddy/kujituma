@@ -21,11 +21,12 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Feed />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/feed" element={<Feed />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/goals" element={<Goals />} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="*" element={<Feed />} />
+            <Route path="*" element={<Index />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>

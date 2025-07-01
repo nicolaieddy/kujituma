@@ -15,7 +15,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
   // Determine current section based on pathname
   const getCurrentSection = () => {
     const path = location.pathname;
-    if (path.startsWith('/feed') || path === '/') return 'feed';
+    if (path.startsWith('/feed')) return 'feed';
     if (path.startsWith('/goals')) return 'goals';
     return 'feed';
   };
@@ -30,7 +30,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           
           <nav className="flex items-center space-x-4 sm:space-x-6">
             <button
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/feed')}
               className={`text-sm sm:text-base text-white/80 hover:text-white transition-colors ${
                 currentSection === 'feed' ? 'text-white font-medium' : ''
               }`}
