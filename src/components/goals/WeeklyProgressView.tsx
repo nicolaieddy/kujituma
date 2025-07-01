@@ -33,6 +33,13 @@ export const WeeklyProgressView = () => {
     isUncompletingWeek,
   } = useWeeklyProgress(currentWeekStart);
 
+  // Debug auth state
+  useEffect(() => {
+    console.log('WeeklyProgressView - Current week start:', currentWeekStart);
+    console.log('WeeklyProgressView - Objectives count:', objectives?.length || 0);
+    console.log('WeeklyProgressView - Progress post:', progressPost ? 'exists' : 'null');
+  }, [currentWeekStart, objectives, progressPost]);
+
   // Initialize progress notes when progressPost changes
   useEffect(() => {
     console.log('Progress post changed:', progressPost);

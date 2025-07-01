@@ -23,16 +23,30 @@ export const useWeeklyProgress = (weekStart?: string) => {
     }
   }, [weekStart]);
 
-  const { data: objectives = [], isLoading: objectivesLoading } = useQuery({
+  const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
-    queryFn: () => WeeklyProgressService.getWeeklyObjectives(currentWeekStart),
+    queryFn: async () => {
+      console.log('Fetching objectives for user:', user?.id, 'week:', currentWeekStart);
+      return WeeklyProgressService.getWeeklyObjectives(currentWeekStart);
+    },
     enabled: !!user && !!currentWeekStart,
+    retry: (failureCount, error) => {
+      console.error('Objectives query failed:', error);
+      return failureCount < 2;
+    }
   });
 
-  const { data: progressPost = null, isLoading: progressPostLoading } = useQuery({
+  const { data: progressPost = null, isLoading: progressPostLoading, error: progressPostError } = useQuery({
     queryKey: ['weekly-progress-post', user?.id, currentWeekStart],
-    queryFn: () => WeeklyProgressService.getWeeklyProgressPost(currentWeekStart),
+    queryFn: async () => {
+      console.log('Fetching progress post for user:', user?.id, 'week:', currentWeekStart);
+      return WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
+    },
     enabled: !!user && !!currentWeekStart,
+    retry: (failureCount, error) => {
+      console.error('Progress post query failed:', error);
+      return failureCount < 2;
+    }
   });
 
   const createObjectiveMutation = useMutation({
