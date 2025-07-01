@@ -44,8 +44,13 @@ export const WeeklyProgressHeader = ({
         <Button
           variant="ghost"
           size="sm"
-          onClick={onNextWeek}
-          className="text-white/80 hover:text-white hover:bg-white/10"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Next button clicked in header!');
+            onNextWeek();
+          }}
+          className="text-white/80 hover:text-white hover:bg-white/10 relative z-10"
         >
           Next
           <ChevronRight className="h-4 w-4" />
