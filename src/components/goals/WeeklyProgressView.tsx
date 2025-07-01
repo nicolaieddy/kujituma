@@ -30,6 +30,7 @@ export const WeeklyProgressView = () => {
   const {
     objectives,
     progressPost,
+    feedPost,
     createObjective,
     updateObjective,
     deleteObjective,
@@ -272,10 +273,12 @@ export const WeeklyProgressView = () => {
         description: "Failed to post to feed. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsPostingToFeed(false);
-      setShowIncompleteModal(false);
-    }
+      } finally {
+        setIsPostingToFeed(false);
+        setShowIncompleteModal(false);
+        // Invalidate feed post query to check if it's now posted
+        queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
+      }
   };
 
   const handleConfirmPostWithReflections = (reflections: Record<string, string>) => {
@@ -285,6 +288,14 @@ export const WeeklyProgressView = () => {
   const handleEditWeek = () => {
     console.log('Editing week:', weekStart);
     uncompleteWeek();
+  };
+
+  const handleViewPost = () => {
+    if (feedPost) {
+      // Navigate to feed with the specific post - you could implement a route like /feed#post-id
+      // For now, just navigate to feed
+      window.open('/feed', '_blank');
+    }
   };
 
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
@@ -347,12 +358,14 @@ export const WeeklyProgressView = () => {
           <WeeklyProgressActions
             isWeekCompleted={isWeekCompleted}
             weekNumber={weekNumber}
+            feedPost={feedPost}
             isSavingNotes={isSavingNotes}
             isCompletingWeek={isPostingToFeed}
             isUncompletingWeek={isUncompletingWeek}
             onSaveNotes={handleSaveNotes}
             onPostToFeed={handlePostToFeed}
             onEditWeek={handleEditWeek}
+            onViewPost={handleViewPost}
           />
         </CardContent>
       </Card>

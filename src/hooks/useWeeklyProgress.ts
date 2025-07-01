@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { FeedService } from "@/services/feedService";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -47,6 +48,17 @@ export const useWeeklyProgress = (weekStart?: string) => {
       console.error('Progress post query failed:', error);
       return failureCount < 2;
     }
+  });
+
+  // Fetch feed post for this week to check if it's been posted
+  const { data: feedPost = null } = useQuery({
+    queryKey: ['week-feed-post', user?.id, currentWeekStart],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      console.log('Fetching feed post for user:', user.id, 'week:', currentWeekStart);
+      return FeedService.getPostByWeek(user.id, currentWeekStart);
+    },
+    enabled: !!user?.id && !!currentWeekStart,
   });
 
   const createObjectiveMutation = useMutation({
@@ -188,6 +200,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
   return {
     objectives,
     progressPost,
+    feedPost,
     isLoading: objectivesLoading || progressPostLoading,
     createObjective,
     updateObjective,

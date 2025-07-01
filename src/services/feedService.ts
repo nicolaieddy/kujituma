@@ -176,4 +176,27 @@ export class FeedService {
 
     return isLiked;
   }
+
+  static async getPostByWeek(userId: string, weekStart: string): Promise<FeedPost | null> {
+    const { data: post, error } = await supabase
+      .from('posts')
+      .select(`
+        *,
+        profiles:user_id (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('user_id', userId)
+      .eq('week_start', weekStart)
+      .eq('hidden', false)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching post by week:', error);
+      throw error;
+    }
+
+    return post as FeedPost | null;
+  }
 }
