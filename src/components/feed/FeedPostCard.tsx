@@ -105,22 +105,22 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
       <CardContent className="space-y-4">
         {post.accomplishments && (
           <div>
-            <h4 className="text-white font-medium mb-2">🎉 Accomplishments</h4>
-            <p className="text-white/80">{post.accomplishments}</p>
+            <h4 className="text-white font-medium mb-2">🎉 Weekly Summary</h4>
+            <div className="text-white/80 whitespace-pre-line">{post.accomplishments}</div>
           </div>
         )}
 
         {post.priorities && (
           <div>
             <h4 className="text-white font-medium mb-2">🎯 Next Priorities</h4>
-            <p className="text-white/80">{post.priorities}</p>
+            <div className="text-white/80 whitespace-pre-line">{post.priorities}</div>
           </div>
         )}
 
         {post.help && (
           <div>
             <h4 className="text-white font-medium mb-2">🤝 Help Needed</h4>
-            <p className="text-white/80">{post.help}</p>
+            <div className="text-white/80 whitespace-pre-line">{post.help}</div>
           </div>
         )}
 
