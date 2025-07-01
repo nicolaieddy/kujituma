@@ -177,36 +177,44 @@ export const WeeklyProgressView = () => {
       console.log('Pending objectives:', pendingObjectives);
       
       let accomplishments = '';
-      if (completedObjectives.length > 0) {
-        accomplishments += '✅ Completed Objectives:\n';
-        accomplishments += completedObjectives.map(obj => `• ${obj.text}`).join('\n');
-        accomplishments += '\n\n';
-      }
       
-      if (pendingObjectives.length > 0) {
-        accomplishments += '❌ Incomplete Objectives:\n';
-        accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
+      // Always show objectives summary if there are any objectives
+      if (completedObjectives.length > 0 || pendingObjectives.length > 0) {
+        accomplishments += '🎯 This Week\'s Objectives:\n\n';
         
-        // Add reflections for incomplete objectives if provided
-        if (incompleteReflections) {
-          accomplishments += '\n\n🤔 Reflections on Incomplete Objectives:\n';
-          pendingObjectives.forEach(obj => {
-            if (incompleteReflections[obj.id]) {
-              accomplishments += `• ${obj.text}: ${incompleteReflections[obj.id]}\n`;
-            }
-          });
+        if (completedObjectives.length > 0) {
+          accomplishments += '✅ Completed Objectives:\n';
+          accomplishments += completedObjectives.map(obj => `• ${obj.text}`).join('\n');
+          accomplishments += '\n\n';
         }
         
-        accomplishments += '\n\n';
+        if (pendingObjectives.length > 0) {
+          accomplishments += '❌ Incomplete Objectives:\n';
+          accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
+          accomplishments += '\n\n';
+          
+          // Add reflections for incomplete objectives if provided
+          if (incompleteReflections && Object.keys(incompleteReflections).length > 0) {
+            accomplishments += '🤔 Reflections on Incomplete Objectives:\n';
+            pendingObjectives.forEach(obj => {
+              if (incompleteReflections[obj.id]?.trim()) {
+                accomplishments += `• **${obj.text}**: ${incompleteReflections[obj.id]}\n`;
+              }
+            });
+            accomplishments += '\n';
+          }
+        }
       }
       
-      if (progressPost?.notes) {
+      // Add weekly reflections/notes
+      if (progressPost?.notes?.trim()) {
         accomplishments += '📝 Weekly Reflections:\n';
         accomplishments += progressPost.notes;
+        accomplishments += '\n\n';
       }
 
-      // If no objectives or reflections, show a different message
-      if (accomplishments.trim() === '') {
+      // Only use fallback if there are truly no objectives AND no notes
+      if (accomplishments.trim() === '' && (completedObjectives.length === 0 && pendingObjectives.length === 0 && !progressPost?.notes?.trim())) {
         accomplishments = 'No objectives or reflections recorded for this week.';
       }
 
