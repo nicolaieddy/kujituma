@@ -4,10 +4,20 @@ import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateW
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
     console.log('Fetching objectives for week:', weekStart);
+    
+    // Check authentication first
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      throw new Error('User not authenticated');
+    }
+    console.log('Authenticated user:', user.id);
+    
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
       .select('*')
       .eq('week_start', weekStart)
+      .eq('user_id', user.id)  // Explicitly filter by user_id
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -75,13 +85,23 @@ export class WeeklyProgressService {
 
   static async getWeeklyProgressPost(weekStart: string): Promise<WeeklyProgressPost | null> {
     console.log('Fetching progress post for week:', weekStart);
+    
+    // Check authentication first
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      throw new Error('User not authenticated');
+    }
+    console.log('Authenticated user:', user.id);
+    
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .select('*')
       .eq('week_start', weekStart)
-      .single();
+      .eq('user_id', user.id)  // Explicitly filter by user_id
+      .maybeSingle();  // Use maybeSingle instead of single to avoid errors when no data
 
-    if (error && error.code !== 'PGRST116') {
+    if (error) {
       console.error('Error fetching progress post:', error);
       throw error;
     }
