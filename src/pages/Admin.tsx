@@ -1,13 +1,15 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import AdminHeader from "@/components/admin/AdminHeader";
-import { MainNavigation } from "@/components/layout/MainNavigation";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { useAuth } from "@/contexts/AuthContext";
+
 import PostsManagement from "@/components/admin/PostsManagement";
 import UsersOverview from "@/components/admin/UsersOverview";
 import AnalyticsMetrics from "@/components/admin/AnalyticsMetrics";
 import { useAdminData } from "@/hooks/useAdminData";
 
 const Admin = () => {
+  const { signOut } = useAuth();
   const {
     posts,
     users,
@@ -17,6 +19,14 @@ const Admin = () => {
     togglePostVisibility,
     deletePost
   } = useAdminData();
+
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
 
   if (loading) {
     return (
@@ -36,7 +46,10 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-      <AdminHeader />
+      <DashboardHeader 
+        isAdmin={isAdmin}
+        onSignOut={handleSignOut}
+      />
 
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
@@ -46,7 +59,6 @@ const Admin = () => {
           </p>
         </div>
 
-        <MainNavigation isAdmin={isAdmin} />
         <Tabs defaultValue="posts" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg">
             <TabsTrigger value="posts" className="text-white data-[state=active]:bg-white/20">
