@@ -31,13 +31,14 @@ export const WeeklyObjectivesList = ({
   onAddObjective,
 }: WeeklyObjectivesListProps) => {
   const [newObjective, setNewObjective] = useState("");
-  const [selectedGoalId, setSelectedGoalId] = useState<string>("");
+  const [selectedGoalId, setSelectedGoalId] = useState<string>("none");
 
   const handleAddObjective = () => {
     if (newObjective.trim()) {
-      onAddObjective(newObjective.trim(), selectedGoalId || undefined);
+      const goalId = selectedGoalId === "none" ? undefined : selectedGoalId;
+      onAddObjective(newObjective.trim(), goalId);
       setNewObjective("");
-      setSelectedGoalId("");
+      setSelectedGoalId("none");
     }
   };
 
@@ -134,7 +135,7 @@ export const WeeklyObjectivesList = ({
                   <SelectValue placeholder="Link to a goal (optional)" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-white/20">
-                  <SelectItem value="">No goal (standalone objective)</SelectItem>
+                  <SelectItem value="none">No goal (standalone objective)</SelectItem>
                   {goals.map((goal) => (
                     <SelectItem key={goal.id} value={goal.id} className="text-white">
                       {goal.title}
