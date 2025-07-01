@@ -119,10 +119,10 @@ export const WeeklyObjectivesList = ({
                     autoFocus
                   />
                 ) : (
-                  <div className={`flex-1 border rounded-md px-3 py-2 transition-all duration-300 ${
+                  <div className={`flex-1 px-2 py-1 transition-all duration-300 ${
                     objective.is_completed 
-                      ? 'bg-green-500/20 border-green-400/40 text-green-100' 
-                      : 'bg-white/5 border-white/10 text-white'
+                      ? 'text-green-100' 
+                      : 'text-white'
                   }`}>
                     <span className={`${
                       objective.is_completed 
