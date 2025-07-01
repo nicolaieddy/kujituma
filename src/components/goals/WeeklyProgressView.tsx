@@ -12,10 +12,12 @@ import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 export const WeeklyProgressView = () => {
   const { user } = useAuth();
   const { goals } = useGoals();
+  const queryClient = useQueryClient();
   const [progressNotes, setProgressNotes] = useState("");
   const [isPostingToFeed, setIsPostingToFeed] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
@@ -121,8 +123,11 @@ export const WeeklyProgressView = () => {
         return;
       }
 
-      // First complete the week
-      await completeWeek();
+      // First complete the week directly using the service
+      await WeeklyProgressService.completeWeek(currentWeekStart);
+      
+      // Invalidate queries to ensure UI updates immediately
+      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
 
       // Get user profile for name
       const { data: profile } = await supabase
