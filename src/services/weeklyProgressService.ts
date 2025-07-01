@@ -164,9 +164,6 @@ export class WeeklyProgressService {
     // Set to the start of the week (Sunday)
     startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
     
-    // Set to start of day (00:00:00)
-    startOfWeek.setHours(0, 0, 0, 0);
-    
     // Return in YYYY-MM-DD format
     const result = startOfWeek.toISOString().split('T')[0];
     console.log('Week start calculated:', result);
