@@ -10,13 +10,39 @@ import { WeeklyProgressActions } from "./WeeklyProgressActions";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 export const WeeklyProgressView = () => {
+  console.log('WeeklyProgressView: Component rendering...');
+  
   const [progressNotes, setProgressNotes] = useState("");
-  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
-    WeeklyProgressService.getWeekStart()
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(() => {
+    try {
+      const weekStart = WeeklyProgressService.getWeekStart();
+      console.log('WeeklyProgressView: Initial week start:', weekStart);
+      return weekStart;
+    } catch (error) {
+      console.error('WeeklyProgressView: Error getting week start:', error);
+      return new Date().toISOString().split('T')[0]; // fallback to today
+    }
+  });
   
   const { goals } = useGoals();
+  console.log('WeeklyProgressView: Goals loaded:', goals?.length || 0);
   
+  const weeklyProgressData = useWeeklyProgress(currentWeekStart);
+  
+  // Handle loading and error states
+  if (!weeklyProgressData) {
+    console.error('WeeklyProgressView: useWeeklyProgress returned null/undefined');
+    return (
+      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+        <CardContent className="p-6">
+          <div className="text-center text-white">
+            Unable to load weekly progress data. Please try refreshing the page.
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const {
     objectives,
     progressPost,
@@ -33,7 +59,15 @@ export const WeeklyProgressView = () => {
     isSavingNotes,
     isCompletingWeek,
     isUncompletingWeek,
-  } = useWeeklyProgress(currentWeekStart);
+  } = weeklyProgressData;
+  
+  console.log('WeeklyProgressView: Weekly progress data loaded:', {
+    objectivesCount: objectives?.length || 0,
+    progressPost: !!progressPost,
+    weekStart,
+    weekRange,
+    weekNumber
+  });
 
   // Initialize progress notes when progressPost changes
   useEffect(() => {
@@ -112,8 +146,9 @@ export const WeeklyProgressView = () => {
     uncompleteWeek();
   };
 
-  const completedCount = objectives.filter(obj => obj.is_completed).length;
-  const totalCount = objectives.length;
+  const safeObjectives = objectives || [];
+  const completedCount = safeObjectives.filter(obj => obj.is_completed).length;
+  const totalCount = safeObjectives.length;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isWeekCompleted = progressPost?.is_completed || false;
 
@@ -136,7 +171,7 @@ export const WeeklyProgressView = () => {
         <PreviousWeekSummary currentWeekStart={currentWeekStart} />
 
         <WeeklyObjectivesList
-          objectives={objectives}
+          objectives={safeObjectives}
           goals={goals}
           isWeekCompleted={isWeekCompleted}
           isCreating={isCreating}
