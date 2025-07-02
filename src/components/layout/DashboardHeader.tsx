@@ -35,7 +35,8 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
                 currentSection === 'feed' ? 'text-white font-medium' : ''
               }`}
             >
-              Feed
+              <span className="hidden sm:inline">Community Stream</span>
+              <span className="sm:hidden">Stream</span>
             </button>
             <button
               onClick={() => navigate('/goals')}

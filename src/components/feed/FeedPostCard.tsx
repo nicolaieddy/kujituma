@@ -8,13 +8,15 @@ import { FeedPostPriorities } from "./FeedPostPriorities";
 import { FeedPostHelp } from "./FeedPostHelp";
 import { FeedPostActions } from "./FeedPostActions";
 import { FeedPostComments } from "./FeedPostComments";
+import { LiveUpdateBadge } from "./LiveUpdateBadge";
 
 interface FeedPostCardProps {
   post: UnifiedPost;
   onUpdate: () => void;
+  showLiveIndicator?: boolean;
 }
 
-export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
+export const FeedPostCard = ({ post, onUpdate, showLiveIndicator = false }: FeedPostCardProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isLiking, setIsLiking] = useState(false);
@@ -56,7 +58,8 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
   };
 
   return (
-    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300">
+    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300 relative">
+      <LiveUpdateBadge show={showLiveIndicator} />
       <CardHeader className="pb-4">
         <FeedPostHeader post={post} />
       </CardHeader>
