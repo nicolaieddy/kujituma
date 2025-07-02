@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { unifiedPostsService, UnifiedPost } from "@/services/unifiedPostsService";
 import { FeedPostHeader } from "./FeedPostHeader";
 import { FeedPostContent } from "./FeedPostContent";
-import { FeedPostPriorities } from "./FeedPostPriorities";
+
 import { FeedPostHelp } from "./FeedPostHelp";
 import { FeedPostActions } from "./FeedPostActions";
 import { FeedPostComments } from "./FeedPostComments";
@@ -66,7 +66,6 @@ export const FeedPostCard = ({ post, onUpdate, showLiveIndicator = false }: Feed
 
       <CardContent className="space-y-8 pt-0">
         <FeedPostContent post={post} />
-        <FeedPostPriorities post={post} />
         <FeedPostHelp post={post} />
         
         <FeedPostActions
