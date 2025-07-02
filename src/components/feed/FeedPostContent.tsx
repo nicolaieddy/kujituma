@@ -73,14 +73,17 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
               ) || sections.incompleteReflections[index];
 
               return (
-                <div key={index} className="space-y-3">
+                <div key={index} className="space-y-2">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-amber-400 bg-transparent mt-0.5" />
                     <p className="text-white font-medium leading-relaxed">{objective}</p>
                   </div>
                   {reflection && (
-                    <div className="ml-8 bg-white/5 rounded-md p-3 border-l-2 border-amber-400/50">
-                      <p className="text-amber-200 italic text-sm leading-relaxed">"{reflection}"</p>
+                    <div className="ml-8 space-y-1">
+                      <div className="text-amber-300 text-xs font-medium uppercase tracking-wide">Reflection</div>
+                      <div className="bg-amber-500/5 rounded-md p-3 border-l-2 border-amber-400/50">
+                        <p className="text-amber-200/80 text-sm leading-relaxed">{reflection}</p>
+                      </div>
                     </div>
                   )}
                 </div>
