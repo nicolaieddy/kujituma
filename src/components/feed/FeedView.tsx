@@ -1,29 +1,16 @@
-import { useRealtimePosts } from "@/hooks/useRealtimePosts";
+import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
 import { FeedPostCard } from "./FeedPostCard";
-import { RealtimeIndicator } from "./RealtimeIndicator";
-import { PostAnimationWrapper } from "./PostAnimationWrapper";
 
 interface FeedViewProps {
   feedType: "all" | "my";
 }
 
 export const FeedView = ({ feedType }: FeedViewProps) => {
-  const { 
-    posts, 
-    loading: isLoading, 
-    newPostsCount,
-    refetch,
-    clearNewPostsIndicator
-  } = useRealtimePosts({
+  const { posts, loading: isLoading, refetch } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user"
   });
 
   const handlePostUpdate = () => {
-    refetch();
-  };
-
-  const handleRefreshNewPosts = () => {
-    clearNewPostsIndicator();
     refetch();
   };
 
@@ -60,19 +47,12 @@ export const FeedView = ({ feedType }: FeedViewProps) => {
 
   return (
     <div className="space-y-6">
-      {feedType === "all" && (
-        <RealtimeIndicator 
-          newPostsCount={newPostsCount} 
-          onRefresh={handleRefreshNewPosts}
+      {posts.map((post) => (
+        <FeedPostCard 
+          key={post.id} 
+          post={post} 
+          onUpdate={handlePostUpdate}
         />
-      )}
-      {posts.map((post, index) => (
-        <PostAnimationWrapper key={post.id} index={index}>
-          <FeedPostCard 
-            post={post} 
-            onUpdate={handlePostUpdate}
-          />
-        </PostAnimationWrapper>
       ))}
     </div>
   );

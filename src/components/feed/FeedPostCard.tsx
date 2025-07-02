@@ -4,19 +4,17 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { unifiedPostsService, UnifiedPost } from "@/services/unifiedPostsService";
 import { FeedPostHeader } from "./FeedPostHeader";
 import { FeedPostContent } from "./FeedPostContent";
-
+import { FeedPostPriorities } from "./FeedPostPriorities";
 import { FeedPostHelp } from "./FeedPostHelp";
 import { FeedPostActions } from "./FeedPostActions";
 import { FeedPostComments } from "./FeedPostComments";
-import { LiveUpdateBadge } from "./LiveUpdateBadge";
 
 interface FeedPostCardProps {
   post: UnifiedPost;
   onUpdate: () => void;
-  showLiveIndicator?: boolean;
 }
 
-export const FeedPostCard = ({ post, onUpdate, showLiveIndicator = false }: FeedPostCardProps) => {
+export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isLiking, setIsLiking] = useState(false);
@@ -58,14 +56,14 @@ export const FeedPostCard = ({ post, onUpdate, showLiveIndicator = false }: Feed
   };
 
   return (
-    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300 relative">
-      <LiveUpdateBadge show={showLiveIndicator} />
+    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300">
       <CardHeader className="pb-4">
         <FeedPostHeader post={post} />
       </CardHeader>
 
       <CardContent className="space-y-8 pt-0">
         <FeedPostContent post={post} />
+        <FeedPostPriorities post={post} />
         <FeedPostHelp post={post} />
         
         <FeedPostActions

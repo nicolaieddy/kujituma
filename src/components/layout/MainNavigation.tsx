@@ -54,8 +54,8 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
             className="flex items-center gap-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
           >
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Community Stream</span>
-            <span className="sm:hidden">Stream</span>
+            <span className="hidden sm:inline">Progress Feed</span>
+            <span className="sm:hidden">Feed</span>
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger 

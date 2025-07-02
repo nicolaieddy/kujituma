@@ -43,9 +43,9 @@ const Feed = () => {
 
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Community Stream</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Progress Feed</h1>
           <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto">
-            Real-time updates from your community. Watch progress unfold as others share their weekly achievements.
+            Share your weekly progress and celebrate achievements with the community.
           </p>
         </div>
 
@@ -53,7 +53,7 @@ const Feed = () => {
           <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg border-white/20 mb-6">
             <TabsTrigger value="all" className="flex items-center gap-2 text-white data-[state=active]:bg-white/20">
               <Users className="h-4 w-4" />
-              Live Stream
+              All Posts
             </TabsTrigger>
             <TabsTrigger value="my" className="flex items-center gap-2 text-white data-[state=active]:bg-white/20">
               <User className="h-4 w-4" />
