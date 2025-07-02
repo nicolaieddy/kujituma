@@ -1,9 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Heart, MessageCircle } from "lucide-react";
-import { FeedPost } from "@/services/feedService";
+import { UnifiedPost } from "@/services/unifiedPostsService";
 
 interface FeedPostActionsProps {
-  post: FeedPost;
+  post: UnifiedPost;
   commentsCount: number;
   onLike: () => void;
   onComment: () => void;

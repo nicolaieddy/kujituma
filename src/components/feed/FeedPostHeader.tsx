@@ -2,10 +2,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Target } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { FeedPost } from "@/services/feedService";
+import { UnifiedPost } from "@/services/unifiedPostsService";
 
 interface FeedPostHeaderProps {
-  post: FeedPost;
+  post: UnifiedPost;
 }
 
 export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
@@ -40,22 +40,28 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
           </span>
         </div>
         
-        <div className="flex items-center gap-2 mb-3">
-          <Calendar className="h-4 w-4 text-white/60" />
-          <span className="text-white/80 text-sm">
-            Week: {formatWeekRange(post.week_start, post.week_end)}
-          </span>
-          <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
-            {post.completion_percentage}% Complete
-          </Badge>
-        </div>
-
-        <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
-          <div className="flex items-center gap-1">
-            <Target className="h-4 w-4" />
-            <span>{post.objectives_completed}/{post.total_objectives} objectives</span>
+        {post.week_start && post.week_end && (
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="h-4 w-4 text-white/60" />
+            <span className="text-white/80 text-sm">
+              Week: {formatWeekRange(post.week_start, post.week_end)}
+            </span>
+            {post.completion_percentage !== undefined && (
+              <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
+                {post.completion_percentage}% Complete
+              </Badge>
+            )}
           </div>
-        </div>
+        )}
+
+        {post.objectives_completed !== undefined && post.total_objectives !== undefined && (
+          <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
+            <div className="flex items-center gap-1">
+              <Target className="h-4 w-4" />
+              <span>{post.objectives_completed}/{post.total_objectives} objectives</span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

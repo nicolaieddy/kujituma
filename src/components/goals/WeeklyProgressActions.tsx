@@ -1,7 +1,7 @@
 
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Edit, Save, Share, ExternalLink, Check } from "lucide-react";
-import { FeedPost } from "@/services/feedService";
+import { UnifiedPost } from "@/services/unifiedPostsService";
 
 interface WeeklyProgressActionsProps {
   isWeekCompleted: boolean;
@@ -9,7 +9,7 @@ interface WeeklyProgressActionsProps {
   isSavingNotes: boolean;
   isCompletingWeek: boolean;
   isUncompletingWeek: boolean;
-  feedPost?: FeedPost | null;
+  feedPost?: UnifiedPost | null;
   onSaveNotes: () => void;
   onPostToFeed: () => void;
   onEditWeek: () => void;

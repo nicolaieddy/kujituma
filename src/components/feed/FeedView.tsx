@@ -1,26 +1,13 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { FeedService, FeedPost } from "@/services/feedService";
+import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
 import { FeedPostCard } from "./FeedPostCard";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface FeedViewProps {
   feedType: "all" | "my";
 }
 
 export const FeedView = ({ feedType }: FeedViewProps) => {
-  const { user } = useAuth();
-  
-  const { data: posts = [], isLoading, refetch } = useQuery({
-    queryKey: ['feed-posts', feedType, user?.id],
-    queryFn: () => {
-      if (feedType === "all") {
-        return FeedService.getAllPosts();
-      } else {
-        return FeedService.getUserPosts();
-      }
-    },
-    enabled: !!user,
+  const { posts, loading: isLoading, refetch } = useUnifiedPosts({
+    feedType: feedType === "all" ? "all" : "user"
   });
 
   const handlePostUpdate = () => {

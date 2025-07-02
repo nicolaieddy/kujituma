@@ -3,10 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { Comment } from "@/services/feedService";
+import { UnifiedComment } from "@/services/unifiedPostsService";
 
 interface FeedPostCommentsProps {
-  comments: Comment[];
+  comments: UnifiedComment[];
   isCommenting: boolean;
   newComment: string;
   onCommentChange: (value: string) => void;

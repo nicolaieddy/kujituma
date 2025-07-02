@@ -1,7 +1,7 @@
-import { FeedPost } from "@/services/feedService";
+import { UnifiedPost } from "@/services/unifiedPostsService";
 
 interface FeedPostContentProps {
-  post: FeedPost;
+  post: UnifiedPost;
 }
 
 export const FeedPostContent = ({ post }: FeedPostContentProps) => {

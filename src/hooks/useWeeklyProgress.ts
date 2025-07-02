@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { FeedService } from "@/services/feedService";
+import { unifiedPostsService } from "@/services/unifiedPostsService";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -56,7 +56,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
     queryFn: async () => {
       if (!user?.id) return null;
       console.log('Fetching feed post for user:', user.id, 'week:', currentWeekStart);
-      return FeedService.getPostByWeek(user.id, currentWeekStart);
+      return unifiedPostsService.getPostByWeek(user.id, currentWeekStart);
     },
     enabled: !!user?.id && !!currentWeekStart,
   });

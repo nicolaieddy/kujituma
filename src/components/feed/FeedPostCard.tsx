@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { FeedService, FeedPost } from "@/services/feedService";
+import { unifiedPostsService, UnifiedPost } from "@/services/unifiedPostsService";
 import { FeedPostHeader } from "./FeedPostHeader";
 import { FeedPostContent } from "./FeedPostContent";
 import { FeedPostPriorities } from "./FeedPostPriorities";
@@ -10,7 +10,7 @@ import { FeedPostActions } from "./FeedPostActions";
 import { FeedPostComments } from "./FeedPostComments";
 
 interface FeedPostCardProps {
-  post: FeedPost;
+  post: UnifiedPost;
   onUpdate: () => void;
 }
 
@@ -21,14 +21,14 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
 
   const { data: comments = [], refetch: refetchComments } = useQuery({
     queryKey: ['post-comments', post.id],
-    queryFn: () => FeedService.getPostComments(post.id),
+    queryFn: () => unifiedPostsService.getPostComments(post.id),
   });
 
   const handleLike = async () => {
     if (isLiking) return;
     setIsLiking(true);
     try {
-      await FeedService.togglePostLike(post.id);
+      await unifiedPostsService.togglePostLike(post.id);
       onUpdate();
     } catch (error) {
       console.error('Error toggling like:', error);
@@ -40,7 +40,7 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
   const handleComment = async () => {
     if (!newComment.trim()) return;
     try {
-      await FeedService.addComment(post.id, newComment.trim());
+      await unifiedPostsService.addComment(post.id, newComment.trim());
       setNewComment("");
       setIsCommenting(false);
       refetchComments();

@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { User, Clock, X } from "lucide-react";
 import { ProgressPostType } from "@/types/progress";
 import { formatTimeAgo } from "@/utils/timeUtils";
-import { usePosts } from "@/hooks/usePosts";
+import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
 
 interface UserPostsModalProps {
   userId: string;
@@ -15,7 +15,7 @@ interface UserPostsModalProps {
 }
 
 const UserPostsModal = ({ userId, onClose }: UserPostsModalProps) => {
-  const { posts } = usePosts();
+  const { posts } = useUnifiedPosts();
   const [userPosts, setUserPosts] = useState<ProgressPostType[]>([]);
   const [userName, setUserName] = useState("");
 
