@@ -56,12 +56,12 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-      <CardHeader>
+    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300">
+      <CardHeader className="pb-4">
         <FeedPostHeader post={post} />
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-8 pt-0">
         <FeedPostContent post={post} />
         <FeedPostPriorities post={post} />
         <FeedPostHelp post={post} />

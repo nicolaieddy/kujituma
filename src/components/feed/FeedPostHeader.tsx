@@ -24,45 +24,51 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
   };
 
   return (
-    <div className="flex items-start gap-3">
-      <Avatar className="h-10 w-10">
-        <AvatarImage src={post.profiles?.avatar_url || undefined} />
-        <AvatarFallback className="bg-purple-500 text-white">
-          {getInitials(post.profiles?.full_name || post.name)}
-        </AvatarFallback>
-      </Avatar>
-      
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-white font-semibold">{post.profiles?.full_name || post.name}</h3>
+    <div className="space-y-4">
+      {/* User Info */}
+      <div className="flex items-center gap-3">
+        <Avatar className="h-12 w-12 ring-2 ring-white/20">
+          <AvatarImage src={post.profiles?.avatar_url || undefined} />
+          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
+            {getInitials(post.profiles?.full_name || post.name)}
+          </AvatarFallback>
+        </Avatar>
+        
+        <div className="flex-1">
+          <h3 className="text-white font-semibold text-lg">{post.profiles?.full_name || post.name}</h3>
           <span className="text-white/60 text-sm">
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
           </span>
         </div>
-        
-        {post.week_start && post.week_end && (
-          <div className="flex items-center gap-2 mb-3">
-            <Calendar className="h-4 w-4 text-white/60" />
-            <span className="text-white/80 text-sm">
-              Week: {formatWeekRange(post.week_start, post.week_end)}
-            </span>
+      </div>
+
+      {/* Week Info */}
+      {post.week_start && post.week_end && (
+        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-5 w-5 text-blue-400" />
+              <span className="text-white font-medium">
+                {formatWeekRange(post.week_start, post.week_end)}
+              </span>
+            </div>
             {post.completion_percentage !== undefined && (
-              <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
+              <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 font-semibold">
                 {post.completion_percentage}% Complete
               </Badge>
             )}
           </div>
-        )}
-
-        {post.objectives_completed !== undefined && post.total_objectives !== undefined && (
-          <div className="flex items-center gap-4 text-sm text-white/60 mb-4">
-            <div className="flex items-center gap-1">
-              <Target className="h-4 w-4" />
-              <span>{post.objectives_completed}/{post.total_objectives} objectives</span>
+          
+          {post.objectives_completed !== undefined && post.total_objectives !== undefined && (
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
+              <Target className="h-4 w-4 text-white/60" />
+              <span className="text-white/80 text-sm">
+                {post.objectives_completed} of {post.total_objectives} objectives completed
+              </span>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
