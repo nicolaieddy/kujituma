@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
+import { startOfWeek, endOfWeek, format } from "date-fns";
 
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
@@ -197,47 +198,22 @@ export class WeeklyProgressService {
    * Returns date in YYYY-MM-DD format
    */
   static getWeekStart(date: Date = new Date()): string {
-    console.log('Getting week start for date:', date.toISOString());
-    
-    // Create a new date to avoid mutating the input and ensure UTC consistency
-    const startOfWeek = new Date(date.getTime());
-    
-    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-    const dayOfWeek = startOfWeek.getUTCDay();
-    
-    // Calculate how many days to subtract to get to Monday
-    // If it's Sunday (0), we need to go back 6 days to get to Monday
-    // If it's Monday (1), we need to go back 0 days
-    // If it's Tuesday (2), we need to go back 1 day, etc.
-    const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    
-    // Set to the start of the week (Monday) using UTC methods
-    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - daysToSubtract);
-    
-    // Return in YYYY-MM-DD format
-    const result = startOfWeek.toISOString().split('T')[0];
-    console.log('Week start calculated:', result);
-    return result;
+    // Use date-fns to get the start of the week (Monday)
+    const weekStart = startOfWeek(date, { weekStartsOn: 1 });
+    return format(weekStart, 'yyyy-MM-dd');
   }
 
   static formatWeekRange(weekStart: string): string {
-    const start = new Date(weekStart + 'T00:00:00.000Z');
-    const end = new Date(start);
-    end.setUTCDate(start.getUTCDate() + 6);
+    const start = new Date(weekStart);
+    const end = endOfWeek(start, { weekStartsOn: 1 });
     
-    const formatOptions: Intl.DateTimeFormatOptions = { 
-      month: 'short', 
-      day: 'numeric',
-      timeZone: 'UTC'
-    };
-    
-    return `${start.toLocaleDateString('en-US', formatOptions)} - ${end.toLocaleDateString('en-US', formatOptions)}`;
+    return `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`;
   }
 
   static getWeekNumber(weekStart: string): number {
-    const start = new Date(weekStart + 'T00:00:00.000Z');
-    const startOfYear = new Date(Date.UTC(start.getUTCFullYear(), 0, 1));
+    const start = new Date(weekStart);
+    const startOfYear = new Date(start.getFullYear(), 0, 1);
     const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    return Math.ceil((days + startOfYear.getUTCDay() + 1) / 7);
+    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
   }
 }
