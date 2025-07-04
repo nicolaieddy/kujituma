@@ -274,6 +274,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          about_me: string | null
           avatar_url: string | null
           created_at: string
           email: string
@@ -281,9 +282,11 @@ export type Database = {
           google_id: string | null
           id: string
           last_active_at: string | null
+          linkedin_url: string | null
           updated_at: string
         }
         Insert: {
+          about_me?: string | null
           avatar_url?: string | null
           created_at?: string
           email: string
@@ -291,9 +294,11 @@ export type Database = {
           google_id?: string | null
           id: string
           last_active_at?: string | null
+          linkedin_url?: string | null
           updated_at?: string
         }
         Update: {
+          about_me?: string | null
           avatar_url?: string | null
           created_at?: string
           email?: string
@@ -301,6 +306,7 @@ export type Database = {
           google_id?: string | null
           id?: string
           last_active_at?: string | null
+          linkedin_url?: string | null
           updated_at?: string
         }
         Relationships: []

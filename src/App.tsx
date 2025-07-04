@@ -11,6 +11,7 @@ import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Goals from "./pages/Goals";
+import Profile from "./pages/Profile";
 
 const AppContent = () => {
   // Track user activity for last active timestamp
@@ -23,6 +24,7 @@ const AppContent = () => {
       <Route path="/auth" element={<Auth />} />
       <Route path="/goals" element={<Goals />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/profile" element={<Profile />} />
       <Route path="*" element={<Index />} />
     </Routes>
   );

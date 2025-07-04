@@ -1,0 +1,255 @@
+import { useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { User, Upload, Save, X } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+
+interface Profile {
+  id: string;
+  email: string;
+  full_name: string;
+  avatar_url?: string;
+  about_me?: string;
+  linkedin_url?: string;
+  created_at: string;
+  last_active_at?: string;
+}
+
+interface ProfileEditFormProps {
+  profile: Profile;
+  onUpdate: (profile: Profile) => void;
+  onCancel: () => void;
+}
+
+export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditFormProps) => {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: profile.full_name || '',
+    about_me: profile.about_me || '',
+    linkedin_url: profile.linkedin_url || '',
+    avatar_url: profile.avatar_url || ''
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const uploadProfilePhoto = async (file: File) => {
+    if (!user) return null;
+
+    setUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/avatar.${fileExt}`;
+
+      const { data, error } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file, { upsert: true });
+
+      if (error) {
+        console.error('Upload error:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload profile photo. Please try again.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Upload error:', error);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select a file smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const publicUrl = await uploadProfilePhoto(file);
+    if (publicUrl) {
+      setFormData(prev => ({ ...prev, avatar_url: publicUrl }));
+      toast({
+        title: "Photo uploaded",
+        description: "Profile photo uploaded successfully!",
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: formData.full_name,
+          about_me: formData.about_me,
+          linkedin_url: formData.linkedin_url,
+          avatar_url: formData.avatar_url,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Update error:', error);
+        toast({
+          title: "Update failed",
+          description: "Failed to update profile. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been updated successfully!",
+      });
+
+      onUpdate(data);
+    } catch (error) {
+      console.error('Update error:', error);
+      toast({
+        title: "Update failed",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="max-w-2xl mx-auto bg-white/10 backdrop-blur-lg border-white/20">
+      <CardHeader>
+        <CardTitle className="text-white text-center">Edit Profile</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Profile Photo Section */}
+          <div className="text-center">
+            <div className="flex justify-center mb-4">
+              <Avatar className="h-24 w-24 border-4 border-white/20">
+                <AvatarImage src={formData.avatar_url} alt={formData.full_name} />
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                  <User className="h-12 w-12" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <div className="flex justify-center">
+              <Label htmlFor="photo-upload" className="cursor-pointer">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={uploading}
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                  asChild
+                >
+                  <span>
+                    <Upload className="h-4 w-4 mr-2" />
+                    {uploading ? 'Uploading...' : 'Change Photo'}
+                  </span>
+                </Button>
+              </Label>
+              <input
+                id="photo-upload"
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+            </div>
+          </div>
+
+          {/* Form Fields */}
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="full_name" className="text-white">Full Name</Label>
+              <Input
+                id="full_name"
+                value={formData.full_name}
+                onChange={(e) => handleInputChange('full_name', e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                placeholder="Your full name"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="about_me" className="text-white">About Me</Label>
+              <Textarea
+                id="about_me"
+                value={formData.about_me}
+                onChange={(e) => handleInputChange('about_me', e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+                placeholder="Tell us about yourself..."
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="linkedin_url" className="text-white">LinkedIn Profile</Label>
+              <Input
+                id="linkedin_url"
+                type="url"
+                value={formData.linkedin_url}
+                onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                placeholder="https://linkedin.com/in/yourprofile"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onCancel}
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+};

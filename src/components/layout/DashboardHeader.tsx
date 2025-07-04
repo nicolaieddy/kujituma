@@ -17,6 +17,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
     const path = location.pathname;
     if (path.startsWith('/feed')) return 'feed';
     if (path.startsWith('/goals')) return 'goals';
+    if (path.startsWith('/profile')) return 'profile';
     return 'feed';
   };
 
@@ -45,6 +46,14 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
             >
               <span className="hidden sm:inline">Goals and Progress</span>
               <span className="sm:hidden">Goals</span>
+            </button>
+            <button
+              onClick={() => navigate('/profile')}
+              className={`text-sm sm:text-base text-white/80 hover:text-white transition-colors ${
+                currentSection === 'profile' ? 'text-white font-medium' : ''
+              }`}
+            >
+              Profile
             </button>
           </nav>
         </div>
