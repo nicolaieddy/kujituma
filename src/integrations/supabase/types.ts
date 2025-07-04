@@ -280,6 +280,7 @@ export type Database = {
           full_name: string
           google_id: string | null
           id: string
+          last_active_at: string | null
           updated_at: string
         }
         Insert: {
@@ -289,6 +290,7 @@ export type Database = {
           full_name: string
           google_id?: string | null
           id: string
+          last_active_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -298,6 +300,7 @@ export type Database = {
           full_name?: string
           google_id?: string | null
           id?: string
+          last_active_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -415,7 +418,7 @@ export type Database = {
           created_at: string
           posts_count: number
           role: string
-          last_sign_in_at: string
+          last_active_at: string
         }[]
       }
       has_role: {
@@ -432,6 +435,10 @@ export type Database = {
       toggle_post_like: {
         Args: { _user_id: string; _post_id: string }
         Returns: boolean
+      }
+      update_user_last_active: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
     }
     Enums: {

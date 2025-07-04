@@ -28,7 +28,7 @@ interface AdminUser {
   created_at: string;
   posts_count: number;
   role?: string;
-  last_sign_in_at?: string;
+  last_active_at?: string;
 }
 
 interface AnalyticsData {

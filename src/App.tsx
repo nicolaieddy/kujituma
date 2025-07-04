@@ -5,11 +5,28 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { useLastActive } from "@/hooks/useLastActive";
 import Index from "./pages/Index";
 import Feed from "./pages/Feed";
 import Auth from "./pages/Auth";
 import Admin from "./pages/Admin";
 import Goals from "./pages/Goals";
+
+const AppContent = () => {
+  // Track user activity for last active timestamp
+  useLastActive();
+
+  return (
+    <Routes>
+      <Route path="/" element={<Index />} />
+      <Route path="/feed" element={<Feed />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/goals" element={<Goals />} />
+      <Route path="/admin" element={<Admin />} />
+      <Route path="*" element={<Index />} />
+    </Routes>
+  );
+};
 
 const queryClient = new QueryClient();
 
@@ -20,14 +37,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/feed" element={<Feed />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/goals" element={<Goals />} />
-            <Route path="/admin" element={<Admin />} />
-            <Route path="*" element={<Index />} />
-          </Routes>
+          <AppContent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

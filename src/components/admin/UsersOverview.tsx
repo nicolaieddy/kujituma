@@ -14,7 +14,7 @@ interface AdminUser {
   created_at: string;
   posts_count: number;
   role?: string;
-  last_sign_in_at?: string;
+  last_active_at?: string;
 }
 
 interface UsersOverviewProps {
@@ -41,7 +41,7 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
                   <TableHead className="text-white/80">Email</TableHead>
                   <TableHead className="text-white/80">Role</TableHead>
                   <TableHead className="text-white/80">Posts</TableHead>
-                  <TableHead className="text-white/80">Last Login</TableHead>
+                  <TableHead className="text-white/80">Last Active</TableHead>
                   <TableHead className="text-white/80">Joined</TableHead>
                 </TableRow>
               </TableHeader>
@@ -79,8 +79,8 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
                     </TableCell>
                     <TableCell>
                       <span className="text-white/60 text-sm">
-                        {user.last_sign_in_at 
-                          ? formatTimeAgo(new Date(user.last_sign_in_at).getTime())
+                        {user.last_active_at 
+                          ? formatTimeAgo(new Date(user.last_active_at).getTime())
                           : 'Never'
                         }
                       </span>
