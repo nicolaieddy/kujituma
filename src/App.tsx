@@ -25,6 +25,7 @@ const AppContent = () => {
       <Route path="/goals" element={<Goals />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/profile/:userId" element={<Profile />} />
       <Route path="*" element={<Index />} />
     </Routes>
   );

@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Target } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { UnifiedPost } from "@/services/unifiedPostsService";
 
 interface FeedPostHeaderProps {
@@ -9,6 +10,8 @@ interface FeedPostHeaderProps {
 }
 
 export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
+  const navigate = useNavigate();
+  
   const formatWeekRange = (weekStart: string, weekEnd: string) => {
     const start = new Date(weekStart);
     const end = new Date(weekEnd);
@@ -23,11 +26,18 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const handleProfileClick = () => {
+    navigate(`/profile/${post.user_id}`);
+  };
+
   return (
     <div className="space-y-4">
       {/* User Info */}
       <div className="flex items-center gap-3">
-        <Avatar className="h-12 w-12 ring-2 ring-white/20">
+        <Avatar 
+          className="h-12 w-12 ring-2 ring-white/20 cursor-pointer hover:ring-white/40 transition-all"
+          onClick={handleProfileClick}
+        >
           <AvatarImage src={post.profiles?.avatar_url || undefined} />
           <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
             {getInitials(post.profiles?.full_name || post.name)}
@@ -35,7 +45,12 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
         </Avatar>
         
         <div className="flex-1">
-          <h3 className="text-white font-semibold text-lg">{post.profiles?.full_name || post.name}</h3>
+          <h3 
+            className="text-white font-semibold text-lg cursor-pointer hover:text-white/80 transition-colors"
+            onClick={handleProfileClick}
+          >
+            {post.profiles?.full_name || post.name}
+          </h3>
           <span className="text-white/60 text-sm">
             {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
           </span>

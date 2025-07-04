@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,10 +24,14 @@ interface Profile {
 const Profile = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { userId } = useParams();
   const { isAdmin } = useAdminStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Determine if viewing own profile or someone else's
+  const isOwnProfile = !userId || userId === user?.id;
 
   const handleSignOut = async () => {
     await signOut();
@@ -35,19 +39,20 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (user) {
+    if (user || userId) {
       fetchProfile();
     }
-  }, [user]);
+  }, [user, userId]);
 
   const fetchProfile = async () => {
-    if (!user) return;
+    const targetUserId = userId || user?.id;
+    if (!targetUserId) return;
 
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', targetUserId)
         .single();
 
       if (error) {
@@ -68,7 +73,7 @@ const Profile = () => {
     setIsEditing(false);
   };
 
-  if (!user) {
+  if (!user && isOwnProfile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary">
         <div className="flex items-center justify-center min-h-screen">
@@ -98,28 +103,30 @@ const Profile = () => {
           <>
             <ProfileHeader profile={profile} />
             
-            <div className="mt-8 flex justify-center gap-4">
-              <Button
-                onClick={() => setIsEditing(!isEditing)}
-                variant={isEditing ? "secondary" : "default"}
-                className="flex items-center gap-2"
-              >
-                {isEditing ? (
-                  <>
-                    <Eye className="h-4 w-4" />
-                    Preview
-                  </>
-                ) : (
-                  <>
-                    <Edit3 className="h-4 w-4" />
-                    Edit Profile
-                  </>
-                )}
-              </Button>
-            </div>
+            {isOwnProfile && (
+              <div className="mt-8 flex justify-center gap-4">
+                <Button
+                  onClick={() => setIsEditing(!isEditing)}
+                  variant={isEditing ? "secondary" : "default"}
+                  className="flex items-center gap-2"
+                >
+                  {isEditing ? (
+                    <>
+                      <Eye className="h-4 w-4" />
+                      Preview
+                    </>
+                  ) : (
+                    <>
+                      <Edit3 className="h-4 w-4" />
+                      Edit Profile
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
 
             <div className="mt-8">
-              {isEditing ? (
+              {isOwnProfile && isEditing ? (
                 <ProfileEditForm
                   profile={profile}
                   onUpdate={handleProfileUpdate}

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { User, Send } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ProgressPostType } from "@/types/progress";
 import { formatTimeAgo } from "@/utils/timeUtils";
 
@@ -27,11 +28,16 @@ export const ProgressPostComments = ({
   onCommentLike,
   onCloseCommentForm
 }: ProgressPostCommentsProps) => {
+  const navigate = useNavigate();
   const [commentData, setCommentData] = useState({
     name: userName,
     message: ""
   });
   const [commentErrors, setCommentErrors] = useState<{ [key: string]: string }>({});
+
+  const handleProfileClick = (userId: string) => {
+    navigate(`/profile/${userId}`);
+  };
 
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();

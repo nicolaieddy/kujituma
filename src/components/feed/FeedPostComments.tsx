@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { useNavigate } from "react-router-dom";
 import { UnifiedComment } from "@/services/unifiedPostsService";
 
 interface FeedPostCommentsProps {
@@ -22,8 +23,14 @@ export const FeedPostComments = ({
   onCommentSubmit,
   onKeyPress
 }: FeedPostCommentsProps) => {
+  const navigate = useNavigate();
+  
   const getInitials = (name: string) => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleProfileClick = (userId: string) => {
+    navigate(`/profile/${userId}`);
   };
 
   return (
@@ -33,7 +40,10 @@ export const FeedPostComments = ({
         <div className="space-y-3 pt-4 border-t border-white/10">
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-3">
-              <Avatar className="h-8 w-8">
+              <Avatar 
+                className="h-8 w-8 cursor-pointer hover:ring-2 hover:ring-white/20 transition-all"
+                onClick={() => handleProfileClick(comment.user_id)}
+              >
                 <AvatarImage src={comment.profiles?.avatar_url || undefined} />
                 <AvatarFallback className="bg-purple-500 text-white text-xs">
                   {getInitials(comment.profiles?.full_name || comment.name)}
@@ -42,7 +52,10 @@ export const FeedPostComments = ({
               <div className="flex-1">
                 <div className="bg-white/5 rounded-lg p-3">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-white font-medium text-sm">
+                    <span 
+                      className="text-white font-medium text-sm cursor-pointer hover:text-white/80 transition-colors"
+                      onClick={() => handleProfileClick(comment.user_id)}
+                    >
                       {comment.profiles?.full_name || comment.name}
                     </span>
                     <span className="text-white/40 text-xs">
