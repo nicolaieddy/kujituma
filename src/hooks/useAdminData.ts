@@ -28,6 +28,7 @@ interface AdminUser {
   created_at: string;
   posts_count: number;
   role?: string;
+  last_sign_in_at?: string;
 }
 
 interface AnalyticsData {
@@ -104,7 +105,8 @@ export const useAdminData = () => {
             full_name,
             email,
             avatar_url
-          )
+          ),
+          comments (count)
         `)
         .order('created_at', { ascending: false });
 
@@ -119,64 +121,16 @@ export const useAdminData = () => {
     try {
       console.log('Fetching users...');
       
-      // First, get all profiles
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*')
-        .order('created_at', { ascending: false });
+      const { data: usersData, error: usersError } = await supabase
+        .rpc('get_admin_users_data');
 
-      if (profilesError) {
-        console.error('Error fetching profiles:', profilesError);
-        throw profilesError;
+      if (usersError) {
+        console.error('Error fetching users:', usersError);
+        throw usersError;
       }
 
-      console.log('Profiles data:', profilesData);
-
-      // Get user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-
-      if (rolesError) {
-        console.error('Error fetching roles:', rolesError);
-      }
-
-      console.log('Roles data:', rolesData);
-
-      // Get post counts for each user
-      const { data: postCounts, error: postCountsError } = await supabase
-        .from('posts')
-        .select('user_id')
-        .not('user_id', 'is', null);
-
-      if (postCountsError) {
-        console.error('Error fetching post counts:', postCountsError);
-      }
-
-      console.log('Post counts data:', postCounts);
-
-      const postCountMap = postCounts?.reduce((acc: Record<string, number>, post) => {
-        acc[post.user_id] = (acc[post.user_id] || 0) + 1;
-        return acc;
-      }, {}) || {};
-
-      const roleMap = rolesData?.reduce((acc: Record<string, string>, role) => {
-        acc[role.user_id] = role.role;
-        return acc;
-      }, {}) || {};
-
-      const usersWithCounts = profilesData?.map(profile => ({
-        id: profile.id,
-        email: profile.email,
-        full_name: profile.full_name,
-        avatar_url: profile.avatar_url,
-        created_at: profile.created_at,
-        posts_count: postCountMap[profile.id] || 0,
-        role: roleMap[profile.id] || 'user'
-      })) || [];
-
-      console.log('Final users data:', usersWithCounts);
-      setUsers(usersWithCounts);
+      console.log('Users data:', usersData);
+      setUsers(usersData || []);
     } catch (error) {
       console.error('Error fetching users:', error);
     }

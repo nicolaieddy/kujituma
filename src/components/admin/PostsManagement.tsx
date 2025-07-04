@@ -16,11 +16,13 @@ interface AdminPost {
   created_at: string;
   hidden: boolean;
   user_id: string;
+  likes?: number;
   profiles: {
     full_name: string;
     email: string;
     avatar_url?: string;
   };
+  comments?: Array<any>;
 }
 
 interface PostsManagementProps {
@@ -37,16 +39,17 @@ const PostsManagement = ({ posts, onToggleVisibility, onDeletePost }: PostsManag
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-white/20">
-                <TableHead className="text-white/80">User</TableHead>
-                <TableHead className="text-white/80">Content</TableHead>
-                <TableHead className="text-white/80">Created</TableHead>
-                <TableHead className="text-white/80">Status</TableHead>
-                <TableHead className="text-white/80">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
+            <Table>
+              <TableHeader>
+                <TableRow className="border-white/20">
+                  <TableHead className="text-white/80">User</TableHead>
+                  <TableHead className="text-white/80">Content</TableHead>
+                  <TableHead className="text-white/80">Engagement</TableHead>
+                  <TableHead className="text-white/80">Created</TableHead>
+                  <TableHead className="text-white/80">Status</TableHead>
+                  <TableHead className="text-white/80">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {posts.map((post) => (
                 <TableRow key={post.id} className="border-white/20">
@@ -85,6 +88,14 @@ const PostsManagement = ({ posts, onToggleVisibility, onDeletePost }: PostsManag
                           <strong>Help:</strong> {post.help.substring(0, 100)}...
                         </div>
                       )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 text-white/80 text-sm">
+                        <span>👍 {post.likes || 0}</span>
+                        <span>💬 {post.comments?.length || 0}</span>
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>
