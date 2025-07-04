@@ -5,7 +5,8 @@ import { useAuth } from "@/contexts/AuthContext";
 
 import PostsManagement from "@/components/admin/PostsManagement";
 import UsersOverview from "@/components/admin/UsersOverview";
-import AnalyticsMetrics from "@/components/admin/AnalyticsMetrics";
+import UserAnalytics from "@/components/admin/UserAnalytics";
+import PostAnalytics from "@/components/admin/PostAnalytics";
 import { useAdminData } from "@/hooks/useAdminData";
 
 const Admin = () => {
@@ -69,7 +70,13 @@ const Admin = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="posts" className="mt-6">
+          <TabsContent value="posts" className="mt-6 space-y-6">
+            <PostAnalytics
+              totalPosts={analytics.totalPosts}
+              totalComments={analytics.totalComments}
+              postsThisWeek={analytics.postsThisWeek}
+              commentsThisWeek={analytics.commentsThisWeek}
+            />
             <PostsManagement
               posts={posts}
               onToggleVisibility={togglePostVisibility}
@@ -78,7 +85,12 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="users" className="mt-6 space-y-6">
-            <AnalyticsMetrics {...analytics} />
+            <UserAnalytics
+              totalUsers={analytics.totalUsers}
+              newUsersThisWeek={analytics.newUsersThisWeek}
+              activeUsersThisWeek={analytics.activeUsersThisWeek}
+              averagePostsPerUser={analytics.averagePostsPerUser}
+            />
             <UsersOverview users={users} />
           </TabsContent>
         </Tabs>
