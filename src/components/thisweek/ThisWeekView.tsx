@@ -1,18 +1,16 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, CheckCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { CheckCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { unifiedPostsService } from "@/services/unifiedPostsService";
 import { useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -23,9 +21,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { user } = useAuth();
   const { goals } = useGoals();
   const queryClient = useQueryClient();
-  const [newObjective, setNewObjective] = useState("");
   const [weeklyReflection, setWeeklyReflection] = useState("");
   const [isSharing, setIsSharing] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
   
   const {
     objectives,
@@ -45,17 +43,25 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     setWeeklyReflection(progressPost?.notes || "");
   }, [progressPost]);
 
-  const handleAddObjective = () => {
-    if (!newObjective.trim()) return;
-    createObjective({
-      text: newObjective.trim(),
-      week_start: currentWeekStart,
-    });
-    setNewObjective("");
+  const handleAddObjective = async (text: string, goalId?: string) => {
+    setIsCreating(true);
+    try {
+      await createObjective({
+        text,
+        week_start: currentWeekStart,
+        goal_id: goalId || null,
+      });
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleToggleObjective = (id: string, isCompleted: boolean) => {
     updateObjective(id, { is_completed: !isCompleted });
+  };
+
+  const handleUpdateObjectiveText = (id: string, text: string) => {
+    updateObjective(id, { text });
   };
 
   const handleDeleteObjective = (id: string) => {
@@ -187,18 +193,18 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
               {onNavigateWeek && (
                 <div className="flex items-center space-x-2">
                   <Button
-                    variant="ghost"
+                    variant="glass-outline"
                     size="sm"
                     onClick={() => onNavigateWeek('previous')}
-                    className="text-white/60 hover:text-white hover:bg-white/20 px-2"
+                    className="px-2"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant="glass-outline"
                     size="sm"
                     onClick={() => onNavigateWeek('next')}
-                    className="text-white/60 hover:text-white hover:bg-white/20 px-2"
+                    className="px-2"
                     disabled={WeeklyProgressService.getWeekStart() === currentWeekStart}
                   >
                     <ChevronRight className="h-4 w-4" />
@@ -230,62 +236,16 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           <CardTitle className="text-white">This Week's Focus</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Add Objective */}
-          {!isReadOnly && (
-            <div className="flex space-x-2">
-              <Input
-                value={newObjective}
-                onChange={(e) => setNewObjective(e.target.value)}
-                placeholder="What do you want to accomplish this week?"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddObjective()}
-              />
-              <Button
-                onClick={handleAddObjective}
-                disabled={!newObjective.trim()}
-                className="bg-blue-500 hover:bg-blue-600"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
-
-          {/* Objectives List */}
-          <div className="space-y-3">
-            {objectives?.map((objective) => (
-              <div key={objective.id} className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
-                <Checkbox
-                  checked={objective.is_completed}
-                  onCheckedChange={() => handleToggleObjective(objective.id, objective.is_completed)}
-                  disabled={isReadOnly}
-                  className="border-white/20"
-                />
-                <span className={`flex-1 text-white ${objective.is_completed ? 'line-through opacity-60' : ''}`}>
-                  {objective.text}
-                </span>
-                {objective.is_completed && (
-                  <CheckCircle className="h-4 w-4 text-green-400" />
-                )}
-                {!isReadOnly && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDeleteObjective(objective.id)}
-                    className="text-white/60 hover:text-white hover:bg-white/20 px-2"
-                  >
-                    ×
-                  </Button>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {objectives?.length === 0 && (
-            <div className="text-center py-8 text-white/60">
-              <p>No objectives set for this week yet.</p>
-              <p className="text-sm mt-1">Add your first objective above to get started!</p>
-            </div>
-          )}
+          <WeeklyObjectivesList
+            objectives={objectives || []}
+            goals={goals || []}
+            isWeekCompleted={isReadOnly}
+            isCreating={isCreating}
+            onToggleObjective={handleToggleObjective}
+            onUpdateObjectiveText={handleUpdateObjectiveText}
+            onDeleteObjective={handleDeleteObjective}
+            onAddObjective={handleAddObjective}
+          />
         </CardContent>
       </Card>
 
@@ -305,8 +265,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           {!isReadOnly && (
             <Button
               onClick={handleSaveReflection}
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/20"
+              variant="glass-outline"
             >
               Save Reflection
             </Button>
@@ -332,8 +291,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
               <div className="flex gap-2 mt-3 justify-center">
                 <Button
                   onClick={() => window.open('/community', '_blank')}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/20"
+                  variant="glass-outline"
                 >
                   View in Community
                 </Button>
@@ -341,7 +299,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
                   <Button
                     onClick={handleShareWeek}
                     disabled={isSharing}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
                   >
                     {isSharing ? "Updating..." : "Share Updates"}
                   </Button>
