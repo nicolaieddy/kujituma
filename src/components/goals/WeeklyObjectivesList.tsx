@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, X, Target, Edit2, Check, RotateCcw } from "lucide-react";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
+import { useObjectiveAutoSave } from "@/hooks/useObjectiveAutoSave";
+import { AutoSaveIndicator } from "@/components/thisweek/AutoSaveIndicator";
 
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
@@ -16,8 +18,9 @@ interface WeeklyObjectivesListProps {
   isCreating: boolean;
   onToggleObjective: (id: string, isCompleted: boolean) => void;
   onUpdateObjectiveText: (id: string, text: string) => void;
+  onUpdateObjectiveGoal: (id: string, goalId: string | null) => void;
   onDeleteObjective: (id: string) => void;
-  onAddObjective: (text: string, goalId?: string) => void;
+  onAddObjective: (text: string, goalId?: string) => Promise<void>;
 }
 
 export const WeeklyObjectivesList = ({
@@ -27,22 +30,18 @@ export const WeeklyObjectivesList = ({
   isCreating,
   onToggleObjective,
   onUpdateObjectiveText,
+  onUpdateObjectiveGoal,
   onDeleteObjective,
   onAddObjective,
 }: WeeklyObjectivesListProps) => {
-  const [newObjective, setNewObjective] = useState("");
-  const [selectedGoalId, setSelectedGoalId] = useState<string>("none");
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
 
-  const handleAddObjective = () => {
-    if (newObjective.trim()) {
-      const goalId = selectedGoalId === "none" ? undefined : selectedGoalId;
-      onAddObjective(newObjective.trim(), goalId);
-      setNewObjective("");
-      setSelectedGoalId("none");
-    }
-  };
+  // Auto-save hook for new objectives
+  const autoSave = useObjectiveAutoSave({
+    onSave: onAddObjective,
+    delay: 2000,
+  });
 
   // Helper function to get goal name by ID
   const getGoalName = (goalId: string | null) => {
@@ -72,6 +71,11 @@ export const WeeklyObjectivesList = ({
   const handleCancelEdit = () => {
     setEditingObjectiveId(null);
     setEditingText("");
+  };
+
+  const handleGoalChange = (objectiveId: string, goalId: string) => {
+    const goalIdToSave = goalId === "none" ? null : goalId;
+    onUpdateObjectiveGoal(objectiveId, goalIdToSave);
   };
 
   return (
@@ -187,20 +191,47 @@ export const WeeklyObjectivesList = ({
                   </div>
                 )}
               </div>
-              {goalName && (
-                <div className={`ml-8 flex items-center gap-2 text-xs transition-all duration-300 ${
-                  objective.is_completed ? 'text-green-300/80' : 'text-white/60'
-                }`}>
-                  <Target className="h-3 w-3" />
-                  <span>Linked to goal: {goalName}</span>
-                  {objective.is_completed && <span className="text-green-400">🎯</span>}
-                </div>
-              )}
+              
+              {/* Goal association section */}
+              <div className={`ml-8 space-y-2 ${
+                objective.is_completed ? 'text-green-300/80' : 'text-white/60'
+              }`}>
+                {goalName && (
+                  <div className="flex items-center gap-2 text-xs transition-all duration-300">
+                    <Target className="h-3 w-3" />
+                    <span>Linked to goal: {goalName}</span>
+                    {objective.is_completed && <span className="text-green-400">🎯</span>}
+                  </div>
+                )}
+                
+                {/* Goal selector for existing objectives - only show if week is not completed */}
+                {!isWeekCompleted && (
+                  <div className="flex items-center gap-2">
+                    <Target className="h-3 w-3" />
+                    <Select 
+                      value={objective.goal_id || "none"} 
+                      onValueChange={(value) => handleGoalChange(objective.id, value)}
+                    >
+                      <SelectTrigger className="w-full text-xs bg-white/5 border-white/10 text-white/80 h-8">
+                        <SelectValue placeholder="Link to goal" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-800 border-white/20">
+                        <SelectItem value="none">No goal (standalone objective)</SelectItem>
+                        {goals.map((goal) => (
+                          <SelectItem key={goal.id} value={goal.id} className="text-white">
+                            {goal.title}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </div>
           );
         })}
         
-        {/* Add new objective - only show if week is not completed */}
+        {/* Add new objective with auto-save - only show if week is not completed */}
         {!isWeekCompleted && (
           <div className="space-y-3 border-t border-white/10 pt-3">
             <div className="flex items-center gap-3">
@@ -209,28 +240,22 @@ export const WeeklyObjectivesList = ({
                 className="border-white/40 opacity-50"
               />
               <Input
-                value={newObjective}
-                onChange={(e) => setNewObjective(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAddObjective()}
+                value={autoSave.value}
+                onChange={(e) => autoSave.setValue(e.target.value)}
                 className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="Add a new objective..."
               />
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleAddObjective}
-                disabled={!newObjective.trim() || isCreating}
-                className="text-white/60 hover:text-white hover:bg-white/20"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
+              <AutoSaveIndicator
+                isSaving={autoSave.isSaving}
+                lastSaved={autoSave.lastSaved}
+                hasUnsavedChanges={autoSave.hasUnsavedChanges}
+              />
             </div>
             
-            {/* Goal selector */}
+            {/* Goal selector for new objective */}
             <div className="ml-8 flex items-center gap-3">
               <Target className="h-4 w-4 text-white/60" />
-              <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+              <Select value={autoSave.goalId} onValueChange={autoSave.setGoalId}>
                 <SelectTrigger className="w-full bg-white/10 border-white/20 text-white">
                   <SelectValue placeholder="Link to a goal (optional)" />
                 </SelectTrigger>

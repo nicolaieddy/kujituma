@@ -84,13 +84,18 @@ export const WeeklyProgressView = () => {
     setCurrentWeekStart(newWeekStart);
   };
 
-  const handleAddObjective = (text: string, goalId?: string) => {
+  const handleAddObjective = async (text: string, goalId?: string) => {
     console.log('Adding objective:', text, 'with goal:', goalId);
-    createObjective({
+    await createObjective({
       text,
       goal_id: goalId,
       week_start: currentWeekStart,
     });
+  };
+
+  const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
+    console.log('Updating objective goal:', id, 'to:', goalId);
+    updateObjective(id, { goal_id: goalId });
   };
 
   const handleToggleObjective = (id: string, isCompleted: boolean) => {
@@ -340,6 +345,7 @@ export const WeeklyProgressView = () => {
             isCreating={isCreating}
             onToggleObjective={handleToggleObjective}
             onUpdateObjectiveText={handleUpdateObjectiveText}
+            onUpdateObjectiveGoal={handleUpdateObjectiveGoal}
             onDeleteObjective={handleDeleteObjective}
             onAddObjective={handleAddObjective}
           />

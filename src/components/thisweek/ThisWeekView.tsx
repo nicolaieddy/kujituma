@@ -37,6 +37,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     weekStart: currentWeekStart,
   } = useWeeklyProgress(weekStart);
 
+  const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
+    updateObjective(id, { goal_id: goalId });
+  };
+
   const handleAddObjective = async (text: string, goalId?: string) => {
     setIsCreating(true);
     try {
@@ -207,6 +211,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             isCreating={isCreating}
             onToggleObjective={handleToggleObjective}
             onUpdateObjectiveText={handleUpdateObjectiveText}
+            onUpdateObjectiveGoal={handleUpdateObjectiveGoal}
             onDeleteObjective={handleDeleteObjective}
             onAddObjective={handleAddObjective}
           />
