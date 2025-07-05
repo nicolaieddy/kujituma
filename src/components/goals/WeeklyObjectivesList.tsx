@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2 } from "lucide-react";
+import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2, Pencil } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -51,6 +51,7 @@ export const WeeklyObjectivesList = ({
 }: WeeklyObjectivesListProps) => {
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
 
   // Auto-save hook for new objectives
   const autoSave = useObjectiveAutoSave({
@@ -91,6 +92,11 @@ export const WeeklyObjectivesList = ({
   const handleGoalChange = (objectiveId: string, goalId: string) => {
     const goalIdToSave = goalId === "none" ? null : goalId;
     onUpdateObjectiveGoal(objectiveId, goalIdToSave);
+    setEditingGoalId(null); // Close goal editor after change
+  };
+
+  const handleEditGoal = (objectiveId: string, currentGoalId: string | null) => {
+    setEditingGoalId(objectiveId);
   };
 
   return (
@@ -158,41 +164,94 @@ export const WeeklyObjectivesList = ({
                   )}
                 </div>
                 
-                {isEditing ? (
-                  <Input
-                    value={editingText}
-                    onChange={(e) => setEditingText(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleSaveEdit(objective.id);
-                      } else if (e.key === 'Escape') {
-                        handleCancelEdit();
-                      }
-                    }}
-                    className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                    placeholder="Enter an objective..."
-                    autoFocus
-                  />
-                ) : (
-                  <div className={`flex-1 px-2 py-1 transition-all duration-300 ${
-                    objective.is_completed 
-                      ? 'text-green-100' 
-                      : 'text-white'
-                  }`}>
-                    <span className={`${
-                      objective.is_completed 
-                        ? 'line-through decoration-2 decoration-green-400' 
-                        : ''
-                    } transition-all duration-300`}>
-                      {objective.text}
-                    </span>
-                    {objective.is_completed && (
-                      <span className="ml-2 text-green-400 font-medium animate-pulse">
-                        ✨ Complete!
-                      </span>
-                    )}
-                  </div>
-                )}
+                 {isEditing ? (
+                   <Input
+                     value={editingText}
+                     onChange={(e) => setEditingText(e.target.value)}
+                     onKeyPress={(e) => {
+                       if (e.key === 'Enter') {
+                         handleSaveEdit(objective.id);
+                       } else if (e.key === 'Escape') {
+                         handleCancelEdit();
+                       }
+                     }}
+                     className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                     placeholder="Enter an objective..."
+                     autoFocus
+                   />
+                 ) : (
+                   <div className={`flex-1 px-2 py-1 transition-all duration-300 ${
+                     objective.is_completed 
+                       ? 'text-green-100' 
+                       : 'text-white'
+                   }`}>
+                     <div className="flex items-center gap-2">
+                       <span className={`${
+                         objective.is_completed 
+                           ? 'line-through decoration-2 decoration-green-400' 
+                           : ''
+                       } transition-all duration-300`}>
+                         {objective.text}
+                       </span>
+                       {objective.is_completed && (
+                         <span className="text-green-400 font-medium animate-pulse">
+                           ✨ Complete!
+                         </span>
+                       )}
+                       {/* Show goal inline with pencil edit */}
+                       {goalName && (
+                         <div className="flex items-center gap-1 ml-2">
+                           <Target className="h-3 w-3 text-white/60" />
+                           <span className="text-xs text-white/60">→ {goalName}</span>
+                           {!isWeekCompleted && (
+                             <Button
+                               type="button"
+                               variant="ghost"
+                               size="sm"
+                               onClick={() => handleEditGoal(objective.id, objective.goal_id)}
+                               className="h-4 w-4 p-0 text-white/40 hover:text-white hover:bg-white/10 ml-1"
+                             >
+                               <Pencil className="h-3 w-3" />
+                             </Button>
+                           )}
+                         </div>
+                       )}
+                       {/* Show goal selector inline when editing */}
+                       {editingGoalId === objective.id && !isWeekCompleted && (
+                         <div className="ml-2">
+                           <Select 
+                             value={objective.goal_id || "none"} 
+                             onValueChange={(value) => handleGoalChange(objective.id, value)}
+                             open={true}
+                             onOpenChange={(open) => !open && setEditingGoalId(null)}
+                           >
+                             <SelectContent className="bg-slate-800 border-white/20">
+                               <SelectItem value="none">No goal</SelectItem>
+                               {goals.map((goal) => (
+                                 <SelectItem key={goal.id} value={goal.id} className="text-white">
+                                   {goal.title}
+                                 </SelectItem>
+                               ))}
+                             </SelectContent>
+                           </Select>
+                         </div>
+                       )}
+                       {/* Add goal button when no goal is linked */}
+                       {!goalName && !isWeekCompleted && editingGoalId !== objective.id && (
+                         <Button
+                           type="button"
+                           variant="ghost"
+                           size="sm"
+                           onClick={() => handleEditGoal(objective.id, objective.goal_id)}
+                           className="h-6 px-2 text-xs text-white/40 hover:text-white hover:bg-white/10 ml-2"
+                         >
+                           <Target className="h-3 w-3 mr-1" />
+                           Link goal
+                         </Button>
+                       )}
+                     </div>
+                   </div>
+                 )}
                 
                 {!isWeekCompleted && (
                   <div className="flex items-center gap-1">
@@ -239,45 +298,9 @@ export const WeeklyObjectivesList = ({
                         </Button>
                       </>
                     )}
-                  </div>
-                )}
-              </div>
-              
-              {/* Goal association section */}
-              <div className={`ml-8 space-y-2 ${
-                objective.is_completed ? 'text-green-300/80' : 'text-white/60'
-              }`}>
-                {goalName && (
-                  <div className="flex items-center gap-2 text-xs transition-all duration-300">
-                    <Target className="h-3 w-3" />
-                    <span>Linked to goal: {goalName}</span>
-                    {objective.is_completed && <span className="text-green-400">🎯</span>}
-                  </div>
-                )}
-                
-                {/* Goal selector for existing objectives - only show if week is not completed */}
-                {!isWeekCompleted && (
-                  <div className="flex items-center gap-2">
-                    <Target className="h-3 w-3" />
-                    <Select 
-                      value={objective.goal_id || "none"} 
-                      onValueChange={(value) => handleGoalChange(objective.id, value)}
-                    >
-                      <SelectTrigger className="w-full text-xs bg-white/5 border-white/10 text-white/80 h-8">
-                        <SelectValue placeholder="Link to goal" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-white/20">
-                        <SelectItem value="none">No goal (standalone objective)</SelectItem>
-                        {goals.map((goal) => (
-                          <SelectItem key={goal.id} value={goal.id} className="text-white">
-                            {goal.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                )}
-              </div>
+                   </div>
+                 )}
+               </div>
             </div>
           );
         })}
@@ -290,17 +313,20 @@ export const WeeklyObjectivesList = ({
                 disabled 
                 className="border-white/40 opacity-50"
               />
-              <Input
-                value={autoSave.value}
-                onChange={(e) => autoSave.setValue(e.target.value)}
-                className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                placeholder="Add a new objective..."
-              />
-              <AutoSaveIndicator
-                isSaving={autoSave.isSaving}
-                lastSaved={autoSave.lastSaved}
-                hasUnsavedChanges={autoSave.hasUnsavedChanges}
-              />
+               <Input
+                 value={autoSave.value}
+                 onChange={(e) => autoSave.setValue(e.target.value)}
+                 className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                 placeholder="Add a new objective..."
+               />
+               {/* Show auto-save indicator only when actively saving or recently saved */}
+               {(autoSave.isSaving || autoSave.lastSaved) && (
+                 <AutoSaveIndicator
+                   isSaving={autoSave.isSaving}
+                   lastSaved={autoSave.lastSaved}
+                   hasUnsavedChanges={autoSave.hasUnsavedChanges}
+                 />
+               )}
             </div>
             
             {/* Goal selector for new objective */}
