@@ -1,14 +1,19 @@
 
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
+    WeeklyProgressService.getWeekStart()
+  );
 
   const handleSignOut = async () => {
     try {
@@ -16,6 +21,20 @@ const Index = () => {
     } catch (error) {
       console.error('Error signing out:', error);
     }
+  };
+
+  const navigateToWeek = (direction: 'previous' | 'next') => {
+    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
+    const newDate = new Date(currentDate);
+    
+    if (direction === 'previous') {
+      newDate.setUTCDate(currentDate.getUTCDate() - 7);
+    } else {
+      newDate.setUTCDate(currentDate.getUTCDate() + 7);
+    }
+    
+    const newWeekStart = WeeklyProgressService.getWeekStart(newDate);
+    setCurrentWeekStart(newWeekStart);
   };
 
   if (authLoading) {
@@ -47,7 +66,10 @@ const Index = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <ThisWeekView />
+          <ThisWeekView 
+            weekStart={currentWeekStart}
+            onNavigateWeek={navigateToWeek}
+          />
         </div>
       </div>
     </div>

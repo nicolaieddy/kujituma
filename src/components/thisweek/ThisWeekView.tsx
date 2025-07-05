@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, CheckCircle, Calendar } from "lucide-react";
+import { Plus, CheckCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,8 +12,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { unifiedPostsService } from "@/services/unifiedPostsService";
 import { useQueryClient } from "@tanstack/react-query";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
-export const ThisWeekView = () => {
+interface ThisWeekViewProps {
+  weekStart?: string;
+  onNavigateWeek?: (direction: 'previous' | 'next') => void;
+}
+
+export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) => {
   const { user } = useAuth();
   const { goals } = useGoals();
   const queryClient = useQueryClient();
@@ -31,8 +37,8 @@ export const ThisWeekView = () => {
     updateProgressNotes,
     weekRange,
     weekNumber,
-    weekStart,
-  } = useWeeklyProgress();
+    weekStart: currentWeekStart,
+  } = useWeeklyProgress(weekStart);
 
   // Initialize reflection from progress post
   useEffect(() => {
@@ -43,7 +49,7 @@ export const ThisWeekView = () => {
     if (!newObjective.trim()) return;
     createObjective({
       text: newObjective.trim(),
-      week_start: weekStart,
+      week_start: currentWeekStart,
     });
     setNewObjective("");
   };
@@ -103,7 +109,7 @@ export const ThisWeekView = () => {
         accomplishments = 'Focused on personal growth this week.';
       }
 
-      const weekEnd = new Date(weekStart);
+      const weekEnd = new Date(currentWeekStart);
       weekEnd.setDate(weekEnd.getDate() + 6);
 
       const completedCount = completedObjectives.length;
@@ -119,7 +125,7 @@ export const ThisWeekView = () => {
           accomplishments: accomplishments,
           priorities: '',
           help: '',
-          week_start: weekStart,
+          week_start: currentWeekStart,
           week_end: weekEnd.toISOString().split('T')[0],
           objectives_completed: completedCount,
           total_objectives: totalCount,
@@ -143,7 +149,7 @@ export const ThisWeekView = () => {
           .from('weekly_progress_posts')
           .upsert({
             user_id: user.id,
-            week_start: weekStart,
+            week_start: currentWeekStart,
             notes: weeklyReflection,
             is_completed: true,
             completed_at: new Date().toISOString(),
@@ -167,6 +173,9 @@ export const ThisWeekView = () => {
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const hasShared = !!feedPost;
+  const isCurrentWeek = WeeklyProgressService.getWeekStart() === currentWeekStart;
+  const isPastWeek = currentWeekStart < WeeklyProgressService.getWeekStart();
+  const isReadOnly = isPastWeek && hasShared;
 
   return (
     <div className="space-y-6">
@@ -174,11 +183,34 @@ export const ThisWeekView = () => {
       <Card className="bg-white/10 backdrop-blur-lg border-white/20">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-white text-2xl">
-                Week {weekNumber}
-              </CardTitle>
-              <p className="text-white/60 mt-1">{weekRange}</p>
+            <div className="flex items-center space-x-4">
+              {onNavigateWeek && (
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onNavigateWeek('previous')}
+                    className="text-white/60 hover:text-white hover:bg-white/20 px-2"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onNavigateWeek('next')}
+                    className="text-white/60 hover:text-white hover:bg-white/20 px-2"
+                    disabled={WeeklyProgressService.getWeekStart() === currentWeekStart}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+              <div>
+                <CardTitle className="text-white text-2xl">
+                  Week {weekNumber}
+                </CardTitle>
+                <p className="text-white/60 mt-1">{weekRange}</p>
+              </div>
             </div>
             <div className="flex items-center space-x-2">
               <Calendar className="h-5 w-5 text-white/60" />
@@ -199,7 +231,7 @@ export const ThisWeekView = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Add Objective */}
-          {!hasShared && (
+          {!isReadOnly && (
             <div className="flex space-x-2">
               <Input
                 value={newObjective}
@@ -225,7 +257,7 @@ export const ThisWeekView = () => {
                 <Checkbox
                   checked={objective.is_completed}
                   onCheckedChange={() => handleToggleObjective(objective.id, objective.is_completed)}
-                  disabled={hasShared}
+                  disabled={isReadOnly}
                   className="border-white/20"
                 />
                 <span className={`flex-1 text-white ${objective.is_completed ? 'line-through opacity-60' : ''}`}>
@@ -234,7 +266,7 @@ export const ThisWeekView = () => {
                 {objective.is_completed && (
                   <CheckCircle className="h-4 w-4 text-green-400" />
                 )}
-                {!hasShared && (
+                {!isReadOnly && (
                   <Button
                     variant="ghost"
                     size="sm"
@@ -268,9 +300,9 @@ export const ThisWeekView = () => {
             onChange={(e) => setWeeklyReflection(e.target.value)}
             placeholder="How did this week go? What did you learn? Any insights or challenges?"
             className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
-            disabled={hasShared}
+            disabled={isReadOnly}
           />
-          {!hasShared && (
+          {!isReadOnly && (
             <Button
               onClick={handleSaveReflection}
               variant="outline"
@@ -288,17 +320,33 @@ export const ThisWeekView = () => {
           {hasShared ? (
             <div className="text-center py-4">
               <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
-              <p className="text-white text-lg font-medium">Week Shared!</p>
-              <p className="text-white/60 text-sm mt-1">
-                Your progress has been shared with the community.
+              <p className="text-white text-lg font-medium">
+                {isCurrentWeek ? "Week Shared!" : "Week Previously Shared"}
               </p>
-              <Button
-                onClick={() => window.open('/community', '_blank')}
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/20 mt-3"
-              >
-                View in Community
-              </Button>
+              <p className="text-white/60 text-sm mt-1">
+                {isCurrentWeek 
+                  ? "Your progress has been shared. You can continue editing and re-share updates."
+                  : "This week's progress was shared with the community."
+                }
+              </p>
+              <div className="flex gap-2 mt-3 justify-center">
+                <Button
+                  onClick={() => window.open('/community', '_blank')}
+                  variant="outline"
+                  className="border-white/20 text-white hover:bg-white/20"
+                >
+                  View in Community
+                </Button>
+                {isCurrentWeek && (
+                  <Button
+                    onClick={handleShareWeek}
+                    disabled={isSharing}
+                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                  >
+                    {isSharing ? "Updating..." : "Share Updates"}
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="text-center py-4">
