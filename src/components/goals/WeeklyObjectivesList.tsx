@@ -52,6 +52,7 @@ export const WeeklyObjectivesList = ({
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
+  const [savingObjectiveIds, setSavingObjectiveIds] = useState<Set<string>>(new Set());
 
   // Auto-save hook for new objectives
   const autoSave = useObjectiveAutoSave({
@@ -76,9 +77,18 @@ export const WeeklyObjectivesList = ({
     setEditingText(objective.text);
   };
 
-  const handleSaveEdit = (objectiveId: string) => {
+  const handleSaveEdit = async (objectiveId: string) => {
     if (editingText.trim()) {
-      onUpdateObjectiveText(objectiveId, editingText.trim());
+      setSavingObjectiveIds(prev => new Set(prev).add(objectiveId));
+      try {
+        await onUpdateObjectiveText(objectiveId, editingText.trim());
+      } finally {
+        setSavingObjectiveIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(objectiveId);
+          return newSet;
+        });
+      }
     }
     setEditingObjectiveId(null);
     setEditingText("");
@@ -89,9 +99,18 @@ export const WeeklyObjectivesList = ({
     setEditingText("");
   };
 
-  const handleGoalChange = (objectiveId: string, goalId: string) => {
+  const handleGoalChange = async (objectiveId: string, goalId: string) => {
     const goalIdToSave = goalId === "none" ? null : goalId;
-    onUpdateObjectiveGoal(objectiveId, goalIdToSave);
+    setSavingObjectiveIds(prev => new Set(prev).add(objectiveId));
+    try {
+      await onUpdateObjectiveGoal(objectiveId, goalIdToSave);
+    } finally {
+      setSavingObjectiveIds(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(objectiveId);
+        return newSet;
+      });
+    }
     setEditingGoalId(null); // Close goal editor after change
   };
 
@@ -216,26 +235,28 @@ export const WeeklyObjectivesList = ({
                            )}
                          </div>
                        )}
-                       {/* Show goal selector inline when editing */}
-                       {editingGoalId === objective.id && !isWeekCompleted && (
-                         <div className="ml-2">
-                           <Select 
-                             value={objective.goal_id || "none"} 
-                             onValueChange={(value) => handleGoalChange(objective.id, value)}
-                             open={true}
-                             onOpenChange={(open) => !open && setEditingGoalId(null)}
-                           >
-                             <SelectContent className="bg-slate-800 border-white/20">
-                               <SelectItem value="none">No goal</SelectItem>
-                               {goals.map((goal) => (
-                                 <SelectItem key={goal.id} value={goal.id} className="text-white">
-                                   {goal.title}
-                                 </SelectItem>
-                               ))}
-                             </SelectContent>
-                           </Select>
-                         </div>
-                       )}
+                        {/* Show goal selector inline when editing */}
+                        {editingGoalId === objective.id && !isWeekCompleted && (
+                          <div className="ml-2">
+                            <Select 
+                              value={objective.goal_id || "none"} 
+                              onValueChange={(value) => handleGoalChange(objective.id, value)}
+                              onOpenChange={(open) => !open && setEditingGoalId(null)}
+                            >
+                              <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+                                <SelectValue placeholder="Select a goal" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-slate-800 border-white/20">
+                                <SelectItem value="none">No goal</SelectItem>
+                                {goals.map((goal) => (
+                                  <SelectItem key={goal.id} value={goal.id} className="text-white">
+                                    {goal.title}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                        {/* Add goal button when no goal is linked */}
                        {!goalName && !isWeekCompleted && editingGoalId !== objective.id && (
                          <Button
@@ -248,7 +269,14 @@ export const WeeklyObjectivesList = ({
                            <Target className="h-3 w-3 mr-1" />
                            Link goal
                          </Button>
-                       )}
+                        )}
+                        {/* Show saving indicator */}
+                        {savingObjectiveIds.has(objective.id) && (
+                          <div className="flex items-center gap-1 ml-2">
+                            <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin"></div>
+                            <span className="text-xs text-white/60">Saving...</span>
+                          </div>
+                        )}
                      </div>
                    </div>
                  )}
