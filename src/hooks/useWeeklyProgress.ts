@@ -64,7 +64,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
   const createObjectiveMutation = useMutation({
     mutationFn: WeeklyProgressService.createWeeklyObjective,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
       toast({
         title: "Success",
         description: "Objective created successfully!",
@@ -84,7 +84,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
     mutationFn: ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) =>
       WeeklyProgressService.updateWeeklyObjective(id, data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
     },
     onError: (error) => {
       console.error('Error updating objective:', error);
@@ -99,7 +99,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
   const deleteObjectiveMutation = useMutation({
     mutationFn: WeeklyProgressService.deleteWeeklyObjective,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
       toast({
         title: "Success",
         description: "Objective deleted successfully!",
