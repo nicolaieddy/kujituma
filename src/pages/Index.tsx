@@ -1,147 +1,55 @@
 
-import { Button } from '@/components/ui/button';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
+import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
 
 const Index = () => {
-  const [isLaunching, setIsLaunching] = useState(false);
   const navigate = useNavigate();
+  const { user, loading: authLoading, signOut } = useAuth();
+  const { isAdmin } = useAdminStatus();
 
-  const handleLaunch = () => {
-    setIsLaunching(true);
-    setTimeout(() => {
-      navigate('/goals');
-    }, 3000);
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+        <div className="text-white">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    navigate('/auth');
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black via-blue-900 to-purple-900 flex flex-col items-center justify-center relative overflow-hidden">
-      {/* Navigation */}
-      <div className="absolute top-4 right-4 z-30 flex space-x-2">
-        <Link to="/auth">
-          <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-            Sign In
-          </Button>
-        </Link>
-        <Link to="/goals">
-          <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-            Goals
-          </Button>
-        </Link>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <DashboardHeader 
+        isAdmin={isAdmin}
+        onSignOut={handleSignOut}
+      />
 
-      {/* Stars background */}
-      <div className="absolute inset-0">
-        {[...Array(100)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute w-1 h-1 bg-white rounded-full opacity-60"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 3}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Launching Astronaut Animation */}
-      {isLaunching && (
-        <div className="absolute inset-0 flex items-center justify-center z-20">
-          <div 
-            className="relative transform transition-all duration-3000 ease-out"
-            style={{
-              animation: 'launchAstronaut 3s ease-out forwards'
-            }}
-          >
-            {/* Astronaut Figure */}
-            <div className="flex flex-col items-center">
-              {/* Helmet */}
-              <div className="w-12 h-12 bg-gradient-to-b from-gray-300 to-gray-400 rounded-full mb-1 relative">
-                <div className="w-8 h-8 bg-gradient-to-b from-gray-200 to-gray-300 rounded-full absolute top-1 left-2 opacity-80"></div>
-              </div>
-              
-              {/* Arms */}
-              <div className="flex items-center justify-between w-16 mb-1">
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full transform -rotate-12"></div>
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full transform rotate-12"></div>
-              </div>
-              
-              {/* Body */}
-              <div className="w-10 h-12 bg-gradient-to-b from-orange-500 to-orange-700 rounded-lg mb-1"></div>
-              
-              {/* Legs */}
-              <div className="flex space-x-1">
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full"></div>
-                <div className="w-3 h-8 bg-gradient-to-b from-orange-400 to-orange-600 rounded-full"></div>
-              </div>
-            </div>
-            
-            {/* Rocket Fire */}
-            <div className="flex justify-center space-x-1 mt-2">
-              <div className="w-2 h-12 bg-gradient-to-t from-red-500 via-orange-500 to-yellow-400 rounded-full animate-pulse"></div>
-              <div className="w-3 h-16 bg-gradient-to-t from-red-600 via-orange-600 to-yellow-500 rounded-full animate-pulse animation-delay-100"></div>
-              <div className="w-2 h-12 bg-gradient-to-t from-red-500 via-orange-500 to-yellow-400 rounded-full animate-pulse animation-delay-200"></div>
-            </div>
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">This Week</h1>
+          <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto">
+            Set your focus, track progress, and share your journey with the community.
+          </p>
         </div>
-      )}
 
-      <div className="text-center relative z-10">
-        {/* Title */}
-        <h1 className="text-7xl md:text-9xl font-bold bg-gradient-to-r from-blue-300 via-purple-300 to-pink-300 bg-clip-text text-transparent mb-8 animate-pulse">
-          Kujituma
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-gray-300 text-xl mb-16 opacity-80">Launch into your journey of growth</p>
-
-        {/* Button */}
-        <Button 
-          onClick={handleLaunch}
-          size="lg"
-          disabled={isLaunching}
-          className="bg-gradient-to-r from-purple-500 via-blue-500 to-purple-600 hover:from-purple-600 hover:via-blue-600 hover:to-purple-700 text-white px-12 py-6 text-xl font-bold rounded-full shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 relative overflow-hidden group disabled:opacity-50"
-        >
-          <span className="relative z-10 flex items-center">
-            {isLaunching ? '🚀 LAUNCHING...' : 'Begin Your Journey'}
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300" />
-        </Button>
+        <div className="max-w-4xl mx-auto">
+          <ThisWeekView />
+        </div>
       </div>
-
-      <style>{`
-        @keyframes launchAstronaut {
-          0% {
-            transform: translateY(0) scale(1) rotate(0deg);
-            opacity: 1;
-          }
-          20% {
-            transform: translateY(-10vh) scale(0.95) rotate(-5deg);
-            opacity: 1;
-          }
-          60% {
-            transform: translateY(-40vh) scale(0.7) rotate(-10deg);
-            opacity: 0.8;
-          }
-          100% {
-            transform: translateY(-120vh) scale(0.2) rotate(-15deg);
-            opacity: 0;
-          }
-        }
-        
-        .animation-delay-100 {
-          animation-delay: 0.1s;
-        }
-        
-        .animation-delay-200 {
-          animation-delay: 0.2s;
-        }
-        
-        .duration-3000 {
-          transition-duration: 3000ms;
-        }
-      `}</style>
     </div>
   );
 };

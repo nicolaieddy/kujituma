@@ -26,10 +26,11 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
   // Determine current section based on pathname
   const getCurrentSection = () => {
     const path = location.pathname;
-    if (path.startsWith('/feed')) return 'feed';
+    if (path.startsWith('/community')) return 'community';
     if (path.startsWith('/goals')) return 'goals';
     if (path.startsWith('/profile')) return 'profile';
-    return 'feed';
+    if (path === '/') return 'thisweek';
+    return 'thisweek';
   };
 
   const currentSection = getCurrentSection();
@@ -68,12 +69,20 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           
           <nav className="flex items-center space-x-4 sm:space-x-6">
             <button
-              onClick={() => navigate('/feed')}
+              onClick={() => navigate('/')}
               className={`text-sm sm:text-base text-white/80 hover:text-white transition-colors ${
-                currentSection === 'feed' ? 'text-white font-medium' : ''
+                currentSection === 'thisweek' ? 'text-white font-medium' : ''
               }`}
             >
-              Feed
+              This Week
+            </button>
+            <button
+              onClick={() => navigate('/community')}
+              className={`text-sm sm:text-base text-white/80 hover:text-white transition-colors ${
+                currentSection === 'community' ? 'text-white font-medium' : ''
+              }`}
+            >
+              Community
             </button>
             <button
               onClick={() => navigate('/goals')}
@@ -81,8 +90,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
                 currentSection === 'goals' ? 'text-white font-medium' : ''
               }`}
             >
-              <span className="hidden sm:inline">Goals and Progress</span>
-              <span className="sm:hidden">Goals</span>
+              Goals
             </button>
           </nav>
         </div>
