@@ -115,6 +115,25 @@ export const useWeeklyProgress = (weekStart?: string) => {
     },
   });
 
+  const deleteAllObjectivesMutation = useMutation({
+    mutationFn: WeeklyProgressService.deleteAllWeeklyObjectives,
+    onSuccess: (deletedCount) => {
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+      toast({
+        title: "Success",
+        description: `${deletedCount} objective${deletedCount !== 1 ? 's' : ''} cleared successfully!`,
+      });
+    },
+    onError: (error) => {
+      console.error('Error deleting all objectives:', error);
+      toast({
+        title: "Error",
+        description: "Failed to clear objectives. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const updateProgressPostMutation = useMutation({
     mutationFn: ({ weekStart, notes }: { weekStart: string; notes: string }) =>
       WeeklyProgressService.upsertWeeklyProgressPost(weekStart, notes),
@@ -185,6 +204,10 @@ export const useWeeklyProgress = (weekStart?: string) => {
     deleteObjectiveMutation.mutate(id);
   };
 
+  const deleteAllObjectives = () => {
+    deleteAllObjectivesMutation.mutate(currentWeekStart);
+  };
+
   const updateProgressNotes = (notes: string) => {
     updateProgressPostMutation.mutate({ weekStart: currentWeekStart, notes });
   };
@@ -205,6 +228,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
     createObjective,
     updateObjective,
     deleteObjective,
+    deleteAllObjectives,
     updateProgressNotes,
     completeWeek,
     uncompleteWeek,
@@ -214,6 +238,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
     isCreating: createObjectiveMutation.isPending,
     isUpdating: updateObjectiveMutation.isPending,
     isDeleting: deleteObjectiveMutation.isPending,
+    isDeletingAll: deleteAllObjectivesMutation.isPending,
     isSavingNotes: updateProgressPostMutation.isPending,
     isCompletingWeek: completeWeekMutation.isPending,
     isUncompletingWeek: uncompleteWeekMutation.isPending,

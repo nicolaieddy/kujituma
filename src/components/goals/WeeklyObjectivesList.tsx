@@ -5,7 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, Target, Edit2, Check, RotateCcw } from "lucide-react";
+import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2 } from "lucide-react";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
 import { useObjectiveAutoSave } from "@/hooks/useObjectiveAutoSave";
@@ -20,7 +31,9 @@ interface WeeklyObjectivesListProps {
   onUpdateObjectiveText: (id: string, text: string) => void;
   onUpdateObjectiveGoal: (id: string, goalId: string | null) => void;
   onDeleteObjective: (id: string) => void;
+  onDeleteAllObjectives: () => void;
   onAddObjective: (text: string, goalId?: string) => Promise<void>;
+  isDeletingAll?: boolean;
 }
 
 export const WeeklyObjectivesList = ({
@@ -32,7 +45,9 @@ export const WeeklyObjectivesList = ({
   onUpdateObjectiveText,
   onUpdateObjectiveGoal,
   onDeleteObjective,
+  onDeleteAllObjectives,
   onAddObjective,
+  isDeletingAll = false,
 }: WeeklyObjectivesListProps) => {
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
@@ -80,9 +95,45 @@ export const WeeklyObjectivesList = ({
 
   return (
     <div>
-      <Label className="text-white font-medium text-lg">
-        🎯 This Week's Objectives
-      </Label>
+      <div className="flex items-center justify-between mb-3">
+        <Label className="text-white font-medium text-lg">
+          🎯 This Week's Objectives
+        </Label>
+        {objectives.length > 0 && !isWeekCompleted && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                variant="glass-outline"
+                size="sm"
+                disabled={isDeletingAll}
+                className="text-red-300 hover:text-red-200 hover:border-red-300"
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Clear All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-slate-800 border-white/20">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-white">Clear All Objectives</AlertDialogTitle>
+                <AlertDialogDescription className="text-white/80">
+                  Are you sure you want to delete all {objectives.length} objective{objectives.length !== 1 ? 's' : ''}? This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={onDeleteAllObjectives}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Clear All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
       <div className="mt-3 space-y-3">
         {objectives.map((objective) => {
           const goalName = getGoalName(objective.goal_id);

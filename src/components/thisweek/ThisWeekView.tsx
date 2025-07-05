@@ -31,10 +31,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     createObjective,
     updateObjective,
     deleteObjective,
+    deleteAllObjectives,
     updateProgressNotes,
     weekRange,
     weekNumber,
     weekStart: currentWeekStart,
+    isDeletingAll,
   } = useWeeklyProgress(weekStart);
 
   const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
@@ -213,7 +215,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onUpdateObjectiveText={handleUpdateObjectiveText}
             onUpdateObjectiveGoal={handleUpdateObjectiveGoal}
             onDeleteObjective={handleDeleteObjective}
+            onDeleteAllObjectives={deleteAllObjectives}
             onAddObjective={handleAddObjective}
+            isDeletingAll={isDeletingAll}
           />
         </CardContent>
       </Card>

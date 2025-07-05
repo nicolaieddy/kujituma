@@ -34,6 +34,7 @@ export const WeeklyProgressView = () => {
     createObjective,
     updateObjective,
     deleteObjective,
+    deleteAllObjectives,
     updateProgressNotes,
     completeWeek,
     uncompleteWeek,
@@ -44,6 +45,7 @@ export const WeeklyProgressView = () => {
     isSavingNotes,
     isCompletingWeek,
     isUncompletingWeek,
+    isDeletingAll,
   } = useWeeklyProgress(currentWeekStart);
 
   // Debug auth state
@@ -347,7 +349,9 @@ export const WeeklyProgressView = () => {
             onUpdateObjectiveText={handleUpdateObjectiveText}
             onUpdateObjectiveGoal={handleUpdateObjectiveGoal}
             onDeleteObjective={handleDeleteObjective}
+            onDeleteAllObjectives={deleteAllObjectives}
             onAddObjective={handleAddObjective}
+            isDeletingAll={isDeletingAll}
           />
 
           <IncompleteObjectiveReflections

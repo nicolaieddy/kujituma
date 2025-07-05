@@ -83,6 +83,26 @@ export class WeeklyProgressService {
     console.log('Deleted objective:', id);
   }
 
+  static async deleteAllWeeklyObjectives(weekStart: string): Promise<number> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
+    console.log('Deleting all objectives for user:', user.id, 'week:', weekStart);
+    const { data, error } = await supabase.rpc('delete_all_weekly_objectives', {
+      _user_id: user.id,
+      _week_start: weekStart
+    });
+
+    if (error) {
+      console.error('Error deleting all objectives:', error);
+      throw error;
+    }
+    
+    const deletedCount = data || 0;
+    console.log('Deleted', deletedCount, 'objectives');
+    return deletedCount;
+  }
+
   static async getWeeklyProgressPost(weekStart: string): Promise<WeeklyProgressPost | null> {
     console.log('Fetching progress post for week:', weekStart);
     

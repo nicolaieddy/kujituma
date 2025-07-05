@@ -414,6 +414,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      delete_all_weekly_objectives: {
+        Args: { _user_id: string; _week_start: string }
+        Returns: number
+      }
       get_admin_users_data: {
         Args: Record<PropertyKey, never>
         Returns: {
