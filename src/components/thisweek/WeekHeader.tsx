@@ -40,7 +40,6 @@ export const WeekHeader = ({
                   size="sm"
                   onClick={() => onNavigateWeek('next')}
                   className="px-2"
-                  disabled={WeeklyProgressService.getWeekStart() === currentWeekStart}
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
