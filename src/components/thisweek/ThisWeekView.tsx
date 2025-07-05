@@ -1,8 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,9 +8,9 @@ import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
-import { useAutoSave } from "@/hooks/useAutoSave";
-import { AutoSaveIndicator } from "@/components/thisweek/AutoSaveIndicator";
-import { SharedPostPreview } from "@/components/thisweek/SharedPostPreview";
+import { WeekHeader } from "@/components/thisweek/WeekHeader";
+import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
+import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -39,13 +36,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     weekNumber,
     weekStart: currentWeekStart,
   } = useWeeklyProgress(weekStart);
-
-  // Auto-save functionality for weekly reflection
-  const autoSave = useAutoSave({
-    onSave: updateProgressNotes,
-    delay: 2000,
-    initialValue: progressPost?.notes || ""
-  });
 
   const handleAddObjective = async (text: string, goalId?: string) => {
     setIsCreating(true);
@@ -114,9 +104,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         }
       }
       
-      if (autoSave.value.trim()) {
+      if (progressPost?.notes?.trim()) {
         accomplishments += '💭 Weekly Reflection:\n';
-        accomplishments += autoSave.value;
+        accomplishments += progressPost.notes;
         accomplishments += '\n\n';
       }
 
@@ -165,7 +155,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           .upsert({
             user_id: user.id,
             week_start: currentWeekStart,
-            notes: autoSave.value,
+            notes: progressPost?.notes || "",
             is_completed: true,
             completed_at: new Date().toISOString(),
           });
@@ -195,49 +185,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   return (
     <div className="space-y-6">
       {/* Week Header */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {onNavigateWeek && (
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="glass-outline"
-                    size="sm"
-                    onClick={() => onNavigateWeek('previous')}
-                    className="px-2"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="glass-outline"
-                    size="sm"
-                    onClick={() => onNavigateWeek('next')}
-                    className="px-2"
-                    disabled={WeeklyProgressService.getWeekStart() === currentWeekStart}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
-              <div>
-                <CardTitle className="text-white text-2xl">
-                  Week {weekNumber}
-                </CardTitle>
-                <p className="text-white/60 mt-1">{weekRange}</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-5 w-5 text-white/60" />
-              {totalCount > 0 && (
-                <div className="text-white/80 text-sm">
-                  {completedCount}/{totalCount} completed
-                </div>
-              )}
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+      <WeekHeader
+        weekNumber={weekNumber}
+        weekRange={weekRange}
+        currentWeekStart={currentWeekStart}
+        completedCount={completedCount}
+        totalCount={totalCount}
+        onNavigateWeek={onNavigateWeek}
+      />
 
       {/* Weekly Objectives */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20">
@@ -259,90 +214,23 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       </Card>
 
       {/* Weekly Reflection */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Weekly Reflection</CardTitle>
-            <AutoSaveIndicator
-              isSaving={autoSave.isSaving}
-              lastSaved={autoSave.lastSaved}
-              hasUnsavedChanges={autoSave.hasUnsavedChanges}
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Textarea
-            value={autoSave.value}
-            onChange={(e) => autoSave.setValue(e.target.value)}
-            placeholder="How did this week go? What did you learn? Any insights or challenges?"
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
-            disabled={isReadOnly}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Shared Post Preview */}
-      {hasShared && feedPost && (
-        <SharedPostPreview 
-          post={feedPost} 
-          onViewInCommunity={handleViewInCommunity}
-        />
-      )}
+      <WeeklyReflectionCard
+        initialNotes={progressPost?.notes || ""}
+        onUpdateNotes={updateProgressNotes}
+        isReadOnly={isReadOnly}
+      />
 
       {/* Share Week */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-        <CardContent className="pt-6">
-          {hasShared ? (
-            <div className="text-center py-4">
-              <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
-              <p className="text-white text-lg font-medium">
-                {isCurrentWeek ? "Week Shared!" : "Week Previously Shared"}
-              </p>
-              <p className="text-white/60 text-sm mt-1">
-                {isCurrentWeek 
-                  ? "Your progress has been shared. You can continue editing and re-share updates."
-                  : "This week's progress was shared with the community."
-                }
-              </p>
-              <div className="flex gap-2 mt-3 justify-center">
-                <Button
-                  onClick={handleViewInCommunity}
-                  variant="glass-outline"
-                >
-                  View in Community
-                </Button>
-                {isCurrentWeek && (
-                  <Button
-                    onClick={handleShareWeek}
-                    disabled={isSharing}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
-                  >
-                    {isSharing ? "Updating..." : "Share Updates"}
-                  </Button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-center py-4">
-              <p className="text-white/80 mb-4">
-                Ready to share your week's progress with the community?
-              </p>
-              <Button
-                onClick={handleShareWeek}
-                disabled={isSharing || (objectives?.length === 0 && !autoSave.value.trim())}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
-              >
-                {isSharing ? "Sharing..." : "Share This Week"}
-              </Button>
-              {objectives?.length === 0 && !autoSave.value.trim() && (
-                <p className="text-white/40 text-xs mt-2">
-                  Add some objectives or a reflection to share your week
-                </p>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <ShareWeekCard
+        hasShared={hasShared}
+        isCurrentWeek={isCurrentWeek}
+        isSharing={isSharing}
+        feedPost={feedPost}
+        objectives={objectives || []}
+        reflectionValue={progressPost?.notes || ""}
+        onShareWeek={handleShareWeek}
+        onViewInCommunity={handleViewInCommunity}
+      />
     </div>
   );
 };
