@@ -48,7 +48,7 @@ export const useObjectiveAutoSave = ({ onSave, delay = 2000 }: UseObjectiveAutoS
       
       saveObjective();
     }
-  }, [debouncedValue, debouncedGoalId, hasUnsavedChanges, onSave]);
+  }, [debouncedValue, debouncedGoalId, hasUnsavedChanges]);
 
   const handleValueChange = useCallback((newValue: string) => {
     setValue(newValue);
