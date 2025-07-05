@@ -11,6 +11,9 @@ import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
+import { useAutoSave } from "@/hooks/useAutoSave";
+import { AutoSaveIndicator } from "@/components/thisweek/AutoSaveIndicator";
+import { SharedPostPreview } from "@/components/thisweek/SharedPostPreview";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -21,7 +24,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { user } = useAuth();
   const { goals } = useGoals();
   const queryClient = useQueryClient();
-  const [weeklyReflection, setWeeklyReflection] = useState("");
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   
@@ -38,10 +40,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     weekStart: currentWeekStart,
   } = useWeeklyProgress(weekStart);
 
-  // Initialize reflection from progress post
-  useEffect(() => {
-    setWeeklyReflection(progressPost?.notes || "");
-  }, [progressPost]);
+  // Auto-save functionality for weekly reflection
+  const autoSave = useAutoSave({
+    onSave: updateProgressNotes,
+    delay: 2000,
+    initialValue: progressPost?.notes || ""
+  });
 
   const handleAddObjective = async (text: string, goalId?: string) => {
     setIsCreating(true);
@@ -68,8 +72,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     deleteObjective(id);
   };
 
-  const handleSaveReflection = () => {
-    updateProgressNotes(weeklyReflection);
+  const handleViewInCommunity = () => {
+    if (feedPost) {
+      // Navigate to the specific post in the community feed
+      window.open(`/community?post=${feedPost.id}`, '_blank');
+    } else {
+      window.open('/community', '_blank');
+    }
   };
 
   const handleShareWeek = async () => {
@@ -105,9 +114,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         }
       }
       
-      if (weeklyReflection.trim()) {
+      if (autoSave.value.trim()) {
         accomplishments += '💭 Weekly Reflection:\n';
-        accomplishments += weeklyReflection;
+        accomplishments += autoSave.value;
         accomplishments += '\n\n';
       }
 
@@ -156,7 +165,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           .upsert({
             user_id: user.id,
             week_start: currentWeekStart,
-            notes: weeklyReflection,
+            notes: autoSave.value,
             is_completed: true,
             completed_at: new Date().toISOString(),
           });
@@ -252,26 +261,33 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       {/* Weekly Reflection */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20">
         <CardHeader>
-          <CardTitle className="text-white">Weekly Reflection</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white">Weekly Reflection</CardTitle>
+            <AutoSaveIndicator
+              isSaving={autoSave.isSaving}
+              lastSaved={autoSave.lastSaved}
+              hasUnsavedChanges={autoSave.hasUnsavedChanges}
+            />
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <Textarea
-            value={weeklyReflection}
-            onChange={(e) => setWeeklyReflection(e.target.value)}
+            value={autoSave.value}
+            onChange={(e) => autoSave.setValue(e.target.value)}
             placeholder="How did this week go? What did you learn? Any insights or challenges?"
             className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
             disabled={isReadOnly}
           />
-          {!isReadOnly && (
-            <Button
-              onClick={handleSaveReflection}
-              variant="glass-outline"
-            >
-              Save Reflection
-            </Button>
-          )}
         </CardContent>
       </Card>
+
+      {/* Shared Post Preview */}
+      {hasShared && feedPost && (
+        <SharedPostPreview 
+          post={feedPost} 
+          onViewInCommunity={handleViewInCommunity}
+        />
+      )}
 
       {/* Share Week */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20">
@@ -290,7 +306,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
               </p>
               <div className="flex gap-2 mt-3 justify-center">
                 <Button
-                  onClick={() => window.open('/community', '_blank')}
+                  onClick={handleViewInCommunity}
                   variant="glass-outline"
                 >
                   View in Community
@@ -313,12 +329,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
               </p>
               <Button
                 onClick={handleShareWeek}
-                disabled={isSharing || (objectives?.length === 0 && !weeklyReflection.trim())}
+                disabled={isSharing || (objectives?.length === 0 && !autoSave.value.trim())}
                 className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
               >
                 {isSharing ? "Sharing..." : "Share This Week"}
               </Button>
-              {objectives?.length === 0 && !weeklyReflection.trim() && (
+              {objectives?.length === 0 && !autoSave.value.trim() && (
                 <p className="text-white/40 text-xs mt-2">
                   Add some objectives or a reflection to share your week
                 </p>

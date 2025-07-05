@@ -3,9 +3,10 @@ import { FeedPostCard } from "./FeedPostCard";
 
 interface FeedViewProps {
   feedType: "all" | "my";
+  highlightedPostId?: string | null;
 }
 
-export const FeedView = ({ feedType }: FeedViewProps) => {
+export const FeedView = ({ feedType, highlightedPostId }: FeedViewProps) => {
   const { posts, loading: isLoading, refetch } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user"
   });
@@ -48,11 +49,15 @@ export const FeedView = ({ feedType }: FeedViewProps) => {
   return (
     <div className="space-y-6">
       {posts.map((post) => (
-        <FeedPostCard 
-          key={post.id} 
-          post={post} 
-          onUpdate={handlePostUpdate}
-        />
+        <div 
+          key={post.id}
+          className={highlightedPostId === post.id ? "ring-2 ring-blue-400 ring-opacity-50 rounded-lg" : ""}
+        >
+          <FeedPostCard 
+            post={post} 
+            onUpdate={handlePostUpdate}
+          />
+        </div>
       ))}
     </div>
   );

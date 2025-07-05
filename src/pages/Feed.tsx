@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
@@ -6,8 +6,11 @@ import { FeedView } from "@/components/feed/FeedView";
 
 const Feed = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
+  
+  const highlightedPostId = searchParams.get('post');
 
   const handleSignOut = async () => {
     try {
@@ -45,7 +48,7 @@ const Feed = () => {
           </p>
         </div>
 
-        <FeedView feedType="all" />
+        <FeedView feedType="all" highlightedPostId={highlightedPostId} />
       </div>
     </div>
   );
