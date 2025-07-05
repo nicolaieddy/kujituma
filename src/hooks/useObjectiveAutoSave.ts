@@ -16,26 +16,6 @@ export const useObjectiveAutoSave = ({ onSave, delay = 2000 }: UseObjectiveAutoS
   const debouncedValue = useDebounce(value, delay);
   const debouncedGoalId = useDebounce(goalId, delay);
 
-  const save = useCallback(async (textToSave: string, goalToSave: string) => {
-    if (!textToSave.trim()) return;
-    
-    console.log('Auto-save: Saving objective:', textToSave, 'with goal:', goalToSave);
-    setIsSaving(true);
-    try {
-      const goalIdToSave = goalToSave === 'none' ? undefined : goalToSave;
-      await onSave(textToSave.trim(), goalIdToSave);
-      console.log('Auto-save: Successfully saved objective');
-      setLastSaved(new Date());
-      setHasUnsavedChanges(false);
-      // Clear the form after successful save
-      setValue('');
-      setGoalId('none');
-    } catch (error) {
-      console.error('Auto-save: Error saving objective:', error);
-    } finally {
-      setIsSaving(false);
-    }
-  }, [onSave]);
 
   useEffect(() => {
     console.log('Auto-save: useEffect triggered', { 
@@ -45,9 +25,30 @@ export const useObjectiveAutoSave = ({ onSave, delay = 2000 }: UseObjectiveAutoS
     });
     
     if (debouncedValue.trim() && hasUnsavedChanges) {
-      save(debouncedValue, debouncedGoalId);
+      const saveObjective = async () => {
+        if (!debouncedValue.trim()) return;
+        
+        console.log('Auto-save: Saving objective:', debouncedValue, 'with goal:', debouncedGoalId);
+        setIsSaving(true);
+        try {
+          const goalIdToSave = debouncedGoalId === 'none' ? undefined : debouncedGoalId;
+          await onSave(debouncedValue.trim(), goalIdToSave);
+          console.log('Auto-save: Successfully saved objective');
+          setLastSaved(new Date());
+          setHasUnsavedChanges(false);
+          // Clear the form after successful save
+          setValue('');
+          setGoalId('none');
+        } catch (error) {
+          console.error('Auto-save: Error saving objective:', error);
+        } finally {
+          setIsSaving(false);
+        }
+      };
+      
+      saveObjective();
     }
-  }, [debouncedValue, debouncedGoalId, hasUnsavedChanges, save]);
+  }, [debouncedValue, debouncedGoalId, hasUnsavedChanges, onSave]);
 
   const handleValueChange = useCallback((newValue: string) => {
     setValue(newValue);
