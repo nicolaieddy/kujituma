@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -41,7 +41,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     updateObjective(id, { goal_id: goalId });
   };
 
-  const handleAddObjective = async (text: string, goalId?: string) => {
+  const handleAddObjective = useCallback(async (text: string, goalId?: string) => {
     setIsCreating(true);
     try {
       await createObjective({
@@ -52,7 +52,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     } finally {
       setIsCreating(false);
     }
-  };
+  }, [createObjective, currentWeekStart]);
 
   const handleToggleObjective = (id: string, isCompleted: boolean) => {
     updateObjective(id, { is_completed: !isCompleted });

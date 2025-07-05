@@ -19,23 +19,31 @@ export const useObjectiveAutoSave = ({ onSave, delay = 2000 }: UseObjectiveAutoS
   const save = useCallback(async (textToSave: string, goalToSave: string) => {
     if (!textToSave.trim()) return;
     
+    console.log('Auto-save: Saving objective:', textToSave, 'with goal:', goalToSave);
     setIsSaving(true);
     try {
       const goalIdToSave = goalToSave === 'none' ? undefined : goalToSave;
       await onSave(textToSave.trim(), goalIdToSave);
+      console.log('Auto-save: Successfully saved objective');
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
       // Clear the form after successful save
       setValue('');
       setGoalId('none');
     } catch (error) {
-      console.error('Error saving objective:', error);
+      console.error('Auto-save: Error saving objective:', error);
     } finally {
       setIsSaving(false);
     }
   }, [onSave]);
 
   useEffect(() => {
+    console.log('Auto-save: useEffect triggered', { 
+      debouncedValue: debouncedValue.slice(0, 20), 
+      hasUnsavedChanges,
+      shouldSave: debouncedValue.trim() && hasUnsavedChanges 
+    });
+    
     if (debouncedValue.trim() && hasUnsavedChanges) {
       save(debouncedValue, debouncedGoalId);
     }
@@ -53,11 +61,19 @@ export const useObjectiveAutoSave = ({ onSave, delay = 2000 }: UseObjectiveAutoS
     }
   }, [value]);
 
+  const clearForm = useCallback(() => {
+    setValue('');
+    setGoalId('none');
+    setHasUnsavedChanges(false);
+    setLastSaved(null);
+  }, []);
+
   return {
     value,
     goalId,
     setValue: handleValueChange,
     setGoalId: handleGoalChange,
+    clearForm,
     isSaving,
     hasUnsavedChanges,
     lastSaved,
