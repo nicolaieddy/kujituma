@@ -347,14 +347,14 @@ export const WeeklyObjectivesList = ({
                  className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
                  placeholder="Add a new objective..."
                />
-               {/* Show auto-save indicator only when actively saving or recently saved */}
-               {(autoSave.isSaving || autoSave.lastSaved) && (
-                 <AutoSaveIndicator
-                   isSaving={autoSave.isSaving}
-                   lastSaved={autoSave.lastSaved}
-                   hasUnsavedChanges={autoSave.hasUnsavedChanges}
-                 />
-               )}
+                {/* Show auto-save indicator only when actively saving or recently saved */}
+                {(autoSave.isSaving || (autoSave.lastSaved && autoSave.value.trim())) && (
+                  <AutoSaveIndicator
+                    isSaving={autoSave.isSaving}
+                    lastSaved={autoSave.lastSaved}
+                    hasUnsavedChanges={autoSave.hasUnsavedChanges}
+                  />
+                )}
             </div>
             
             {/* Goal selector for new objective */}
