@@ -79,7 +79,7 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
   });
 
   const updateProgressNotes = (notes: string) => {
-    updateProgressPostMutation.mutate({ weekStart: currentWeekStart, notes });
+    return updateProgressPostMutation.mutateAsync({ weekStart: currentWeekStart, notes });
   };
 
   const completeWeek = () => {
