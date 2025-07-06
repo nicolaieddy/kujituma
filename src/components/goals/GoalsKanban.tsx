@@ -13,6 +13,7 @@ interface GoalsKanbanProps {
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: GoalStatus) => void;
+  onGoalClick?: (goal: Goal) => void;
 }
 
 const COLUMNS = [
@@ -36,7 +37,7 @@ const COLUMNS = [
   }
 ];
 
-export const GoalsKanban = ({ goalsByStatus, onEdit, onDelete, onStatusChange }: GoalsKanbanProps) => {
+export const GoalsKanban = ({ goalsByStatus, onEdit, onDelete, onStatusChange, onGoalClick }: GoalsKanbanProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {COLUMNS.map((column) => {
@@ -71,6 +72,7 @@ export const GoalsKanban = ({ goalsByStatus, onEdit, onDelete, onStatusChange }:
                     onEdit={onEdit}
                     onDelete={onDelete}
                     onStatusChange={onStatusChange}
+                    onClick={onGoalClick}
                   />
                 ))
               )}

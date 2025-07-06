@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock } from "lucide-react";
+import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Goal, GoalStatus } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
@@ -13,6 +13,7 @@ interface GoalCardProps {
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: GoalStatus) => void;
+  onClick?: (goal: Goal) => void;
 }
 
 const STATUS_CONFIG = {
@@ -33,7 +34,7 @@ const STATUS_CONFIG = {
   }
 };
 
-export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange }: GoalCardProps) => {
+export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: GoalCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const config = STATUS_CONFIG[goal.status];
   const IconComponent = config.icon;
@@ -53,7 +54,10 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange }: GoalCardPro
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-colors">
+    <Card 
+      className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-colors cursor-pointer group"
+      onClick={() => onClick?.(goal)}
+    >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -63,41 +67,50 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange }: GoalCardPro
                 {config.label}
               </Badge>
             </div>
-            <h3 className="font-semibold text-white text-lg leading-tight">
+            <h3 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-300 transition-colors">
               {goal.title}
             </h3>
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-300 flex items-center gap-1 mt-1">
+              <MousePointer className="h-3 w-3" />
+              Click to view details
+            </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-white hover:bg-white/20"
+                onClick={(e) => e.stopPropagation()}
+              >
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => onEdit(goal)}>
+            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(goal); }}>
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
               {goal.status === 'coming_up' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('in_progress'); }}>
                   <Play className="h-4 w-4 mr-2" />
                   Start Progress
                 </DropdownMenuItem>
               )}
               {goal.status === 'in_progress' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('completed')}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('completed'); }}>
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Mark Complete
                 </DropdownMenuItem>
               )}
               {goal.status === 'completed' && (
-                <DropdownMenuItem onClick={() => handleStatusChange('in_progress')}>
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('in_progress'); }}>
                   <Play className="h-4 w-4 mr-2" />
                   Reopen
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem 
-                onClick={() => onDelete(goal.id)}
+                onClick={(e) => { e.stopPropagation(); onDelete(goal.id); }}
                 className="text-red-600"
               >
                 <Trash2 className="h-4 w-4 mr-2" />

@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
+import { useGoalObjectives } from "@/hooks/useGoalObjectives";
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { GoalsKanban } from "@/components/goals/GoalsKanban";
+import { GoalDetailModal } from "@/components/goals/GoalDetailModal";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 
@@ -16,8 +18,11 @@ const Goals = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const { goalsByStatus, isLoading, createGoal, updateGoal, deleteGoal } = useGoals();
+  const { objectives, createObjective, updateObjective, deleteObjective } = useGoalObjectives();
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -52,6 +57,32 @@ const Goals = () => {
 
   const handleStatusChange = (id: string, status: any) => {
     updateGoal(id, { status });
+  };
+
+  const handleGoalClick = (goal: Goal) => {
+    setSelectedGoal(goal);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setShowDetailModal(false);
+    setSelectedGoal(null);
+  };
+
+  const handleCreateObjective = (goalId: string, text: string) => {
+    createObjective(goalId, text);
+  };
+
+  const handleUpdateObjective = (id: string, updates: any) => {
+    updateObjective(id, updates);
+  };
+
+  const handleDeleteObjective = (id: string) => {
+    deleteObjective(id);
+  };
+
+  const handleModalEditGoal = (updatedGoal: Goal) => {
+    updateGoal(updatedGoal.id, updatedGoal);
   };
 
   if (authLoading) {
@@ -110,10 +141,25 @@ const Goals = () => {
                 onEdit={handleEditGoal}
                 onDelete={deleteGoal}
                 onStatusChange={handleStatusChange}
+                onGoalClick={handleGoalClick}
               />
             )}
           </>
         )}
+
+        {/* Goal Detail Modal */}
+        <GoalDetailModal
+          goal={selectedGoal}
+          isOpen={showDetailModal}
+          onClose={handleCloseDetailModal}
+          onEdit={handleModalEditGoal}
+          onDelete={deleteGoal}
+          onStatusChange={handleStatusChange}
+          weeklyObjectives={objectives}
+          onCreateObjective={handleCreateObjective}
+          onUpdateObjective={handleUpdateObjective}
+          onDeleteObjective={handleDeleteObjective}
+        />
       </div>
     </div>
   );
