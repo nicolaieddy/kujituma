@@ -33,7 +33,8 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     mutationFn: ({ weekStart, notes }: { weekStart: string; notes: string }) =>
       WeeklyProgressService.upsertWeeklyProgressPost(weekStart, notes),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+      // Only invalidate the specific week being updated
+      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post', user?.id, currentWeekStart] });
       // Remove toast to prevent potential React crashes
       console.log('Progress notes saved successfully!');
     },
@@ -83,6 +84,7 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
   });
 
   const updateProgressNotes = (notes: string) => {
+    console.log('UpdateProgressNotes called with:', { notes, currentWeekStart });
     return updateProgressPostMutation.mutateAsync({ weekStart: currentWeekStart, notes });
   };
 
