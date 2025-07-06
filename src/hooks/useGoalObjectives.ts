@@ -100,12 +100,12 @@ export const useGoalObjectives = (goalId?: string) => {
     },
   });
 
-  const createObjective = (goalId: string, text: string) => {
-    const currentWeekStart = WeeklyProgressService.getWeekStart();
+  const createObjective = (goalId: string, text: string, weekStart?: string) => {
+    const targetWeekStart = weekStart || WeeklyProgressService.getWeekStart();
     createObjectiveMutation.mutate({
       goal_id: goalId,
       text,
-      week_start: currentWeekStart,
+      week_start: targetWeekStart,
     });
   };
 

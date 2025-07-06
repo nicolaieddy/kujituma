@@ -4,17 +4,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Goal } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { formatRelativeTime } from "@/utils/dateUtils";
-import { Plus, CheckCircle2, Clock, Trash2, Calendar } from "lucide-react";
+import { Plus, CheckCircle2, Clock, Trash2, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface GoalObjectivesListProps {
   goal: Goal;
   objectives: WeeklyObjective[];
-  onCreateObjective: (goalId: string, text: string) => void;
+  onCreateObjective: (goalId: string, text: string, weekStart?: string) => void;
   onUpdateObjective: (id: string, updates: any) => void;
   onDeleteObjective: (id: string) => void;
 }
@@ -28,6 +29,33 @@ export const GoalObjectivesList = ({
 }: GoalObjectivesListProps) => {
   const [newObjectiveText, setNewObjectiveText] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [selectedWeekStart, setSelectedWeekStart] = useState<string>(
+    WeeklyProgressService.getWeekStart()
+  );
+
+  // Generate week options (current week + 12 weeks forward and backward)
+  const generateWeekOptions = () => {
+    const weeks = [];
+    const currentDate = new Date();
+    
+    // Add past weeks (12 weeks back)
+    for (let i = 12; i >= 1; i--) {
+      const date = new Date(currentDate);
+      date.setDate(date.getDate() - (i * 7));
+      weeks.push(WeeklyProgressService.getWeekStart(date));
+    }
+    
+    // Add current week and future weeks (12 weeks forward)
+    for (let i = 0; i <= 12; i++) {
+      const date = new Date(currentDate);
+      date.setDate(date.getDate() + (i * 7));
+      weeks.push(WeeklyProgressService.getWeekStart(date));
+    }
+    
+    return weeks;
+  };
+
+  const weekOptions = generateWeekOptions();
 
   // Group objectives by week
   const objectivesByWeek = objectives.reduce((acc, obj) => {
@@ -48,8 +76,7 @@ export const GoalObjectivesList = ({
 
     setIsCreating(true);
     try {
-      const currentWeekStart = WeeklyProgressService.getWeekStart();
-      onCreateObjective(goal.id, newObjectiveText.trim());
+      onCreateObjective(goal.id, newObjectiveText.trim(), selectedWeekStart);
       setNewObjectiveText("");
       toast({
         title: "Success",
@@ -77,22 +104,61 @@ export const GoalObjectivesList = ({
     return WeeklyProgressService.formatWeekRange(weekStart);
   };
 
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const currentIndex = weekOptions.indexOf(selectedWeekStart);
+    if (direction === 'prev' && currentIndex > 0) {
+      setSelectedWeekStart(weekOptions[currentIndex - 1]);
+    } else if (direction === 'next' && currentIndex < weekOptions.length - 1) {
+      setSelectedWeekStart(weekOptions[currentIndex + 1]);
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Create new objective for current week */}
+      {/* Create new objective for selected week */}
       <Card className="bg-white/10 backdrop-blur-lg border-white/20">
         <CardHeader>
           <CardTitle className="text-white text-lg">Add Weekly Objective</CardTitle>
-          <p className="text-white/60 text-sm">
-            Create a new objective for this goal for the current week
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-white/60 text-sm">
+              Create a new objective for this goal
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateWeek('prev')}
+                disabled={weekOptions.indexOf(selectedWeekStart) === 0}
+                className="text-white/60 hover:text-white hover:bg-white/20 h-8 w-8 p-0"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex items-center gap-2 px-3 py-1 bg-white/5 rounded-md border border-white/20">
+                <Calendar className="h-4 w-4 text-white/60" />
+                <span className="text-sm text-white font-medium">
+                  {formatWeekRange(selectedWeekStart)}
+                </span>
+              </div>
+              
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigateWeek('next')}
+                disabled={weekOptions.indexOf(selectedWeekStart) === weekOptions.length - 1}
+                className="text-white/60 hover:text-white hover:bg-white/20 h-8 w-8 p-0"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
               value={newObjectiveText}
               onChange={(e) => setNewObjectiveText(e.target.value)}
-              placeholder="What do you want to achieve this week towards this goal?"
+              placeholder={`What do you want to achieve for ${formatWeekRange(selectedWeekStart)}?`}
               className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {

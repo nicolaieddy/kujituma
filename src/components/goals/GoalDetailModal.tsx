@@ -2,13 +2,10 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Goal, GoalStatus } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
-import { GoalDetailOverview } from "./GoalDetailOverview";
 import { GoalObjectivesList } from "./GoalObjectivesList";
-import { formatRelativeTime } from "@/utils/dateUtils";
 import { Edit, CheckCircle, Play, Clock, Trash2 } from "lucide-react";
 
 interface GoalDetailModalProps {
@@ -19,7 +16,7 @@ interface GoalDetailModalProps {
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: GoalStatus) => void;
   weeklyObjectives: WeeklyObjective[];
-  onCreateObjective: (goalId: string, text: string) => void;
+  onCreateObjective: (goalId: string, text: string, weekStart?: string) => void;
   onUpdateObjective: (id: string, updates: any) => void;
   onDeleteObjective: (id: string) => void;
 }
@@ -55,7 +52,6 @@ export const GoalDetailModal = ({
   onDeleteObjective,
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [activeTab, setActiveTab] = useState("overview");
 
   if (!goal) return null;
 
@@ -97,6 +93,9 @@ export const GoalDetailModal = ({
               <DialogTitle className="text-2xl text-white">
                 {goal.title}
               </DialogTitle>
+              {goal.description && (
+                <p className="text-white/80 mt-2">{goal.description}</p>
+              )}
             </div>
             <div className="flex gap-2">
               {!isEditing && (
@@ -155,30 +154,15 @@ export const GoalDetailModal = ({
             />
           </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-6">
-            <TabsList className="grid w-full grid-cols-2 bg-white/10">
-              <TabsTrigger value="overview" className="text-white data-[state=active]:bg-white/20">
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value="objectives" className="text-white data-[state=active]:bg-white/20">
-                Weekly Objectives ({relatedObjectives.length})
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="overview" className="mt-6">
-              <GoalDetailOverview goal={goal} />
-            </TabsContent>
-            
-            <TabsContent value="objectives" className="mt-6">
-              <GoalObjectivesList
-                goal={goal}
-                objectives={relatedObjectives}
-                onCreateObjective={onCreateObjective}
-                onUpdateObjective={onUpdateObjective}
-                onDeleteObjective={onDeleteObjective}
-              />
-            </TabsContent>
-          </Tabs>
+          <div className="mt-6">
+            <GoalObjectivesList
+              goal={goal}
+              objectives={relatedObjectives}
+              onCreateObjective={onCreateObjective}
+              onUpdateObjective={onUpdateObjective}
+              onDeleteObjective={onDeleteObjective}
+            />
+          </div>
         )}
       </DialogContent>
     </Dialog>
