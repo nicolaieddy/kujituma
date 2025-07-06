@@ -35,7 +35,6 @@ export interface CreateGoalData {
   timeframe: GoalTimeframe;
   target_date?: string;
   category?: string;
-  notes?: string;
   is_public?: boolean;
 }
 

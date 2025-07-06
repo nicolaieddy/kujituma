@@ -7,9 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { X, Calendar, Eye, EyeOff } from "lucide-react";
+import { X, Calendar, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
+import { CustomCategoriesService } from "@/services/customCategoriesService";
+import { CustomGoalCategory } from "@/types/customCategories";
+import { toast } from "@/hooks/use-toast";
 
 interface GoalFormProps {
   onSubmit: (data: CreateGoalData) => void;
@@ -29,15 +33,31 @@ const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
 
 export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
   const isMobile = useIsMobile();
+  const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
+  const [showAddCategory, setShowAddCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [formData, setFormData] = useState<CreateGoalData>({
     title: '',
     description: '',
     timeframe: '1 Month',
     target_date: '',
     category: '',
-    notes: '',
     is_public: true
   });
+
+  // Load custom categories
+  useEffect(() => {
+    const loadCustomCategories = async () => {
+      try {
+        const categories = await CustomCategoriesService.getCustomCategories();
+        setCustomCategories(categories);
+      } catch (error) {
+        console.error('Error loading custom categories:', error);
+      }
+    };
+
+    loadCustomCategories();
+  }, []);
 
   // Initialize form data when initialData changes (for editing)
   useEffect(() => {
@@ -48,7 +68,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         timeframe: initialData.timeframe || '1 Month',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
-        notes: initialData.notes || '',
         is_public: initialData.is_public ?? true
       });
     } else {
@@ -59,7 +78,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         timeframe: '1 Month',
         target_date: '',
         category: '',
-        notes: '',
         is_public: true
       });
     }
@@ -74,7 +92,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       description: formData.description?.trim() || '',
       timeframe: formData.timeframe,
       category: formData.category?.trim() || '',
-      notes: formData.notes?.trim() || '',
       is_public: formData.is_public
     };
 
@@ -85,6 +102,58 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
 
     onSubmit(submitData);
   };
+
+  const handleAddCustomCategory = async () => {
+    if (!newCategoryName.trim()) return;
+
+    try {
+      const newCategory = await CustomCategoriesService.createCustomCategory({
+        name: newCategoryName.trim()
+      });
+      setCustomCategories([...customCategories, newCategory]);
+      setFormData({ ...formData, category: newCategory.name });
+      setNewCategoryName("");
+      setShowAddCategory(false);
+      toast({
+        title: "Success",
+        description: "Custom category created successfully!",
+      });
+    } catch (error) {
+      console.error('Error creating custom category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to create custom category. It may already exist.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteCustomCategory = async (categoryId: string, categoryName: string) => {
+    try {
+      await CustomCategoriesService.deleteCustomCategory(categoryId);
+      setCustomCategories(customCategories.filter(cat => cat.id !== categoryId));
+      // Clear category if it was selected
+      if (formData.category === categoryName) {
+        setFormData({ ...formData, category: '' });
+      }
+      toast({
+        title: "Success",
+        description: "Custom category deleted successfully!",
+      });
+    } catch (error) {
+      console.error('Error deleting custom category:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete custom category.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const allCategories = [
+    ...PREDEFINED_CATEGORIES.map(cat => ({ name: cat, isCustom: false })),
+    ...customCategories.map(cat => ({ name: cat.name, isCustom: true, id: cat.id }))
+  ];
 
   return (
     <Card className={`w-full ${isMobile ? 'mx-4' : 'max-w-2xl mx-auto'} bg-white/10 backdrop-blur-lg border-white/20`}>
@@ -174,29 +243,110 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
 
           <div>
             <Label htmlFor="category" className="text-white font-medium text-sm">Category</Label>
-            <Input
-              id="category"
-              value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              placeholder="e.g., Health, Career, Learning..."
-              className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-1.5 ${
-                isMobile ? 'h-12 text-base' : 'h-10'
-              }`}
-            />
-          </div>
+            <div className="mt-1.5 space-y-3">
+              <Select
+                value={formData.category}
+                onValueChange={(value) => {
+                  if (value === "__add_custom__") {
+                    setShowAddCategory(true);
+                  } else {
+                    setFormData({ ...formData, category: value });
+                  }
+                }}
+              >
+                <SelectTrigger className={`bg-white/10 border-white/20 text-white ${
+                  isMobile ? 'h-12' : 'h-10'
+                }`}>
+                  <SelectValue placeholder="Select a category" />
+                </SelectTrigger>
+                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
+                  <SelectItem value="" className="hover:bg-white/20">
+                    No Category
+                  </SelectItem>
+                  {PREDEFINED_CATEGORIES.map((category) => (
+                    <SelectItem key={category} value={category} className="hover:bg-white/20">
+                      {category}
+                    </SelectItem>
+                  ))}
+                  {customCategories.length > 0 && (
+                    <>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t border-gray-200 mt-1">
+                        Custom Categories
+                      </div>
+                      {customCategories.map((category) => (
+                        <div key={category.id} className="flex items-center justify-between px-2 py-1 hover:bg-white/20">
+                          <SelectItem value={category.name} className="flex-1 border-none p-0 hover:bg-transparent">
+                            {category.name}
+                          </SelectItem>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteCustomCategory(category.id, category.name);
+                            }}
+                            className="h-6 w-6 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  <div className="border-t border-gray-200 mt-1">
+                    <SelectItem value="__add_custom__" className="hover:bg-white/20 text-blue-400 font-medium">
+                      <div className="flex items-center gap-2">
+                        <Plus className="h-4 w-4" />
+                        Add Custom Category
+                      </div>
+                    </SelectItem>
+                  </div>
+                </SelectContent>
+              </Select>
 
-          <div>
-            <Label htmlFor="notes" className="text-white font-medium text-sm">Additional Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Any additional notes or details..."
-              className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-1.5 resize-none ${
-                isMobile ? 'text-base' : ''
-              }`}
-              rows={isMobile ? 2 : 3}
-            />
+              {showAddCategory && (
+                <div className="flex gap-2">
+                  <Input
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Enter category name..."
+                    className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 ${
+                      isMobile ? 'h-12 text-base' : 'h-10'
+                    }`}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddCustomCategory();
+                      } else if (e.key === 'Escape') {
+                        setShowAddCategory(false);
+                        setNewCategoryName("");
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    onClick={handleAddCustomCategory}
+                    disabled={!newCategoryName.trim()}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAddCategory(false);
+                      setNewCategoryName("");
+                    }}
+                    className="border-white/20 text-white hover:bg-white/20"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className={`${isMobile ? 'p-4' : 'p-5'} bg-white/5 rounded-lg border border-white/10`}>
@@ -239,7 +389,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
               type="button"
               variant="outline"
               onClick={onCancel}
-              className={`${isMobile ? 'w-full h-12 text-base' : ''} border-white/20 text-white hover:bg-white/20`}
+              className={`${isMobile ? 'w-full h-12 text-base' : ''} bg-white text-black border-white hover:bg-gray-100`}
             >
               Cancel
             </Button>
