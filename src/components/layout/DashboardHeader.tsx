@@ -2,7 +2,8 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { LogOut, Settings, User, Menu } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { LogOut, Settings, User, Menu, ChevronDown } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -119,57 +120,67 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           )}
         </div>
         
-        <div className="flex items-center space-x-2">
-          {/* Profile Avatar */}
-          <Avatar 
-            className="h-9 w-9 cursor-pointer hover:ring-2 hover:ring-white/20 transition-all"
-            onClick={() => {
-              navigate('/profile');
-              setMobileMenuOpen(false);
-            }}
-          >
-            <AvatarImage src={userProfile?.avatar_url || undefined} />
-            <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm">
-              {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
-            </AvatarFallback>
-          </Avatar>
-
-          {!isMobile && (
-            <>
-              {isAdmin && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white/80 hover:text-white hover:bg-white/20"
-                  onClick={() => navigate('/admin')}
-                >
-                  <Settings className="h-4 w-4 mr-2" />
-                  Admin
-                </Button>
-              )}
-              
-              <Button
-                variant="ghost" 
-                size="sm"
-                onClick={onSignOut}
-                className="text-white/80 hover:text-white hover:bg-white/20"
+        <div className="flex items-center justify-end">
+          {!isMobile ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-white/10 transition-colors">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={userProfile?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm">
+                      {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <ChevronDown className="h-4 w-4 text-white/60" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent 
+                align="end" 
+                className="w-56 bg-slate-800/95 backdrop-blur-lg border-white/20 text-white"
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
-            </>
-          )}
-
-          {isMobile && (
+                <DropdownMenuItem 
+                  onClick={() => navigate('/profile')}
+                  className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  Profile
+                </DropdownMenuItem>
+                
+                {isAdmin && (
+                  <>
+                    <DropdownMenuSeparator className="bg-white/20" />
+                    <DropdownMenuItem 
+                      onClick={() => navigate('/admin')}
+                      className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      Admin
+                    </DropdownMenuItem>
+                  </>
+                )}
+                
+                <DropdownMenuSeparator className="bg-white/20" />
+                <DropdownMenuItem 
+                  onClick={onSignOut}
+                  className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-red-300"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Sign Out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
             <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <SheetTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-white/80 hover:text-white hover:bg-white/20 p-2"
-                >
-                  <Menu className="h-5 w-5" />
-                </Button>
+                <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-white/10 transition-colors">
+                  <Avatar className="h-9 w-9">
+                    <AvatarImage src={userProfile?.avatar_url || undefined} />
+                    <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm">
+                      {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
+                    </AvatarFallback>
+                  </Avatar>
+                  <Menu className="h-4 w-4 text-white/60" />
+                </button>
               </SheetTrigger>
               <SheetContent 
                 side="right" 
@@ -180,6 +191,17 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
                   <NavigationItems />
                   
                   <div className="border-t border-white/20 my-4"></div>
+                  
+                  <button
+                    onClick={() => {
+                      navigate('/profile');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+                  >
+                    <User className="h-4 w-4 mr-3" />
+                    Profile
+                  </button>
                   
                   {isAdmin && (
                     <button
@@ -199,7 +221,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
                       onSignOut();
                       setMobileMenuOpen(false);
                     }}
-                    className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+                    className="flex items-center w-full text-left py-3 px-4 rounded-lg text-red-300 hover:text-red-200 hover:bg-red-500/20 transition-colors"
                   >
                     <LogOut className="h-4 w-4 mr-3" />
                     Sign Out
