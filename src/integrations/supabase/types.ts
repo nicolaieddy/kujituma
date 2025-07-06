@@ -132,6 +132,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          is_public: boolean
           notes: string | null
           order_index: number | null
           status: string
@@ -147,6 +148,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_public?: boolean
           notes?: string | null
           order_index?: number | null
           status?: string
@@ -162,6 +164,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          is_public?: boolean
           notes?: string | null
           order_index?: number | null
           status?: string

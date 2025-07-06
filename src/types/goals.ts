@@ -13,6 +13,7 @@ export interface Goal {
   updated_at: string;
   completed_at: string | null;
   order_index: number;
+  is_public: boolean;
 }
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
@@ -35,6 +36,7 @@ export interface CreateGoalData {
   target_date?: string;
   category?: string;
   notes?: string;
+  is_public?: boolean;
 }
 
 export interface UpdateGoalData {
@@ -46,4 +48,5 @@ export interface UpdateGoalData {
   category?: string;
   notes?: string;
   order_index?: number;
+  is_public?: boolean;
 }

@@ -6,7 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Calendar } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { X, Calendar, Eye, EyeOff } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal } from "@/types/goals";
 
 interface GoalFormProps {
@@ -32,7 +33,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     timeframe: '1 Month',
     target_date: '',
     category: '',
-    notes: ''
+    notes: '',
+    is_public: true
   });
 
   // Initialize form data when initialData changes (for editing)
@@ -44,7 +46,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         timeframe: initialData.timeframe || '1 Month',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
-        notes: initialData.notes || ''
+        notes: initialData.notes || '',
+        is_public: initialData.is_public ?? true
       });
     } else {
       // Reset form for new goal
@@ -54,7 +57,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         timeframe: '1 Month',
         target_date: '',
         category: '',
-        notes: ''
+        notes: '',
+        is_public: true
       });
     }
   }, [initialData]);
@@ -68,7 +72,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       description: formData.description?.trim() || '',
       timeframe: formData.timeframe,
       category: formData.category?.trim() || '',
-      notes: formData.notes?.trim() || ''
+      notes: formData.notes?.trim() || '',
+      is_public: formData.is_public
     };
 
     // Only include target_date if timeframe is Custom Date and date is provided
@@ -177,6 +182,32 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
               placeholder="Any additional notes or details..."
               className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
               rows={2}
+            />
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="flex items-center gap-3">
+              {formData.is_public ? (
+                <Eye className="h-5 w-5 text-white" />
+              ) : (
+                <EyeOff className="h-5 w-5 text-white" />
+              )}
+              <div>
+                <Label htmlFor="is_public" className="text-white font-medium">
+                  {formData.is_public ? 'Public Goal' : 'Private Goal'}
+                </Label>
+                <p className="text-sm text-white/60">
+                  {formData.is_public 
+                    ? 'Visible on your public profile' 
+                    : 'Only visible to you'
+                  }
+                </p>
+              </div>
+            </div>
+            <Switch
+              id="is_public"
+              checked={formData.is_public}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
             />
           </div>
 

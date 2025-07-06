@@ -13,6 +13,7 @@ export class GoalsService {
         target_date: data.target_date || null,
         category: data.category || '',
         notes: data.notes || '',
+        is_public: data.is_public ?? true,
         user_id: (await supabase.auth.getUser()).data.user?.id
       })
       .select()
@@ -26,6 +27,20 @@ export class GoalsService {
     const { data: goals, error } = await supabase
       .from('goals')
       .select('*')
+      .neq('status', 'deleted')
+      .order('order_index', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return (goals || []) as Goal[];
+  }
+
+  static async getPublicGoals(userId: string): Promise<Goal[]> {
+    const { data: goals, error } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_public', true)
       .neq('status', 'deleted')
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: false });

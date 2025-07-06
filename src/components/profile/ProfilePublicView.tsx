@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Calendar, Clock, ExternalLink } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
+import { ProfileGoals } from "./ProfileGoals";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface Profile {
   id: string;
@@ -20,6 +22,9 @@ interface ProfilePublicViewProps {
 }
 
 export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
+  const { user } = useAuth();
+  const isOwnProfile = user?.id === profile.id;
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -29,7 +34,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-4xl mx-auto space-y-8">
       <Card className="bg-white/10 backdrop-blur-lg border-white/20">
         <CardContent className="p-8">
           {/* Profile Header */}
@@ -88,6 +93,9 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Goals Section */}
+      <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />
     </div>
   );
 };
