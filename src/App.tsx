@@ -19,7 +19,7 @@ const AppContent = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Feed />} />
+      <Route path="/" element={<Index />} />
       <Route path="/community" element={<Feed />} />
       <Route path="/goals" element={<Goals />} />
       <Route path="/auth" element={<Auth />} />

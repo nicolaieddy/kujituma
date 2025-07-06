@@ -95,11 +95,6 @@ const Auth = () => {
             )}
           </Button>
 
-          <div className="text-center mt-6">
-            <p className="text-white/60 text-sm">
-              You can also <a href="/community" className="text-blue-400 hover:underline">browse the community without signing in</a>
-            </p>
-          </div>
         </CardContent>
       </Card>
     </div>
