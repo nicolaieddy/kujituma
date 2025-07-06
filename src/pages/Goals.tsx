@@ -142,13 +142,13 @@ const Goals = () => {
                 value="weekly" 
                 className={`text-white data-[state=active]:bg-white/20 data-[state=active]:text-white ${isMobile ? 'text-sm' : 'text-base'}`}
               >
-                Weekly Updates
+                Weekly Plan
               </TabsTrigger>
               <TabsTrigger 
                 value="longterm" 
                 className={`text-white data-[state=active]:bg-white/20 data-[state=active]:text-white ${isMobile ? 'text-sm' : 'text-base'}`}
               >
-                Long-term Goals
+                Goals
               </TabsTrigger>
             </TabsList>
             
