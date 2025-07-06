@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useDebounce } from './useDebounce';
 
 interface UseAutoSaveOptions {
-  onSave: (value: string) => void;
+  onSave: (value: string) => Promise<void> | void;
   delay?: number;
   initialValue?: string;
 }
@@ -23,10 +23,18 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
   useEffect(() => {
     // Only save if the value is different from initial and not empty
     if (debouncedValue !== initialValue && debouncedValue.trim() !== '') {
-      setIsSaving(true);
-      onSave(debouncedValue);
-      setLastSaved(new Date());
-      setIsSaving(false);
+      const saveAsync = async () => {
+        setIsSaving(true);
+        try {
+          await onSave(debouncedValue);
+          setLastSaved(new Date());
+        } catch (error) {
+          console.error('Auto-save failed:', error);
+        } finally {
+          setIsSaving(false);
+        }
+      };
+      saveAsync();
     }
   }, [debouncedValue, onSave, initialValue]);
 
@@ -34,12 +42,17 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
     setValue(newValue);
   }, []);
 
-  const manualSave = useCallback(() => {
+  const manualSave = useCallback(async () => {
     if (value.trim() !== '') {
       setIsSaving(true);
-      onSave(value);
-      setLastSaved(new Date());
-      setIsSaving(false);
+      try {
+        await onSave(value);
+        setLastSaved(new Date());
+      } catch (error) {
+        console.error('Manual save failed:', error);
+      } finally {
+        setIsSaving(false);
+      }
     }
   }, [value, onSave]);
 
