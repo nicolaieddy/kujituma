@@ -6,11 +6,13 @@ import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
+  const isMobile = useIsMobile();
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
@@ -57,15 +59,15 @@ const Index = () => {
         onSignOut={handleSignOut}
       />
 
-      <div className="container mx-auto px-4 py-6">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">This Week</h1>
-          <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto">
+      <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
+        <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-white mb-4`}>This Week</h1>
+          <p className={`text-white/80 ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto`}>
             Set your focus, track progress, and share your journey with the community.
           </p>
         </div>
 
-        <div className="max-w-4xl mx-auto">
+        <div className={`${isMobile ? 'max-w-full' : 'max-w-4xl'} mx-auto`}>
           <ThisWeekView 
             weekStart={currentWeekStart}
             onNavigateWeek={navigateToWeek}

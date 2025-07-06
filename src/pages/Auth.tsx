@@ -47,29 +47,29 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+        <CardHeader className="text-center pb-6">
+          <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
             Welcome to Kujituma
           </CardTitle>
-          <p className="text-white/80 mt-2">
+          <p className="text-white/80 mt-3 text-sm sm:text-base">
             Sign in to track your goals and manage your progress
           </p>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
           {error && (
-            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 flex items-center space-x-2">
-              <AlertCircle className="h-4 w-4 text-red-400" />
-              <p className="text-red-300 text-sm">{error}</p>
+            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <p className="text-red-300 text-sm leading-relaxed">{error}</p>
             </div>
           )}
           
           <Button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-medium py-3 flex items-center justify-center space-x-2"
+            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-medium py-4 h-12 flex items-center justify-center space-x-3 text-base"
           >
             {signingIn ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             ) : (
               <>
                 <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@ const Auth = () => {
             )}
           </Button>
 
-          <div className="text-center mt-4">
+          <div className="text-center mt-6">
             <p className="text-white/60 text-sm">
               You can also <a href="/goals" className="text-blue-400 hover:underline">browse goals without signing in</a>
             </p>

@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { X, Calendar, Eye, EyeOff } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal } from "@/types/goals";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface GoalFormProps {
   onSubmit: (data: CreateGoalData) => void;
@@ -27,6 +28,7 @@ const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
 ];
 
 export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
+  const isMobile = useIsMobile();
   const [formData, setFormData] = useState<CreateGoalData>({
     title: '',
     description: '',
@@ -85,59 +87,65 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   };
 
   return (
-    <Card className="w-full max-w-2xl mx-auto bg-white/10 backdrop-blur-lg border-white/20">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-white">
+    <Card className={`w-full ${isMobile ? 'mx-4' : 'max-w-2xl mx-auto'} bg-white/10 backdrop-blur-lg border-white/20`}>
+      <CardHeader className="flex flex-row items-center justify-between pb-4">
+        <CardTitle className={`text-white ${isMobile ? 'text-lg' : 'text-xl'}`}>
           {initialData ? 'Edit Goal' : 'Create New Goal'}
         </CardTitle>
         <Button
           variant="ghost"
           size="sm"
           onClick={onCancel}
-          className="text-white hover:bg-white/20"
+          className="text-white hover:bg-white/20 h-8 w-8 p-0"
         >
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <CardContent className={`${isMobile ? 'px-4 pb-4' : 'px-6 pb-6'}`}>
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <Label htmlFor="title" className="text-white">Goal Title *</Label>
+            <Label htmlFor="title" className="text-white font-medium text-sm">Goal Title *</Label>
             <Input
               id="title"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="Enter your goal title..."
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-1.5 ${
+                isMobile ? 'h-12 text-base' : 'h-10'
+              }`}
               required
             />
           </div>
 
           <div>
-            <Label htmlFor="description" className="text-white">Description</Label>
+            <Label htmlFor="description" className="text-white font-medium text-sm">Description</Label>
             <Textarea
               id="description"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Describe your goal..."
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-              rows={3}
+              className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-1.5 resize-none ${
+                isMobile ? 'text-base' : ''
+              }`}
+              rows={isMobile ? 3 : 4}
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-5' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
             <div>
-              <Label htmlFor="timeframe" className="text-white">Timeframe *</Label>
+              <Label htmlFor="timeframe" className="text-white font-medium text-sm">Timeframe *</Label>
               <Select
                 value={formData.timeframe}
                 onValueChange={(value: GoalTimeframe) => setFormData({ ...formData, timeframe: value })}
               >
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectTrigger className={`bg-white/10 border-white/20 text-white mt-1.5 ${
+                  isMobile ? 'h-12' : 'h-10'
+                }`}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
                   {TIMEFRAME_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option}>
+                    <SelectItem key={option} value={option} className="hover:bg-white/20">
                       {option}
                     </SelectItem>
                   ))}
@@ -147,14 +155,16 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
 
             {formData.timeframe === 'Custom Date' && (
               <div>
-                <Label htmlFor="target_date" className="text-white">Target Date</Label>
+                <Label htmlFor="target_date" className="text-white font-medium text-sm">Target Date</Label>
                 <div className="relative">
                   <Input
                     id="target_date"
                     type="date"
                     value={formData.target_date}
                     onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                    className="bg-white/10 border-white/20 text-white"
+                    className={`bg-white/10 border-white/20 text-white mt-1.5 ${
+                      isMobile ? 'h-12' : 'h-10'
+                    }`}
                   />
                   <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 h-4 w-4 pointer-events-none" />
                 </div>
@@ -163,59 +173,65 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
           </div>
 
           <div>
-            <Label htmlFor="category" className="text-white">Category</Label>
+            <Label htmlFor="category" className="text-white font-medium text-sm">Category</Label>
             <Input
               id="category"
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               placeholder="e.g., Health, Career, Learning..."
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-1.5 ${
+                isMobile ? 'h-12 text-base' : 'h-10'
+              }`}
             />
           </div>
 
           <div>
-            <Label htmlFor="notes" className="text-white">Additional Notes</Label>
+            <Label htmlFor="notes" className="text-white font-medium text-sm">Additional Notes</Label>
             <Textarea
               id="notes"
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               placeholder="Any additional notes or details..."
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
-              rows={2}
+              className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 mt-1.5 resize-none ${
+                isMobile ? 'text-base' : ''
+              }`}
+              rows={isMobile ? 2 : 3}
             />
           </div>
 
-          <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-            <div className="flex items-center gap-3">
-              {formData.is_public ? (
-                <Eye className="h-5 w-5 text-white" />
-              ) : (
-                <EyeOff className="h-5 w-5 text-white" />
-              )}
-              <div>
-                <Label htmlFor="is_public" className="text-white font-medium">
-                  {formData.is_public ? 'Public Goal' : 'Private Goal'}
-                </Label>
-                <p className="text-sm text-white/60">
-                  {formData.is_public 
-                    ? 'Visible on your public profile' 
-                    : 'Only visible to you'
-                  }
-                </p>
+          <div className={`${isMobile ? 'p-4' : 'p-5'} bg-white/5 rounded-lg border border-white/10`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {formData.is_public ? (
+                  <Eye className="h-5 w-5 text-white" />
+                ) : (
+                  <EyeOff className="h-5 w-5 text-white" />
+                )}
+                <div>
+                  <Label htmlFor="is_public" className="text-white font-medium">
+                    {formData.is_public ? 'Public Goal' : 'Private Goal'}
+                  </Label>
+                  <p className={`text-white/60 ${isMobile ? 'text-sm' : 'text-sm'}`}>
+                    {formData.is_public 
+                      ? 'Visible on your public profile' 
+                      : 'Only visible to you'
+                    }
+                  </p>
+                </div>
               </div>
+              <Switch
+                id="is_public"
+                checked={formData.is_public}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
+              />
             </div>
-            <Switch
-              id="is_public"
-              checked={formData.is_public}
-              onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
-            />
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className={`flex ${isMobile ? 'flex-col gap-3' : 'flex-row gap-3'} pt-2`}>
             <Button
               type="submit"
               disabled={!formData.title.trim() || isLoading}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+              className={`${isMobile ? 'w-full h-12 text-base' : 'flex-1'} bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600`}
             >
               {isLoading ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Goal' : 'Create Goal')}
             </Button>
@@ -223,7 +239,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="border-white/20 text-white hover:bg-white/20"
+              className={`${isMobile ? 'w-full h-12 text-base' : ''} border-white/20 text-white hover:bg-white/20`}
             >
               Cancel
             </Button>
