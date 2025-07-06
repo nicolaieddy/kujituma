@@ -12,7 +12,6 @@ export class GoalsService {
         timeframe: data.timeframe,
         target_date: data.target_date || null,
         category: data.category || '',
-        notes: data.notes || '',
         is_public: data.is_public ?? true,
         user_id: (await supabase.auth.getUser()).data.user?.id
       })
