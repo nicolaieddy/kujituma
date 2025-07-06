@@ -114,14 +114,23 @@ export class WeeklyProgressService {
     }
     console.log('Authenticated user:', user.id);
     
+    // Add more specific logging
+    console.log('Query params:', { weekStart, userId: user.id });
+    
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .select('*')
       .eq('week_start', weekStart)
-      .eq('user_id', user.id)  // Explicitly filter by user_id
-      .maybeSingle();  // Use maybeSingle instead of single to avoid errors when no data
+      .eq('user_id', user.id)
+      .limit(1)  // Add explicit limit to prevent multiple rows
+      .single();  // Use single but with limit for safety
 
     if (error) {
+      // If no data found, return null instead of throwing
+      if (error.code === 'PGRST116') {
+        console.log('No progress post found for this week');
+        return null;
+      }
       console.error('Error fetching progress post:', error);
       throw error;
     }
