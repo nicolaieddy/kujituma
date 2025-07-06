@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, Calendar, Target } from "lucide-react";
+import { ExternalLink, Calendar, Target, CheckCircle2, Clock } from "lucide-react";
 import { UnifiedPost } from "@/services/unifiedPostsService";
 
 interface SharedPostPreviewProps {
@@ -33,36 +33,74 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-3 pt-0">
-        {/* Accomplishments Preview */}
+      <CardContent className="space-y-4 pt-0">
+        {/* Week Summary */}
+        {post.total_objectives !== null && post.total_objectives > 0 && (
+          <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-lg p-3 border border-white/10">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-white/80 text-xs font-medium">Week Summary</span>
+              <div className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium">
+                {post.completion_percentage}% Complete
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {/* Completed */}
+              <div className="flex items-center gap-1">
+                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
+                <span className="text-emerald-300 text-xs font-medium">
+                  {post.objectives_completed} Done
+                </span>
+              </div>
+              
+              {/* In Progress */}
+              {(post.total_objectives - post.objectives_completed) > 0 && (
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3 text-amber-400" />
+                  <span className="text-amber-300 text-xs font-medium">
+                    {post.total_objectives - post.objectives_completed} In Progress
+                  </span>
+                </div>
+              )}
+
+              {/* Progress Bar */}
+              <div className="flex-1 ml-2">
+                <div className="bg-white/10 rounded-full h-1.5 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                    style={{ width: `${post.completion_percentage}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick Preview */}
         {post.accomplishments && (
-          <div>
-            <h4 className="text-white text-xs font-medium mb-1">Progress Shared:</h4>
-            <p className="text-white/80 text-xs line-clamp-3 bg-white/5 rounded p-2">
-              {post.accomplishments}
+          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+            <h4 className="text-white text-xs font-medium mb-2 flex items-center gap-1">
+              <Target className="h-3 w-3" />
+              Progress Highlights
+            </h4>
+            <p className="text-white/70 text-xs line-clamp-2 leading-relaxed">
+              {post.accomplishments.split('\n').find(line => 
+                line.includes('•') || line.trim().length > 0
+              )?.replace('•', '').trim() || 'Weekly progress shared'}
             </p>
           </div>
         )}
 
-        {/* Completion Stats */}
-        {post.total_objectives !== null && post.total_objectives > 0 && (
-          <div className="flex items-center text-white/70 text-xs">
-            <Target className="h-3 w-3 mr-1" />
-            {post.objectives_completed}/{post.total_objectives} objectives completed
-            ({post.completion_percentage}%)
-          </div>
-        )}
-
-        {/* Engagement Stats */}
-        <div className="flex items-center justify-between">
-          <div className="text-white/60 text-xs">
+        {/* Engagement & Action */}
+        <div className="flex items-center justify-between pt-2 border-t border-white/10">
+          <div className="text-white/50 text-xs">
             {post.likes} likes • {post.comments.length} comments
           </div>
           <Button
             variant="glass-outline"
             size="sm"
             onClick={onViewInCommunity}
-            className="text-xs px-3 py-1 h-auto"
+            className="text-xs px-3 py-1 h-auto hover:bg-white/10"
           >
             <ExternalLink className="h-3 w-3 mr-1" />
             View Post

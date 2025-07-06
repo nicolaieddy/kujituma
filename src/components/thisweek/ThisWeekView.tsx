@@ -98,20 +98,32 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         accomplishments += '🎯 This Week\'s Progress:\n\n';
         
         if (completedObjectives.length > 0) {
-          accomplishments += '✅ Completed:\n';
+          accomplishments += 'Completed Objectives:\n';
           accomplishments += completedObjectives.map(obj => `• ${obj.text}`).join('\n');
           accomplishments += '\n\n';
         }
         
         if (pendingObjectives.length > 0) {
-          accomplishments += '🔄 In Progress:\n';
+          accomplishments += 'Incomplete Objectives:\n';
           accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
           accomplishments += '\n\n';
+          
+          // Add reflection notes for incomplete objectives if available
+          const incompleteReflections = progressPost?.incomplete_reflections || {};
+          const reflectionEntries = Object.entries(incompleteReflections)
+            .filter(([_, reflection]) => reflection && typeof reflection === 'string' && reflection.trim())
+            .map(([_, reflection]) => reflection);
+          
+          if (reflectionEntries.length > 0) {
+            accomplishments += 'Reflections on Incomplete Objectives:\n';
+            accomplishments += reflectionEntries.join('\n');
+            accomplishments += '\n\n';
+          }
         }
       }
       
       if (progressPost?.notes?.trim()) {
-        accomplishments += '💭 Weekly Reflection:\n';
+        accomplishments += 'Weekly Reflections:\n';
         accomplishments += progressPost.notes;
         accomplishments += '\n\n';
       }
