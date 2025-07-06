@@ -11,13 +11,22 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     queryKey: ['weekly-progress-post', user?.id, currentWeekStart],
     queryFn: async () => {
       console.log('Fetching progress post for user:', user?.id, 'week:', currentWeekStart);
-      return WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
+      try {
+        return await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
+      } catch (error) {
+        console.error('Progress post query failed:', error);
+        // Return null instead of throwing to prevent crashes
+        return null;
+      }
     },
     enabled: !!user && !!currentWeekStart,
     retry: (failureCount, error) => {
-      console.error('Progress post query failed:', error);
-      return failureCount < 2;
-    }
+      console.error('Progress post query failed, attempt:', failureCount + 1, error);
+      // Only retry on network errors, not on data integrity issues
+      return failureCount < 1 && !error?.message?.includes('multiple');
+    },
+    staleTime: 5000, // Consider data fresh for 5 seconds
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
   });
 
   const updateProgressPostMutation = useMutation({
