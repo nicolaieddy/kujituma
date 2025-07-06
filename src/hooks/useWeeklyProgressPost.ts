@@ -25,18 +25,13 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
       WeeklyProgressService.upsertWeeklyProgressPost(weekStart, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
-      toast({
-        title: "Success",
-        description: "Progress notes saved successfully!",
-      });
+      // Remove toast to prevent potential React crashes
+      console.log('Progress notes saved successfully!');
     },
     onError: (error) => {
       console.error('Error updating progress post:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save progress notes. Please try again.",
-        variant: "destructive",
-      });
+      // Remove toast to prevent potential React crashes  
+      console.error('Failed to save progress notes:', error);
     },
   });
 

@@ -15,7 +15,14 @@ export const WeeklyReflectionCard = ({
   isReadOnly
 }: WeeklyReflectionCardProps) => {
   const autoSave = useAutoSave({
-    onSave: onUpdateNotes,
+    onSave: async (notes: string) => {
+      try {
+        await onUpdateNotes(notes);
+      } catch (error) {
+        console.error('Failed to save notes:', error);
+        // Don't throw - let the component continue
+      }
+    },
     delay: 2000,
     initialValue: initialNotes
   });
