@@ -33,8 +33,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
     if (path.startsWith('/community')) return 'community';
     if (path.startsWith('/goals')) return 'goals';
     if (path.startsWith('/profile')) return 'profile';
-    if (path === '/') return 'thisweek';
-    return 'thisweek';
+    return 'community';
   };
 
   const currentSection = getCurrentSection();
@@ -69,17 +68,6 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
     <>
       <button
         onClick={() => {
-          navigate('/');
-          setMobileMenuOpen(false);
-        }}
-        className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors ${
-          currentSection === 'thisweek' ? 'text-white font-medium bg-white/10' : ''
-        }`}
-      >
-        This Week
-      </button>
-      <button
-        onClick={() => {
           navigate('/community');
           setMobileMenuOpen(false);
         }}
@@ -111,14 +99,6 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           
           {!isMobile && (
             <nav className="flex items-center space-x-6 ml-8">
-              <button
-                onClick={() => navigate('/')}
-                className={`text-base text-white/80 hover:text-white transition-colors ${
-                  currentSection === 'thisweek' ? 'text-white font-medium' : ''
-                }`}
-              >
-                This Week
-              </button>
               <button
                 onClick={() => navigate('/community')}
                 className={`text-base text-white/80 hover:text-white transition-colors ${

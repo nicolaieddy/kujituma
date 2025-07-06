@@ -15,8 +15,8 @@ const Auth = () => {
   useEffect(() => {
     console.log('Auth page mounted, user:', user, 'loading:', loading);
     if (user) {
-      console.log('User detected, redirecting to goals');
-      navigate('/goals');
+      console.log('User detected, redirecting to community');
+      navigate('/community');
     }
   }, [user, navigate]);
 
@@ -97,7 +97,7 @@ const Auth = () => {
 
           <div className="text-center mt-6">
             <p className="text-white/60 text-sm">
-              You can also <a href="/goals" className="text-blue-400 hover:underline">browse goals without signing in</a>
+              You can also <a href="/community" className="text-blue-400 hover:underline">browse the community without signing in</a>
             </p>
           </div>
         </CardContent>

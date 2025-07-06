@@ -19,14 +19,14 @@ const AppContent = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Index />} />
+      <Route path="/" element={<Feed />} />
       <Route path="/community" element={<Feed />} />
       <Route path="/goals" element={<Goals />} />
       <Route path="/auth" element={<Auth />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/profile/:userId" element={<Profile />} />
-      <Route path="*" element={<Index />} />
+      <Route path="*" element={<Feed />} />
     </Routes>
   );
 };
