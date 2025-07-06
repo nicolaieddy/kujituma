@@ -142,17 +142,28 @@ export class WeeklyProgressService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    console.log('Upserting progress post:', { weekStart, userId: user.id, notesLength: notes.length });
+
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .upsert({
         user_id: user.id,
         week_start: weekStart,
         notes: notes,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,week_start', // Specify the conflict columns
+        ignoreDuplicates: false // We want to update, not ignore
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error upserting progress post:', error);
+      throw error;
+    }
+    
+    console.log('Successfully upserted progress post');
     return post as WeeklyProgressPost;
   }
 
@@ -164,6 +175,8 @@ export class WeeklyProgressService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
+    console.log('Upserting progress post with reflections:', { weekStart, userId: user.id });
+
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .upsert({
@@ -172,6 +185,8 @@ export class WeeklyProgressService {
         notes: notes,
         incomplete_reflections: incompleteReflections || {},
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,week_start'
       })
       .select()
       .single();
@@ -180,12 +195,15 @@ export class WeeklyProgressService {
       console.error('Error upserting progress post with reflections:', error);
       throw error;
     }
+    console.log('Successfully upserted progress post with reflections');
     return post as WeeklyProgressPost;
   }
 
   static async completeWeek(weekStart: string): Promise<WeeklyProgressPost> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
+
+    console.log('Completing week:', { weekStart, userId: user.id });
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
@@ -194,11 +212,18 @@ export class WeeklyProgressService {
         week_start: weekStart,
         is_completed: true,
         completed_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id,week_start'
       })
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error completing week:', error);
+      throw error;
+    }
+    console.log('Successfully completed week');
     return post as WeeklyProgressPost;
   }
 
