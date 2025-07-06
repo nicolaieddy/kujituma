@@ -56,7 +56,7 @@ export const WeeklyObjectivesList = ({
 
   // Auto-save hook for new objectives
   const autoSave = useObjectiveAutoSave({
-    onSave: onAddObjective,
+    onSave: (text: string) => onAddObjective(text),
     delay: 2000,
   });
 
@@ -357,23 +357,6 @@ export const WeeklyObjectivesList = ({
                )}
             </div>
             
-            {/* Goal selector for new objective */}
-            <div className="ml-8 flex items-center gap-3">
-              <Target className="h-4 w-4 text-white/60" />
-              <Select value={autoSave.goalId} onValueChange={autoSave.setGoalId}>
-                <SelectTrigger className="w-full bg-white/10 border-white/20 text-white">
-                  <SelectValue placeholder="Link to a goal (optional)" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-white/20">
-                  <SelectItem value="none">No goal (standalone objective)</SelectItem>
-                  {goals.map((goal) => (
-                    <SelectItem key={goal.id} value={goal.id} className="text-white">
-                      {goal.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
         )}
       </div>
