@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { TourPopover } from './TourPopover';
 import { onboardingTourConfig } from './TourConfig';
 import { useTour } from '@/hooks/useTour';
@@ -25,13 +26,16 @@ interface TourProviderProps {
 
 export const TourProvider = ({ children }: TourProviderProps) => {
   const { tour, showTour, nextStep, previousStep, completeTour, dismissTour, startTour } = useTour();
+  const queryClient = useQueryClient();
   const [targetElement, setTargetElement] = useState<Element | null>(null);
   const [overlay, setOverlay] = useState<Element | null>(null);
+  const [forcedShow, setForcedShow] = useState(false);
 
-  const currentStep = showTour && tour ? onboardingTourConfig.steps[tour.current_step] : null;
+  const shouldShowTour = (showTour || forcedShow) && tour;
+  const currentStep = shouldShowTour ? onboardingTourConfig.steps[tour.current_step] : null;
 
   useEffect(() => {
-    if (!showTour || !currentStep) {
+    if (!shouldShowTour || !currentStep) {
       removeHighlight();
       return;
     }
@@ -44,7 +48,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     }
 
     return () => removeHighlight();
-  }, [showTour, currentStep]);
+  }, [shouldShowTour, currentStep]);
 
   const highlightElement = (element: Element) => {
     // Create a subtle overlay that doesn't block interactions
@@ -108,6 +112,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     
     if (isLastStep) {
       completeTour();
+      setForcedShow(false);
     } else {
       nextStep();
     }
@@ -115,26 +120,31 @@ export const TourProvider = ({ children }: TourProviderProps) => {
 
   const handleSkip = () => {
     completeTour();
+    setForcedShow(false);
   };
 
   const handleClose = () => {
     dismissTour();
+    setForcedShow(false);
   };
 
   const startTourManually = async () => {
     try {
       await TourService.restartTour();
-      startTour();
+      // Invalidate queries to refresh tour state
+      queryClient.invalidateQueries({ queryKey: ['user-tour'] });
+      // Force show the tour immediately
+      setForcedShow(true);
     } catch (error) {
       console.error('Error restarting tour:', error);
     }
   };
 
   return (
-    <TourContext.Provider value={{ startTour: startTourManually, isActive: showTour }}>
+    <TourContext.Provider value={{ startTour: startTourManually, isActive: !!shouldShowTour }}>
       {children}
       
-      {showTour && currentStep && targetElement && (
+      {shouldShowTour && currentStep && targetElement && (
         <TourPopover
           step={currentStep}
           currentStepIndex={tour?.current_step || 0}
