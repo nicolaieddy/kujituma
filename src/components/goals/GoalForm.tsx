@@ -91,7 +91,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       title: formData.title.trim(),
       description: formData.description?.trim() || '',
       timeframe: formData.timeframe,
-      category: formData.category?.trim() || '',
+      category: formData.category === 'none' ? '' : (formData.category?.trim() || ''),
       is_public: formData.is_public
     };
 
@@ -260,7 +260,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
-                  <SelectItem value="" className="hover:bg-white/20">
+                  <SelectItem value="none" className="hover:bg-white/20">
                     No Category
                   </SelectItem>
                   {PREDEFINED_CATEGORIES.map((category) => (
