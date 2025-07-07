@@ -120,44 +120,10 @@ export const WeeklyObjectivesList = ({
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-3">
+      <div className="mb-3">
         <Label className="text-white font-medium text-lg">
           🎯 This Week's Objectives
         </Label>
-        {objectives.length > 0 && !isWeekCompleted && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="glass-outline"
-                size="sm"
-                disabled={isDeletingAll}
-                className="text-red-300 hover:text-red-200 hover:border-red-300"
-              >
-                <Trash2 className="h-4 w-4 mr-1" />
-                Clear All
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="bg-slate-800 border-white/20">
-              <AlertDialogHeader>
-                <AlertDialogTitle className="text-white">Clear All Objectives</AlertDialogTitle>
-                <AlertDialogDescription className="text-white/80">
-                  Are you sure you want to delete all {objectives.length} objective{objectives.length !== 1 ? 's' : ''}? This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-                  Cancel
-                </AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={onDeleteAllObjectives}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                >
-                  Clear All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
       </div>
       <div className="mt-3 space-y-3">
         {objectives.map((objective) => {
