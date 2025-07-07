@@ -55,7 +55,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
 
   return (
     <Card 
-      className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-colors cursor-pointer group"
+      className="bg-slate-800/90 backdrop-blur-lg border-slate-700/50 hover:bg-slate-700/90 transition-colors cursor-pointer group shadow-lg"
       onClick={() => onClick?.(goal)}
     >
       <CardHeader className="pb-3">
@@ -124,7 +124,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
       <CardContent className="pt-0">
         <div className="space-y-3">
           {goal.description && (
-            <p className="text-white/80 text-sm leading-relaxed">
+            <p className="text-slate-200 text-sm leading-relaxed">
               {isExpanded ? goal.description : 
                 goal.description.length > 100 ? 
                   `${goal.description.substring(0, 100)}...` : 
@@ -141,7 +141,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             </p>
           )}
           
-          <div className="flex flex-wrap gap-2 text-xs text-white/70">
+          <div className="flex flex-wrap gap-2 text-xs text-slate-300">
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               <span>{getTargetDateDisplay()}</span>
@@ -162,7 +162,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             )}
           </div>
           
-          <div className="flex justify-between items-center text-xs text-white/60 pt-2 border-t border-white/10">
+          <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-600/50">
             <span>Created {formatRelativeTime(new Date(goal.created_at).getTime())}</span>
             {goal.completed_at && (
               <span>Completed {formatRelativeTime(new Date(goal.completed_at).getTime())}</span>
