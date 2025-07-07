@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import { TourPopover } from './TourPopover';
 import { onboardingTourConfig } from './TourConfig';
 import { useTour } from '@/hooks/useTour';
+import { TourService } from '@/services/tourService';
 
 interface TourContextType {
   startTour: () => void;
@@ -23,7 +24,7 @@ interface TourProviderProps {
 }
 
 export const TourProvider = ({ children }: TourProviderProps) => {
-  const { tour, showTour, nextStep, completeTour, dismissTour } = useTour();
+  const { tour, showTour, nextStep, completeTour, dismissTour, startTour } = useTour();
   const [targetElement, setTargetElement] = useState<Element | null>(null);
   const [overlay, setOverlay] = useState<Element | null>(null);
 
@@ -120,8 +121,13 @@ export const TourProvider = ({ children }: TourProviderProps) => {
     dismissTour();
   };
 
-  const startTourManually = () => {
-    // This will be implemented for admin trigger functionality
+  const startTourManually = async () => {
+    try {
+      await TourService.restartTour();
+      startTour();
+    } catch (error) {
+      console.error('Error restarting tour:', error);
+    }
   };
 
   return (

@@ -3,12 +3,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User, Menu, ChevronDown } from "lucide-react";
+import { LogOut, Settings, User, Menu, ChevronDown, HelpCircle } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useTourContext } from "@/components/tour/TourProvider";
+import { useToast } from "@/hooks/use-toast";
 
 interface DashboardHeaderProps {
   isAdmin: boolean;
@@ -27,6 +29,8 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { startTour } = useTourContext();
+  const { toast } = useToast();
 
   // Determine current section based on pathname
   const getCurrentSection = () => {
@@ -63,6 +67,22 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
 
   const getInitials = (name: string) => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleRestartTour = async () => {
+    try {
+      await startTour();
+      toast({
+        title: "Tour restarted",
+        description: "The onboarding tour has been restarted to help you get familiar with the app.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to restart the tour. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const NavigationItems = () => (
@@ -146,6 +166,14 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
                   Profile
                 </DropdownMenuItem>
                 
+                <DropdownMenuItem 
+                  onClick={handleRestartTour}
+                  className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+                >
+                  <HelpCircle className="h-4 w-4 mr-2" />
+                  Restart Tour
+                </DropdownMenuItem>
+                
                 {isAdmin && (
                   <>
                     <DropdownMenuSeparator className="bg-white/20" />
@@ -201,6 +229,17 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
                   >
                     <User className="h-4 w-4 mr-3" />
                     Profile
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      handleRestartTour();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+                  >
+                    <HelpCircle className="h-4 w-4 mr-3" />
+                    Restart Tour
                   </button>
                   
                   {isAdmin && (

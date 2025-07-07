@@ -105,4 +105,18 @@ export class TourService {
     // Show tour if no tour record exists or if tour is not completed/dismissed
     return !tour || (!tour.is_completed && !tour.dismissed_at);
   }
+
+  static async restartTour(tourType: string = 'onboarding'): Promise<void> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+
+    // Check if tour exists, if not create it, if yes reset it
+    const existingTour = await this.getUserTour(tourType);
+    
+    if (existingTour) {
+      await this.resetUserTour(user.user.id, tourType);
+    } else {
+      await this.createUserTour(tourType);
+    }
+  }
 }
