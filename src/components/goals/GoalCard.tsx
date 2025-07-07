@@ -124,7 +124,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
       <CardContent className="pt-0">
         <div className="space-y-3">
           {goal.description && (
-            <p className="text-slate-200 text-sm leading-relaxed">
+            <p className="text-gray-100 text-sm leading-relaxed font-medium">
               {isExpanded ? goal.description : 
                 goal.description.length > 100 ? 
                   `${goal.description.substring(0, 100)}...` : 
@@ -133,7 +133,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
               {goal.description.length > 100 && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-blue-400 hover:text-blue-300 ml-1 text-sm"
+                  className="text-blue-400 hover:text-blue-300 ml-1 text-sm font-medium"
                 >
                   {isExpanded ? 'Show less' : 'Show more'}
                 </button>
@@ -141,7 +141,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             </p>
           )}
           
-          <div className="flex flex-wrap gap-2 text-xs text-slate-300">
+          <div className="flex flex-wrap gap-2 text-xs text-gray-200 font-medium">
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               <span>{getTargetDateDisplay()}</span>
@@ -162,7 +162,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             )}
           </div>
           
-          <div className="flex justify-between items-center text-xs text-slate-400 pt-2 border-t border-slate-600/50">
+          <div className="flex justify-between items-center text-xs text-gray-300 pt-2 border-t border-slate-600/50 font-medium">
             <span>Created {formatRelativeTime(new Date(goal.created_at).getTime())}</span>
             {goal.completed_at && (
               <span>Completed {formatRelativeTime(new Date(goal.completed_at).getTime())}</span>
