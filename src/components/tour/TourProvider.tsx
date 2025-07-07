@@ -24,7 +24,7 @@ interface TourProviderProps {
 }
 
 export const TourProvider = ({ children }: TourProviderProps) => {
-  const { tour, showTour, nextStep, completeTour, dismissTour, startTour } = useTour();
+  const { tour, showTour, nextStep, previousStep, completeTour, dismissTour, startTour } = useTour();
   const [targetElement, setTargetElement] = useState<Element | null>(null);
   const [overlay, setOverlay] = useState<Element | null>(null);
 
@@ -140,6 +140,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
           currentStepIndex={tour?.current_step || 0}
           totalSteps={onboardingTourConfig.steps.length}
           onNext={handleNext}
+          onPrevious={previousStep}
           onSkip={handleSkip}
           onClose={handleClose}
           targetElement={targetElement}

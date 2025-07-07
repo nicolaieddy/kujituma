@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, ArrowRight, SkipForward } from 'lucide-react';
+import { X, ArrowRight, SkipForward, ArrowLeft } from 'lucide-react';
 import { TourStep } from '@/types/tour';
 
 interface TourPopoverProps {
@@ -9,6 +9,7 @@ interface TourPopoverProps {
   currentStepIndex: number;
   totalSteps: number;
   onNext: () => void;
+  onPrevious: () => void;
   onSkip: () => void;
   onClose: () => void;
   targetElement: Element | null;
@@ -19,6 +20,7 @@ export const TourPopover = ({
   currentStepIndex, 
   totalSteps, 
   onNext, 
+  onPrevious,
   onSkip, 
   onClose,
   targetElement 
@@ -92,6 +94,7 @@ export const TourPopover = ({
   }, [targetElement, step.placement]);
 
   const isLastStep = currentStepIndex === totalSteps - 1;
+  const isFirstStep = currentStepIndex === 0;
 
   return (
     <div 
@@ -146,6 +149,17 @@ export const TourPopover = ({
           
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
+              {!isFirstStep && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={onPrevious}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <ArrowLeft className="h-3 w-3 mr-1" />
+                  Previous
+                </Button>
+              )}
               {step.showSkip && !isLastStep && (
                 <Button 
                   variant="ghost" 

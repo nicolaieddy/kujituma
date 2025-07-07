@@ -67,6 +67,12 @@ export const useTour = (tourType: string = 'onboarding') => {
     updateTourMutation.mutate({ step: nextStepNumber });
   };
 
+  const previousStep = () => {
+    if (!tour || tour.current_step <= 0) return;
+    const prevStepNumber = tour.current_step - 1;
+    updateTourMutation.mutate({ step: prevStepNumber });
+  };
+
   const completeTour = () => {
     if (!tour) return;
     updateTourMutation.mutate({ step: tour.current_step, completed: true });
@@ -83,6 +89,7 @@ export const useTour = (tourType: string = 'onboarding') => {
     isLoading,
     startTour,
     nextStep,
+    previousStep,
     completeTour,
     dismissTour,
     isUpdating: updateTourMutation.isPending,

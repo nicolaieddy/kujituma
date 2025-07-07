@@ -11,6 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useTourContext } from "@/components/tour/TourProvider";
 import { useToast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface DashboardHeaderProps {
   isAdmin: boolean;
@@ -140,7 +141,24 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           )}
         </div>
         
-        <div className="flex items-center justify-end">
+        <div className="flex items-center justify-end gap-3">
+          {/* Help Icon with Tooltip */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleRestartTour}
+                className="h-9 w-9 p-0 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Restart product tour</p>
+            </TooltipContent>
+          </Tooltip>
+
           {!isMobile ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

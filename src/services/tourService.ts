@@ -110,13 +110,18 @@ export class TourService {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
-    // Check if tour exists, if not create it, if yes reset it
-    const existingTour = await this.getUserTour(tourType);
-    
-    if (existingTour) {
-      await this.resetUserTour(user.user.id, tourType);
-    } else {
-      await this.createUserTour(tourType);
-    }
+    // Always reset the tour to step 0
+    const { error } = await supabase
+      .from('user_tours')
+      .upsert({
+        user_id: user.user.id,
+        tour_type: tourType,
+        current_step: 0,
+        is_completed: false,
+        dismissed_at: null,
+        completed_at: null
+      });
+
+    if (error) throw error;
   }
 }
