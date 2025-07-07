@@ -23,9 +23,13 @@ export class GoalsService {
   }
 
   static async getGoals(): Promise<Goal[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+
     const { data: goals, error } = await supabase
       .from('goals')
       .select('*')
+      .eq('user_id', user.user.id)
       .neq('status', 'deleted')
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: false });
