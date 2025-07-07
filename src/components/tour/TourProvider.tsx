@@ -46,9 +46,7 @@ export const TourProvider = ({ children }: TourProviderProps) => {
   }, [showTour, currentStep]);
 
   const highlightElement = (element: Element) => {
-    const rect = element.getBoundingClientRect();
-    
-    // Create overlay
+    // Create a subtle overlay that doesn't block interactions
     const overlayDiv = document.createElement('div');
     overlayDiv.className = 'tour-overlay';
     overlayDiv.style.cssText = `
@@ -57,32 +55,25 @@ export const TourProvider = ({ children }: TourProviderProps) => {
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(0, 0, 0, 0.4);
+      background: rgba(0, 0, 0, 0.3);
       z-index: 40;
       pointer-events: none;
     `;
 
-    // Create spotlight hole
-    const spotlight = document.createElement('div');
-    spotlight.style.cssText = `
-      position: absolute;
-      top: ${rect.top - 8}px;
-      left: ${rect.left - 8}px;
-      width: ${rect.width + 16}px;
-      height: ${rect.height + 16}px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.4);
-      border-radius: 8px;
-      pointer-events: auto;
-    `;
-
-    overlayDiv.appendChild(spotlight);
     document.body.appendChild(overlayDiv);
     setOverlay(overlayDiv);
 
-    // Bring target element to front
+    // Bring target element and navigation to front
     element.classList.add('tour-highlighted');
     (element as HTMLElement).style.position = 'relative';
     (element as HTMLElement).style.zIndex = '45';
+    
+    // Also bring the entire tab navigation to front to ensure both tabs are clickable
+    const tabsList = document.querySelector('[role="tablist"]');
+    if (tabsList) {
+      (tabsList as HTMLElement).style.position = 'relative';
+      (tabsList as HTMLElement).style.zIndex = '45';
+    }
   };
 
   const removeHighlight = () => {
@@ -98,6 +89,13 @@ export const TourProvider = ({ children }: TourProviderProps) => {
       (el as HTMLElement).style.position = '';
       (el as HTMLElement).style.zIndex = '';
     });
+
+    // Reset tabs navigation z-index
+    const tabsList = document.querySelector('[role="tablist"]');
+    if (tabsList) {
+      (tabsList as HTMLElement).style.position = '';
+      (tabsList as HTMLElement).style.zIndex = '';
+    }
 
     setTargetElement(null);
   };
