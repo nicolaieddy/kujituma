@@ -140,12 +140,14 @@ const Goals = () => {
             <TabsList className={`grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg border-white/20 ${isMobile ? 'h-11' : 'h-12'}`}>
               <TabsTrigger 
                 value="weekly" 
+                data-tour="weekly-tab"
                 className={`text-white data-[state=active]:bg-white/20 data-[state=active]:text-white ${isMobile ? 'text-sm' : 'text-base'}`}
               >
                 Weekly Plan
               </TabsTrigger>
               <TabsTrigger 
                 value="longterm" 
+                data-tour="goals-tab"
                 className={`text-white data-[state=active]:bg-white/20 data-[state=active]:text-white ${isMobile ? 'text-sm' : 'text-base'}`}
               >
                 Goals

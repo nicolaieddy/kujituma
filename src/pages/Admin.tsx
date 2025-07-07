@@ -7,6 +7,7 @@ import PostsManagement from "@/components/admin/PostsManagement";
 import UsersOverview from "@/components/admin/UsersOverview";
 import UserAnalytics from "@/components/admin/UserAnalytics";
 import PostAnalytics from "@/components/admin/PostAnalytics";
+import { TourManagement } from "@/components/admin/TourManagement";
 import { useAdminData } from "@/hooks/useAdminData";
 
 const Admin = () => {
@@ -61,12 +62,15 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg">
+          <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-lg">
             <TabsTrigger value="posts" className="text-white data-[state=active]:bg-white/20">
               Posts Management
             </TabsTrigger>
             <TabsTrigger value="users" className="text-white data-[state=active]:bg-white/20">
               Users Overview
+            </TabsTrigger>
+            <TabsTrigger value="tours" className="text-white data-[state=active]:bg-white/20">
+              Tour Management
             </TabsTrigger>
           </TabsList>
 
@@ -92,6 +96,10 @@ const Admin = () => {
               averagePostsPerUser={analytics.averagePostsPerUser}
             />
             <UsersOverview users={users} />
+          </TabsContent>
+
+          <TabsContent value="tours" className="mt-6">
+            <TourManagement />
           </TabsContent>
         </Tabs>
       </div>
