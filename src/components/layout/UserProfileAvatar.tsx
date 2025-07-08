@@ -3,6 +3,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { cacheService } from "@/services/cacheService";
+import { backgroundSyncService } from "@/services/backgroundSyncService";
 
 interface UserProfile {
   avatar_url?: string;
@@ -21,6 +23,15 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
     const fetchUserProfile = async () => {
       if (!user) return;
 
+      // Check cache first
+      const cacheKey = cacheService.keys.userProfile(user.id);
+      const cached = cacheService.get<UserProfile>(cacheKey);
+      
+      if (cached) {
+        setUserProfile(cached);
+        return;
+      }
+
       try {
         const { data, error } = await supabase
           .from('profiles')
@@ -30,6 +41,11 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
 
         if (data && !error) {
           setUserProfile(data);
+          // Cache for 10 minutes
+          cacheService.set(cacheKey, data, 10 * 60 * 1000);
+          
+          // Track profile fetch in background
+          backgroundSyncService.trackEvent('profile_fetched', { userId: user.id });
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
