@@ -5,6 +5,7 @@ import { NavigationMenu } from "./NavigationMenu";
 import { HelpButton } from "./HelpButton";
 import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 interface DashboardHeaderProps {
   isAdmin: boolean;
@@ -42,6 +43,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
         
         <div className="flex items-center justify-end gap-3">
           <HelpButton />
+          <NotificationBell />
           
           {!isMobile ? (
             <UserDropdownMenu 

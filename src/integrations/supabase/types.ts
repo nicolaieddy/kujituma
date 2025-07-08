@@ -213,6 +213,45 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          related_comment_id: string | null
+          related_post_id: string | null
+          triggered_by_user_id: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          related_comment_id?: string | null
+          related_post_id?: string | null
+          triggered_by_user_id: string
+          type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          related_comment_id?: string | null
+          related_post_id?: string | null
+          triggered_by_user_id?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_likes: {
         Row: {
           created_at: string | null
@@ -482,6 +521,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_notification: {
+        Args: {
+          _user_id: string
+          _type: string
+          _message: string
+          _related_post_id?: string
+          _related_comment_id?: string
+          _triggered_by_user_id?: string
+        }
+        Returns: string
+      }
       delete_all_weekly_objectives: {
         Args: { _user_id: string; _week_start: string }
         Returns: number
@@ -504,6 +554,14 @@ export type Database = {
           _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
         }
+        Returns: boolean
+      }
+      mark_all_notifications_read: {
+        Args: { _user_id: string }
+        Returns: number
+      }
+      mark_notification_read: {
+        Args: { _notification_id: string; _user_id: string }
         Returns: boolean
       }
       toggle_comment_like: {
