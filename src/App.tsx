@@ -7,27 +7,38 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { useLastActive } from "@/hooks/useLastActive";
-import Feed from "./pages/Feed";
-import Auth from "./pages/Auth";
-import Admin from "./pages/Admin";
-import Goals from "./pages/Goals";
-import Profile from "./pages/Profile";
+import { lazy, Suspense } from "react";
+
+// Lazy load pages for better performance
+const Feed = lazy(() => import("./pages/Feed"));
+const Auth = lazy(() => import("./pages/Auth"));
+const Admin = lazy(() => import("./pages/Admin"));
+const Goals = lazy(() => import("./pages/Goals"));
+const Profile = lazy(() => import("./pages/Profile"));
+
+const LoadingSpinner = () => (
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+    <div className="text-white">Loading...</div>
+  </div>
+);
 
 const AppContent = () => {
   // Track user activity for last active timestamp
   useLastActive();
 
   return (
-    <Routes>
-      <Route path="/" element={<Goals />} />
-      <Route path="/community" element={<Feed />} />
-      <Route path="/goals" element={<Goals />} />
-      <Route path="/auth" element={<Auth />} />
-      <Route path="/admin" element={<Admin />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/profile/:userId" element={<Profile />} />
-      <Route path="*" element={<Feed />} />
-    </Routes>
+    <Suspense fallback={<LoadingSpinner />}>
+      <Routes>
+        <Route path="/" element={<Goals />} />
+        <Route path="/community" element={<Feed />} />
+        <Route path="/goals" element={<Goals />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/admin" element={<Admin />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/profile/:userId" element={<Profile />} />
+        <Route path="*" element={<Feed />} />
+      </Routes>
+    </Suspense>
   );
 };
 

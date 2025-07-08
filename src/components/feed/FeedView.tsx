@@ -1,16 +1,15 @@
 import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
-import { FeedPostCard } from "./FeedPostCard";
-import { EnhancedFeedPostCard } from "./EnhancedFeedPostCard";
+import { VirtualizedFeedList } from "./VirtualizedFeedList";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List } from "lucide-react";
-import { useState } from "react";
+import { useState, memo } from "react";
 
 interface FeedViewProps {
   feedType: "all" | "my";
   highlightedPostId?: string | null;
 }
 
-export const FeedView = ({ feedType, highlightedPostId }: FeedViewProps) => {
+export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) => {
   const [useEnhancedView, setUseEnhancedView] = useState(true);
   
   const { posts, loading: isLoading, refetch } = useUnifiedPosts({
@@ -82,24 +81,14 @@ export const FeedView = ({ feedType, highlightedPostId }: FeedViewProps) => {
       </div>
 
       {/* Posts */}
-      {posts.map((post) => (
-        <div 
-          key={post.id}
-          className={highlightedPostId === post.id ? "ring-2 ring-blue-400 ring-opacity-50 rounded-lg" : ""}
-        >
-          {useEnhancedView ? (
-            <EnhancedFeedPostCard 
-              post={post} 
-              onUpdate={handlePostUpdate}
-            />
-          ) : (
-            <FeedPostCard 
-              post={post} 
-              onUpdate={handlePostUpdate}
-            />
-          )}
-        </div>
-      ))}
+      <VirtualizedFeedList
+        posts={posts}
+        useEnhancedView={useEnhancedView}
+        highlightedPostId={highlightedPostId}
+        onUpdate={handlePostUpdate}
+      />
     </div>
   );
-};
+});
+
+FeedView.displayName = 'FeedView';

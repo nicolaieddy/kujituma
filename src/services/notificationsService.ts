@@ -20,25 +20,23 @@ class NotificationsService {
 
     if (error) throw error;
 
-    // Get triggered_by user info separately
+    // Get unique triggered_by user IDs for batch fetching
     const notifications = data || [];
-    const enrichedNotifications = await Promise.all(
-      notifications.map(async (notification: any) => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, avatar_url')
-          .eq('id', notification.triggered_by_user_id)
-          .single();
+    const triggeredByIds = [...new Set(notifications.map(n => n.triggered_by_user_id))];
+    
+    // Batch fetch user profiles
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', triggeredByIds);
 
-        return {
-          ...notification,
-          type: notification.type as 'post_like' | 'comment_added' | 'comment_like',
-          triggered_by: profile
-        } as Notification;
-      })
-    );
+    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
 
-    return enrichedNotifications;
+    return notifications.map(notification => ({
+      ...notification,
+      type: notification.type as 'post_like' | 'comment_added' | 'comment_like',
+      triggered_by: profileMap.get(notification.triggered_by_user_id) || null
+    })) as Notification[];
   }
 
   async getUnreadCount(): Promise<number> {

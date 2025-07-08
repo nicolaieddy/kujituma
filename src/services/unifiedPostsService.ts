@@ -51,16 +51,29 @@ class UnifiedPostsService {
     return user;
   }
 
+  private likesCache = new Map<string, { postLikes: any[], commentLikes: any[], timestamp: number }>();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
   private async getUserLikes(userId: string) {
+    const cacheKey = userId;
+    const cached = this.likesCache.get(cacheKey);
+    
+    if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+      return { postLikes: cached.postLikes, commentLikes: cached.commentLikes };
+    }
+
     const [postLikesResult, commentLikesResult] = await Promise.all([
       supabase.from('post_likes').select('post_id').eq('user_id', userId),
       supabase.from('comment_likes').select('comment_id').eq('user_id', userId)
     ]);
 
-    return {
+    const result = {
       postLikes: postLikesResult.data || [],
       commentLikes: commentLikesResult.data || []
     };
+
+    this.likesCache.set(cacheKey, { ...result, timestamp: Date.now() });
+    return result;
   }
 
   private formatPost(post: any, user: any, postLikes: any[], commentLikes: any[]): UnifiedPost {
@@ -292,6 +305,9 @@ class UnifiedPostsService {
     const user = await this.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
 
+    // Invalidate cache when toggling likes
+    this.likesCache.delete(user.id);
+
     const { data: isLiked, error } = await supabase.rpc('toggle_post_like', {
       _user_id: user.id,
       _post_id: postId
@@ -304,6 +320,9 @@ class UnifiedPostsService {
   async toggleCommentLike(commentId: string): Promise<boolean> {
     const user = await this.getCurrentUser();
     if (!user) throw new Error('User not authenticated');
+
+    // Invalidate cache when toggling likes
+    this.likesCache.delete(user.id);
 
     const { data: isLiked, error } = await supabase.rpc('toggle_comment_like', {
       _user_id: user.id,

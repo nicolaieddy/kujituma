@@ -46,33 +46,102 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
 
   const addComment = useCallback(async (postId: string, message: string) => {
     try {
-      await unifiedPostsService.addComment(postId, message);
-      await fetchPosts(); // Refresh posts
+      const newComment = await unifiedPostsService.addComment(postId, message);
+      // Optimistic update - add comment immediately
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              comments: [...post.comments, newComment]
+            };
+          }
+          return post;
+        })
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add comment');
       throw err;
     }
-  }, [fetchPosts]);
+  }, []);
 
   const togglePostLike = useCallback(async (postId: string) => {
     try {
+      // Optimistic update
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              user_liked: !post.user_liked,
+              likes: post.user_liked ? post.likes - 1 : post.likes + 1
+            };
+          }
+          return post;
+        })
+      );
+      
       await unifiedPostsService.togglePostLike(postId);
-      await fetchPosts(); // Refresh posts
     } catch (err) {
+      // Revert optimistic update on error
+      setPosts(prevPosts => 
+        prevPosts.map(post => {
+          if (post.id === postId) {
+            return {
+              ...post,
+              user_liked: !post.user_liked,
+              likes: post.user_liked ? post.likes + 1 : post.likes - 1
+            };
+          }
+          return post;
+        })
+      );
       setError(err instanceof Error ? err.message : 'Failed to toggle post like');
       throw err;
     }
-  }, [fetchPosts]);
+  }, []);
 
   const toggleCommentLike = useCallback(async (commentId: string) => {
     try {
+      // Optimistic update
+      setPosts(prevPosts => 
+        prevPosts.map(post => ({
+          ...post,
+          comments: post.comments.map(comment => {
+            if (comment.id === commentId) {
+              return {
+                ...comment,
+                user_liked: !comment.user_liked,
+                likes: comment.user_liked ? comment.likes - 1 : comment.likes + 1
+              };
+            }
+            return comment;
+          })
+        }))
+      );
+      
       await unifiedPostsService.toggleCommentLike(commentId);
-      await fetchPosts(); // Refresh posts
     } catch (err) {
+      // Revert optimistic update on error
+      setPosts(prevPosts => 
+        prevPosts.map(post => ({
+          ...post,
+          comments: post.comments.map(comment => {
+            if (comment.id === commentId) {
+              return {
+                ...comment,
+                user_liked: !comment.user_liked,
+                likes: comment.user_liked ? comment.likes + 1 : comment.likes - 1
+              };
+            }
+            return comment;
+          })
+        }))
+      );
       setError(err instanceof Error ? err.message : 'Failed to toggle comment like');
       throw err;
     }
-  }, [fetchPosts]);
+  }, []);
 
   useEffect(() => {
     fetchPosts();
