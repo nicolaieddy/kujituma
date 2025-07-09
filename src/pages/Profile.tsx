@@ -39,34 +39,39 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    if (user || userId) {
-      fetchProfile();
-    }
-  }, [user, userId]);
-
-  const fetchProfile = async () => {
-    const targetUserId = userId || user?.id;
-    if (!targetUserId) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', targetUserId)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
+    const fetchProfile = async () => {
+      const targetUserId = userId || user?.id;
+      if (!targetUserId) {
+        setLoading(false);
         return;
       }
 
-      setProfile(data);
-    } catch (error) {
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', targetUserId)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setLoading(false);
+          return;
+        }
+
+        setProfile(data);
+      } catch (error) {
+        console.error('Error:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Only fetch if we have a user context established or a specific userId
+    if (user !== null || userId) {
+      fetchProfile();
     }
-  };
+  }, [user, userId]);
 
   const handleProfileUpdate = (updatedProfile: Profile) => {
     setProfile(updatedProfile);

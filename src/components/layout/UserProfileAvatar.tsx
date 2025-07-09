@@ -20,7 +20,10 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user) return;
+      if (!user?.id) {
+        setUserProfile(null);
+        return;
+      }
 
       // Check lightweight cache first
       const cacheKey = lightweightCache.keys.userProfile(user.id);
@@ -49,7 +52,7 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [user?.id]);
 
   const getInitials = useMemo(() => (name: string) => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
@@ -71,7 +74,10 @@ export const useUserProfile = () => {
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      if (!user) return;
+      if (!user?.id) {
+        setUserProfile(null);
+        return;
+      }
 
       try {
         const { data, error } = await supabase
@@ -89,7 +95,7 @@ export const useUserProfile = () => {
     };
 
     fetchUserProfile();
-  }, [user]);
+  }, [user?.id]);
 
   return userProfile;
 };
