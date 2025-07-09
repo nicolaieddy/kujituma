@@ -6,8 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TourProvider } from "@/components/tour/TourProvider";
-import { useLastActive } from "@/hooks/useLastActive";
 import { lazy, Suspense } from "react";
+import { useOptimizedAuth } from "@/hooks/useOptimizedAuth";
 
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
@@ -23,8 +23,8 @@ const LoadingSpinner = () => (
 );
 
 const AppContent = () => {
-  // Track user activity for last active timestamp
-  useLastActive();
+  // Optimized auth tracking
+  useOptimizedAuth();
 
   return (
     <Suspense fallback={<LoadingSpinner />}>

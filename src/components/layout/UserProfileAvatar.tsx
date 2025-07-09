@@ -1,10 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { cacheService } from "@/services/cacheService";
-import { backgroundSyncService } from "@/services/backgroundSyncService";
+import { lightweightCache } from "@/services/lightweightCache";
 
 interface UserProfile {
   avatar_url?: string;
@@ -23,9 +22,9 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
     const fetchUserProfile = async () => {
       if (!user) return;
 
-      // Check cache first
-      const cacheKey = cacheService.keys.userProfile(user.id);
-      const cached = cacheService.get<UserProfile>(cacheKey);
+      // Check lightweight cache first
+      const cacheKey = lightweightCache.keys.userProfile(user.id);
+      const cached = lightweightCache.get<UserProfile>(cacheKey);
       
       if (cached) {
         setUserProfile(cached);
@@ -41,11 +40,8 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
 
         if (data && !error) {
           setUserProfile(data);
-          // Cache for 10 minutes
-          cacheService.set(cacheKey, data, 10 * 60 * 1000);
-          
-          // Track profile fetch in background
-          backgroundSyncService.trackEvent('profile_fetched', { userId: user.id });
+          // Cache for 5 minutes
+          lightweightCache.set(cacheKey, data, 5 * 60 * 1000);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -55,9 +51,9 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
     fetchUserProfile();
   }, [user]);
 
-  const getInitials = (name: string) => {
+  const getInitials = useMemo(() => (name: string) => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
-  };
+  }, []);
 
   return (
     <Avatar className={className}>

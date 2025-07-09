@@ -1,7 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getDateFromPeriod } from '@/utils/dateUtils';
-import { cacheService } from './cacheService';
-import { backgroundSyncService } from './backgroundSyncService';
+import { lightweightCache } from './lightweightCache';
 
 export type FilterPeriod = "1day" | "3days" | "7days" | "14days" | "30days" | "all";
 
@@ -120,13 +119,11 @@ class UnifiedPostsService {
 
   async getAllPosts(filterPeriod: FilterPeriod = "14days", limit = 20, offset = 0): Promise<UnifiedPost[]> {
     const user = await this.getCurrentUser();
-    const cacheKey = cacheService.keys.allPosts(`${filterPeriod}_${limit}_${offset}`);
+    const cacheKey = lightweightCache.keys.posts(`${filterPeriod}_${limit}_${offset}`);
     
     // Try cache first
-    const cached = cacheService.get<UnifiedPost[]>(cacheKey);
+    const cached = lightweightCache.get<UnifiedPost[]>(cacheKey);
     if (cached) {
-      // Track cache hit in background
-      backgroundSyncService.trackEvent('cache_hit', { key: cacheKey, type: 'posts' });
       return cached;
     }
     
@@ -170,11 +167,8 @@ class UnifiedPostsService {
 
     const result = posts?.map(post => this.formatPost(post, user, postLikes, commentLikes)) || [];
     
-    // Cache the result
-    cacheService.set(cacheKey, result, 3 * 60 * 1000); // 3 minutes TTL
-    
-    // Track cache miss in background
-    backgroundSyncService.trackEvent('cache_miss', { key: cacheKey, type: 'posts' });
+    // Cache the result for 3 minutes
+    lightweightCache.set(cacheKey, result, 3 * 60 * 1000);
     
     return result;
   }
