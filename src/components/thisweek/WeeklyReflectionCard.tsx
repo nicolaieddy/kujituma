@@ -1,8 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import MDEditor from '@uiw/react-md-editor';
-import '@uiw/react-md-editor/markdown-editor.css';
 
 interface WeeklyReflectionCardProps {
   initialNotes: string;
@@ -34,25 +33,13 @@ export const WeeklyReflectionCard = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="markdown-editor-container" data-color-mode="dark">
-          <MDEditor
-            value={autoSave.value || ''}
-            onChange={(val) => autoSave.setValue(val || '')}
-            preview="edit"
-            hideToolbar={isReadOnly}
-            height={200}
-            data-color-mode="dark"
-            textareaProps={{
-              placeholder: "How did this week go? What did you learn? Any insights or challenges?",
-              disabled: isReadOnly,
-              style: {
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                color: 'white',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-              }
-            }}
-          />
-        </div>
+        <Textarea
+          value={autoSave.value}
+          onChange={(e) => autoSave.setValue(e.target.value)}
+          placeholder="How did this week go? What did you learn? Any insights or challenges?"
+          className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+          disabled={isReadOnly}
+        />
       </CardContent>
     </Card>
   );
