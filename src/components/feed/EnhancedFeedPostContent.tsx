@@ -1,6 +1,7 @@
 import { UnifiedPost } from "@/services/unifiedPostsService";
 import { EnhancedObjectiveDisplay } from "./EnhancedObjectiveDisplay";
 import { MessageCircle, Lightbulb } from "lucide-react";
+import MDEditor from '@uiw/react-md-editor';
 
 interface EnhancedFeedPostContentProps {
   post: UnifiedPost;
@@ -66,12 +67,14 @@ export const EnhancedFeedPostContent = ({ post }: EnhancedFeedPostContentProps) 
             </div>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3" data-color-mode="dark">
             {sections.generalReflections.map((reflection, index) => (
               <div key={index} className="bg-blue-500/5 rounded-lg p-3 border-l-2 border-blue-400/50">
                 <div className="flex items-start gap-2">
                   <MessageCircle className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
-                  <p className="text-white/90 leading-relaxed text-sm">{reflection}</p>
+                  <div className="text-white/90 leading-relaxed text-sm prose prose-invert prose-sm max-w-none">
+                    <MDEditor.Markdown source={reflection} />
+                  </div>
                 </div>
               </div>
             ))}

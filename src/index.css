@@ -115,4 +115,72 @@
   .tour-overlay > div {
     pointer-events: auto;
   }
+
+  /* Markdown Editor Dark Theme Styles */
+  .markdown-editor-container .w-md-editor {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .markdown-editor-container .w-md-editor-text-container,
+  .markdown-editor-container .w-md-editor-text,
+  .markdown-editor-container .w-md-editor-text-textarea {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: white !important;
+    border: none !important;
+  }
+
+  .markdown-editor-container .w-md-editor-toolbar {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .markdown-editor-container .w-md-editor-toolbar-divider {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+  }
+
+  .markdown-editor-container .w-md-editor-toolbar button {
+    color: rgba(255, 255, 255, 0.8) !important;
+  }
+
+  .markdown-editor-container .w-md-editor-toolbar button:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+    color: white !important;
+  }
+
+  /* Prose styling for markdown content */
+  .prose-invert {
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .prose-invert h1, .prose-invert h2, .prose-invert h3, 
+  .prose-invert h4, .prose-invert h5, .prose-invert h6 {
+    color: white;
+  }
+
+  .prose-invert strong {
+    color: white;
+  }
+
+  .prose-invert blockquote {
+    border-left-color: rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .prose-invert code {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+    padding: 0.125rem 0.25rem;
+    border-radius: 0.25rem;
+  }
+
+  .prose-invert pre {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .prose-invert ul li::marker,
+  .prose-invert ol li::marker {
+    color: rgba(255, 255, 255, 0.6);
+  }
 }

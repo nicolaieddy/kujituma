@@ -1,4 +1,5 @@
 import { UnifiedPost } from "@/services/unifiedPostsService";
+import MDEditor from '@uiw/react-md-editor';
 
 interface FeedPostContentProps {
   post: UnifiedPost;
@@ -100,9 +101,11 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
             <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
             <h4 className="text-blue-300 font-semibold text-lg">Weekly Reflections</h4>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-3" data-color-mode="dark">
             {sections.generalReflections.map((reflection, index) => (
-              <p key={index} className="text-white/90 leading-relaxed">{reflection}</p>
+              <div key={index} className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+                <MDEditor.Markdown source={reflection} />
+              </div>
             ))}
           </div>
         </div>
