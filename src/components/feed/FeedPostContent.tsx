@@ -101,9 +101,9 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
             <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
             <h4 className="text-blue-300 font-semibold text-lg">Weekly Reflections</h4>
           </div>
-          <div className="space-y-3" data-color-mode="dark">
+          <div className="space-y-3">
             {sections.generalReflections.map((reflection, index) => (
-              <div key={index} className="text-white/90 leading-relaxed prose prose-invert max-w-none">
+              <div key={index} className="text-white/90 leading-relaxed prose prose-invert max-w-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:text-white/90 [&_p]:text-white/90 [&_strong]:text-white [&_em]:text-white/80 [&_pre]:bg-white/10 [&_code]:bg-white/10 [&_code]:px-1 [&_code]:rounded">
                 <MDEditor.Markdown source={reflection} />
               </div>
             ))}
