@@ -96,22 +96,30 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
 
       {/* Weekly Reflections */}
       {sections.generalReflections.length > 0 && (
-        <div className="bg-blue-500/10 rounded-lg p-5 border border-blue-500/20">
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-            <h4 className="text-blue-300 font-semibold text-lg">Weekly Reflections</h4>
+        <div className="bg-blue-500/10 rounded-xl p-5 border border-blue-500/20 shadow-lg shadow-blue-500/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            </div>
+            <div>
+              <h4 className="text-blue-200 font-semibold text-base">Weekly Reflections</h4>
+              <p className="text-white/60 text-xs">Key insights and learnings</p>
+            </div>
           </div>
-          <div className="space-y-3">
-            {sections.generalReflections.map((reflection, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-400 mt-2"></div>
-                <div className="flex-1 text-white/90 leading-relaxed">
-                  <div className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic [&_li]:text-white/90 [&_p]:text-white/90 [&_strong]:text-white [&_em]:text-white/80">
-                    <MDEditor.Markdown source={reflection} />
-                  </div>
-                </div>
+          
+          <div className="space-y-4">
+            <div className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:list-decimal [&_ol]:pl-6 [&_p]:mb-3 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic [&_li]:text-white/90 [&_p]:text-white/90 [&_strong]:text-white [&_em]:text-white/80 [&_li]:mb-1">
+              <MDEditor.Markdown source={sections.generalReflections.join('\n\n')} />
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="text-white/60 text-xs">Personal insights</span>
+              <div className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
+                {sections.generalReflections.length} reflection{sections.generalReflections.length !== 1 ? 's' : ''}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       )}
