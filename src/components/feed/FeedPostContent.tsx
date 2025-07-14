@@ -103,8 +103,15 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
           </div>
           <div className="space-y-3">
             {sections.generalReflections.map((reflection, index) => (
-              <div key={index} className="text-white/90 leading-relaxed prose prose-invert max-w-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_li]:text-white/90 [&_p]:text-white/90 [&_strong]:text-white [&_em]:text-white/80 [&_pre]:bg-white/10 [&_code]:bg-white/10 [&_code]:px-1 [&_code]:rounded">
-                <MDEditor.Markdown source={reflection} />
+              <div key={index} className="flex items-start gap-3">
+                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mt-1">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                </div>
+                <div className="flex-1 bg-white/95 text-gray-800 rounded-lg p-4 shadow-sm">
+                  <div className="prose prose-gray prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic">
+                    <MDEditor.Markdown source={reflection} />
+                  </div>
+                </div>
               </div>
             ))}
           </div>
