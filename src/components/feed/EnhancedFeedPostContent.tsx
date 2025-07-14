@@ -70,11 +70,9 @@ export const EnhancedFeedPostContent = ({ post }: EnhancedFeedPostContentProps) 
           <div className="space-y-3">
             {sections.generalReflections.map((reflection, index) => (
               <div key={index} className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center mt-1">
-                  <MessageCircle className="h-4 w-4 text-blue-400" />
-                </div>
-                <div className="flex-1 bg-white/95 text-gray-800 rounded-lg p-4 shadow-sm">
-                  <div className="prose prose-gray prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic">
+                <div className="flex-shrink-0 w-2 h-2 rounded-full bg-blue-400 mt-2"></div>
+                <div className="flex-1 text-white/90 leading-relaxed">
+                  <div className="prose prose-invert prose-sm max-w-none [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4 [&_p]:mb-2 [&_p:last-child]:mb-0 [&_strong]:font-semibold [&_em]:italic [&_li]:text-white/90 [&_p]:text-white/90 [&_strong]:text-white [&_em]:text-white/80">
                     <MDEditor.Markdown source={reflection} />
                   </div>
                 </div>
