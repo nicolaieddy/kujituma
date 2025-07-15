@@ -14,6 +14,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     const path = location.pathname;
     if (path.startsWith('/community')) return 'community';
     if (path.startsWith('/goals')) return 'goals';
+    if (path.startsWith('/analytics')) return 'analytics';
     if (path.startsWith('/profile')) return 'profile';
     return 'community';
   };
@@ -44,6 +45,14 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
         >
           Goals
         </button>
+        <button
+          onClick={() => handleNavigation('/analytics')}
+          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors ${
+            currentSection === 'analytics' ? 'text-white font-medium bg-white/10' : ''
+          }`}
+        >
+          Analytics
+        </button>
       </>
     );
   }
@@ -65,6 +74,14 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
         }`}
       >
         Goals
+      </button>
+      <button
+        onClick={() => handleNavigation('/analytics')}
+        className={`text-base text-white/80 hover:text-white transition-colors ${
+          currentSection === 'analytics' ? 'text-white font-medium' : ''
+        }`}
+      >
+        Analytics
       </button>
     </nav>
   );
