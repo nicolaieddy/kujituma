@@ -117,9 +117,9 @@ class UnifiedPostsService {
     };
   }
 
-  async getAllPosts(filterPeriod: FilterPeriod = "14days", limit = 20, offset = 0): Promise<UnifiedPost[]> {
+  async getAllPosts(filterPeriod: FilterPeriod = "14days", limit = 10, offset = 0): Promise<UnifiedPost[]> {
     const user = await this.getCurrentUser();
-    const cacheKey = lightweightCache.keys.posts(`${filterPeriod}_${limit}_${offset}`);
+    const cacheKey = lightweightCache.keys.posts(`${filterPeriod}_${limit}_${offset}_${user?.id || 'anon'}`);
     
     // Try cache first
     const cached = lightweightCache.get<UnifiedPost[]>(cacheKey);
@@ -129,6 +129,7 @@ class UnifiedPostsService {
     
     const dateFilter = getDateFromPeriod(filterPeriod);
     
+    // Simplified query - only get essential data
     let query = supabase
       .from('posts')
       .select(`
@@ -138,7 +139,12 @@ class UnifiedPostsService {
           avatar_url
         ),
         comments (
-          *,
+          id,
+          user_id,
+          name,
+          message,
+          likes,
+          created_at,
           profiles:user_id (
             full_name,
             avatar_url
@@ -167,8 +173,8 @@ class UnifiedPostsService {
 
     const result = posts?.map(post => this.formatPost(post, user, postLikes, commentLikes)) || [];
     
-    // Cache the result for 3 minutes
-    lightweightCache.set(cacheKey, result, 3 * 60 * 1000);
+    // Cache the result for 5 minutes for better performance
+    lightweightCache.set(cacheKey, result, 5 * 60 * 1000);
     
     return result;
   }

@@ -59,6 +59,7 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
           return post;
         })
       );
+      return newComment;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add comment');
       throw err;

@@ -1,5 +1,4 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, memo, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { unifiedPostsService, UnifiedPost } from "@/services/unifiedPostsService";
 import { FeedPostHeader } from "./FeedPostHeader";
@@ -14,17 +13,15 @@ interface FeedPostCardProps {
   onUpdate: () => void;
 }
 
-export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
+export const FeedPostCard = memo(({ post, onUpdate }: FeedPostCardProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isLiking, setIsLiking] = useState(false);
 
-  const { data: comments = [], refetch: refetchComments } = useQuery({
-    queryKey: ['post-comments', post.id],
-    queryFn: () => unifiedPostsService.getPostComments(post.id),
-  });
+  // Use comments from post data instead of separate query
+  const comments = post.comments || [];
 
-  const handleLike = async () => {
+  const handleLike = useCallback(async () => {
     if (isLiking) return;
     setIsLiking(true);
     try {
@@ -35,25 +32,25 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
     } finally {
       setIsLiking(false);
     }
-  };
+  }, [isLiking, post.id, onUpdate]);
 
-  const handleComment = async () => {
+  const handleComment = useCallback(async () => {
     if (!newComment.trim()) return;
     try {
       await unifiedPostsService.addComment(post.id, newComment.trim());
       setNewComment("");
       setIsCommenting(false);
-      refetchComments();
+      onUpdate();
     } catch (error) {
       console.error('Error adding comment:', error);
     }
-  };
+  }, [newComment, post.id, onUpdate]);
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleComment();
     }
-  };
+  }, [handleComment]);
 
   return (
     <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300">
@@ -85,4 +82,6 @@ export const FeedPostCard = ({ post, onUpdate }: FeedPostCardProps) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+FeedPostCard.displayName = 'FeedPostCard';

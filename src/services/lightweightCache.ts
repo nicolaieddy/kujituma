@@ -1,7 +1,7 @@
 // Lightweight cache service for critical data only
 class LightweightCache {
   private cache = new Map<string, { data: any; expires: number }>();
-  private readonly DEFAULT_TTL = 5 * 60 * 1000; // 5 minutes
+  private readonly DEFAULT_TTL = 3 * 60 * 1000; // 3 minutes
 
   set<T>(key: string, data: T, ttl: number = this.DEFAULT_TTL): void {
     this.cache.set(key, {
@@ -10,7 +10,7 @@ class LightweightCache {
     });
 
     // Auto-cleanup to prevent memory leaks
-    if (this.cache.size > 50) {
+    if (this.cache.size > 30) {
       this.cleanup();
     }
   }
