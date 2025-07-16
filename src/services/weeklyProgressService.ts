@@ -294,4 +294,78 @@ export class WeeklyProgressService {
     const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
     return Math.ceil((days + startOfYear.getUTCDay() + 1) / 7);
   }
+
+  static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error('Authentication error:', authError);
+      throw new Error('User not authenticated');
+    }
+
+    console.log('Fetching incomplete objectives before week:', currentWeekStart);
+    
+    const { data: objectives, error } = await supabase
+      .from('weekly_objectives')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('is_completed', false)
+      .lt('week_start', currentWeekStart)
+      .order('week_start', { ascending: false })
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching incomplete objectives:', error);
+      throw error;
+    }
+    
+    console.log('Fetched incomplete objectives:', objectives?.length || 0);
+    return (objectives || []) as WeeklyObjective[];
+  }
+
+  static async carryOverObjectives(objectiveIds: string[], newWeekStart: string): Promise<WeeklyObjective[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    console.log('Carrying over objectives:', objectiveIds, 'to week:', newWeekStart);
+
+    // Get the original objectives to copy their data
+    const { data: originalObjectives, error: fetchError } = await supabase
+      .from('weekly_objectives')
+      .select('*')
+      .in('id', objectiveIds)
+      .eq('user_id', user.id);
+
+    if (fetchError) {
+      console.error('Error fetching objectives to carry over:', fetchError);
+      throw fetchError;
+    }
+
+    if (!originalObjectives || originalObjectives.length === 0) {
+      return [];
+    }
+
+    // Create new objectives for the current week
+    const objectivesToCreate = originalObjectives.map(obj => ({
+      user_id: user.id,
+      goal_id: obj.goal_id,
+      text: obj.text,
+      week_start: newWeekStart,
+      is_completed: false
+    }));
+
+    const { data: newObjectives, error: createError } = await supabase
+      .from('weekly_objectives')
+      .insert(objectivesToCreate)
+      .select();
+
+    if (createError) {
+      console.error('Error creating carried over objectives:', createError);
+      throw createError;
+    }
+
+    console.log('Successfully carried over objectives:', newObjectives?.length || 0);
+    return (newObjectives || []) as WeeklyObjective[];
+  }
 }

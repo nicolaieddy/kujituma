@@ -3,12 +3,14 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
+import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
 import { PreviousWeekSummary } from "./PreviousWeekSummary";
 import { WeeklyProgressHeader } from "./WeeklyProgressHeader";
 import { WeeklyObjectivesList } from "./WeeklyObjectivesList";
 import { WeeklyProgressNotesSection } from "./WeeklyProgressNotesSection";
 import { WeeklyProgressActions } from "./WeeklyProgressActions";
 import { IncompleteObjectivesModal } from "./IncompleteObjectivesModal";
+import { CarryOverObjectivesModal } from "./CarryOverObjectivesModal";
 import { IncompleteObjectiveReflections } from "./IncompleteObjectiveReflections";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { supabase } from "@/integrations/supabase/client";
@@ -23,6 +25,7 @@ export const WeeklyProgressView = () => {
   const [progressNotes, setProgressNotes] = useState("");
   const [isPostingToFeed, setIsPostingToFeed] = useState(false);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
+  const [showCarryOverModal, setShowCarryOverModal] = useState(false);
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
@@ -47,6 +50,13 @@ export const WeeklyProgressView = () => {
     isUncompletingWeek,
     isDeletingAll,
   } = useWeeklyProgress(currentWeekStart);
+
+  // Carry-over functionality
+  const {
+    incompleteObjectives,
+    carryOverObjectives,
+    isCarryingOver,
+  } = useCarryOverObjectives(currentWeekStart);
 
   // Debug auth state
   useEffect(() => {
@@ -305,6 +315,15 @@ export const WeeklyProgressView = () => {
     }
   };
 
+  const handleOpenCarryOver = () => {
+    setShowCarryOverModal(true);
+  };
+
+  const handleCarryOverObjectives = (objectiveIds: string[]) => {
+    carryOverObjectives(objectiveIds);
+    setShowCarryOverModal(false);
+  };
+
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
@@ -351,6 +370,8 @@ export const WeeklyProgressView = () => {
             onDeleteObjective={handleDeleteObjective}
             onDeleteAllObjectives={deleteAllObjectives}
             onAddObjective={handleAddObjective}
+            onOpenCarryOver={handleOpenCarryOver}
+            hasIncompleteObjectives={incompleteObjectives.length > 0}
             isDeletingAll={isDeletingAll}
           />
 
@@ -386,6 +407,15 @@ export const WeeklyProgressView = () => {
         incompleteObjectives={objectives?.filter(obj => !obj.is_completed) || []}
         onConfirmPost={handleConfirmPostWithReflections}
         isPosting={isPostingToFeed}
+      />
+
+      <CarryOverObjectivesModal
+        open={showCarryOverModal}
+        onOpenChange={setShowCarryOverModal}
+        incompleteObjectives={incompleteObjectives}
+        goals={goals || []}
+        onConfirmCarryOver={handleCarryOverObjectives}
+        isCarryingOver={isCarryingOver}
       />
     </>
   );

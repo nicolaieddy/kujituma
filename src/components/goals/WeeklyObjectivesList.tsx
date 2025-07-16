@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2, Pencil } from "lucide-react";
+import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2, Pencil, ArrowRight } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,8 @@ interface WeeklyObjectivesListProps {
   onDeleteObjective: (id: string) => void;
   onDeleteAllObjectives: () => void;
   onAddObjective: (text: string, goalId?: string) => Promise<void>;
+  onOpenCarryOver?: () => void;
+  hasIncompleteObjectives?: boolean;
   isDeletingAll?: boolean;
 }
 
@@ -47,6 +49,8 @@ export const WeeklyObjectivesList = ({
   onDeleteObjective,
   onDeleteAllObjectives,
   onAddObjective,
+  onOpenCarryOver,
+  hasIncompleteObjectives = false,
   isDeletingAll = false,
 }: WeeklyObjectivesListProps) => {
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -120,10 +124,21 @@ export const WeeklyObjectivesList = ({
 
   return (
     <div>
-      <div className="mb-3">
+      <div className="mb-3 flex items-center justify-between">
         <Label className="text-white font-medium text-lg">
           🎯 This Week's Objectives
         </Label>
+        {!isWeekCompleted && hasIncompleteObjectives && onOpenCarryOver && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onOpenCarryOver}
+            className="border-white/20 text-white hover:bg-white/10 text-xs"
+          >
+            <ArrowRight className="h-3 w-3 mr-1" />
+            Carry Over From Previous Weeks
+          </Button>
+        )}
       </div>
       <div className="mt-3 space-y-3">
         {objectives.map((objective) => {
