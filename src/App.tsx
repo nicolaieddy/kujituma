@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { useUserActivity } from "@/hooks/useUserActivity";
 import { lazy, Suspense } from "react";
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
@@ -23,6 +24,8 @@ const LoadingSpinner = () => (
 );
 
 const AppContent = () => {
+  // Track user activity to update last_active_at timestamp
+  useUserActivity();
 
   return (
     <Suspense fallback={<LoadingSpinner />}>
