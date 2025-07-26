@@ -60,14 +60,14 @@ export const GoalDetailModal = ({
   const relatedObjectives = weeklyObjectives.filter(obj => obj.goal_id === goal.id);
   
   // Debug logging to help identify the linking issue
-  console.log('GoalDetailModal Debug:', {
-    goalId: goal.id,
-    goalTitle: goal.title,
-    totalWeeklyObjectives: weeklyObjectives.length,
-    weeklyObjectivesData: weeklyObjectives,
-    relatedObjectives: relatedObjectives,
-    relatedObjectivesCount: relatedObjectives.length
-  });
+  console.log('=== GoalDetailModal Debug START ===');
+  console.log('Goal ID:', goal.id);
+  console.log('Goal Title:', goal.title);
+  console.log('Total Weekly Objectives:', weeklyObjectives.length);
+  console.log('Weekly Objectives Data:', weeklyObjectives);
+  console.log('Related Objectives:', relatedObjectives);
+  console.log('Related Objectives Count:', relatedObjectives.length);
+  console.log('=== GoalDetailModal Debug END ===');
 
   const handleStatusChange = (newStatus: GoalStatus) => {
     if (newStatus !== goal.status) {
