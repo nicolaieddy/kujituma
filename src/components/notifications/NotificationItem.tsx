@@ -35,6 +35,8 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
         return '💬';
       case 'comment_like':
         return '❤️';
+      case 'mention':
+        return '📣';
       default:
         return '🔔';
     }

@@ -34,7 +34,7 @@ class NotificationsService {
 
     return notifications.map(notification => ({
       ...notification,
-      type: notification.type as 'post_like' | 'comment_added' | 'comment_like',
+      type: notification.type as 'post_like' | 'comment_added' | 'comment_like' | 'mention',
       triggered_by: profileMap.get(notification.triggered_by_user_id) || null
     })) as Notification[];
   }

@@ -1,7 +1,7 @@
 export interface Notification {
   id: string;
   user_id: string;
-  type: 'post_like' | 'comment_added' | 'comment_like';
+  type: 'post_like' | 'comment_added' | 'comment_like' | 'mention';
   message: string;
   related_post_id?: string | null;
   related_comment_id?: string | null;

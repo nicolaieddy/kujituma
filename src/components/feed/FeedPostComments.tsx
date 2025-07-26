@@ -1,10 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Send } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useNavigate } from "react-router-dom";
 import { UnifiedComment } from "@/services/unifiedPostsService";
+import { MentionInput } from "@/components/ui/mention-input";
+import { MentionText } from "@/components/ui/mention-text";
 
 interface FeedPostCommentsProps {
   comments: UnifiedComment[];
@@ -64,7 +65,7 @@ export const FeedPostComments = ({
                       {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                     </span>
                   </div>
-                  <p className="text-white/80 text-sm">{comment.message}</p>
+                  <MentionText text={comment.message} className="text-white/80 text-sm" />
                 </div>
               </div>
             </div>
@@ -75,10 +76,10 @@ export const FeedPostComments = ({
       {/* Add Comment */}
       {isCommenting && (
         <div className="flex items-center gap-2 pt-4 border-t border-white/10">
-          <Input
+          <MentionInput
             value={newComment}
-            onChange={(e) => onCommentChange(e.target.value)}
-            placeholder="Write a comment..."
+            onChange={onCommentChange}
+            placeholder="Write a comment... Use @ to mention someone"
             className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
             onKeyPress={onKeyPress}
           />
