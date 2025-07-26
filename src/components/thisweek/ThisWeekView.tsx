@@ -12,6 +12,7 @@ import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
+import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -24,6 +25,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+  const [showShareConfirmation, setShowShareConfirmation] = useState(false);
   
   const {
     objectives,
@@ -79,9 +81,15 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
-  const handleShareWeek = async () => {
+  const handleRequestShare = () => {
+    // Show confirmation dialog first
+    setShowShareConfirmation(true);
+  };
+
+  const handleConfirmShare = async () => {
     if (!user) return;
     
+    setShowShareConfirmation(false);
     setIsSharing(true);
     try {
       // Get user profile for name
@@ -198,7 +206,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const hasShared = !!feedPost;
   const isCurrentWeek = WeeklyProgressService.getWeekStart() === currentWeekStart;
   const isPastWeek = currentWeekStart < WeeklyProgressService.getWeekStart();
-  const isReadOnly = isPastWeek && hasShared;
+  
+  // Enforce immutability: once a week is completed (shared), it becomes read-only
+  const isWeekCompleted = progressPost?.is_completed || false;
+  const isReadOnly = isWeekCompleted;
 
   // Show loading skeleton while data is being fetched
   if (weeklyDataLoading) {
@@ -244,6 +255,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         initialNotes={progressPost?.notes || ""}
         onUpdateNotes={updateProgressNotes}
         isReadOnly={isReadOnly}
+        weekStart={currentWeekStart}
       />
 
       {/* Share Week */}
@@ -254,8 +266,17 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         feedPost={feedPost}
         objectives={objectives || []}
         reflectionValue={progressPost?.notes || ""}
-        onShareWeek={handleShareWeek}
+        onShareWeek={handleRequestShare}
         onViewInCommunity={handleViewInCommunity}
+        isWeekCompleted={isWeekCompleted}
+      />
+
+      {/* Confirmation Dialog */}
+      <ShareConfirmationDialog
+        isOpen={showShareConfirmation}
+        onClose={() => setShowShareConfirmation(false)}
+        onConfirm={handleConfirmShare}
+        isSharing={isSharing}
       />
     </div>
   );

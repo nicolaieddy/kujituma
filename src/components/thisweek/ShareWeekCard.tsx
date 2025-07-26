@@ -13,6 +13,7 @@ interface ShareWeekCardProps {
   reflectionValue: string;
   onShareWeek: () => void;
   onViewInCommunity: () => void;
+  isWeekCompleted?: boolean;
 }
 
 export const ShareWeekCard = ({
@@ -23,7 +24,8 @@ export const ShareWeekCard = ({
   objectives,
   reflectionValue,
   onShareWeek,
-  onViewInCommunity
+  onViewInCommunity,
+  isWeekCompleted = false
 }: ShareWeekCardProps) => {
   return (
     <>
@@ -42,11 +44,11 @@ export const ShareWeekCard = ({
             <div className="text-center py-4">
               <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
               <p className="text-white text-lg font-medium">
-                {isCurrentWeek ? "Week Shared!" : "Week Previously Shared"}
+                Week Shared & Locked
               </p>
               <p className="text-white/60 text-sm mt-1">
-                {isCurrentWeek 
-                  ? "Your progress has been shared. You can continue editing and re-share updates."
+                {isWeekCompleted 
+                  ? "This week has been posted and is now permanent. Objectives and reflection are locked."
                   : "This week's progress was shared with the community."
                 }
               </p>
@@ -57,15 +59,6 @@ export const ShareWeekCard = ({
                 >
                   View in Community
                 </Button>
-                {isCurrentWeek && (
-                  <Button
-                    onClick={onShareWeek}
-                    disabled={isSharing}
-                    className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
-                  >
-                    {isSharing ? "Updating..." : "Share Updates"}
-                  </Button>
-                )}
               </div>
             </div>
           ) : (

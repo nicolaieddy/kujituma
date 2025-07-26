@@ -2,23 +2,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useAutoSave } from "@/hooks/useAutoSave";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
+import { useEffect } from "react";
 
 interface WeeklyReflectionCardProps {
   initialNotes: string;
   onUpdateNotes: (notes: string) => void;
   isReadOnly: boolean;
+  weekStart: string; // Add weekStart as a key for proper scoping
 }
 
 export const WeeklyReflectionCard = ({
   initialNotes,
   onUpdateNotes,
-  isReadOnly
+  isReadOnly,
+  weekStart
 }: WeeklyReflectionCardProps) => {
   const autoSave = useAutoSave({
     onSave: onUpdateNotes,
     delay: 2000,
     initialValue: initialNotes
   });
+
+  // Force reset when week changes - critical for proper week isolation
+  useEffect(() => {
+    console.log('WeeklyReflectionCard: weekStart changed to', weekStart, 'initialNotes:', initialNotes);
+    // Always reset the auto-save value when the week changes to ensure proper isolation
+    autoSave.setValue(initialNotes);
+  }, [weekStart]); // Only depend on weekStart to trigger on week changes
+  
+  // Reset when initialNotes change for the same week (e.g., data loading)
+  useEffect(() => {
+    if (initialNotes !== autoSave.value) {
+      console.log('WeeklyReflectionCard: initialNotes changed, updating from', autoSave.value, 'to', initialNotes);
+      autoSave.setValue(initialNotes);
+    }
+  }, [initialNotes]);
 
   return (
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
