@@ -11,6 +11,7 @@ import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
+import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -37,6 +38,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     weekNumber,
     weekStart: currentWeekStart,
     isDeletingAll,
+    isLoading: weeklyDataLoading,
   } = useWeeklyProgress(weekStart);
 
   const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
@@ -199,6 +201,11 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const isCurrentWeek = WeeklyProgressService.getWeekStart() === currentWeekStart;
   const isPastWeek = currentWeekStart < WeeklyProgressService.getWeekStart();
   const isReadOnly = isPastWeek && hasShared;
+
+  // Show loading skeleton while data is being fetched
+  if (weeklyDataLoading) {
+    return <ThisWeekSkeleton />;
+  }
 
   return (
     <div className="space-y-6">

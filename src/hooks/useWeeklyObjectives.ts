@@ -15,6 +15,8 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
       return WeeklyProgressService.getWeeklyObjectives(currentWeekStart);
     },
     enabled: !!user && !!currentWeekStart,
+    staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
+    gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
     retry: (failureCount, error) => {
       console.error('Objectives query failed:', error);
       return failureCount < 2;

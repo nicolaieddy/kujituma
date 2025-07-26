@@ -22,8 +22,8 @@ const Goals = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
-  const { goalsByStatus, isLoading, createGoal, updateGoal, deleteGoal } = useGoals();
-  const { objectives, createObjective, updateObjective, deleteObjective } = useAllWeeklyObjectives();
+  const { goalsByStatus, isLoading: goalsLoading, createGoal, updateGoal, deleteGoal } = useGoals();
+  const { objectives, createObjective, updateObjective, deleteObjective, isLoading: objectivesLoading } = useAllWeeklyObjectives();
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -189,7 +189,7 @@ const Goals = () => {
                     </Button>
                   </div>
 
-                  {isLoading ? (
+                  {goalsLoading ? (
                     <div className="text-center text-white">Loading goals...</div>
                   ) : (
                     <GoalsKanban

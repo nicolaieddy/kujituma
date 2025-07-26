@@ -13,11 +13,12 @@ export const useAllWeeklyObjectives = () => {
     queryFn: async () => {
       console.log('=== useAllWeeklyObjectives: Fetching objectives ===');
       
-      // Get current week and previous 12 weeks
+      // Only get current week and previous 3 weeks for faster initial load
+      // User can navigate to see more weeks if needed
       const weeks = [];
       const currentDate = new Date();
       
-      for (let i = 0; i < 13; i++) {
+      for (let i = 0; i < 4; i++) {
         const date = new Date(currentDate);
         date.setDate(date.getDate() - (i * 7));
         weeks.push(WeeklyProgressService.getWeekStart(date));
@@ -25,6 +26,7 @@ export const useAllWeeklyObjectives = () => {
 
       console.log('Fetching objectives for weeks:', weeks);
 
+      // Fetch objectives in parallel for better performance
       const allWeekObjectives = await Promise.all(
         weeks.map(async (week) => {
           try {
@@ -45,6 +47,8 @@ export const useAllWeeklyObjectives = () => {
       return flatObjectives;
     },
     enabled: !!user,
+    staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes (gcTime replaces cacheTime in v5)
     retry: (failureCount, error) => {
       console.error('All objectives query failed:', error);
       return failureCount < 2;
