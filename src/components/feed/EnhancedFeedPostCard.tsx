@@ -36,18 +36,25 @@ export const EnhancedFeedPostCard = memo(({ post, onLike, onComment, onCommentLi
   }, [isLiking, post.id, onLike]);
 
   const handleComment = useCallback(async () => {
-    if (!newComment.trim()) return;
+    console.log('handleComment called with:', newComment);
+    if (!newComment.trim()) {
+      console.log('handleComment: empty comment, returning');
+      return;
+    }
     try {
+      console.log('handleComment: posting comment for post:', post.id);
       await onComment(post.id, newComment.trim());
       setNewComment("");
       setIsCommenting(false);
+      console.log('handleComment: success');
     } catch (error) {
       console.error('Error adding comment:', error);
     }
   }, [newComment, post.id, onComment]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleComment();
     }
   }, [handleComment]);

@@ -134,15 +134,16 @@ export const MentionInput = ({
             selectSuggestion(suggestions[selectedSuggestionIndex]);
             return;
           }
+          // If no suggestion selected, let the parent handle the Enter key
           break;
         case 'Escape':
           e.preventDefault();
           setShowSuggestions(false);
-          break;
+          return; // Don't pass through Escape key
       }
     }
     
-    // Pass through other key events
+    // Pass through key events to parent
     onKeyPress?.(e);
   };
 
