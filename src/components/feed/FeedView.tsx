@@ -13,13 +13,9 @@ interface FeedViewProps {
 export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) => {
   const [useEnhancedView, setUseEnhancedView] = useState(true);
   
-  const { posts, loading: isLoading, refetch } = useUnifiedPosts({
+  const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user"
   });
-
-  const handlePostUpdate = () => {
-    refetch();
-  };
 
   if (isLoading) {
     return <FeedSkeletonList count={3} />;
@@ -76,7 +72,9 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
         posts={posts}
         useEnhancedView={useEnhancedView}
         highlightedPostId={highlightedPostId}
-        onUpdate={handlePostUpdate}
+        onLike={togglePostLike}
+        onComment={addComment}
+        onCommentLike={toggleCommentLike}
       />
     </div>
   );

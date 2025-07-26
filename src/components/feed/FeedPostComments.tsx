@@ -13,6 +13,7 @@ interface FeedPostCommentsProps {
   onCommentChange: (value: string) => void;
   onCommentSubmit: () => void;
   onKeyPress: (e: React.KeyboardEvent) => void;
+  onCommentLike?: (commentId: string) => void;
 }
 
 export const FeedPostComments = ({
@@ -21,7 +22,8 @@ export const FeedPostComments = ({
   newComment,
   onCommentChange,
   onCommentSubmit,
-  onKeyPress
+  onKeyPress,
+  onCommentLike
 }: FeedPostCommentsProps) => {
   const navigate = useNavigate();
   

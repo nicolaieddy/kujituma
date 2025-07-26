@@ -1,6 +1,6 @@
 import { useState, memo, useCallback } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { unifiedPostsService, UnifiedPost } from "@/services/unifiedPostsService";
+import { UnifiedPost } from "@/services/unifiedPostsService";
 import { EnhancedFeedPostHeader } from "./EnhancedFeedPostHeader";
 import { EnhancedFeedPostContent } from "./EnhancedFeedPostContent";
 import { FeedPostPriorities } from "./FeedPostPriorities";
@@ -10,10 +10,12 @@ import { FeedPostComments } from "./FeedPostComments";
 
 interface EnhancedFeedPostCardProps {
   post: UnifiedPost;
-  onUpdate: () => void;
+  onLike: (postId: string) => void;
+  onComment: (postId: string, message: string) => void;
+  onCommentLike: (commentId: string) => void;
 }
 
-export const EnhancedFeedPostCard = memo(({ post, onUpdate }: EnhancedFeedPostCardProps) => {
+export const EnhancedFeedPostCard = memo(({ post, onLike, onComment, onCommentLike }: EnhancedFeedPostCardProps) => {
   const [isCommenting, setIsCommenting] = useState(false);
   const [newComment, setNewComment] = useState("");
   const [isLiking, setIsLiking] = useState(false);
@@ -25,26 +27,24 @@ export const EnhancedFeedPostCard = memo(({ post, onUpdate }: EnhancedFeedPostCa
     if (isLiking) return;
     setIsLiking(true);
     try {
-      await unifiedPostsService.togglePostLike(post.id);
-      onUpdate();
+      await onLike(post.id);
     } catch (error) {
       console.error('Error toggling like:', error);
     } finally {
       setIsLiking(false);
     }
-  }, [isLiking, post.id, onUpdate]);
+  }, [isLiking, post.id, onLike]);
 
   const handleComment = useCallback(async () => {
     if (!newComment.trim()) return;
     try {
-      await unifiedPostsService.addComment(post.id, newComment.trim());
+      await onComment(post.id, newComment.trim());
       setNewComment("");
       setIsCommenting(false);
-      onUpdate(); // Use parent update instead of separate refetch
     } catch (error) {
       console.error('Error adding comment:', error);
     }
-  }, [newComment, post.id, onUpdate]);
+  }, [newComment, post.id, onComment]);
 
   const handleKeyPress = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -78,6 +78,7 @@ export const EnhancedFeedPostCard = memo(({ post, onUpdate }: EnhancedFeedPostCa
           onCommentChange={setNewComment}
           onCommentSubmit={handleComment}
           onKeyPress={handleKeyPress}
+          onCommentLike={onCommentLike}
         />
       </CardContent>
     </Card>

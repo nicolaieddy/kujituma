@@ -7,24 +7,30 @@ interface VirtualizedFeedListProps {
   posts: UnifiedPost[];
   useEnhancedView: boolean;
   highlightedPostId?: string | null;
-  onUpdate: () => void;
+  onLike: (postId: string) => void;
+  onComment: (postId: string, message: string) => void;
+  onCommentLike: (commentId: string) => void;
 }
 
 const PostItem = memo(({ 
   post, 
   useEnhancedView, 
   isHighlighted, 
-  onUpdate 
+  onLike,
+  onComment,
+  onCommentLike
 }: {
   post: UnifiedPost;
   useEnhancedView: boolean;
   isHighlighted: boolean;
-  onUpdate: () => void;
+  onLike: (postId: string) => void;
+  onComment: (postId: string, message: string) => void;
+  onCommentLike: (commentId: string) => void;
 }) => {
   const content = useEnhancedView ? (
-    <EnhancedFeedPostCard post={post} onUpdate={onUpdate} />
+    <EnhancedFeedPostCard post={post} onLike={onLike} onComment={onComment} onCommentLike={onCommentLike} />
   ) : (
-    <FeedPostCard post={post} onUpdate={onUpdate} />
+    <FeedPostCard post={post} onLike={onLike} onComment={onComment} onCommentLike={onCommentLike} />
   );
 
   return (
@@ -40,7 +46,9 @@ export const VirtualizedFeedList = memo(({
   posts, 
   useEnhancedView, 
   highlightedPostId, 
-  onUpdate 
+  onLike,
+  onComment,
+  onCommentLike
 }: VirtualizedFeedListProps) => {
   const renderedPosts = useMemo(() => 
     posts.map((post) => (
@@ -49,9 +57,11 @@ export const VirtualizedFeedList = memo(({
         post={post}
         useEnhancedView={useEnhancedView}
         isHighlighted={highlightedPostId === post.id}
-        onUpdate={onUpdate}
+        onLike={onLike}
+        onComment={onComment}
+        onCommentLike={onCommentLike}
       />
-    )), [posts, useEnhancedView, highlightedPostId, onUpdate]);
+    )), [posts, useEnhancedView, highlightedPostId, onLike, onComment, onCommentLike]);
 
   return <>{renderedPosts}</>;
 });
