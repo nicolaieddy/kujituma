@@ -75,22 +75,30 @@ export const FeedPostComments = ({
 
       {/* Add Comment */}
       {isCommenting && (
-        <div className="flex items-center gap-2 pt-4 border-t border-white/10">
-          <MentionInput
-            value={newComment}
-            onChange={onCommentChange}
-            placeholder="Write a comment... Use @ to mention someone"
-            className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-            onKeyPress={onKeyPress}
-          />
-          <Button
-            onClick={onCommentSubmit}
-            disabled={!newComment.trim()}
-            size="sm"
-            className="bg-blue-500 hover:bg-blue-600"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
+        <div className="pt-4 border-t border-white/10 space-y-3">
+          <div className="relative">
+            <MentionInput
+              value={newComment}
+              onChange={onCommentChange}
+              placeholder="Write a comment... Use @ to mention someone"
+              className="w-full bg-white/10 border-white/20 text-white placeholder:text-white/60 resize-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50"
+              onKeyPress={onKeyPress}
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-white/50">
+              💡 Type @ to mention someone
+            </div>
+            <Button
+              onClick={onCommentSubmit}
+              disabled={!newComment.trim()}
+              size="sm"
+              className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed px-6 py-2 font-medium"
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Post Comment
+            </Button>
+          </div>
         </div>
       )}
     </>

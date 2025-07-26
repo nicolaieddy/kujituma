@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -33,7 +33,7 @@ export const MentionInput = ({
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionStartPos, setMentionStartPos] = useState(-1);
   
-  const inputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   
   const debouncedMentionQuery = useDebounce(mentionQuery, 300);
@@ -67,8 +67,8 @@ export const MentionInput = ({
     }
   }, [debouncedMentionQuery, fetchUserSuggestions]);
 
-  // Handle input change and detect mentions
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Handle textarea change and detect mentions
+  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
     const cursorPos = e.target.selectionStart || 0;
     
@@ -103,17 +103,17 @@ export const MentionInput = ({
     onChange(newValue);
     setShowSuggestions(false);
     
-    // Focus back to input
+    // Focus back to textarea
     setTimeout(() => {
-      inputRef.current?.focus();
+      textareaRef.current?.focus();
       // Set cursor position after the mention
       const newCursorPos = beforeMention.length + suggestion.full_name.length + 2;
-      inputRef.current?.setSelectionRange(newCursorPos, newCursorPos);
+      textareaRef.current?.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
   };
 
   // Handle keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (showSuggestions && suggestions.length > 0) {
       switch (e.key) {
         case 'ArrowDown':
@@ -151,22 +151,23 @@ export const MentionInput = ({
   };
 
   return (
-    <div className="relative">
-      <Input
-        ref={inputRef}
+    <div className="relative w-full">
+      <Textarea
+        ref={textareaRef}
         value={value}
-        onChange={handleInputChange}
+        onChange={handleTextareaChange}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         className={className}
         disabled={disabled}
+        rows={3}
       />
       
       {/* Suggestions Dropdown */}
       {showSuggestions && suggestions.length > 0 && (
         <div
           ref={suggestionsRef}
-          className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50"
+          className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-48 overflow-y-auto z-50"
         >
           {suggestions.map((suggestion, index) => (
             <div
