@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useCallback } from "react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -33,13 +32,15 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
   const updateProgressPostMutation = useMutation({
     mutationFn: ({ weekStart, notes }: { weekStart: string; notes: string }) =>
       WeeklyProgressService.upsertWeeklyProgressPost(weekStart, notes),
-    onSuccess: (_, variables) => {
-      // Use the weekStart from the mutation variables to invalidate the correct query
-      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post', user?.id, variables.weekStart] });
-      console.log('Progress notes saved successfully for week:', variables.weekStart);
+    onSuccess: () => {
+      // Only invalidate the specific week being updated
+      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post', user?.id, currentWeekStart] });
+      // Remove toast to prevent potential React crashes
+      console.log('Progress notes saved successfully!');
     },
     onError: (error) => {
       console.error('Error updating progress post:', error);
+      // Remove toast to prevent potential React crashes  
       console.error('Failed to save progress notes:', error);
     },
   });
@@ -82,10 +83,10 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     },
   });
 
-  const updateProgressNotes = useCallback((notes: string) => {
+  const updateProgressNotes = (notes: string) => {
     console.log('UpdateProgressNotes called with:', { notes, currentWeekStart });
     return updateProgressPostMutation.mutateAsync({ weekStart: currentWeekStart, notes });
-  }, [currentWeekStart, updateProgressPostMutation]);
+  };
 
   const completeWeek = () => {
     completeWeekMutation.mutate(currentWeekStart);

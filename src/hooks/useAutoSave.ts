@@ -13,7 +13,6 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveInProgress = useRef(false);
   const mounted = useRef(true);
-  const pendingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const debouncedValue = useDebounce(value, delay);
   const initialValueRef = useRef(initialValue);
@@ -21,13 +20,6 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
   // Update value when initialValue changes (e.g., when data loads or week changes)
   useEffect(() => {
     if (mounted.current && initialValue !== initialValueRef.current) {
-      // Cancel any pending saves when the context changes
-      if (pendingTimeoutRef.current) {
-        clearTimeout(pendingTimeoutRef.current);
-        pendingTimeoutRef.current = null;
-        console.log('Auto-save cancelled: context changed to new initial value');
-      }
-      
       setValue(initialValue);
       initialValueRef.current = initialValue;
     }
@@ -37,9 +29,6 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
   useEffect(() => {
     return () => {
       mounted.current = false;
-      if (pendingTimeoutRef.current) {
-        clearTimeout(pendingTimeoutRef.current);
-      }
     };
   }, []);
 
@@ -88,13 +77,9 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
       
       // Use setTimeout to defer execution and prevent blocking
       const timeoutId = setTimeout(saveAsync, 0);
-      pendingTimeoutRef.current = timeoutId;
       
       return () => {
         clearTimeout(timeoutId);
-        if (pendingTimeoutRef.current === timeoutId) {
-          pendingTimeoutRef.current = null;
-        }
       };
     }
   }, [debouncedValue, onSave, initialValue]);
