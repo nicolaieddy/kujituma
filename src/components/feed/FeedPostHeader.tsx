@@ -45,15 +45,20 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
         </Avatar>
         
         <div className="flex-1">
-          <h3 
-            className="text-white font-semibold text-lg cursor-pointer hover:text-white/80 transition-colors"
-            onClick={handleProfileClick}
-          >
-            {post.profiles?.full_name || post.name}
-          </h3>
-          <span className="text-white/60 text-sm">
-            {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-          </span>
+            <h3 
+              className="text-white font-semibold text-lg cursor-pointer hover:text-white/80 transition-colors"
+              onClick={handleProfileClick}
+            >
+              {post.profiles?.full_name || post.name}
+            </h3>
+            <div className="flex items-center gap-2">
+              <span className="text-white/60 text-sm">
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </span>
+              <span className="text-white/40 text-xs font-mono">
+                ID: {post.user_id?.slice(0, 8)}...
+              </span>
+            </div>
         </div>
       </div>
 

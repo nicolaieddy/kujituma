@@ -57,9 +57,14 @@ export const EnhancedFeedPostHeader = ({ post }: EnhancedFeedPostHeaderProps) =>
             >
               {post.profiles?.full_name || post.name}
             </h3>
-            <span className="text-white/60 text-sm">
-              {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-white/60 text-sm">
+                {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
+              </span>
+              <span className="text-white/40 text-xs font-mono">
+                ID: {post.user_id?.slice(0, 8)}...
+              </span>
+            </div>
           </div>
         </div>
 
