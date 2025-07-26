@@ -24,6 +24,11 @@ const Goals = () => {
   const isMobile = useIsMobile();
   const { goalsByStatus, isLoading, createGoal, updateGoal, deleteGoal } = useGoals();
   const { objectives, createObjective, updateObjective, deleteObjective } = useGoalObjectives();
+  
+  // Debug logging for objectives data
+  console.log('=== Goals.tsx Debug ===');
+  console.log('Objectives from useGoalObjectives:', objectives);
+  console.log('Objectives count:', objectives?.length || 0);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);

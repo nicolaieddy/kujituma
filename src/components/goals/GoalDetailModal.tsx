@@ -53,6 +53,13 @@ export const GoalDetailModal = ({
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
+  // Debug logging to check if modal is being rendered
+  console.log('=== GoalDetailModal RENDER START ===');
+  console.log('isOpen:', isOpen);
+  console.log('goal:', goal);
+  console.log('weeklyObjectives length:', weeklyObjectives?.length || 0);
+  console.log('=== GoalDetailModal RENDER END ===');
+
   if (!goal) return null;
 
   const config = STATUS_CONFIG[goal.status];
