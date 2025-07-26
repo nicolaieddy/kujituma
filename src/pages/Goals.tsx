@@ -26,9 +26,11 @@ const Goals = () => {
   const { objectives, createObjective, updateObjective, deleteObjective } = useGoalObjectives();
   
   // Debug logging for objectives data
-  console.log('=== Goals.tsx Debug ===');
-  console.log('Objectives from useGoalObjectives:', objectives);
+  console.log('=== Goals.tsx Debug START ===');
+  console.log('Total Objectives from useGoalObjectives:', objectives);
   console.log('Objectives count:', objectives?.length || 0);
+  console.log('Sample objectives with goal_id:', objectives?.filter(obj => obj.goal_id).slice(0, 3));
+  console.log('=== Goals.tsx Debug END ===');
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
