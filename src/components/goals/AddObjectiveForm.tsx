@@ -1,9 +1,11 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Plus } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
+import { Plus, Target } from "lucide-react";
 import { Goal } from "@/types/goals";
 
 interface AddObjectiveFormProps {
@@ -17,6 +19,7 @@ export const AddObjectiveForm = ({
   onCreateObjective, 
   isCreating 
 }: AddObjectiveFormProps) => {
+  const navigate = useNavigate();
   const [newObjectiveText, setNewObjectiveText] = useState("");
   const [selectedGoalId, setSelectedGoalId] = useState("");
 
@@ -26,6 +29,17 @@ export const AddObjectiveForm = ({
     onCreateObjective(newObjectiveText, selectedGoalId || undefined);
     setNewObjectiveText("");
     setSelectedGoalId("");
+  };
+
+  const handleCreateNewGoal = () => {
+    navigate('/goals');
+  };
+
+  // Group goals by status
+  const groupedGoals = {
+    in_progress: goals.filter(goal => goal.status === 'in_progress'),
+    not_started: goals.filter(goal => goal.status === 'not_started'),
+    completed: goals.filter(goal => goal.status === 'completed'),
   };
 
   return (
@@ -51,22 +65,65 @@ export const AddObjectiveForm = ({
           </Button>
         </div>
         
-        {goals.length > 0 && (
-          <div>
-            <select
-              value={selectedGoalId}
-              onChange={(e) => setSelectedGoalId(e.target.value)}
-              className="w-full bg-white/10 border border-white/20 rounded-md px-3 py-2 text-white text-sm"
-            >
-              <option value="">Link to a goal (optional)</option>
-              {goals.map((goal) => (
-                <option key={goal.id} value={goal.id} className="bg-gray-800">
-                  {goal.title}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div>
+          <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
+            <SelectTrigger className="w-full bg-white/10 border-white/20 text-white">
+              <SelectValue placeholder="Link to a goal (optional)" />
+            </SelectTrigger>
+            <SelectContent className="bg-slate-800 border-white/20 z-50">
+              <SelectItem value="">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4" />
+                  <span>No goal</span>
+                </div>
+              </SelectItem>
+              
+              {goals.length === 0 ? (
+                <SelectItem value="create-new" onSelect={handleCreateNewGoal}>
+                  <div className="flex items-center gap-2 text-blue-400">
+                    <Plus className="h-4 w-4" />
+                    <span>Create your first goal</span>
+                  </div>
+                </SelectItem>
+              ) : (
+                <>
+                  {groupedGoals.in_progress.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-green-400 font-medium">In Progress</SelectLabel>
+                      {groupedGoals.in_progress.map((goal) => (
+                        <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                          {goal.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  
+                  {groupedGoals.not_started.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-blue-400 font-medium">Not Started</SelectLabel>
+                      {groupedGoals.not_started.map((goal) => (
+                        <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                          {goal.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                  
+                  {groupedGoals.completed.length > 0 && (
+                    <SelectGroup>
+                      <SelectLabel className="text-gray-400 font-medium">Completed</SelectLabel>
+                      {groupedGoals.completed.map((goal) => (
+                        <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                          {goal.title}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  )}
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
       </CardContent>
     </Card>
   );

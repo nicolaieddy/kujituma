@@ -1,10 +1,11 @@
 
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2, Pencil, ArrowRight } from "lucide-react";
 import { 
   AlertDialog,
@@ -53,10 +54,22 @@ export const WeeklyObjectivesList = ({
   hasIncompleteObjectives = false,
   isDeletingAll = false,
 }: WeeklyObjectivesListProps) => {
+  const navigate = useNavigate();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [savingObjectiveIds, setSavingObjectiveIds] = useState<Set<string>>(new Set());
+
+  const handleCreateNewGoal = () => {
+    navigate('/goals');
+  };
+
+  // Group goals by status
+  const groupedGoals = {
+    in_progress: goals.filter(goal => goal.status === 'in_progress'),
+    not_started: goals.filter(goal => goal.status === 'not_started'),
+    completed: goals.filter(goal => goal.status === 'completed'),
+  };
 
   // Auto-save hook for new objectives
   const autoSave = useObjectiveAutoSave({
@@ -227,14 +240,58 @@ export const WeeklyObjectivesList = ({
                               <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
                                 <SelectValue placeholder="Select a goal" />
                               </SelectTrigger>
-                              <SelectContent className="bg-slate-800 border-white/20">
-                                <SelectItem value="none">No goal</SelectItem>
-                                {goals.map((goal) => (
-                                  <SelectItem key={goal.id} value={goal.id} className="text-white">
-                                    {goal.title}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
+                               <SelectContent className="bg-slate-800 border-white/20 z-50">
+                                 <SelectItem value="none">
+                                   <div className="flex items-center gap-2">
+                                     <Target className="h-4 w-4" />
+                                     <span>No goal</span>
+                                   </div>
+                                 </SelectItem>
+                                 
+                                 {goals.length === 0 ? (
+                                   <SelectItem value="create-new" onSelect={handleCreateNewGoal}>
+                                     <div className="flex items-center gap-2 text-blue-400">
+                                       <Plus className="h-4 w-4" />
+                                       <span>Create your first goal</span>
+                                     </div>
+                                   </SelectItem>
+                                 ) : (
+                                   <>
+                                     {groupedGoals.in_progress.length > 0 && (
+                                       <SelectGroup>
+                                         <SelectLabel className="text-green-400 font-medium">In Progress</SelectLabel>
+                                         {groupedGoals.in_progress.map((goal) => (
+                                           <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                                             {goal.title}
+                                           </SelectItem>
+                                         ))}
+                                       </SelectGroup>
+                                     )}
+                                     
+                                     {groupedGoals.not_started.length > 0 && (
+                                       <SelectGroup>
+                                         <SelectLabel className="text-blue-400 font-medium">Not Started</SelectLabel>
+                                         {groupedGoals.not_started.map((goal) => (
+                                           <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                                             {goal.title}
+                                           </SelectItem>
+                                         ))}
+                                       </SelectGroup>
+                                     )}
+                                     
+                                     {groupedGoals.completed.length > 0 && (
+                                       <SelectGroup>
+                                         <SelectLabel className="text-gray-400 font-medium">Completed</SelectLabel>
+                                         {groupedGoals.completed.map((goal) => (
+                                           <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                                             {goal.title}
+                                           </SelectItem>
+                                         ))}
+                                       </SelectGroup>
+                                     )}
+                                   </>
+                                 )}
+                               </SelectContent>
                             </Select>
                           </div>
                         )}
