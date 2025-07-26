@@ -53,7 +53,38 @@ export const EnhancedFeedPostContent = ({ post }: EnhancedFeedPostContentProps) 
         showReflections={true}
       />
 
-      {/* Weekly Reflections */}
+      {/* Weekly Reflection */}
+      {post.reflection && post.reflection.trim() && (
+        <div className="bg-blue-500/10 rounded-xl p-5 border border-blue-500/20 shadow-lg shadow-blue-500/20">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <Lightbulb className="h-4 w-4 text-blue-400" />
+            </div>
+            <div>
+              <h4 className="text-blue-200 font-semibold text-base">Weekly Reflection</h4>
+              <p className="text-white/60 text-xs">Key insights and learnings</p>
+            </div>
+          </div>
+          
+          <div className="bg-blue-500/5 rounded-lg p-4 border-l-2 border-blue-400/50">
+            <div className="flex items-start gap-2">
+              <MessageCircle className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+              <p className="text-white/90 leading-relaxed text-sm">{post.reflection}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-white/10">
+            <div className="flex items-center justify-between">
+              <span className="text-white/60 text-xs">Personal insights</span>
+              <div className="px-2 py-1 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300">
+                Weekly reflection
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy Weekly Reflections (for backwards compatibility) */}
       {sections.generalReflections.length > 0 && (
         <div className="bg-blue-500/10 rounded-xl p-5 border border-blue-500/20 shadow-lg shadow-blue-500/20">
           <div className="flex items-center gap-3 mb-4">

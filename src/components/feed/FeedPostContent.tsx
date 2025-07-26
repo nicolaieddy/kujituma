@@ -93,7 +93,20 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
         </div>
       )}
 
-      {/* Weekly Reflections */}
+      {/* Weekly Reflection */}
+      {post.reflection && post.reflection.trim() && (
+        <div className="bg-blue-500/10 rounded-lg p-5 border border-blue-500/20">
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            <h4 className="text-blue-300 font-semibold text-lg">Weekly Reflection</h4>
+          </div>
+          <div className="space-y-3">
+            <p className="text-white/90 leading-relaxed">{post.reflection}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Legacy Weekly Reflections (for backwards compatibility) */}
       {sections.generalReflections.length > 0 && (
         <div className="bg-blue-500/10 rounded-lg p-5 border border-blue-500/20">
           <div className="flex items-center gap-2 mb-4">

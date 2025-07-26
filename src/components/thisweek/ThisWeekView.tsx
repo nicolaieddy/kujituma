@@ -124,12 +124,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         }
       }
       
-      if (progressPost?.notes?.trim()) {
-        accomplishments += 'Weekly Reflections:\n';
-        accomplishments += progressPost.notes;
-        accomplishments += '\n\n';
-      }
-
+      // Separate the weekly reflection from accomplishments
+      const weeklyReflection = progressPost?.notes?.trim() || '';
+      
       if (!accomplishments.trim()) {
         accomplishments = 'Focused on personal growth this week.';
       }
@@ -150,6 +147,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           accomplishments: accomplishments,
           priorities: '',
           help: '',
+          reflection: weeklyReflection,
           week_start: currentWeekStart,
           week_end: weekEnd.toISOString().split('T')[0],
           objectives_completed: completedCount,

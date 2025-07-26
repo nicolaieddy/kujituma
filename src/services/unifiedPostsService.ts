@@ -11,6 +11,7 @@ export interface UnifiedPost {
   accomplishments: string;
   priorities: string;
   help: string;
+  reflection?: string;
   week_start?: string;
   week_end?: string;
   objectives_completed?: number;
@@ -85,6 +86,7 @@ class UnifiedPostsService {
       accomplishments: post.accomplishments,
       priorities: post.priorities,
       help: post.help,
+      reflection: post.reflection,
       week_start: post.week_start,
       week_end: post.week_end,
       objectives_completed: post.objectives_completed,
@@ -268,6 +270,7 @@ class UnifiedPostsService {
         accomplishments: postData.accomplishments,
         priorities: postData.priorities,
         help: postData.help,
+        reflection: postData.reflection,
         week_start: postData.week_start,
         week_end: postData.week_end,
         objectives_completed: postData.objectives_completed,

@@ -293,6 +293,7 @@ export type Database = {
           name: string
           objectives_completed: number | null
           priorities: string
+          reflection: string | null
           total_objectives: number | null
           updated_at: string
           user_id: string
@@ -310,6 +311,7 @@ export type Database = {
           name: string
           objectives_completed?: number | null
           priorities?: string
+          reflection?: string | null
           total_objectives?: number | null
           updated_at?: string
           user_id: string
@@ -327,6 +329,7 @@ export type Database = {
           name?: string
           objectives_completed?: number | null
           priorities?: string
+          reflection?: string | null
           total_objectives?: number | null
           updated_at?: string
           user_id?: string
