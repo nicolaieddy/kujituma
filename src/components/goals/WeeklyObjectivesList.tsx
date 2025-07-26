@@ -153,6 +153,55 @@ export const WeeklyObjectivesList = ({
           </Button>
         )}
       </div>
+      
+      {/* Empty state with helpful description */}
+      {objectives.length === 0 && (
+        <div className="bg-white/5 rounded-lg p-6 border border-white/10 mb-6">
+          <div className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="bg-purple-500/20 rounded-full p-3">
+                <Target className="h-8 w-8 text-purple-400" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-white font-semibold text-lg">
+                Plan Your Week for Success
+              </h3>
+              <p className="text-white/70 text-sm max-w-md mx-auto">
+                Use your weekly plan to list your top priorities for the week. Focus on what matters most and make meaningful progress.
+              </p>
+            </div>
+            <div className="bg-white/5 rounded-lg p-4 space-y-3 text-left max-w-lg mx-auto">
+              <div className="flex items-start gap-3">
+                <div className="bg-blue-500/20 rounded-full p-1 mt-0.5">
+                  <Target className="h-3 w-3 text-blue-400" />
+                </div>
+                <div className="text-sm">
+                  <div className="text-white font-medium">Link to Long-term Goals</div>
+                  <div className="text-white/60">
+                    Connect weekly objectives to your bigger goals for better accountability and visibility into your progress.
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-start gap-3">
+                <div className="bg-green-500/20 rounded-full p-1 mt-0.5">
+                  <Check className="h-3 w-3 text-green-400" />
+                </div>
+                <div className="text-sm">
+                  <div className="text-white font-medium">Not Everything Needs a Goal</div>
+                  <div className="text-white/60">
+                    Some weekly priorities might be standalone tasks - that's perfectly fine! The goal linking is optional.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p className="text-white/50 text-xs">
+              Start by adding your first objective below ⬇️
+            </p>
+          </div>
+        </div>
+      )}
+      
       <div className="mt-3 space-y-3">
         {objectives.map((objective) => {
           const goalName = getGoalName(objective.goal_id);
