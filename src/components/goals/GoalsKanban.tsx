@@ -7,7 +7,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 
 interface GoalsKanbanProps {
   goalsByStatus: {
-    coming_up: Goal[];
+    not_started: Goal[];
     in_progress: Goal[];
     completed: Goal[];
   };
@@ -19,8 +19,8 @@ interface GoalsKanbanProps {
 
 const COLUMNS = [
   {
-    status: 'coming_up' as GoalStatus,
-    title: 'Coming Up',
+    status: 'not_started' as GoalStatus,
+    title: 'Not Started',
     icon: Clock,
     color: 'bg-blue-100 text-blue-800'
   },

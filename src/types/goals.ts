@@ -18,7 +18,7 @@ export interface Goal {
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
 
-export type GoalStatus = 'coming_up' | 'in_progress' | 'completed' | 'deleted';
+export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'deleted';
 
 export interface GoalStatusHistory {
   id: string;

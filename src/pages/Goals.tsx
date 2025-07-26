@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
-import { useGoalObjectives } from "@/hooks/useGoalObjectives";
+import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { GoalsKanban } from "@/components/goals/GoalsKanban";
@@ -23,14 +23,7 @@ const Goals = () => {
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
   const { goalsByStatus, isLoading, createGoal, updateGoal, deleteGoal } = useGoals();
-  const { objectives, createObjective, updateObjective, deleteObjective } = useGoalObjectives();
-  
-  // Debug logging for objectives data
-  console.log('=== Goals.tsx Debug START ===');
-  console.log('Total Objectives from useGoalObjectives:', objectives);
-  console.log('Objectives count:', objectives?.length || 0);
-  console.log('Sample objectives with goal_id:', objectives?.filter(obj => obj.goal_id).slice(0, 3));
-  console.log('=== Goals.tsx Debug END ===');
+  const { objectives, createObjective, updateObjective, deleteObjective } = useAllWeeklyObjectives();
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -38,6 +31,13 @@ const Goals = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
+
+  // Debug logging for objectives data
+  console.log('=== Goals.tsx Debug START ===');
+  console.log('Total Objectives from useAllWeeklyObjectives:', objectives.length);
+  console.log('Objectives with goal_id:', objectives.filter(obj => obj.goal_id));
+  console.log('Sample objectives:', objectives.slice(0, 3));
+  console.log('=== Goals.tsx Debug END ===');
 
   const handleSignOut = async () => {
     try {

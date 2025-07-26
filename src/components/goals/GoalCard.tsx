@@ -17,10 +17,10 @@ interface GoalCardProps {
 }
 
 const STATUS_CONFIG = {
-  coming_up: { 
+  not_started: { 
     color: "bg-blue-100 text-blue-800", 
     icon: Clock, 
-    label: "Coming Up" 
+    label: "Not Started" 
   },
   in_progress: { 
     color: "bg-yellow-100 text-yellow-800", 
@@ -91,7 +91,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              {goal.status === 'coming_up' && (
+              {goal.status === 'not_started' && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('in_progress'); }}>
                   <Play className="h-4 w-4 mr-2" />
                   Start Progress

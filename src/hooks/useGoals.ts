@@ -87,7 +87,7 @@ export const useGoals = () => {
   };
 
   const goalsByStatus = {
-    coming_up: goals.filter(goal => goal.status === 'coming_up'),
+    not_started: goals.filter(goal => goal.status === 'not_started'),
     in_progress: goals.filter(goal => goal.status === 'in_progress'),
     completed: goals.filter(goal => goal.status === 'completed'),
   };
