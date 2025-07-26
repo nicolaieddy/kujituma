@@ -24,7 +24,12 @@ export const WeeklyReflectionCard = ({
     <Card className="bg-white/10 backdrop-blur-lg border-white/20">
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle className="text-white">Weekly Reflection</CardTitle>
+          <div>
+            <CardTitle className="text-white">Weekly Reflection</CardTitle>
+            <p className="text-white/60 text-sm mt-1">
+              This reflection will be included when you share your week with the community
+            </p>
+          </div>
           <AutoSaveIndicator
             isSaving={autoSave.isSaving}
             lastSaved={autoSave.lastSaved}
@@ -36,7 +41,7 @@ export const WeeklyReflectionCard = ({
         <Textarea
           value={autoSave.value}
           onChange={(e) => autoSave.setValue(e.target.value)}
-          placeholder="How did this week go? What did you learn? Any insights or challenges?"
+          placeholder="How did this week go? What did you learn? Any insights or challenges? This will be shared with your weekly post."
           className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
           disabled={isReadOnly}
         />

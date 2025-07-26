@@ -70,8 +70,11 @@ export const ShareWeekCard = ({
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-white/80 mb-4">
+              <p className="text-white/80 mb-2">
                 Ready to share your week's progress with the community?
+              </p>
+              <p className="text-white/60 text-sm mb-4">
+                Your objectives{reflectionValue.trim() ? ' and weekly reflection' : ''} will be shared as a post
               </p>
               <Button
                 onClick={onShareWeek}

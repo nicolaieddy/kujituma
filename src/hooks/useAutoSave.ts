@@ -15,11 +15,13 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
   const mounted = useRef(true);
   
   const debouncedValue = useDebounce(value, delay);
+  const initialValueRef = useRef(initialValue);
 
-  // Update value when initialValue changes (e.g., when data loads)
+  // Update value when initialValue changes (e.g., when data loads or week changes)
   useEffect(() => {
-    if (mounted.current) {
+    if (mounted.current && initialValue !== initialValueRef.current) {
       setValue(initialValue);
+      initialValueRef.current = initialValue;
     }
   }, [initialValue]);
 
@@ -36,10 +38,17 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
       return;
     }
 
-    // Only save if the value is different from initial and not empty
-    if (debouncedValue !== initialValue && debouncedValue.trim() !== '') {
+    // Only save if the value is different from the current initial value and not empty
+    // This prevents saving old values when the initial value changes (e.g., week change)
+    if (debouncedValue !== initialValueRef.current && debouncedValue.trim() !== '') {
       const saveAsync = async () => {
         if (!mounted.current || saveInProgress.current) {
+          return;
+        }
+        
+        // Double-check that we're still in the same context (initial value hasn't changed)
+        if (initialValueRef.current !== initialValue) {
+          console.log('Auto-save cancelled: context changed during debounce');
           return;
         }
         
@@ -108,6 +117,6 @@ export const useAutoSave = ({ onSave, delay = 1000, initialValue = '' }: UseAuto
     isSaving,
     lastSaved,
     manualSave,
-    hasUnsavedChanges: value !== initialValue
+    hasUnsavedChanges: value !== initialValueRef.current
   };
 };
