@@ -58,6 +58,16 @@ export const GoalDetailModal = ({
   const config = STATUS_CONFIG[goal.status];
   const IconComponent = config.icon;
   const relatedObjectives = weeklyObjectives.filter(obj => obj.goal_id === goal.id);
+  
+  // Debug logging to help identify the linking issue
+  console.log('GoalDetailModal Debug:', {
+    goalId: goal.id,
+    goalTitle: goal.title,
+    totalWeeklyObjectives: weeklyObjectives.length,
+    weeklyObjectivesData: weeklyObjectives,
+    relatedObjectives: relatedObjectives,
+    relatedObjectivesCount: relatedObjectives.length
+  });
 
   const handleStatusChange = (newStatus: GoalStatus) => {
     if (newStatus !== goal.status) {
