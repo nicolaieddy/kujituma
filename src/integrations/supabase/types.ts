@@ -269,6 +269,7 @@ export type Database = {
           message: string
           related_comment_id: string | null
           related_post_id: string | null
+          related_request_id: string | null
           triggered_by_user_id: string
           type: string
           updated_at: string
@@ -281,6 +282,7 @@ export type Database = {
           message: string
           related_comment_id?: string | null
           related_post_id?: string | null
+          related_request_id?: string | null
           triggered_by_user_id: string
           type: string
           updated_at?: string
@@ -293,12 +295,21 @@ export type Database = {
           message?: string
           related_comment_id?: string | null
           related_post_id?: string | null
+          related_request_id?: string | null
           triggered_by_user_id?: string
           type?: string
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "notifications_related_request_id_fkey"
+            columns: ["related_request_id"]
+            isOneToOne: false
+            referencedRelation: "friend_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       post_likes: {
         Row: {
@@ -586,14 +597,24 @@ export type Database = {
         Returns: boolean
       }
       create_notification: {
-        Args: {
-          _user_id: string
-          _type: string
-          _message: string
-          _related_post_id?: string
-          _related_comment_id?: string
-          _triggered_by_user_id?: string
-        }
+        Args:
+          | {
+              _user_id: string
+              _type: string
+              _message: string
+              _related_post_id?: string
+              _related_comment_id?: string
+              _triggered_by_user_id?: string
+            }
+          | {
+              _user_id: string
+              _type: string
+              _message: string
+              _related_post_id?: string
+              _related_comment_id?: string
+              _triggered_by_user_id?: string
+              _related_request_id?: string
+            }
         Returns: string
       }
       delete_all_weekly_objectives: {

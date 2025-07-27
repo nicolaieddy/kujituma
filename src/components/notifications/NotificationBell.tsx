@@ -34,7 +34,7 @@ export const NotificationBell = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-80 p-0 bg-slate-800 border-white/20" 
+        className="w-96 p-0 bg-slate-800 border-white/20" 
         align="end"
       >
         <div className="flex items-center justify-between p-4 border-b border-white/20">
