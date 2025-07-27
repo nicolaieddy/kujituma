@@ -253,11 +253,11 @@ export class WeeklyProgressService {
   static getWeekStart(date: Date = new Date()): string {
     console.log('Getting week start for date:', date.toISOString());
     
-    // Create a new date to avoid mutating the input and ensure UTC consistency
+    // Create a new date to avoid mutating the input and use local time
     const startOfWeek = new Date(date.getTime());
     
-    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday)
-    const dayOfWeek = startOfWeek.getUTCDay();
+    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday) in local time
+    const dayOfWeek = startOfWeek.getDay();
     
     // Calculate how many days to subtract to get to Monday
     // If it's Sunday (0), we need to go back 6 days to get to Monday
@@ -265,34 +265,41 @@ export class WeeklyProgressService {
     // If it's Tuesday (2), we need to go back 1 day, etc.
     const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     
-    // Set to the start of the week (Monday) using UTC methods
-    startOfWeek.setUTCDate(startOfWeek.getUTCDate() - daysToSubtract);
+    // Set to the start of the week (Monday) using local time methods
+    startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
     
-    // Return in YYYY-MM-DD format
-    const result = startOfWeek.toISOString().split('T')[0];
+    // Return in YYYY-MM-DD format using local time
+    const year = startOfWeek.getFullYear();
+    const month = String(startOfWeek.getMonth() + 1).padStart(2, '0');
+    const day = String(startOfWeek.getDate()).padStart(2, '0');
+    const result = `${year}-${month}-${day}`;
+    
     console.log('Week start calculated:', result);
     return result;
   }
 
   static formatWeekRange(weekStart: string): string {
-    const start = new Date(weekStart + 'T00:00:00.000Z');
+    // Parse the date string as local date (not UTC)
+    const [year, month, day] = weekStart.split('-').map(Number);
+    const start = new Date(year, month - 1, day); // month is 0-based in Date constructor
     const end = new Date(start);
-    end.setUTCDate(start.getUTCDate() + 6);
+    end.setDate(start.getDate() + 6);
     
     const formatOptions: Intl.DateTimeFormatOptions = { 
       month: 'short', 
-      day: 'numeric',
-      timeZone: 'UTC'
+      day: 'numeric'
     };
     
     return `${start.toLocaleDateString('en-US', formatOptions)} - ${end.toLocaleDateString('en-US', formatOptions)}`;
   }
 
   static getWeekNumber(weekStart: string): number {
-    const start = new Date(weekStart + 'T00:00:00.000Z');
-    const startOfYear = new Date(Date.UTC(start.getUTCFullYear(), 0, 1));
+    // Parse the date string as local date (not UTC)
+    const [year, month, day] = weekStart.split('-').map(Number);
+    const start = new Date(year, month - 1, day); // month is 0-based in Date constructor
+    const startOfYear = new Date(start.getFullYear(), 0, 1);
     const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    return Math.ceil((days + startOfYear.getUTCDay() + 1) / 7);
+    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
   }
 
   static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {
