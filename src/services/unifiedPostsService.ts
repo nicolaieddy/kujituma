@@ -330,9 +330,6 @@ class UnifiedPostsService {
 
     // Invalidate cache when toggling likes
     this.likesCache.delete(user.id);
-    
-    // Also clear the unified posts cache to ensure likes are refreshed
-    lightweightCache.clear();
 
     const { data: isLiked, error } = await supabase.rpc('toggle_post_like', {
       _user_id: user.id,
