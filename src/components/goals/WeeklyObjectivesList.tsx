@@ -138,8 +138,9 @@ export const WeeklyObjectivesList = ({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <Label className="text-white font-medium text-lg">
+        <Label className="text-white font-medium text-lg flex items-center gap-2">
           🎯 This Week's Objectives
+          {isWeekCompleted && <span className="text-xs text-yellow-400">🔒 Locked</span>}
         </Label>
         {!isWeekCompleted && hasIncompleteObjectives && onOpenCarryOver && (
           <Button

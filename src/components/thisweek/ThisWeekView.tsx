@@ -204,9 +204,21 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const isCurrentWeek = WeeklyProgressService.getWeekStart() === currentWeekStart;
   const isPastWeek = currentWeekStart < WeeklyProgressService.getWeekStart();
   
+  
   // Enforce immutability: once a week is completed (shared), it becomes read-only
   const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
+  
+  console.log('ThisWeekView debug:', {
+    hasShared,
+    progressPost: progressPost ? { 
+      id: progressPost.id, 
+      is_completed: progressPost.is_completed,
+      completed_at: progressPost.completed_at
+    } : null,
+    isWeekCompleted,
+    isReadOnly
+  });
 
   // Show loading skeleton while data is being fetched
   if (weeklyDataLoading) {

@@ -27,30 +27,51 @@ export const WeeklyReflectionCard = ({
   });
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className={`bg-white/10 backdrop-blur-lg border-white/20 ${isReadOnly ? 'opacity-75' : ''}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-white">Weekly Reflection</CardTitle>
+            <CardTitle className={`text-white ${isReadOnly ? 'text-white/70' : ''}`}>
+              Weekly Reflection
+              {isReadOnly && <span className="ml-2 text-xs text-yellow-400">🔒 Locked</span>}
+            </CardTitle>
             <p className="text-white/60 text-sm mt-1">
-              This reflection will be included when you share your week with the community
+              {isReadOnly 
+                ? "This week has been shared and can no longer be edited"
+                : "This reflection will be included when you share your week with the community"
+              }
             </p>
           </div>
-          <AutoSaveIndicator
-            isSaving={reflection.isSaving}
-            lastSaved={reflection.lastSaved}
-            hasUnsavedChanges={reflection.hasUnsavedChanges}
-          />
+          {!isReadOnly && (
+            <AutoSaveIndicator
+              isSaving={reflection.isSaving}
+              lastSaved={reflection.lastSaved}
+              hasUnsavedChanges={reflection.hasUnsavedChanges}
+            />
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
           value={reflection.value}
           onChange={(e) => reflection.setValue(e.target.value)}
-          placeholder="How did this week go? What did you learn? Any insights or challenges? This will be shared with your weekly post."
-          className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+          placeholder={isReadOnly 
+            ? "No reflection added for this week" 
+            : "How did this week go? What did you learn? Any insights or challenges? This will be shared with your weekly post."
+          }
+          className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px] ${
+            isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+          }`}
           disabled={isReadOnly}
+          readOnly={isReadOnly}
         />
+        {isReadOnly && (
+          <div className="text-center py-2">
+            <span className="text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full">
+              ✅ Week completed and shared with community
+            </span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
