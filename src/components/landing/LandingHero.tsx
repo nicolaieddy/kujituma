@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import kilimanjaroBackground from "@/assets/kilimanjaro-background.jpg";
 
 interface LandingHeroProps {
   onGetStarted: () => void;
@@ -7,8 +8,15 @@ interface LandingHeroProps {
 
 export const LandingHero = ({ onGetStarted }: LandingHeroProps) => {
   return (
-    <section className="relative py-20 md:py-32 px-4">
-      <div className="max-w-6xl mx-auto">
+    <section className="relative py-20 md:py-32 px-4 overflow-hidden">
+      {/* Mt Kilimanjaro Background */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
+        style={{ backgroundImage: `url(${kilimanjaroBackground})` }}
+      ></div>
+      <div className="absolute inset-0 bg-gradient-background/80"></div>
+      
+      <div className="max-w-6xl mx-auto relative z-10">
         <div className="text-center space-y-8">
           {/* Main Headline */}
           <div className="space-y-4">
@@ -20,6 +28,7 @@ export const LandingHero = ({ onGetStarted }: LandingHeroProps) => {
               <span className="text-foreground">Into Achievements</span>
             </h1>
             <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+              Like climbing Kilimanjaro, every great achievement starts with a single step. 
               Join thousands who've turned their aspirations into reality with structured weekly planning, 
               progress tracking, and community accountability.
             </p>

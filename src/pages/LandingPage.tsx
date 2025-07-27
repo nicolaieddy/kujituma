@@ -1,6 +1,5 @@
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingFeatures } from "@/components/landing/LandingFeatures";
-import { LandingBenefits } from "@/components/landing/LandingBenefits";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -50,7 +49,6 @@ const LandingPage = () => {
       <main>
         <LandingHero onGetStarted={handleGetStarted} />
         <LandingFeatures />
-        <LandingBenefits />
         <LandingCTA onGetStarted={handleGetStarted} />
       </main>
 
