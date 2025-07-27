@@ -26,6 +26,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   
   const { 
@@ -53,17 +54,33 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
     }
   };
 
-  // Auto-search when debounced query changes
+  // Load all users when discover view is first opened
+  const loadAllUsers = async () => {
+    setSearchLoading(true);
+    try {
+      const results = await friendsService.searchUsers('');
+      setAllUsers(results);
+    } catch (error) {
+      console.error('Error loading all users:', error);
+      setAllUsers([]);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Auto-search when debounced query changes or load all users when discover view opens
   useEffect(() => {
     const searchEffect = async () => {
-      if (debouncedSearchQuery && view === 'discover') {
-        await handleSearch(debouncedSearchQuery);
-      } else if (!debouncedSearchQuery) {
-        setSearchResults([]);
+      if (view === 'discover') {
+        if (debouncedSearchQuery) {
+          await handleSearch(debouncedSearchQuery);
+        } else if (allUsers.length === 0) {
+          await loadAllUsers();
+        }
       }
     };
     searchEffect();
-  }, [debouncedSearchQuery, view]);
+  }, [debouncedSearchQuery, view, allUsers.length]);
 
   const handleAcceptRequest = async (requestId: string) => {
     await respondToFriendRequest(requestId, 'accepted');
@@ -263,12 +280,25 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
               </div>
             )}
 
-            {!searchQuery && (
+            {!searchLoading && !searchQuery && allUsers.length > 0 && (
+              <div className="space-y-4">
+                {allUsers.map((user) => (
+                  <UserSearchCard
+                    key={user.id}
+                    user={user}
+                    onSendRequest={handleSendRequest}
+                    loading={loading}
+                  />
+                ))}
+              </div>
+            )}
+
+            {!searchQuery && allUsers.length === 0 && !searchLoading && (
               <div className="text-center py-12">
                 <Search className="h-16 w-16 mx-auto text-white/40 mb-4" />
                 <p className="text-white/80 text-lg mb-2">Find new friends</p>
                 <p className="text-white/60">
-                  Search for people by name to connect with them.
+                  Use the search above to find specific people, or browse all users below.
                 </p>
               </div>
             )}
