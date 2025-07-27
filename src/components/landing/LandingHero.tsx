@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import kilimanjaroBackground from "@/assets/kilimanjaro-background.jpg";
 
 interface LandingHeroProps {
   onGetStarted: () => void;
@@ -12,7 +11,7 @@ export const LandingHero = ({ onGetStarted }: LandingHeroProps) => {
       {/* Mt Kilimanjaro Background */}
       <div 
         className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-        style={{ backgroundImage: `url(${kilimanjaroBackground})` }}
+        style={{ backgroundImage: `url(/kilimanjaro-background.jpg)` }}
       ></div>
       <div className="absolute inset-0 bg-gradient-background/80"></div>
       
