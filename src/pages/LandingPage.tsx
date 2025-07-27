@@ -3,20 +3,15 @@ import { LandingFeatures } from "@/components/landing/LandingFeatures";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
-
 const LandingPage = () => {
   const navigate = useNavigate();
-
   const handleGetStarted = () => {
     navigate("/auth");
   };
-
   const handleSignIn = () => {
     navigate("/auth");
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-background">
+  return <div className="min-h-screen bg-gradient-background">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,17 +22,10 @@ const LandingPage = () => {
               </h1>
             </div>
             <div className="flex items-center gap-4">
-              <Button 
-                variant="ghost" 
-                onClick={handleSignIn}
-                className="text-foreground hover:text-primary"
-              >
+              <Button variant="ghost" onClick={handleSignIn} className="text-foreground hover:text-primary">
                 Sign In
               </Button>
-              <Button 
-                onClick={handleGetStarted}
-                className="bg-gradient-primary hover:opacity-90 transition-opacity"
-              >
+              <Button onClick={handleGetStarted} className="bg-gradient-primary hover:opacity-90 transition-opacity">
                 Get Started
               </Button>
             </div>
@@ -62,14 +50,10 @@ const LandingPage = () => {
             <p className="text-muted-foreground">
               Transform your goals into achievements with structured planning and community support.
             </p>
-            <div className="text-sm text-muted-foreground">
-              © 2024 Kujituma. Built with passion for achievers.
-            </div>
+            <div className="text-sm text-muted-foreground">© 2025 Kujituma. Built with passion for achievers.</div>
           </div>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;

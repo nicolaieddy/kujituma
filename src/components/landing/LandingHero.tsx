@@ -1,18 +1,16 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-
 interface LandingHeroProps {
   onGetStarted: () => void;
 }
-
-export const LandingHero = ({ onGetStarted }: LandingHeroProps) => {
-  return (
-    <section className="relative py-20 md:py-32 px-4 overflow-hidden">
+export const LandingHero = ({
+  onGetStarted
+}: LandingHeroProps) => {
+  return <section className="relative py-20 md:py-32 px-4 overflow-hidden">
       {/* Mt Kilimanjaro Background */}
-      <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20"
-        style={{ backgroundImage: `url(/kilimanjaro-background.jpg)` }}
-      ></div>
+      <div className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-20" style={{
+      backgroundImage: `url(/kilimanjaro-background.jpg)`
+    }}></div>
       <div className="absolute inset-0 bg-gradient-background/80"></div>
       
       <div className="max-w-6xl mx-auto relative z-10">
@@ -26,29 +24,13 @@ export const LandingHero = ({ onGetStarted }: LandingHeroProps) => {
               <br />
               <span className="text-foreground">Into Achievements</span>
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-              Like climbing Kilimanjaro, every great achievement starts with a single step. 
-              Join thousands who've turned their aspirations into reality with structured weekly planning, 
-              progress tracking, and community accountability.
-            </p>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Like climbing Kilimanjaro, every great achievement starts with a single step.</p>
           </div>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              onClick={onGetStarted}
-              size="lg" 
-              className="text-lg px-8 py-6 bg-gradient-primary hover:opacity-90 transition-opacity"
-            >
-              Start Your Journey
-            </Button>
-            <Button 
-              variant="outline" 
-              size="lg"
-              className="text-lg px-8 py-6 border-primary/20 hover:bg-primary/10"
-            >
-              Watch Demo
-            </Button>
+            <Button onClick={onGetStarted} size="lg" className="text-lg px-8 py-6 bg-gradient-primary hover:opacity-90 transition-opacity">Kujituma</Button>
+            
           </div>
 
           {/* Hero Visual */}
@@ -100,6 +82,5 @@ export const LandingHero = ({ onGetStarted }: LandingHeroProps) => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
