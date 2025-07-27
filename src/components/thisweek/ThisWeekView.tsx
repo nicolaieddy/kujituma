@@ -172,15 +172,19 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         });
       } else {
         // Mark week as completed using the proper service method
+        console.log('Marking week as completed:', currentWeekStart);
         await WeeklyProgressService.completeWeek(currentWeekStart);
+        console.log('Week marked as completed, invalidating queries');
         
         toast({
           title: "Success",
           description: "Your weekly progress has been shared with the community! This week is now locked.",
         });
         
-        queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
-        queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+        // Force refresh both queries to ensure UI updates
+        await queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
+        await queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+        await queryClient.refetchQueries({ queryKey: ['weekly-progress-post', user.id, currentWeekStart] });
       }
     } catch (error) {
       console.error('Error sharing week:', error);
