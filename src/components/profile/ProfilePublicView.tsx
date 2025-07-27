@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,6 +9,7 @@ import xIcon from "@/assets/x-icon.png";
 import tiktokIcon from "@/assets/tiktok-icon.png";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
+import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriendshipStatus } from "@/hooks/useFriendshipStatus";
 import { useFriends } from "@/hooks/useFriends";
@@ -32,9 +34,15 @@ interface ProfilePublicViewProps {
 
 export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   const { user } = useAuth();
+  const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status, loading: statusLoading } = useFriendshipStatus(profile.id);
   const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
+
+  const handleUnfriend = () => {
+    setShowUnfriendDialog(false);
+    removeFriend(profile.id);
+  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -67,7 +75,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                   <Button
                     variant="outline"
                     className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
-                    onClick={() => removeFriend(profile.id)}
+                    onClick={() => setShowUnfriendDialog(true)}
                   >
                     <UserCheck className="h-4 w-4 mr-2" />
                     Friends
@@ -194,6 +202,14 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
       {/* Goals Section */}
       <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />
+      
+      {/* Unfriend Confirmation Dialog */}
+      <UnfriendConfirmDialog
+        isOpen={showUnfriendDialog}
+        onOpenChange={setShowUnfriendDialog}
+        onConfirm={handleUnfriend}
+        friendName={profile.full_name}
+      />
     </div>
   );
 };

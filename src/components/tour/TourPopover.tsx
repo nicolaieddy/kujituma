@@ -37,6 +37,7 @@ export const TourPopover = ({
       const popoverHeight = 200;
       const arrowSize = 8;
       const offset = 16;
+      const padding = 20; // Extra padding from viewport edges
 
       let top = 0;
       let left = 0;
@@ -70,14 +71,53 @@ export const TourPopover = ({
           break;
       }
 
-      // Keep within viewport bounds
+      // Enhanced viewport bounds checking with extra padding for buttons
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
       
-      if (left < 16) left = 16;
-      if (left + popoverWidth > viewportWidth - 16) left = viewportWidth - popoverWidth - 16;
-      if (top < 16) top = 16;
-      if (top + popoverHeight > viewportHeight - 16) top = viewportHeight - popoverHeight - 16;
+      // Ensure popover doesn't go off-screen horizontally
+      if (left < padding) {
+        left = padding;
+        // Adjust arrow position when popover is repositioned
+        if (step.placement === 'bottom' || step.placement === 'top') {
+          arrowLeft = Math.max(arrowSize, Math.min(
+            popoverWidth - arrowSize * 2, 
+            rect.left + (rect.width / 2) - left - arrowSize
+          ));
+        }
+      }
+      if (left + popoverWidth > viewportWidth - padding) {
+        left = viewportWidth - popoverWidth - padding;
+        // Adjust arrow position when popover is repositioned
+        if (step.placement === 'bottom' || step.placement === 'top') {
+          arrowLeft = Math.max(arrowSize, Math.min(
+            popoverWidth - arrowSize * 2, 
+            rect.left + (rect.width / 2) - left - arrowSize
+          ));
+        }
+      }
+      
+      // Ensure popover doesn't go off-screen vertically
+      if (top < padding) {
+        top = padding;
+        // If repositioned from top, adjust arrow
+        if (step.placement === 'left' || step.placement === 'right') {
+          arrowTop = Math.max(arrowSize, Math.min(
+            popoverHeight - arrowSize * 2,
+            rect.top + (rect.height / 2) - top - arrowSize
+          ));
+        }
+      }
+      if (top + popoverHeight > viewportHeight - padding) {
+        top = viewportHeight - popoverHeight - padding;
+        // If repositioned from bottom, adjust arrow
+        if (step.placement === 'left' || step.placement === 'right') {
+          arrowTop = Math.max(arrowSize, Math.min(
+            popoverHeight - arrowSize * 2,
+            rect.top + (rect.height / 2) - top - arrowSize
+          ));
+        }
+      }
 
       setPosition({ top, left });
       setArrowPosition({ top: arrowTop, left: arrowLeft });
@@ -147,14 +187,14 @@ export const TourPopover = ({
             {step.content}
           </p>
           
-          <div className="flex items-center justify-between">
-            <div className="flex gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex gap-2 flex-1">
               {!isFirstStep && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
                   onClick={onPrevious}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                 >
                   <ArrowLeft className="h-3 w-3 mr-1" />
                   Previous
@@ -165,7 +205,7 @@ export const TourPopover = ({
                   variant="ghost" 
                   size="sm" 
                   onClick={onSkip}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 flex-shrink-0"
                 >
                   <SkipForward className="h-3 w-3 mr-1" />
                   Skip
@@ -175,7 +215,8 @@ export const TourPopover = ({
             
             <Button 
               onClick={onNext}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white"
+              size="sm"
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white flex-shrink-0"
             >
               {step.actionText || (isLastStep ? 'Finish' : 'Next')}
               {!isLastStep && <ArrowRight className="h-3 w-3 ml-1" />}
