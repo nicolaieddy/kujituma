@@ -2,6 +2,7 @@ import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
 import { VirtualizedFeedList } from "./VirtualizedFeedList";
 import { FeedSkeletonList } from "./FeedPostSkeleton";
 import { Button } from "@/components/ui/button";
+import FilterDropdown, { FilterPeriod } from "@/components/FilterDropdown";
 import { LayoutGrid, List } from "lucide-react";
 import { useState, memo } from "react";
 
@@ -12,9 +13,11 @@ interface FeedViewProps {
 
 export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) => {
   const [useEnhancedView, setUseEnhancedView] = useState(false);
+  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("14days");
   
   const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike } = useUnifiedPosts({
-    feedType: feedType === "all" ? "all" : "user"
+    feedType: feedType === "all" ? "all" : "user",
+    filterPeriod
   });
 
   if (isLoading) {
@@ -40,6 +43,12 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
 
   return (
     <div className="space-y-6">
+      {/* Filter Period */}
+      <FilterDropdown 
+        selectedPeriod={filterPeriod} 
+        onPeriodChange={setFilterPeriod} 
+      />
+      
       {/* View Toggle */}
       <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
         <div className="flex items-center gap-2">
