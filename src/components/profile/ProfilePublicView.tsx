@@ -47,19 +47,19 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        <Card className="bg-card backdrop-blur-sm border-border/50 shadow-xl">
+        <Card className="bg-background/80 backdrop-blur-sm border-border/30 shadow-lg">
           <CardContent className="p-10">
             {/* Profile Header */}
             <div className="text-center mb-10">
               <div className="flex justify-center mb-6">
                 <Avatar className="h-40 w-40 border-4 border-primary/20 shadow-2xl">
                   <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-primary-foreground text-5xl">
+                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-background text-5xl">
                     <User className="h-20 w-20" />
                   </AvatarFallback>
                 </Avatar>
               </div>
-              <h1 className="text-4xl font-bold text-card-foreground mb-3">{profile.full_name}</h1>
+              <h1 className="text-4xl font-bold text-foreground mb-3">{profile.full_name}</h1>
             
               {/* Friendship Actions */}
               {!isOwnProfile && user && !statusLoading && (
@@ -118,8 +118,8 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
             {/* About Me Section */}
             {profile.about_me && (
               <div className="mb-10">
-                <h2 className="text-2xl font-semibold text-card-foreground mb-6 border-b border-border/30 pb-2">About Me</h2>
-                <p className="text-card-foreground/90 leading-relaxed whitespace-pre-wrap text-lg">
+                <h2 className="text-2xl font-semibold text-foreground mb-6 border-b border-border/30 pb-2">About Me</h2>
+                <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-lg">
                   {profile.about_me}
                 </p>
               </div>
@@ -128,7 +128,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
             {/* Social Media Links */}
             {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
               <div className="mb-10">
-                <h2 className="text-2xl font-semibold text-card-foreground mb-6 border-b border-border/30 pb-2">Connect</h2>
+                <h2 className="text-2xl font-semibold text-foreground mb-6 border-b border-border/30 pb-2">Connect</h2>
                 <div className="flex flex-wrap gap-4">
                   {profile.linkedin_url && (
                     <Button
@@ -180,14 +180,14 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
             {/* Member Info */}
             <div className="border-t border-border/30 pt-8">
-              <h2 className="text-2xl font-semibold text-card-foreground mb-6">Member Information</h2>
+              <h2 className="text-2xl font-semibold text-foreground mb-6">Member Information</h2>
               <div className="space-y-4">
-                <div className="flex items-center text-card-foreground/80 text-lg">
+                <div className="flex items-center text-foreground/70 text-lg">
                   <Calendar className="h-6 w-6 mr-4 text-primary" />
                   <span>Member since {formatDate(profile.created_at)}</span>
                 </div>
                 {profile.last_active_at && (
-                  <div className="flex items-center text-card-foreground/80 text-lg">
+                  <div className="flex items-center text-foreground/70 text-lg">
                     <Clock className="h-6 w-6 mr-4 text-accent" />
                     <span>Last active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
                   </div>
