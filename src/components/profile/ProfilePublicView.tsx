@@ -45,161 +45,155 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
-        <Card className="bg-background/80 backdrop-blur-sm border-border/30 shadow-lg">
-          <CardContent className="p-10">
-            {/* Profile Header */}
-            <div className="text-center mb-10">
-              <div className="flex justify-center mb-6">
-                <Avatar className="h-40 w-40 border-4 border-primary/20 shadow-2xl">
-                  <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                  <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-background text-5xl">
-                    <User className="h-20 w-20" />
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <h1 className="text-4xl font-bold text-foreground mb-3">{profile.full_name}</h1>
+    <div className="max-w-4xl mx-auto space-y-8">
+      <Card className="bg-slate-800/40 backdrop-blur-lg border-slate-700/50">
+        <CardContent className="p-8">
+          {/* Profile Header */}
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Avatar className="h-32 w-32 border-4 border-white/20">
+                <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-4xl">
+                  <User className="h-16 w-16" />
+                </AvatarFallback>
+              </Avatar>
+            </div>
+            <h1 className="text-3xl font-bold text-white mb-2">{profile.full_name}</h1>
             
-              {/* Friendship Actions */}
-              {!isOwnProfile && user && !statusLoading && (
-                <div className="flex justify-center mt-6">
-                  {is_friend ? (
+            {/* Friendship Actions */}
+            {!isOwnProfile && user && !statusLoading && (
+              <div className="flex justify-center mt-4">
+                {is_friend ? (
+                  <Button
+                    variant="outline"
+                    className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
+                    onClick={() => removeFriend(profile.id)}
+                  >
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Friends
+                  </Button>
+                ) : friend_request_status === 'sent' ? (
+                  <Button
+                    variant="outline"
+                    className="bg-yellow-500/20 border-yellow-400 text-yellow-400"
+                    disabled
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Request Sent
+                  </Button>
+                ) : friend_request_status === 'received' ? (
+                  <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      className="bg-accent/10 border-accent/50 text-accent hover:bg-accent/20 transition-all duration-300 shadow-lg"
-                      onClick={() => removeFriend(profile.id)}
+                      className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
+                      onClick={() => respondToFriendRequest(profile.id, 'accepted')}
                     >
-                      <UserCheck className="h-5 w-5 mr-2" />
-                      Friends
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Accept
                     </Button>
-                  ) : friend_request_status === 'sent' ? (
                     <Button
                       variant="outline"
-                      className="bg-muted border-muted-foreground/30 text-muted-foreground"
-                      disabled
+                      className="bg-red-500/20 border-red-400 text-red-400 hover:bg-red-500/30"
+                      onClick={() => respondToFriendRequest(profile.id, 'rejected')}
                     >
-                      <UserPlus className="h-5 w-5 mr-2" />
-                      Request Sent
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      Decline
                     </Button>
-                  ) : friend_request_status === 'received' ? (
-                    <div className="flex gap-3">
-                      <Button
-                        variant="outline"
-                        className="bg-accent/10 border-accent/50 text-accent hover:bg-accent/20 transition-all duration-300"
-                        onClick={() => respondToFriendRequest(profile.id, 'accepted')}
-                      >
-                        <UserCheck className="h-5 w-5 mr-2" />
-                        Accept
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="bg-destructive/10 border-destructive/50 text-destructive hover:bg-destructive/20 transition-all duration-300"
-                        onClick={() => respondToFriendRequest(profile.id, 'rejected')}
-                      >
-                        <UserMinus className="h-5 w-5 mr-2" />
-                        Decline
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="bg-primary/10 border-primary/50 text-primary hover:bg-primary/20 transition-all duration-300 shadow-lg"
-                      onClick={() => sendFriendRequest(profile.id)}
-                    >
-                      <UserPlus className="h-5 w-5 mr-2" />
-                      Add Friend
-                    </Button>
-                  )}
-                </div>
-              )}
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="bg-blue-500/20 border-blue-400 text-blue-400 hover:bg-blue-500/30"
+                    onClick={() => sendFriendRequest(profile.id)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Friend
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
-            {/* About Me Section */}
-            {profile.about_me && (
-              <div className="mb-10">
-                <h2 className="text-2xl font-semibold text-foreground mb-6 border-b border-border/30 pb-2">About Me</h2>
-                <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap text-lg">
-                  {profile.about_me}
-                </p>
-              </div>
-            )}
+          {/* About Me Section */}
+          {profile.about_me && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-white mb-4">About Me</h2>
+              <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
+                {profile.about_me}
+              </p>
+            </div>
+          )}
 
-            {/* Social Media Links */}
-            {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
-              <div className="mb-10">
-                <h2 className="text-2xl font-semibold text-foreground mb-6 border-b border-border/30 pb-2">Connect</h2>
-                <div className="flex flex-wrap gap-4">
-                  {profile.linkedin_url && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="bg-social-linkedin/10 border-social-linkedin/30 text-social-linkedin hover:bg-social-linkedin/20 hover:border-social-linkedin/50 hover:scale-105 transition-all duration-300 shadow-lg"
-                      onClick={() => window.open(profile.linkedin_url, '_blank')}
-                    >
-                      <img src={linkedinIcon} alt="LinkedIn" className="h-5 w-5 mr-3" />
-                      LinkedIn
-                    </Button>
-                  )}
-                  {profile.instagram_url && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="bg-social-instagram/10 border-social-instagram/30 text-social-instagram hover:bg-social-instagram/20 hover:border-social-instagram/50 hover:scale-105 transition-all duration-300 shadow-lg"
-                      onClick={() => window.open(profile.instagram_url, '_blank')}
-                    >
-                      <img src={instagramIcon} alt="Instagram" className="h-5 w-5 mr-3" />
-                      Instagram
-                    </Button>
-                  )}
-                  {profile.tiktok_url && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="bg-social-tiktok/10 border-social-tiktok/30 text-social-tiktok hover:bg-social-tiktok/20 hover:border-social-tiktok/50 hover:scale-105 transition-all duration-300 shadow-lg"
-                      onClick={() => window.open(profile.tiktok_url, '_blank')}
-                    >
-                      <img src={tiktokIcon} alt="TikTok" className="h-5 w-5 mr-3" />
-                      TikTok
-                    </Button>
-                  )}
-                  {profile.twitter_url && (
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="bg-social-twitter/10 border-social-twitter/30 text-social-twitter hover:bg-social-twitter/20 hover:border-social-twitter/50 hover:scale-105 transition-all duration-300 shadow-lg"
-                      onClick={() => window.open(profile.twitter_url, '_blank')}
-                    >
-                      <img src={xIcon} alt="X" className="h-5 w-5 mr-3" />
-                      X
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Member Info */}
-            <div className="border-t border-border/30 pt-8">
-              <h2 className="text-2xl font-semibold text-foreground mb-6">Member Information</h2>
-              <div className="space-y-4">
-                <div className="flex items-center text-foreground/70 text-lg">
-                  <Calendar className="h-6 w-6 mr-4 text-primary" />
-                  <span>Member since {formatDate(profile.created_at)}</span>
-                </div>
-                {profile.last_active_at && (
-                  <div className="flex items-center text-foreground/70 text-lg">
-                    <Clock className="h-6 w-6 mr-4 text-accent" />
-                    <span>Last active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
-                  </div>
+          {/* Social Media Links */}
+          {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-white mb-4">Connect</h2>
+              <div className="flex flex-wrap gap-3">
+                {profile.linkedin_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30 hover:border-blue-400/70 transition-all duration-200"
+                    onClick={() => window.open(profile.linkedin_url, '_blank')}
+                  >
+                    <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    LinkedIn
+                  </Button>
+                )}
+                {profile.instagram_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-pink-600/20 border-pink-500/50 text-pink-300 hover:bg-pink-600/30 hover:border-pink-400/70 transition-all duration-200"
+                    onClick={() => window.open(profile.instagram_url, '_blank')}
+                  >
+                    <img src={instagramIcon} alt="Instagram" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    Instagram
+                  </Button>
+                )}
+                {profile.tiktok_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-purple-600/20 border-purple-500/50 text-purple-300 hover:bg-purple-600/30 hover:border-purple-400/70 transition-all duration-200"
+                    onClick={() => window.open(profile.tiktok_url, '_blank')}
+                  >
+                    <img src={tiktokIcon} alt="TikTok" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    TikTok
+                  </Button>
+                )}
+                {profile.twitter_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-slate-600/20 border-slate-500/50 text-slate-300 hover:bg-slate-600/30 hover:border-slate-400/70 transition-all duration-200"
+                    onClick={() => window.open(profile.twitter_url, '_blank')}
+                  >
+                    <img src={xIcon} alt="X" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    X
+                  </Button>
                 )}
               </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {/* Goals Section */}
-        <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />
-      </div>
+          {/* Member Info */}
+          <div className="border-t border-white/20 pt-8">
+            <h2 className="text-xl font-semibold text-white mb-4">Member Information</h2>
+            <div className="space-y-3">
+              <div className="flex items-center text-white/80">
+                <Calendar className="h-5 w-5 mr-3 text-purple-400" />
+                <span>Member since {formatDate(profile.created_at)}</span>
+              </div>
+              {profile.last_active_at && (
+                <div className="flex items-center text-white/80">
+                  <Clock className="h-5 w-5 mr-3 text-blue-400" />
+                  <span>Last active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Goals Section */}
+      <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />
     </div>
   );
 };
