@@ -20,17 +20,14 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleClick = async () => {
-    // Only navigate on click for non-friend-request notifications
-    if (notification.type === 'friend_request') {
-      return; // Don't navigate for friend requests, let buttons handle the actions
-    }
-    
     if (!notification.is_read) {
       await markAsRead(notification.id);
     }
     
-    // Navigate to the related post
-    if (notification.related_post_id) {
+    // Navigate based on notification type
+    if (notification.type === 'friend_request') {
+      navigate('/friends?tab=requests');
+    } else if (notification.related_post_id) {
       navigate('/feed');
     }
     
@@ -80,7 +77,7 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
   return (
     <div
       onClick={handleClick}
-      className={`p-3 ${!isFriendRequest ? 'cursor-pointer hover:bg-white/5' : ''} transition-colors ${
+      className={`p-3 cursor-pointer hover:bg-white/5 transition-colors ${
         !notification.is_read ? 'bg-blue-500/10 border-l-2 border-l-blue-400' : ''
       }`}
     >

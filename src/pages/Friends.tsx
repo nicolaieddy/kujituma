@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useFriends } from "@/hooks/useFriends";
@@ -11,9 +11,26 @@ import { Users, UserPlus, Inbox } from "lucide-react";
 
 const Friends = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const { friends, friendRequests, loading } = useFriends();
+  
+  const [activeTab, setActiveTab] = useState(() => {
+    return searchParams.get('tab') || 'friends';
+  });
+
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['friends', 'requests', 'discover'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'friends' ? {} : { tab });
+  };
 
   const handleSignOut = async () => {
     try {
@@ -52,7 +69,7 @@ const Friends = () => {
         </div>
 
         <div className="max-w-4xl mx-auto">
-          <Tabs defaultValue="friends" className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3 mb-6">
               <TabsTrigger value="friends" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
