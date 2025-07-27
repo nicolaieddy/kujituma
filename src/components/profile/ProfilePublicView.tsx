@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck } from "lucide-react";
+import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck, Instagram, Twitter } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,9 @@ interface Profile {
   avatar_url?: string;
   about_me?: string;
   linkedin_url?: string;
+  instagram_url?: string;
+  tiktok_url?: string;
+  twitter_url?: string;
   created_at: string;
   last_active_at?: string;
 }
@@ -117,18 +120,52 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
             </div>
           )}
 
-          {/* LinkedIn Section */}
-          {profile.linkedin_url && (
+          {/* Social Media Links */}
+          {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">Professional Links</h2>
-              <Button
-                variant="outline"
-                className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-                onClick={() => window.open(profile.linkedin_url, '_blank')}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                LinkedIn Profile
-              </Button>
+              <h2 className="text-xl font-semibold text-white mb-4">Connect</h2>
+              <div className="flex flex-wrap gap-3">
+                {profile.linkedin_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => window.open(profile.linkedin_url, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    LinkedIn
+                  </Button>
+                )}
+                {profile.instagram_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => window.open(profile.instagram_url, '_blank')}
+                  >
+                    <Instagram className="h-4 w-4 mr-2" />
+                    Instagram
+                  </Button>
+                )}
+                {profile.tiktok_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => window.open(profile.tiktok_url, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    TikTok
+                  </Button>
+                )}
+                {profile.twitter_url && (
+                  <Button
+                    variant="outline"
+                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    onClick={() => window.open(profile.twitter_url, '_blank')}
+                  >
+                    <Twitter className="h-4 w-4 mr-2" />
+                    Twitter
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 

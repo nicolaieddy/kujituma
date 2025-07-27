@@ -17,6 +17,9 @@ interface Profile {
   avatar_url?: string;
   about_me?: string;
   linkedin_url?: string;
+  instagram_url?: string;
+  tiktok_url?: string;
+  twitter_url?: string;
   created_at: string;
   last_active_at?: string;
 }
@@ -36,6 +39,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
     linkedin_url: profile.linkedin_url || '',
+    instagram_url: profile.instagram_url || '',
+    tiktok_url: profile.tiktok_url || '',
+    twitter_url: profile.twitter_url || '',
     avatar_url: profile.avatar_url || ''
   });
 
@@ -113,6 +119,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           full_name: formData.full_name,
           about_me: formData.about_me,
           linkedin_url: formData.linkedin_url,
+          instagram_url: formData.instagram_url,
+          tiktok_url: formData.tiktok_url,
+          twitter_url: formData.twitter_url,
           avatar_url: formData.avatar_url,
           updated_at: new Date().toISOString()
         })
@@ -224,6 +233,42 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="https://linkedin.com/in/yourprofile"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="instagram_url" className="text-white">Instagram Profile</Label>
+              <Input
+                id="instagram_url"
+                type="url"
+                value={formData.instagram_url}
+                onChange={(e) => handleInputChange('instagram_url', e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                placeholder="https://instagram.com/yourusername"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="tiktok_url" className="text-white">TikTok Profile</Label>
+              <Input
+                id="tiktok_url"
+                type="url"
+                value={formData.tiktok_url}
+                onChange={(e) => handleInputChange('tiktok_url', e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                placeholder="https://tiktok.com/@yourusername"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="twitter_url" className="text-white">Twitter Profile</Label>
+              <Input
+                id="twitter_url"
+                type="url"
+                value={formData.twitter_url}
+                onChange={(e) => handleInputChange('twitter_url', e.target.value)}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                placeholder="https://twitter.com/yourusername"
               />
             </div>
           </div>

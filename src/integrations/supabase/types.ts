@@ -403,8 +403,11 @@ export type Database = {
           full_name: string
           google_id: string | null
           id: string
+          instagram_url: string | null
           last_active_at: string | null
           linkedin_url: string | null
+          tiktok_url: string | null
+          twitter_url: string | null
           updated_at: string
         }
         Insert: {
@@ -415,8 +418,11 @@ export type Database = {
           full_name: string
           google_id?: string | null
           id: string
+          instagram_url?: string | null
           last_active_at?: string | null
           linkedin_url?: string | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
           updated_at?: string
         }
         Update: {
@@ -427,8 +433,11 @@ export type Database = {
           full_name?: string
           google_id?: string | null
           id?: string
+          instagram_url?: string | null
           last_active_at?: string | null
           linkedin_url?: string | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
           updated_at?: string
         }
         Relationships: []

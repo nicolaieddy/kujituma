@@ -17,6 +17,9 @@ interface Profile {
   avatar_url?: string;
   about_me?: string;
   linkedin_url?: string;
+  instagram_url?: string;
+  tiktok_url?: string;
+  twitter_url?: string;
   created_at: string;
   last_active_at?: string;
 }
