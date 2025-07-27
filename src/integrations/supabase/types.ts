@@ -597,24 +597,15 @@ export type Database = {
         Returns: boolean
       }
       create_notification: {
-        Args:
-          | {
-              _user_id: string
-              _type: string
-              _message: string
-              _related_post_id?: string
-              _related_comment_id?: string
-              _triggered_by_user_id?: string
-            }
-          | {
-              _user_id: string
-              _type: string
-              _message: string
-              _related_post_id?: string
-              _related_comment_id?: string
-              _triggered_by_user_id?: string
-              _related_request_id?: string
-            }
+        Args: {
+          _user_id: string
+          _type: string
+          _message: string
+          _related_post_id?: string
+          _related_comment_id?: string
+          _triggered_by_user_id?: string
+          _related_request_id?: string
+        }
         Returns: string
       }
       delete_all_weekly_objectives: {
