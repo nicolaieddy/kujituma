@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { formatTimeAgo } from '@/utils/timeUtils';
 import { Notification } from '@/types/notifications';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useFriends } from '@/hooks/useFriends';
 import { useNavigate } from 'react-router-dom';
-import { User } from 'lucide-react';
+import { User, UserCheck, UserMinus, Loader2 } from 'lucide-react';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -12,9 +15,16 @@ interface NotificationItemProps {
 
 export const NotificationItem = ({ notification, onMarkRead }: NotificationItemProps) => {
   const { markAsRead } = useNotifications();
+  const { respondToFriendRequest } = useFriends();
   const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleClick = async () => {
+    // Only navigate on click for non-friend-request notifications
+    if (notification.type === 'friend_request') {
+      return; // Don't navigate for friend requests, let buttons handle the actions
+    }
+    
     if (!notification.is_read) {
       await markAsRead(notification.id);
     }
@@ -27,6 +37,25 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
     onMarkRead();
   };
 
+  const handleFriendRequestResponse = async (response: 'accepted' | 'rejected') => {
+    if (!notification.related_request_id) {
+      console.error('No request ID found for friend request notification');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      await respondToFriendRequest(notification.related_request_id, response);
+      // Mark notification as read after responding
+      await markAsRead(notification.id);
+      onMarkRead();
+    } catch (error) {
+      console.error('Error responding to friend request:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const getNotificationIcon = () => {
     switch (notification.type) {
       case 'post_like':
@@ -37,15 +66,21 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
         return '❤️';
       case 'mention':
         return '📣';
+      case 'friend_request':
+        return '👋';
+      case 'friend_request_accepted':
+        return '🤝';
       default:
         return '🔔';
     }
   };
 
+  const isFriendRequest = notification.type === 'friend_request';
+
   return (
     <div
       onClick={handleClick}
-      className={`p-3 cursor-pointer hover:bg-white/5 transition-colors ${
+      className={`p-3 ${!isFriendRequest ? 'cursor-pointer hover:bg-white/5' : ''} transition-colors ${
         !notification.is_read ? 'bg-blue-500/10 border-l-2 border-l-blue-400' : ''
       }`}
     >
@@ -66,6 +101,39 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
           <p className="text-xs text-white/60 mt-1">
             {formatTimeAgo(new Date(notification.created_at).getTime())}
           </p>
+          
+          {/* Friend Request Action Buttons */}
+          {isFriendRequest && notification.related_request_id && (
+            <div className="flex gap-2 mt-3">
+              <Button
+                size="sm"
+                onClick={() => handleFriendRequestResponse('accepted')}
+                disabled={isProcessing}
+                className="bg-green-600 hover:bg-green-700 text-white flex-1"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <UserCheck className="h-3 w-3 mr-1" />
+                )}
+                Accept
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handleFriendRequestResponse('rejected')}
+                disabled={isProcessing}
+                className="border-red-500 text-red-400 hover:bg-red-500/20 flex-1"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <UserMinus className="h-3 w-3 mr-1" />
+                )}
+                Decline
+              </Button>
+            </div>
+          )}
         </div>
         {!notification.is_read && (
           <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2" />
