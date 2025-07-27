@@ -16,6 +16,7 @@ const Admin = lazy(() => import("./pages/Admin"));
 const Goals = lazy(() => import("./pages/Goals"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Analytics = lazy(() => import("./pages/Analytics"));
+const Friends = lazy(() => import("./pages/Friends"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
@@ -33,6 +34,7 @@ const AppContent = () => {
         <Route path="/" element={<Goals />} />
         <Route path="/community" element={<Feed />} />
         <Route path="/goals" element={<Goals />} />
+        <Route path="/friends" element={<Friends />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/admin" element={<Admin />} />

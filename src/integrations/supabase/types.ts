@@ -112,6 +112,54 @@ export type Database = {
         }
         Relationships: []
       }
+      friend_requests: {
+        Row: {
+          created_at: string
+          id: string
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      friends: {
+        Row: {
+          created_at: string
+          id: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: []
+      }
       goal_status_history: {
         Row: {
           changed_at: string
@@ -524,6 +572,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      are_friends: {
+        Args: { _user1_id: string; _user2_id: string }
+        Returns: boolean
+      }
       create_notification: {
         Args: {
           _user_id: string
@@ -552,6 +604,16 @@ export type Database = {
           last_active_at: string
         }[]
       }
+      get_user_friends: {
+        Args: { _user_id?: string }
+        Returns: {
+          friend_id: string
+          full_name: string
+          avatar_url: string
+          email: string
+          created_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _user_id: string
@@ -566,6 +628,18 @@ export type Database = {
       mark_notification_read: {
         Args: { _notification_id: string; _user_id: string }
         Returns: boolean
+      }
+      remove_friend: {
+        Args: { _friend_id: string }
+        Returns: boolean
+      }
+      respond_to_friend_request: {
+        Args: { _request_id: string; _response: string }
+        Returns: boolean
+      }
+      send_friend_request: {
+        Args: { _receiver_id: string }
+        Returns: string
       }
       toggle_comment_like: {
         Args: { _user_id: string; _comment_id: string }
