@@ -1,0 +1,76 @@
+import { Card } from "@/components/ui/card";
+import { CheckCircle, Target, Users, TrendingUp, Calendar, Heart } from "lucide-react";
+
+export const LandingFeatures = () => {
+  const features = [
+    {
+      icon: Calendar,
+      title: "Weekly Planning",
+      description: "Structure your week with clear objectives and daily focus areas that align with your bigger goals."
+    },
+    {
+      icon: TrendingUp,
+      title: "Progress Tracking",
+      description: "Visualize your journey with detailed analytics and celebrate every milestone along the way."
+    },
+    {
+      icon: Users,
+      title: "Community Support",
+      description: "Share your wins, get encouragement, and stay motivated with a community of goal-getters."
+    },
+    {
+      icon: Target,
+      title: "Goal Management",
+      description: "Break down ambitious goals into manageable weekly objectives that compound into success."
+    },
+    {
+      icon: CheckCircle,
+      title: "Accountability",
+      description: "Weekly check-ins and reflection tools keep you honest and help you course-correct quickly."
+    },
+    {
+      icon: Heart,
+      title: "Habit Building",
+      description: "Transform goals into sustainable habits with consistent daily actions and positive reinforcement."
+    }
+  ];
+
+  return (
+    <section className="py-20 px-4 bg-muted/20">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center space-y-4 mb-16">
+          <h2 className="text-3xl md:text-5xl font-bold">
+            Everything You Need to
+            <span className="bg-gradient-primary bg-clip-text text-transparent"> Succeed</span>
+          </h2>
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+            Powerful tools designed to turn your aspirations into achievements through structured planning and community support.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {features.map((feature, index) => (
+            <Card 
+              key={index} 
+              className="p-6 bg-gradient-card border-primary/10 hover:border-primary/20 transition-colors group"
+            >
+              <div className="space-y-4">
+                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <feature.icon className="w-6 h-6 text-primary-foreground" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground">
+                    {feature.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
