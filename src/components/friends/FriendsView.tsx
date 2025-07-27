@@ -27,6 +27,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
+  const [allUsersLoaded, setAllUsersLoaded] = useState(false);
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
   
   const { 
@@ -56,10 +57,13 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
 
   // Load all users when discover view is first opened
   const loadAllUsers = async () => {
+    if (allUsersLoaded) return; // Don't reload if already loaded
+    
     setSearchLoading(true);
     try {
       const results = await friendsService.searchUsers('');
       setAllUsers(results);
+      setAllUsersLoaded(true);
     } catch (error) {
       console.error('Error loading all users:', error);
       setAllUsers([]);
@@ -74,13 +78,13 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
       if (view === 'discover') {
         if (debouncedSearchQuery) {
           await handleSearch(debouncedSearchQuery);
-        } else if (allUsers.length === 0) {
+        } else if (!allUsersLoaded) {
           await loadAllUsers();
         }
       }
     };
     searchEffect();
-  }, [debouncedSearchQuery, view, allUsers.length]);
+  }, [debouncedSearchQuery, view]); // Removed allUsers.length dependency
 
   const handleAcceptRequest = async (requestId: string) => {
     await respondToFriendRequest(requestId, 'accepted');
@@ -99,6 +103,8 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
     if (result.success) {
       // Remove user from search results since request was sent
       setSearchResults(prev => prev.filter(user => user.id !== userId));
+      // Also remove from allUsers list
+      setAllUsers(prev => prev.filter(user => user.id !== userId));
     }
   };
 

@@ -28,9 +28,10 @@ export const useAnalytics = () => {
     recentActivity: []
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || dataLoaded) return; // Don't reload if data already loaded
 
     const fetchAnalytics = async () => {
       try {
@@ -52,6 +53,7 @@ export const useAnalytics = () => {
         if (objectives && goals) {
           const analyticsData = calculateAnalytics(objectives, goals);
           setAnalytics(analyticsData);
+          setDataLoaded(true);
         }
       } catch (error) {
         console.error('Error fetching analytics:', error);
@@ -61,9 +63,41 @@ export const useAnalytics = () => {
     };
 
     fetchAnalytics();
-  }, [user]);
+  }, [user]); // Removed dataLoaded from dependencies to prevent unnecessary re-runs
 
-  return { analytics, isLoading };
+  const refetchAnalytics = async () => {
+    if (!user) return;
+    
+    setDataLoaded(false);
+    setIsLoading(true);
+    
+    try {
+      // Fetch weekly objectives
+      const { data: objectives } = await supabase
+        .from('weekly_objectives')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('week_start', { ascending: false });
+
+      // Fetch goals
+      const { data: goals } = await supabase
+        .from('goals')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (objectives && goals) {
+        const analyticsData = calculateAnalytics(objectives, goals);
+        setAnalytics(analyticsData);
+        setDataLoaded(true);
+      }
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { analytics, isLoading, refetchAnalytics };
 };
 
 const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
