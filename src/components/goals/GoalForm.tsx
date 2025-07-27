@@ -212,9 +212,13 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 }`}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
+                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20 z-50">
                   {TIMEFRAME_OPTIONS.map((option) => (
-                    <SelectItem key={option} value={option} className="hover:bg-white/20">
+                    <SelectItem 
+                      key={option} 
+                      value={option} 
+                      className="text-gray-900 hover:bg-primary hover:text-white focus:bg-primary focus:text-white cursor-pointer"
+                    >
                       {option}
                     </SelectItem>
                   ))}
@@ -259,23 +263,33 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 }`}>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
-                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20">
-                  <SelectItem value="none" className="hover:bg-white/20">
+                <SelectContent className="bg-white/95 backdrop-blur-lg border-white/20 z-50">
+                  <SelectItem 
+                    value="none" 
+                    className="text-gray-900 hover:bg-primary hover:text-white focus:bg-primary focus:text-white cursor-pointer"
+                  >
                     No Category
                   </SelectItem>
                   {PREDEFINED_CATEGORIES.map((category) => (
-                    <SelectItem key={category} value={category} className="hover:bg-white/20">
+                    <SelectItem 
+                      key={category} 
+                      value={category} 
+                      className="text-gray-900 hover:bg-primary hover:text-white focus:bg-primary focus:text-white cursor-pointer"
+                    >
                       {category}
                     </SelectItem>
                   ))}
                   {customCategories.length > 0 && (
                     <>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-t border-gray-200 mt-1">
+                      <div className="px-2 py-1.5 text-xs font-semibold text-gray-600 border-t border-gray-200 mt-1">
                         Custom Categories
                       </div>
                       {customCategories.map((category) => (
-                        <div key={category.id} className="flex items-center justify-between px-2 py-1 hover:bg-white/20">
-                          <SelectItem value={category.name} className="flex-1 border-none p-0 hover:bg-transparent">
+                        <div key={category.id} className="flex items-center justify-between px-2 py-1 hover:bg-primary hover:text-white group">
+                          <SelectItem 
+                            value={category.name} 
+                            className="flex-1 border-none p-0 hover:bg-transparent text-gray-900 group-hover:text-white cursor-pointer"
+                          >
                             {category.name}
                           </SelectItem>
                           <Button
@@ -295,7 +309,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                     </>
                   )}
                   <div className="border-t border-gray-200 mt-1">
-                    <SelectItem value="__add_custom__" className="hover:bg-white/20 text-blue-400 font-medium">
+                    <SelectItem 
+                      value="__add_custom__" 
+                      className="text-blue-600 hover:bg-primary hover:text-white focus:bg-primary focus:text-white font-medium cursor-pointer"
+                    >
                       <div className="flex items-center gap-2">
                         <Plus className="h-4 w-4" />
                         Add Custom Category
