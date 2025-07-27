@@ -1,10 +1,12 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, ExternalLink } from "lucide-react";
+import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { useAuth } from "@/contexts/AuthContext";
+import { useFriendshipStatus } from "@/hooks/useFriendshipStatus";
+import { useFriends } from "@/hooks/useFriends";
 
 interface Profile {
   id: string;
@@ -24,6 +26,8 @@ interface ProfilePublicViewProps {
 export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const isOwnProfile = user?.id === profile.id;
+  const { is_friend, friend_request_status, loading: statusLoading } = useFriendshipStatus(profile.id);
+  const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -48,6 +52,59 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
               </Avatar>
             </div>
             <h1 className="text-3xl font-bold text-white mb-2">{profile.full_name}</h1>
+            
+            {/* Friendship Actions */}
+            {!isOwnProfile && user && !statusLoading && (
+              <div className="flex justify-center mt-4">
+                {is_friend ? (
+                  <Button
+                    variant="outline"
+                    className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
+                    onClick={() => removeFriend(profile.id)}
+                  >
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Friends
+                  </Button>
+                ) : friend_request_status === 'sent' ? (
+                  <Button
+                    variant="outline"
+                    className="bg-yellow-500/20 border-yellow-400 text-yellow-400"
+                    disabled
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Request Sent
+                  </Button>
+                ) : friend_request_status === 'received' ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
+                      onClick={() => respondToFriendRequest(profile.id, 'accepted')}
+                    >
+                      <UserCheck className="h-4 w-4 mr-2" />
+                      Accept
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="bg-red-500/20 border-red-400 text-red-400 hover:bg-red-500/30"
+                      onClick={() => respondToFriendRequest(profile.id, 'rejected')}
+                    >
+                      <UserMinus className="h-4 w-4 mr-2" />
+                      Decline
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="bg-blue-500/20 border-blue-400 text-blue-400 hover:bg-blue-500/30"
+                    onClick={() => sendFriendRequest(profile.id)}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Friend
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           {/* About Me Section */}

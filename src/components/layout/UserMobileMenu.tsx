@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LogOut, Settings, User, Menu, HelpCircle } from "lucide-react";
+import { LogOut, Settings, User, Menu, HelpCircle, Users } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 import { NavigationMenu } from "./NavigationMenu";
 
@@ -44,6 +44,17 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
           >
             <User className="h-4 w-4 mr-3" />
             Profile
+          </button>
+          
+          <button
+            onClick={() => {
+              navigate('/friends');
+              handleMenuClose();
+            }}
+            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+          >
+            <Users className="h-4 w-4 mr-3" />
+            Friends
           </button>
           
           <button

@@ -46,6 +46,14 @@ const Feed = () => {
           <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto">
             See how everyone in the community is progressing on their weekly journeys.
           </p>
+          <div className="mt-4">
+            <button
+              onClick={() => navigate('/friends')}
+              className="text-blue-400 hover:text-blue-300 transition-colors text-sm underline"
+            >
+              Find friends to connect with →
+            </button>
+          </div>
         </div>
 
         <FeedView feedType="all" highlightedPostId={highlightedPostId} />
