@@ -171,20 +171,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           variant: "destructive",
         });
       } else {
+        // Mark week as completed using the proper service method
+        await WeeklyProgressService.completeWeek(currentWeekStart);
+        
         toast({
           title: "Success",
-          description: "Your weekly progress has been shared with the community!",
+          description: "Your weekly progress has been shared with the community! This week is now locked.",
         });
-        // Mark week as completed
-        await supabase
-          .from('weekly_progress_posts')
-          .upsert({
-            user_id: user.id,
-            week_start: currentWeekStart,
-            notes: progressPost?.notes || "",
-            is_completed: true,
-            completed_at: new Date().toISOString(),
-          });
         
         queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
         queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
