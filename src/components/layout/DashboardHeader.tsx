@@ -6,7 +6,7 @@ import { HelpButton } from "./HelpButton";
 import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
-import { ThemeToggle } from "./ThemeToggle";
+
 import { useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
@@ -52,7 +52,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
         <div className="flex items-center justify-end gap-3">
           <HelpButton />
           <NotificationBell />
-          <ThemeToggle />
+          
           
           {!isMobile ? (
             <UserDropdownMenu 

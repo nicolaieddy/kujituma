@@ -37,7 +37,7 @@ export const EnhancedObjectiveDisplay = ({
       titleColor: 'text-amber-200',
       objectiveTextColor: 'text-white',
       icon: Clock,
-      title: 'In Progress',
+      title: 'Not Accomplished',
       glowColor: 'shadow-amber-500/20'
     }
   };
@@ -124,7 +124,7 @@ export const EnhancedObjectiveDisplay = ({
       <div className="mt-4 pt-3 border-t border-white/10">
         <div className="flex items-center justify-between">
           <span className="text-white/60 text-xs">
-            {isCompleted ? 'All objectives completed' : 'Objectives in progress'}
+            {isCompleted ? 'All objectives completed' : 'Objectives not accomplished'}
           </span>
           <div className={`px-2 py-1 rounded-full text-xs font-medium ${
             isCompleted 

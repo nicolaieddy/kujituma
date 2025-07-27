@@ -113,7 +113,7 @@ export const EnhancedFeedPostHeader = ({ post }: EnhancedFeedPostHeaderProps) =>
                     <Clock className="h-3 w-3 text-amber-400" />
                   </div>
                   <span className="text-amber-300 font-medium text-sm">
-                    {inProgressObjectives} In Progress
+                    {inProgressObjectives} Not Accomplished
                   </span>
                 </div>
               )}

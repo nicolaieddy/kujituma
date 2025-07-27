@@ -58,7 +58,7 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3 text-amber-400" />
                   <span className="text-amber-300 text-xs font-medium">
-                    {post.total_objectives - post.objectives_completed} In Progress
+                    {post.total_objectives - post.objectives_completed} Not Accomplished
                   </span>
                 </div>
               )}

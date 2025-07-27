@@ -53,51 +53,6 @@
     --gradient-teal: linear-gradient(135deg, hsl(200 84% 55%), hsl(180 90% 60%));
   }
 
-  .dark {
-    /* Same colors for consistent experience */
-    --background: 240 21% 15%;
-    --foreground: 300 20% 85%;
-
-    --card: 248 25% 18%;
-    --card-foreground: 300 20% 85%;
-
-    --popover: 248 25% 18%;
-    --popover-foreground: 300 20% 85%;
-
-    --primary: 270 91% 65%;
-    --primary-foreground: 300 20% 95%;
-
-    --secondary: 200 84% 55%;
-    --secondary-foreground: 200 100% 95%;
-
-    --muted: 248 20% 25%;
-    --muted-foreground: 300 10% 65%;
-
-    --accent: 280 65% 60%;
-    --accent-foreground: 300 20% 95%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 300 20% 95%;
-
-    --border: 248 15% 25%;
-    --input: 248 15% 25%;
-    --ring: 270 91% 65%;
-    
-    --sidebar-background: 248 25% 18%;
-    --sidebar-foreground: 300 20% 85%;
-    --sidebar-primary: 270 91% 65%;
-    --sidebar-primary-foreground: 300 20% 95%;
-    --sidebar-accent: 248 20% 25%;
-    --sidebar-accent-foreground: 300 20% 85%;
-    --sidebar-border: 248 15% 25%;
-    --sidebar-ring: 270 91% 65%;
-    
-    /* Custom gradients for slick design */
-    --gradient-primary: linear-gradient(135deg, hsl(270 91% 65%), hsl(280 65% 60%));
-    --gradient-background: linear-gradient(135deg, hsl(240 21% 15%), hsl(270 35% 25%));
-    --gradient-card: linear-gradient(135deg, hsl(248 25% 18%), hsl(260 25% 22%));
-    --gradient-teal: linear-gradient(135deg, hsl(200 84% 55%), hsl(180 90% 60%));
-  }
 }
 
 @layer base {

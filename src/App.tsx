@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TourProvider } from "@/components/tour/TourProvider";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense } from "react";
@@ -70,9 +70,9 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="ui-theme">
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
@@ -84,8 +84,8 @@ const App = () => (
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+};
 
 export default App;

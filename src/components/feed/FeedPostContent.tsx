@@ -63,7 +63,7 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
         <div className="bg-amber-500/10 rounded-lg p-5 border border-amber-500/20">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-2 h-2 bg-amber-400 rounded-full"></div>
-            <h4 className="text-amber-300 font-semibold text-lg">In Progress</h4>
+            <h4 className="text-amber-300 font-semibold text-lg">Not Accomplished</h4>
           </div>
           <div className="space-y-4">
             {sections.incomplete.map((objective, index) => {
