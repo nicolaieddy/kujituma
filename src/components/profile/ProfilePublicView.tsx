@@ -1,7 +1,11 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck, Instagram, Twitter } from "lucide-react";
+import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck } from "lucide-react";
+import linkedinIcon from "@/assets/linkedin-icon.png";
+import instagramIcon from "@/assets/instagram-icon.png";
+import xIcon from "@/assets/x-icon.png";
+import tiktokIcon from "@/assets/tiktok-icon.png";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,7 +46,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+      <Card className="bg-slate-800/40 backdrop-blur-lg border-slate-700/50">
         <CardContent className="p-8">
           {/* Profile Header */}
           <div className="text-center mb-8">
@@ -128,41 +132,41 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 {profile.linkedin_url && (
                   <Button
                     variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30 hover:border-blue-400/70 transition-all duration-200"
                     onClick={() => window.open(profile.linkedin_url, '_blank')}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 mr-2 filter brightness-0 invert" />
                     LinkedIn
                   </Button>
                 )}
                 {profile.instagram_url && (
                   <Button
                     variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-pink-600/20 border-pink-500/50 text-pink-300 hover:bg-pink-600/30 hover:border-pink-400/70 transition-all duration-200"
                     onClick={() => window.open(profile.instagram_url, '_blank')}
                   >
-                    <Instagram className="h-4 w-4 mr-2" />
+                    <img src={instagramIcon} alt="Instagram" className="h-4 w-4 mr-2 filter brightness-0 invert" />
                     Instagram
                   </Button>
                 )}
                 {profile.tiktok_url && (
                   <Button
                     variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-purple-600/20 border-purple-500/50 text-purple-300 hover:bg-purple-600/30 hover:border-purple-400/70 transition-all duration-200"
                     onClick={() => window.open(profile.tiktok_url, '_blank')}
                   >
-                    <ExternalLink className="h-4 w-4 mr-2" />
+                    <img src={tiktokIcon} alt="TikTok" className="h-4 w-4 mr-2 filter brightness-0 invert" />
                     TikTok
                   </Button>
                 )}
                 {profile.twitter_url && (
                   <Button
                     variant="outline"
-                    className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+                    className="bg-slate-600/20 border-slate-500/50 text-slate-300 hover:bg-slate-600/30 hover:border-slate-400/70 transition-all duration-200"
                     onClick={() => window.open(profile.twitter_url, '_blank')}
                   >
-                    <Twitter className="h-4 w-4 mr-2" />
-                    Twitter
+                    <img src={xIcon} alt="X" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    X
                   </Button>
                 )}
               </div>

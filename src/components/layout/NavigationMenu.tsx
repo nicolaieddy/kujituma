@@ -31,7 +31,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
       <>
         <button
           onClick={() => handleNavigation('/community')}
-          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors ${
+          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 hover:scale-105 transition-all duration-200 ${
             currentSection === 'community' ? 'text-white font-medium bg-white/10' : ''
           }`}
         >
@@ -39,7 +39,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
         </button>
         <button
           onClick={() => handleNavigation('/goals')}
-          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors ${
+          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 hover:scale-105 transition-all duration-200 ${
             currentSection === 'goals' ? 'text-white font-medium bg-white/10' : ''
           }`}
         >
@@ -47,7 +47,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
         </button>
         <button
           onClick={() => handleNavigation('/analytics')}
-          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors ${
+          className={`w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 hover:scale-105 transition-all duration-200 ${
             currentSection === 'analytics' ? 'text-white font-medium bg-white/10' : ''
           }`}
         >
@@ -61,7 +61,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     <nav className="flex items-center space-x-6 ml-8">
       <button
         onClick={() => handleNavigation('/community')}
-        className={`text-base text-white/80 hover:text-white transition-colors ${
+        className={`text-base text-white/80 hover:text-white hover:scale-105 transition-all duration-200 ${
           currentSection === 'community' ? 'text-white font-medium' : ''
         }`}
       >
@@ -69,7 +69,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
       </button>
       <button
         onClick={() => handleNavigation('/goals')}
-        className={`text-base text-white/80 hover:text-white transition-colors ${
+        className={`text-base text-white/80 hover:text-white hover:scale-105 transition-all duration-200 ${
           currentSection === 'goals' ? 'text-white font-medium' : ''
         }`}
       >
@@ -77,7 +77,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
       </button>
       <button
         onClick={() => handleNavigation('/analytics')}
-        className={`text-base text-white/80 hover:text-white transition-colors ${
+        className={`text-base text-white/80 hover:text-white hover:scale-105 transition-all duration-200 ${
           currentSection === 'analytics' ? 'text-white font-medium' : ''
         }`}
       >

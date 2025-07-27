@@ -7,6 +7,7 @@ import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "./ThemeToggle";
+import { useNavigate } from "react-router-dom";
 
 interface DashboardHeaderProps {
   isAdmin: boolean;
@@ -17,6 +18,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
   const isMobile = useIsMobile();
   const { startTour } = useTourContext();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleRestartTour = async () => {
     try {
@@ -38,7 +40,12 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
     <header className="bg-white/10 backdrop-blur-lg border-b border-white/20 sticky top-0 z-50">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <h1 className="text-xl font-bold text-white">Kujituma</h1>
+          <h1 
+            className="text-xl font-bold text-white cursor-pointer hover:text-purple-300 transition-colors duration-200" 
+            onClick={() => navigate('/community')}
+          >
+            Kujituma
+          </h1>
           {!isMobile && <NavigationMenu />}
         </div>
         
