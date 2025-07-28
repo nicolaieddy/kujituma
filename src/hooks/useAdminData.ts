@@ -78,9 +78,10 @@ export const useAdminData = () => {
         .select('role')
         .eq('user_id', user.id)
         .eq('role', 'admin')
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
+        console.log('User is not an admin, redirecting to dashboard');
         navigate('/dashboard');
         return;
       }
