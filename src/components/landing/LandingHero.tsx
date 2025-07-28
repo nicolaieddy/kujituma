@@ -18,11 +18,11 @@ export const LandingHero = ({
           {/* Main Headline */}
           <div className="space-y-4">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold">
-              <span className="bg-gradient-primary bg-clip-text text-transparent">Transform Goals</span>
+              <span className="bg-gradient-primary bg-clip-text text-transparent">One Step at a Time</span>
               <br />
-              <span className="text-foreground">Into Achievements</span>
+              <span className="text-foreground">Together</span>
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Like climbing Kilimanjaro, every great achievement starts with a single step.</p>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Like climbing Kilimanjaro, every great achievement happens with support.</p>
           </div>
 
           {/* CTA Buttons */}
