@@ -21,13 +21,21 @@ export class TourService {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
 
+    // First check if tour already exists
+    const existingTour = await this.getUserTour(tourType);
+    if (existingTour) {
+      return existingTour;
+    }
+
     const { data: tour, error } = await supabase
       .from('user_tours')
-      .insert({
+      .upsert({
         user_id: user.user.id,
         tour_type: tourType,
         current_step: 0,
-        is_completed: false
+        is_completed: false,
+        dismissed_at: null,
+        completed_at: null
       })
       .select()
       .single();
