@@ -17,15 +17,17 @@ export const useAdminStatus = () => {
       }
       
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', user.id)
-          .eq('role', 'admin')
-          .maybeSingle();
+        const { data, error } = await supabase.rpc('has_role', {
+          _user_id: user.id,
+          _role: 'admin'
+        });
         
-        // Only set as admin if we found a record without any error
-        setIsAdmin(!!data && !error);
+        if (error) {
+          console.error('Error checking admin status:', error);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin(data === true);
+        }
       } catch (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);

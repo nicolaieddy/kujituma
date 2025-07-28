@@ -73,14 +73,12 @@ export const useAdminData = () => {
     }
 
     try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .eq('role', 'admin')
-        .maybeSingle();
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
 
-      if (error || !data) {
+      if (error || data !== true) {
         console.log('User is not an admin, redirecting to dashboard');
         navigate('/dashboard');
         return;
