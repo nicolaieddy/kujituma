@@ -22,7 +22,7 @@ export const LandingHero = ({
               <br />
               <span className="text-foreground">Together</span>
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Like climbing Kilimanjaro, every great achievement happens with support.</p>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Like climbing Kilimanjaro, every great summit happens with support from your circle.</p>
           </div>
 
           {/* CTA Buttons */}
