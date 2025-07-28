@@ -18,9 +18,7 @@ export const LandingHero = ({
           {/* Main Headline */}
           <div className="space-y-4">
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold">
-              <span className="bg-gradient-primary bg-clip-text text-transparent">
-                Transform Goals
-              </span>
+              <span className="bg-gradient-primary bg-clip-text text-transparent">Transform Goals</span>
               <br />
               <span className="text-foreground">Into Achievements</span>
             </h1>
