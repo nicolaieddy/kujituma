@@ -13,7 +13,7 @@ interface FeedViewProps {
 
 export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) => {
   const [useEnhancedView, setUseEnhancedView] = useState(false);
-  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("14days");
+  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("30days");
   
   const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user",
