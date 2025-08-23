@@ -31,7 +31,16 @@ export const LandingFeatures = () => {
         
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => {})}
+          {features.map((feature, index) => {
+            const Icon = feature.icon;
+            return (
+              <Card key={index} className="p-6 text-center hover:shadow-lg transition-shadow">
+                <Icon className="mx-auto mb-4 h-12 w-12 text-primary" />
+                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
+                <p className="text-muted-foreground">{feature.description}</p>
+              </Card>
+            );
+          })}
         </div>
       </div>
     </section>;
