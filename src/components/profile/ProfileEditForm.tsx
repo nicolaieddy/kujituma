@@ -45,7 +45,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     tiktok_url: profile.tiktok_url || '',
     twitter_url: profile.twitter_url || '',
     avatar_url: profile.avatar_url || '',
-    show_email: profile.show_email ?? true
+    show_email: profile.show_email ?? false
   });
 
   const handleInputChange = (field: string, value: string) => {

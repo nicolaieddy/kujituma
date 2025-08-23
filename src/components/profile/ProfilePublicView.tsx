@@ -13,6 +13,7 @@ import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriendshipStatus } from "@/hooks/useFriendshipStatus";
 import { useFriends } from "@/hooks/useFriends";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
   id: string;
@@ -184,14 +185,37 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
           {/* Member Info */}
           <div className="border-t border-white/20 pt-8">
-            <h2 className="text-xl font-semibold text-white mb-4">Member Information</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white">Member Information</h2>
+              {isOwnProfile && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newShowEmail = !profile.show_email;
+                    // Update profile in database
+                    supabase
+                      .from('profiles')
+                      .update({ show_email: newShowEmail })
+                      .eq('id', profile.id)
+                      .then(() => {
+                        // Force page refresh to show updated state
+                        window.location.reload();
+                      });
+                  }}
+                  className="bg-blue-500/20 border-blue-400/50 text-blue-300 hover:bg-blue-500/30 text-xs"
+                >
+                  {profile.show_email ? 'Hide Email' : 'Show Email'}
+                </Button>
+              )}
+            </div>
             <div className="space-y-3">
               <div className="flex items-center text-white/80">
                 <Calendar className="h-5 w-5 mr-3 text-purple-400" />
                 <span>Member since {formatDate(profile.created_at)}</span>
               </div>
               
-              {profile.show_email !== false && (
+              {profile.show_email && (
                 <div className="flex items-center text-white/80">
                   <User className="h-5 w-5 mr-3 text-green-400" />
                   <span>{profile.email}</span>
