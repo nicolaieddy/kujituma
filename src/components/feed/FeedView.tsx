@@ -2,7 +2,6 @@ import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
 import { VirtualizedFeedList } from "./VirtualizedFeedList";
 import { FeedSkeletonList } from "./FeedPostSkeleton";
 import { Button } from "@/components/ui/button";
-import FilterDropdown, { FilterPeriod } from "@/components/FilterDropdown";
 import { LayoutGrid, List } from "lucide-react";
 import { useState, memo } from "react";
 
@@ -13,11 +12,10 @@ interface FeedViewProps {
 
 export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) => {
   const [useEnhancedView, setUseEnhancedView] = useState(false);
-  const [filterPeriod, setFilterPeriod] = useState<FilterPeriod>("30days");
   
-  const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike } = useUnifiedPosts({
+  const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike, loadMore, hasMore, loadingMore } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user",
-    filterPeriod
+    filterPeriod: "all"
   });
 
   if (isLoading) {
@@ -42,13 +40,7 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
   }
 
   return (
-    <div className="space-y-6">
-      {/* Filter Period */}
-      <FilterDropdown 
-        selectedPeriod={filterPeriod} 
-        onPeriodChange={setFilterPeriod} 
-      />
-      
+    <div className="space-y-6">      
       {/* View Toggle */}
       <div className="flex items-center justify-between bg-white/5 backdrop-blur-sm rounded-lg p-3 border border-white/10">
         <div className="flex items-center gap-2">
@@ -85,6 +77,20 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
         onComment={addComment}
         onCommentLike={toggleCommentLike}
       />
+      
+      {/* Load More Button */}
+      {hasMore && (
+        <div className="flex justify-center pt-6">
+          <Button
+            onClick={loadMore}
+            disabled={loadingMore}
+            variant="outline"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+          >
+            {loadingMore ? 'Loading...' : 'Load More Posts'}
+          </Button>
+        </div>
+      )}
     </div>
   );
 });

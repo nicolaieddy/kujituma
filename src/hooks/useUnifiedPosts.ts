@@ -8,31 +8,60 @@ interface UseUnifiedPostsOptions {
 }
 
 export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
-  const { filterPeriod = "14days", userId, feedType = 'all' } = options;
+  const { filterPeriod = "all", userId, feedType = 'all' } = options;
   const [posts, setPosts] = useState<UnifiedPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [offset, setOffset] = useState(0);
+  const limit = 10;
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (loadMore = false) => {
     try {
-      setLoading(true);
-      setError(null);
-      
-      let data: UnifiedPost[];
-      if (feedType === 'user' || userId) {
-        data = await unifiedPostsService.getUserPosts(userId, filterPeriod);
+      if (loadMore) {
+        setLoadingMore(true);
       } else {
-        data = await unifiedPostsService.getAllPosts(filterPeriod);
+        setLoading(true);
+        setOffset(0);
       }
       
-      setPosts(data);
+      const currentOffset = loadMore ? offset : 0;
+      
+      let newPosts: UnifiedPost[];
+      if (feedType === 'user' || userId) {
+        newPosts = await unifiedPostsService.getUserPosts(userId, filterPeriod, limit, currentOffset);
+      } else {
+        newPosts = await unifiedPostsService.getAllPosts(filterPeriod, limit, currentOffset);
+      }
+
+      if (loadMore) {
+        setPosts(prev => [...prev, ...newPosts]);
+        setOffset(prev => prev + limit);
+      } else {
+        setPosts(newPosts);
+        setOffset(limit);
+      }
+      
+      setHasMore(newPosts.length === limit);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch posts');
       console.error('Error fetching posts:', err);
+      setError(err instanceof Error ? err.message : 'An error occurred');
+      if (!loadMore) {
+        setPosts([]);
+      }
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [filterPeriod, userId, feedType]);
+  }, [feedType, userId, filterPeriod, offset, limit]);
+
+  const loadMorePosts = useCallback(() => {
+    if (!loadingMore && hasMore) {
+      fetchPosts(true);
+    }
+  }, [fetchPosts, loadingMore, hasMore]);
 
   const createPost = useCallback(async (postData: Parameters<typeof unifiedPostsService.createPost>[0]) => {
     try {
@@ -151,11 +180,14 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
   return {
     posts,
     loading,
+    loadingMore,
+    hasMore,
     error,
     createPost,
     addComment,
     togglePostLike,
     toggleCommentLike,
-    refetch: fetchPosts
+    refetch: () => fetchPosts(),
+    loadMore: loadMorePosts
   };
 };
