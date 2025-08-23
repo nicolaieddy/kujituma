@@ -710,6 +710,10 @@ export type Database = {
         Args: { profile_user_id: string; requesting_user_id: string }
         Returns: string
       }
+      get_secure_profile_data: {
+        Args: { profile_row: Database["public"]["Tables"]["profiles"]["Row"] }
+        Returns: Json
+      }
       get_user_friends: {
         Args: { _user_id?: string }
         Returns: {
