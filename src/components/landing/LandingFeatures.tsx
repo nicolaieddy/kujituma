@@ -28,28 +28,10 @@ export const LandingFeatures = () => {
   }];
   return <section className="py-20 px-4 bg-muted/20">
       <div className="max-w-6xl mx-auto">
-        <div className="text-center space-y-4 mb-16">
-          <h2 className="text-3xl md:text-5xl font-bold">
-            Everything You Need to
-            <span className="bg-gradient-primary bg-clip-text text-transparent"> Succeed</span>
-          </h2>
-          
-        </div>
+        
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => (
-            <Card key={index} className="p-6 border-border/50 bg-card/50 backdrop-blur-sm hover:bg-card/80 transition-all duration-300">
-              <div className="space-y-4">
-                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <feature.icon className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
-                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
+          {features.map((feature, index) => {})}
         </div>
       </div>
     </section>;
