@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { unifiedPostsService, UnifiedPost, FilterPeriod } from '@/services/unifiedPostsService';
 
 interface UseUnifiedPostsOptions {
@@ -14,7 +14,7 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
   const limit = 10;
 
   const fetchPosts = useCallback(async (loadMore = false) => {
@@ -23,10 +23,10 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
         setLoadingMore(true);
       } else {
         setLoading(true);
-        setOffset(0);
+        offsetRef.current = 0;
       }
       
-      const currentOffset = loadMore ? offset : 0;
+      const currentOffset = loadMore ? offsetRef.current : 0;
       
       let newPosts: UnifiedPost[];
       if (feedType === 'user' || userId) {
@@ -37,10 +37,10 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
 
       if (loadMore) {
         setPosts(prev => [...prev, ...newPosts]);
-        setOffset(prev => prev + limit);
+        offsetRef.current += limit;
       } else {
         setPosts(newPosts);
-        setOffset(limit);
+        offsetRef.current = limit;
       }
       
       setHasMore(newPosts.length === limit);
@@ -55,13 +55,13 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [feedType, userId, filterPeriod, offset, limit]);
+  }, [feedType, userId, filterPeriod, limit]);
 
   const loadMorePosts = useCallback(() => {
     if (!loadingMore && hasMore) {
       fetchPosts(true);
     }
-  }, [fetchPosts, loadingMore, hasMore]);
+  }, [loadingMore, hasMore, fetchPosts]);
 
   const createPost = useCallback(async (postData: Parameters<typeof unifiedPostsService.createPost>[0]) => {
     try {
