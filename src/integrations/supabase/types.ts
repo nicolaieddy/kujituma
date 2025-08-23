@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "12.2.3 (519615d)"
@@ -417,6 +417,7 @@ export type Database = {
           instagram_url: string | null
           last_active_at: string | null
           linkedin_url: string | null
+          show_email: boolean
           tiktok_url: string | null
           twitter_url: string | null
           updated_at: string
@@ -432,6 +433,7 @@ export type Database = {
           instagram_url?: string | null
           last_active_at?: string | null
           linkedin_url?: string | null
+          show_email?: boolean
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string
@@ -447,6 +449,7 @@ export type Database = {
           instagram_url?: string | null
           last_active_at?: string | null
           linkedin_url?: string | null
+          show_email?: boolean
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string
@@ -598,13 +601,13 @@ export type Database = {
       }
       create_notification: {
         Args: {
-          _user_id: string
-          _type: string
           _message: string
-          _related_post_id?: string
           _related_comment_id?: string
-          _triggered_by_user_id?: string
+          _related_post_id?: string
           _related_request_id?: string
+          _triggered_by_user_id?: string
+          _type: string
+          _user_id: string
         }
         Returns: string
       }
@@ -615,30 +618,30 @@ export type Database = {
       get_admin_users_data: {
         Args: Record<PropertyKey, never>
         Returns: {
-          id: string
-          email: string
-          full_name: string
           avatar_url: string
           created_at: string
+          email: string
+          full_name: string
+          id: string
+          last_active_at: string
           posts_count: number
           role: string
-          last_active_at: string
         }[]
       }
       get_user_friends: {
         Args: { _user_id?: string }
         Returns: {
+          avatar_url: string
+          created_at: string
+          email: string
           friend_id: string
           full_name: string
-          avatar_url: string
-          email: string
-          created_at: string
         }[]
       }
       has_role: {
         Args: {
-          _user_id: string
           _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
         }
         Returns: boolean
       }
@@ -663,11 +666,11 @@ export type Database = {
         Returns: string
       }
       toggle_comment_like: {
-        Args: { _user_id: string; _comment_id: string }
+        Args: { _comment_id: string; _user_id: string }
         Returns: boolean
       }
       toggle_post_like: {
-        Args: { _user_id: string; _post_id: string }
+        Args: { _post_id: string; _user_id: string }
         Returns: boolean
       }
       update_user_last_active: {

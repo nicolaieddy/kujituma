@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Upload, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Switch } from "@/components/ui/switch";
 
 interface Profile {
   id: string;
@@ -20,6 +21,7 @@ interface Profile {
   instagram_url?: string;
   tiktok_url?: string;
   twitter_url?: string;
+  show_email?: boolean;
   created_at: string;
   last_active_at?: string;
 }
@@ -42,7 +44,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     instagram_url: profile.instagram_url || '',
     tiktok_url: profile.tiktok_url || '',
     twitter_url: profile.twitter_url || '',
-    avatar_url: profile.avatar_url || ''
+    avatar_url: profile.avatar_url || '',
+    show_email: profile.show_email ?? true
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -123,6 +126,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           tiktok_url: formData.tiktok_url,
           twitter_url: formData.twitter_url,
           avatar_url: formData.avatar_url,
+          show_email: formData.show_email,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -269,6 +273,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 onChange={(e) => handleInputChange('twitter_url', e.target.value)}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="https://twitter.com/yourusername"
+              />
+            </div>
+          </div>
+
+          {/* Privacy Settings */}
+          <div className="space-y-4">
+            <h3 className="text-white text-lg font-semibold">Privacy Settings</h3>
+            
+            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/20 rounded-lg">
+              <div className="flex-1">
+                <label htmlFor="show_email" className="text-white text-sm font-medium">
+                  Show email on profile
+                </label>
+                <p className="text-white/60 text-xs mt-1">
+                  When enabled, your email address will be visible to other users on your profile
+                </p>
+              </div>
+              <Switch
+                id="show_email"
+                checked={formData.show_email}
+                onCheckedChange={(checked) => setFormData({ ...formData, show_email: checked })}
               />
             </div>
           </div>

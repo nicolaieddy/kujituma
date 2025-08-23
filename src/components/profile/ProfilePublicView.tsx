@@ -24,6 +24,7 @@ interface Profile {
   instagram_url?: string;
   tiktok_url?: string;
   twitter_url?: string;
+  show_email?: boolean;
   created_at: string;
   last_active_at?: string;
 }
@@ -189,6 +190,14 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 <Calendar className="h-5 w-5 mr-3 text-purple-400" />
                 <span>Member since {formatDate(profile.created_at)}</span>
               </div>
+              
+              {profile.show_email !== false && (
+                <div className="flex items-center text-white/80">
+                  <User className="h-5 w-5 mr-3 text-green-400" />
+                  <span>{profile.email}</span>
+                </div>
+              )}
+              
               {profile.last_active_at && (
                 <div className="flex items-center text-white/80">
                   <Clock className="h-5 w-5 mr-3 text-blue-400" />
