@@ -37,21 +37,7 @@ export const LandingFeatures = () => {
         </div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {features.map((feature, index) => <Card key={index} className="p-6 bg-gradient-card border-primary/10 hover:border-primary/20 transition-colors group">
-              <div className="space-y-4">
-                <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <feature.icon className="w-6 h-6 text-primary-foreground" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-xl font-semibold text-foreground">
-                    {feature.title}
-                  </h3>
-                  <p className="text-muted-foreground leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            </Card>)}
+          {features.map((feature, index) => {})}
         </div>
       </div>
     </section>;

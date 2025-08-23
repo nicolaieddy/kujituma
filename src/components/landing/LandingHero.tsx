@@ -20,9 +20,9 @@ export const LandingHero = ({
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold">
               <span className="bg-gradient-primary bg-clip-text text-transparent">One Step at a Time.</span>
               <br />
-              <span className="text-foreground">Together.</span>
+              <span className="text-foreground"></span>
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Like climbing Kilimanjaro, every great summit happens with support from your circle.</p>
+            <p className="text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">Inspired by Kilimanjaro.</p>
           </div>
 
           {/* CTA Buttons */}
