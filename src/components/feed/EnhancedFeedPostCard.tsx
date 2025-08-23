@@ -60,7 +60,7 @@ export const EnhancedFeedPostCard = memo(({ post, onLike, onComment, onCommentLi
   }, [handleComment]);
 
   return (
-    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300 shadow-xl">
+    <Card className="bg-gradient-card backdrop-blur-lg border-border/50 hover:bg-card/80 transition-all duration-300 shadow-xl hover:shadow-2xl hover:border-primary/20 group">
       <CardHeader className="pb-4">
         <EnhancedFeedPostHeader post={post} />
       </CardHeader>
