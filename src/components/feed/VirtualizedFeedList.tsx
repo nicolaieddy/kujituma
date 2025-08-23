@@ -1,6 +1,6 @@
 import { memo, useMemo } from 'react';
 import { UnifiedPost } from '@/services/unifiedPostsService';
-import { FeedPostCard } from './FeedPostCard';
+import { CompactFeedPostCard } from './CompactFeedPostCard';
 import { EnhancedFeedPostCard } from './EnhancedFeedPostCard';
 
 interface VirtualizedFeedListProps {
@@ -30,7 +30,7 @@ const PostItem = memo(({
   const content = useEnhancedView ? (
     <EnhancedFeedPostCard post={post} onLike={onLike} onComment={onComment} onCommentLike={onCommentLike} />
   ) : (
-    <FeedPostCard post={post} onLike={onLike} onComment={onComment} onCommentLike={onCommentLike} />
+    <CompactFeedPostCard post={post} onLike={onLike} onComment={onComment} onCommentLike={onCommentLike} />
   );
 
   return (
