@@ -50,7 +50,7 @@ const LandingPage = () => {
             <p className="text-muted-foreground">
               Transform your goals into achievements with structured planning and community support.
             </p>
-            <div className="text-sm text-muted-foreground">© 2025 Kujituma. Built with passion for achievers.</div>
+            <div className="text-sm text-muted-foreground">© 2025 Kujituma. Built with passion and love for my friends.</div>
           </div>
         </div>
       </footer>
