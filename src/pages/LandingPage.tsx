@@ -36,7 +36,6 @@ const LandingPage = () => {
       {/* Main Content */}
       <main>
         <LandingHero onGetStarted={handleGetStarted} />
-        <LandingFeatures />
         <LandingCTA onGetStarted={handleGetStarted} />
       </main>
 

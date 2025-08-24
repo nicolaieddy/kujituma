@@ -85,9 +85,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error signing out:', error);
         throw error;
       }
-      // Force page reload for clean state and redirect to community
+      // Force page reload for clean state and redirect to home
       console.log('Sign out successful, reloading page');
-      window.location.href = '/community';
+      window.location.href = '/';
     } catch (error) {
       console.error('Error in signOut:', error);
       throw error;
