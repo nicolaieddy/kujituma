@@ -99,6 +99,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         .eq('id', user.id)
         .single();
 
+      // Get the latest progress post data to ensure we have the most current reflection
+      const latestProgressPost = await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
+      console.log('Latest progress post before sharing:', latestProgressPost);
+
       const completedObjectives = objectives?.filter(obj => obj.is_completed) || [];
       const pendingObjectives = objectives?.filter(obj => !obj.is_completed) || [];
       
@@ -119,7 +123,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           accomplishments += '\n\n';
           
           // Add reflection notes for incomplete objectives if available
-          const incompleteReflections = progressPost?.incomplete_reflections || {};
+          const incompleteReflections = latestProgressPost?.incomplete_reflections || {};
           const reflectionEntries = Object.entries(incompleteReflections)
             .filter(([_, reflection]) => reflection && typeof reflection === 'string' && reflection.trim())
             .map(([_, reflection]) => reflection);
@@ -132,8 +136,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         }
       }
       
-      // Separate the weekly reflection from accomplishments
-      const weeklyReflection = progressPost?.notes?.trim() || '';
+      // Use the latest weekly reflection from the freshly fetched data
+      const weeklyReflection = latestProgressPost?.notes?.trim() || '';
+      console.log('Weekly reflection to be shared:', weeklyReflection);
       
       if (!accomplishments.trim()) {
         accomplishments = 'Focused on personal growth this week.';
