@@ -1,18 +1,30 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+
 interface LandingCTAProps {
   onGetStarted: () => void;
 }
+
 export const LandingCTA = ({
   onGetStarted
 }: LandingCTAProps) => {
-  return <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/20">
-      <div className="p-8 text-center">
-        <h2 className="text-3xl font-bold mb-4">Ready?</h2>
-        
-        <Button onClick={onGetStarted} size="lg" className="bg-primary hover:bg-primary/90">
-          Start Your Journey
-        </Button>
+  return (
+    <section className="py-24 px-4">
+      <div className="max-w-2xl mx-auto text-center">
+        <Card className="bg-white/10 backdrop-blur-lg border-white/20 shadow-2xl">
+          <div className="p-12">
+            <h2 className="text-4xl md:text-5xl font-bold mb-8 text-white">Ready?</h2>
+            
+            <Button 
+              onClick={onGetStarted} 
+              size="lg" 
+              className="text-lg px-10 py-6 bg-white text-primary hover:bg-white/90 transition-all duration-300 transform hover:scale-105 shadow-xl"
+            >
+              Start Your Journey
+            </Button>
+          </div>
+        </Card>
       </div>
-    </Card>;
+    </section>
+  );
 };
