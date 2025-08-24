@@ -46,9 +46,7 @@ const LandingPage = () => {
             <h3 className="text-3xl font-bold text-white">
               Kujituma
             </h3>
-            <p className="text-white/70 text-lg max-w-2xl mx-auto">
-              Transform your goals into achievements with structured planning and community support.
-            </p>
+            <p className="text-white/70 text-lg max-w-2xl mx-auto"> "To have a burning fire in your stomach."</p>
             <div className="text-white/50 pt-4 border-t border-white/10">
               © 2025 Kujituma. Built with passion and love for my friends.
             </div>
