@@ -2,10 +2,12 @@ import { useUnifiedPosts } from "@/hooks/useUnifiedPosts";
 import { VirtualizedFeedList } from "./VirtualizedFeedList";
 import { FeedSkeletonList } from "./FeedPostSkeleton";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, RefreshCw } from "lucide-react";
 import { useState, memo } from "react";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { Loader2 } from "lucide-react";
+import { usePullToRefresh } from "@/hooks/usePullToRefresh";
+import { Progress } from "@/components/ui/progress";
 
 interface FeedViewProps {
   feedType: "all" | "my";
@@ -15,7 +17,7 @@ interface FeedViewProps {
 export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) => {
   const [useEnhancedView, setUseEnhancedView] = useState(false);
   
-  const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike, loadMore, hasMore, loadingMore } = useUnifiedPosts({
+  const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike, loadMore, hasMore, loadingMore, refetch } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user",
     filterPeriod: "all"
   });
@@ -26,6 +28,14 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
     hasMore,
     isLoading: loadingMore,
     threshold: 0.8
+  });
+
+  // Pull to refresh (mobile)
+  const { containerRef, isPulling, isRefreshing, progress, pullDistance } = usePullToRefresh({
+    onRefresh: async () => {
+      await refetch()
+    },
+    enabled: true
   });
 
   if (isLoading) {
@@ -50,7 +60,37 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
   }
 
   return (
-    <div className="space-y-6">      
+    <div ref={containerRef} className="space-y-6 relative">
+      {/* Pull to Refresh Indicator */}
+      {(isPulling || isRefreshing) && (
+        <div 
+          className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border transition-all duration-300"
+          style={{ 
+            transform: `translateY(${isPulling ? Math.min(pullDistance * 0.5, 60) : 0}px)`,
+            opacity: isPulling ? 1 : isRefreshing ? 1 : 0
+          }}
+        >
+          <div className="flex flex-col items-center gap-2 py-4">
+            {isRefreshing ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Refreshing...</span>
+              </>
+            ) : (
+              <>
+                <RefreshCw 
+                  className="h-5 w-5 text-primary transition-transform" 
+                  style={{ transform: `rotate(${progress * 3.6}deg)` }}
+                />
+                <div className="w-32">
+                  <Progress value={progress} animated={false} className="h-1" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* View Toggle */}
       <div className="flex items-center justify-between bg-accent rounded-lg p-3 border border-border">
         <div className="flex items-center gap-2">

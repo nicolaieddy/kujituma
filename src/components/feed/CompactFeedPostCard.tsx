@@ -5,6 +5,8 @@ import { CompactFeedPostHeader } from "./CompactFeedPostHeader";
 import { CompactFeedPostContent } from "./CompactFeedPostContent";
 import { CompactFeedPostActions } from "./CompactFeedPostActions";
 import { CompactFeedPostComments } from "./CompactFeedPostComments";
+import { useSwipeGesture } from "@/hooks/useSwipeGesture";
+import { hapticImpact } from "@/utils/haptic";
 
 interface CompactFeedPostCardProps {
   post: UnifiedPost;
@@ -20,8 +22,22 @@ export const CompactFeedPostCard = memo(({ post, onLike, onComment, onCommentLik
 
   const comments = post.comments || [];
 
+  // Swipe gesture for quick actions
+  const { handlers, swipeDistance } = useSwipeGesture({
+    onSwipeRight: () => {
+      hapticImpact()
+      handleLike()
+    },
+    onSwipeLeft: () => {
+      hapticImpact()
+      setIsCommenting(!isCommenting)
+    },
+    threshold: 80
+  });
+
   const handleLike = useCallback(async () => {
     if (isLiking) return;
+    hapticImpact();
     setIsLiking(true);
     try {
       await onLike(post.id);
@@ -51,7 +67,30 @@ export const CompactFeedPostCard = memo(({ post, onLike, onComment, onCommentLik
   }, [handleComment]);
 
   return (
-    <Card className="border-border/50 hover:border-primary/20 transition-all duration-300">
+    <Card 
+      className="border-border/50 hover:border-primary/20 transition-all duration-300 relative overflow-hidden touch-pan-y"
+      style={{
+        transform: swipeDistance !== 0 ? `translateX(${swipeDistance * 0.2}px)` : 'none',
+        transition: swipeDistance === 0 ? 'transform 0.3s ease-out' : 'none'
+      }}
+      {...handlers}
+    >
+      {/* Swipe hints */}
+      {Math.abs(swipeDistance) > 20 && (
+        <>
+          {swipeDistance > 0 && (
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary opacity-70">
+              ❤️ Like
+            </div>
+          )}
+          {swipeDistance < 0 && (
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-primary opacity-70">
+              💬 Comment
+            </div>
+          )}
+        </>
+      )}
+      
       <CardHeader className="pb-2 pt-3 px-4">
         <CompactFeedPostHeader post={post} />
       </CardHeader>
