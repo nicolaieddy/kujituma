@@ -4,6 +4,7 @@ import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Analytics = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
+        <KilimanjaroLoader />
       </div>
     );
   }

@@ -16,6 +16,7 @@ import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 
 const Goals = () => {
   const navigate = useNavigate();
@@ -117,7 +118,7 @@ const Goals = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
+        <KilimanjaroLoader />
       </div>
     );
   }

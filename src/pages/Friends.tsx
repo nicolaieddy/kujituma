@@ -8,6 +8,7 @@ import { FriendsView } from "@/components/friends/FriendsView";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Inbox } from "lucide-react";
+import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 
 const Friends = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ const Friends = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
+        <KilimanjaroLoader />
       </div>
     );
   }

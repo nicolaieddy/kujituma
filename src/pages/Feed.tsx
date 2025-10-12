@@ -6,6 +6,7 @@ import { FeedView } from "@/components/feed/FeedView";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 import { CommunityRightSidebar } from "@/components/community/CommunityRightSidebar";
+import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 
 const Feed = () => {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ const Feed = () => {
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-foreground">Loading...</div>
+        <KilimanjaroLoader />
       </div>
     );
   }
