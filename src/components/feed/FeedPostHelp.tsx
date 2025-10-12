@@ -13,7 +13,7 @@ export const FeedPostHelp = ({ post }: FeedPostHelpProps) => {
         <div className="w-2 h-2 bg-rose-400 rounded-full"></div>
         <h4 className="text-rose-300 font-semibold text-lg">Help Needed</h4>
       </div>
-      <p className="text-white/90 whitespace-pre-line leading-relaxed">{post.help}</p>
+      <p className="text-foreground/90 whitespace-pre-line leading-relaxed">{post.help}</p>
     </div>
   );
 };

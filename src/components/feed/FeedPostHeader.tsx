@@ -35,24 +35,24 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
       {/* User Info */}
       <div className="flex items-center gap-3">
         <Avatar 
-          className="h-12 w-12 ring-2 ring-white/20 cursor-pointer hover:ring-white/40 transition-all"
+          className="h-12 w-12 ring-2 ring-border cursor-pointer hover:ring-primary/40 transition-all"
           onClick={handleProfileClick}
         >
           <AvatarImage src={post.profiles?.avatar_url || undefined} />
-          <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
+          <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
             {getInitials(post.profiles?.full_name || post.name)}
           </AvatarFallback>
         </Avatar>
         
         <div className="flex-1">
             <h3 
-              className="text-white font-semibold text-lg cursor-pointer hover:text-white/80 transition-colors"
+              className="text-foreground font-semibold text-lg cursor-pointer hover:text-foreground/80 transition-colors"
               onClick={handleProfileClick}
             >
               {post.profiles?.full_name || post.name}
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-white/60 text-sm">
+              <span className="text-muted-foreground text-sm">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </span>
             </div>
@@ -61,11 +61,11 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
 
       {/* Week Info */}
       {post.week_start && post.week_end && (
-        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+        <div className="bg-accent rounded-lg p-4 border border-border">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-400" />
-              <span className="text-white font-medium">
+              <span className="text-foreground font-medium">
                 {formatWeekRange(post.week_start, post.week_end)}
               </span>
             </div>
@@ -77,9 +77,9 @@ export const FeedPostHeader = ({ post }: FeedPostHeaderProps) => {
           </div>
           
           {post.objectives_completed !== undefined && post.total_objectives !== undefined && (
-            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-white/10">
-              <Target className="h-4 w-4 text-white/60" />
-              <span className="text-white/80 text-sm">
+            <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border">
+              <Target className="h-4 w-4 text-muted-foreground" />
+              <span className="text-foreground/80 text-sm">
                 {post.objectives_completed} of {post.total_objectives} objectives completed
               </span>
             </div>

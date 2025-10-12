@@ -69,9 +69,9 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
 
   if (loading) {
     return (
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+      <Card className="border-border">
         <CardContent className="p-8">
-          <div className="text-center text-white/60">Loading goals...</div>
+          <div className="text-center text-muted-foreground">Loading goals...</div>
         </CardContent>
       </Card>
     );
@@ -79,15 +79,15 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
 
   if (goals.length === 0) {
     return (
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+      <Card className="border-border">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             <Target className="h-5 w-5" />
             Goals
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-center text-white/60 py-8">
+          <div className="text-center text-muted-foreground py-8">
             {isOwnProfile ? 'No goals yet' : 'No public goals to show'}
           </div>
         </CardContent>
@@ -96,9 +96,9 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
   }
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-foreground flex items-center gap-2">
           <Target className="h-5 w-5" />
           Goals
         </CardTitle>
@@ -113,8 +113,8 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
               <div key={column.status} className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <IconComponent className="h-4 w-4 text-white" />
-                    <h4 className="text-sm font-semibold text-white">{column.title}</h4>
+                    <IconComponent className="h-4 w-4 text-foreground" />
+                    <h4 className="text-sm font-semibold text-foreground">{column.title}</h4>
                   </div>
                   <Badge className={`${column.color} text-xs`}>
                     {columnGoals.length}
@@ -123,40 +123,40 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
                 
                 <div className="space-y-3 min-h-[200px]">
                   {columnGoals.length === 0 ? (
-                    <div className="bg-white/5 backdrop-blur-lg border-white/10 border-2 border-dashed rounded-lg p-6 text-center">
-                      <IconComponent className="h-6 w-6 text-white/40 mx-auto mb-2" />
-                      <p className="text-white/60 text-xs">
+                    <div className="bg-accent border-border border-2 border-dashed rounded-lg p-6 text-center">
+                      <IconComponent className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                      <p className="text-muted-foreground text-xs">
                         No {column.title.toLowerCase()} goals
                       </p>
                     </div>
                   ) : (
                     columnGoals.map((goal) => (
-                      <Card key={goal.id} className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/10 transition-all duration-200">
+                      <Card key={goal.id} className="bg-accent border-border hover:bg-accent/80 transition-all duration-200">
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-2">
-                            <h5 className="text-white font-medium text-sm line-clamp-2">
+                            <h5 className="text-foreground font-medium text-sm line-clamp-2">
                               {goal.title}
                             </h5>
                             {isOwnProfile && !goal.is_public && (
-                              <Badge variant="secondary" className="bg-white/20 text-white/80 text-xs ml-2">
+                              <Badge variant="secondary" className="text-xs ml-2">
                                 Private
                               </Badge>
                             )}
                           </div>
                           
                           {goal.description && (
-                            <p className="text-white/70 text-xs mb-3 line-clamp-2">
+                            <p className="text-muted-foreground text-xs mb-3 line-clamp-2">
                               {goal.description}
                             </p>
                           )}
                           
-                          <div className="flex items-center gap-2 text-white/60 text-xs">
+                          <div className="flex items-center gap-2 text-muted-foreground text-xs">
                             <Calendar className="h-3 w-3" />
                             <span>{getTargetDateDisplay(goal)}</span>
                           </div>
                           
                           {goal.category && (
-                            <Badge variant="outline" className="mt-2 bg-white/10 border-white/20 text-white/80 text-xs">
+                            <Badge variant="outline" className="mt-2 text-xs">
                               {goal.category}
                             </Badge>
                           )}

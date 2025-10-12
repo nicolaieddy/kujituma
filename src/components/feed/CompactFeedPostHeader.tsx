@@ -41,7 +41,7 @@ export const CompactFeedPostHeader = ({ post }: CompactFeedPostHeaderProps) => {
   return (
     <div className="flex items-start gap-3">
       <Avatar 
-        className="h-8 w-8 cursor-pointer hover:ring-1 hover:ring-white/30 transition-all"
+        className="h-8 w-8 cursor-pointer hover:ring-1 hover:ring-primary/30 transition-all"
         onClick={handleProfileClick}
       >
         <AvatarImage src={post.profiles?.avatar_url || undefined} />

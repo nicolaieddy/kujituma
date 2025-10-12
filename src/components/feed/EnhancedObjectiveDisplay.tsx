@@ -24,7 +24,7 @@ export const EnhancedObjectiveDisplay = ({
       iconBg: 'bg-emerald-500',
       textColor: 'text-emerald-300',
       titleColor: 'text-emerald-200',
-      objectiveTextColor: 'text-white',
+      objectiveTextColor: 'text-foreground',
       icon: CheckCircle2,
       title: 'Completed Objectives',
       glowColor: 'shadow-emerald-500/20'
@@ -35,7 +35,7 @@ export const EnhancedObjectiveDisplay = ({
       iconBg: 'bg-amber-500/20',
       textColor: 'text-amber-300',
       titleColor: 'text-amber-200',
-      objectiveTextColor: 'text-white',
+      objectiveTextColor: 'text-foreground',
       icon: Clock,
       title: 'Not Accomplished',
       glowColor: 'shadow-amber-500/20'
@@ -51,7 +51,7 @@ export const EnhancedObjectiveDisplay = ({
       <div className="flex items-center gap-3 mb-4">
         <div className={`w-8 h-8 rounded-full ${isCompleted ? style.iconBg : 'border-2 border-amber-400'} flex items-center justify-center`}>
           {isCompleted ? (
-            <CheckCircle2 className="h-4 w-4 text-white" />
+            <CheckCircle2 className="h-4 w-4 text-primary-foreground" />
           ) : (
             <Clock className="h-4 w-4 text-amber-400" />
           )}
@@ -60,7 +60,7 @@ export const EnhancedObjectiveDisplay = ({
           <h4 className={`${style.titleColor} font-semibold text-base`}>
             {style.title}
           </h4>
-          <p className="text-white/60 text-xs">
+          <p className="text-muted-foreground text-xs">
             {objectives.length} objective{objectives.length !== 1 ? 's' : ''}
           </p>
         </div>
@@ -81,7 +81,7 @@ export const EnhancedObjectiveDisplay = ({
                     : 'border-2 border-amber-400 bg-transparent'
                 }`}>
                   {isCompleted && (
-                    <CheckCircle2 className="w-3 h-3 text-white" />
+                    <CheckCircle2 className="w-3 h-3 text-primary-foreground" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -121,9 +121,9 @@ export const EnhancedObjectiveDisplay = ({
       </div>
 
       {/* Summary Badge */}
-      <div className="mt-4 pt-3 border-t border-white/10">
+      <div className="mt-4 pt-3 border-t border-border">
         <div className="flex items-center justify-between">
-          <span className="text-white/60 text-xs">
+          <span className="text-muted-foreground text-xs">
             {isCompleted ? 'All objectives completed' : 'Objectives not accomplished'}
           </span>
           <div className={`px-2 py-1 rounded-full text-xs font-medium ${

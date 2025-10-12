@@ -20,15 +20,15 @@ export const ProfileHeader = ({ profile }: ProfileHeaderProps) => {
   return (
     <div className="text-center">
       <div className="flex justify-center mb-4">
-        <Avatar className="h-32 w-32 border-4 border-white/20">
+        <Avatar className="h-32 w-32 border-4 border-border">
           <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-4xl">
+          <AvatarFallback className="bg-primary text-primary-foreground text-4xl">
             <User className="h-16 w-16" />
           </AvatarFallback>
         </Avatar>
       </div>
-      <h1 className="text-4xl font-bold text-white mb-2">{profile.full_name}</h1>
-      {profile.email && <p className="text-white/80 text-lg">{profile.email}</p>}
+      <h1 className="text-4xl font-bold text-foreground mb-2">{profile.full_name}</h1>
+      {profile.email && <p className="text-foreground/80 text-lg">{profile.email}</p>}
     </div>
   );
 };

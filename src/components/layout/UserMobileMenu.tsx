@@ -20,27 +20,27 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
   return (
     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
       <SheetTrigger asChild>
-        <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-white/10 transition-colors">
+        <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-accent transition-colors">
           <UserProfileAvatar />
-          <Menu className="h-4 w-4 text-white/60" />
+          <Menu className="h-4 w-4 text-muted-foreground" />
         </button>
       </SheetTrigger>
       <SheetContent 
         side="right" 
-        className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-white/20 w-72"
+        className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-border w-72"
       >
         <div className="flex flex-col space-y-4 mt-8">
-          <div className="text-white font-semibold text-lg mb-4">Navigation</div>
+          <div className="text-foreground font-semibold text-lg mb-4">Navigation</div>
           <NavigationMenu isMobile onItemClick={handleMenuClose} />
           
-          <div className="border-t border-white/20 my-4"></div>
+          <div className="border-t border-border my-4"></div>
           
           <button
             onClick={() => {
               navigate('/profile');
               handleMenuClose();
             }}
-            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
           >
             <User className="h-4 w-4 mr-3" />
             Profile
@@ -51,7 +51,7 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
               navigate('/friends');
               handleMenuClose();
             }}
-            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
           >
             <Users className="h-4 w-4 mr-3" />
             Friends
@@ -62,7 +62,7 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
               onRestartTour();
               handleMenuClose();
             }}
-            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
           >
             <HelpCircle className="h-4 w-4 mr-3" />
             Restart Tour
@@ -74,7 +74,7 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
                 navigate('/admin');
                 handleMenuClose();
               }}
-              className="flex items-center w-full text-left py-3 px-4 rounded-lg text-white/80 hover:text-white hover:bg-white/20 transition-colors"
+              className="flex items-center w-full text-left py-3 px-4 rounded-lg text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
             >
               <Settings className="h-4 w-4 mr-3" />
               Admin

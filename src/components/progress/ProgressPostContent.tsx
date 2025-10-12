@@ -10,28 +10,28 @@ export const ProgressPostContent = ({ post }: ProgressPostContentProps) => {
       {/* Accomplishments */}
       {post.accomplishments && (
         <div>
-          <h4 className="text-white font-medium mb-1 flex items-center text-xs">
+          <h4 className="text-foreground font-medium mb-1 flex items-center text-xs">
             🎉 Wins
           </h4>
-          <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.accomplishments}</p>
+          <p className="text-foreground/80 whitespace-pre-wrap text-xs leading-relaxed">{post.accomplishments}</p>
         </div>
       )}
 
       {post.priorities && (
         <div>
-          <h4 className="text-white font-medium mb-1 flex items-center text-xs">
+          <h4 className="text-foreground font-medium mb-1 flex items-center text-xs">
             🎯 Focus
           </h4>
-          <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.priorities}</p>
+          <p className="text-foreground/80 whitespace-pre-wrap text-xs leading-relaxed">{post.priorities}</p>
         </div>
       )}
 
       {post.help && (
         <div>
-          <h4 className="text-white font-medium mb-1 flex items-center text-xs">
+          <h4 className="text-foreground font-medium mb-1 flex items-center text-xs">
             🤝 Help
           </h4>
-          <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.help}</p>
+          <p className="text-foreground/80 whitespace-pre-wrap text-xs leading-relaxed">{post.help}</p>
         </div>
       )}
     </div>

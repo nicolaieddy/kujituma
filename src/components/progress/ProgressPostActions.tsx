@@ -21,7 +21,7 @@ export const ProgressPostActions = ({
         variant="ghost"
         size="sm"
         onClick={onPostLike}
-        className={`text-xs h-5 px-1 ${post.user_liked ? 'text-orange-400 hover:bg-orange-500/20' : 'text-white/80 hover:bg-white/20'}`}
+        className={`text-xs h-5 px-1 ${post.user_liked ? 'text-orange-400 hover:bg-orange-500/20' : 'text-muted-foreground hover:bg-accent'}`}
       >
         🚀 {post.likes || 0}
       </Button>
@@ -29,7 +29,7 @@ export const ProgressPostActions = ({
         variant="ghost"
         size="sm"
         onClick={onCommentClick}
-        className="text-white/80 hover:bg-white/20 text-xs h-5 px-1"
+        className="text-muted-foreground hover:bg-accent text-xs h-5 px-1"
       >
         <MessageCircle className="h-2 w-2 mr-1" />
         {post.comments.length > 0 ? `${post.comments.length}` : ''}

@@ -162,18 +162,18 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   };
 
   return (
-    <Card className="max-w-2xl mx-auto bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className="max-w-2xl mx-auto border-border">
       <CardHeader>
-        <CardTitle className="text-white text-center">Edit Profile</CardTitle>
+        <CardTitle className="text-foreground text-center">Edit Profile</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Profile Photo Section */}
           <div className="text-center">
             <div className="flex justify-center mb-4">
-              <Avatar className="h-24 w-24 border-4 border-white/20">
+              <Avatar className="h-24 w-24 border-4 border-border">
                 <AvatarImage src={formData.avatar_url} alt={formData.full_name} />
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   <User className="h-12 w-12" />
                 </AvatarFallback>
               </Avatar>
@@ -184,7 +184,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                   type="button"
                   variant="outline"
                   disabled={uploading}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                   asChild
                 >
                   <span>
@@ -206,72 +205,67 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           {/* Form Fields */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="full_name" className="text-white">Full Name</Label>
+              <Label htmlFor="full_name" className="text-foreground">Full Name</Label>
               <Input
                 id="full_name"
                 value={formData.full_name}
                 onChange={(e) => handleInputChange('full_name', e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="Your full name"
                 required
               />
             </div>
 
             <div>
-              <Label htmlFor="about_me" className="text-white">About Me</Label>
+              <Label htmlFor="about_me" className="text-foreground">About Me</Label>
               <Textarea
                 id="about_me"
                 value={formData.about_me}
                 onChange={(e) => handleInputChange('about_me', e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+                className="min-h-[100px]"
                 placeholder="Tell us about yourself..."
               />
             </div>
 
             <div>
-              <Label htmlFor="linkedin_url" className="text-white">LinkedIn Profile</Label>
+              <Label htmlFor="linkedin_url" className="text-foreground">LinkedIn Profile</Label>
               <Input
                 id="linkedin_url"
                 type="url"
                 value={formData.linkedin_url}
                 onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="https://linkedin.com/in/yourprofile"
               />
             </div>
 
             <div>
-              <Label htmlFor="instagram_url" className="text-white">Instagram Profile</Label>
+              <Label htmlFor="instagram_url" className="text-foreground">Instagram Profile</Label>
               <Input
                 id="instagram_url"
                 type="url"
                 value={formData.instagram_url}
                 onChange={(e) => handleInputChange('instagram_url', e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="https://instagram.com/yourusername"
               />
             </div>
 
             <div>
-              <Label htmlFor="tiktok_url" className="text-white">TikTok Profile</Label>
+              <Label htmlFor="tiktok_url" className="text-foreground">TikTok Profile</Label>
               <Input
                 id="tiktok_url"
                 type="url"
                 value={formData.tiktok_url}
                 onChange={(e) => handleInputChange('tiktok_url', e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="https://tiktok.com/@yourusername"
               />
             </div>
 
             <div>
-              <Label htmlFor="twitter_url" className="text-white">Twitter Profile</Label>
+              <Label htmlFor="twitter_url" className="text-foreground">Twitter Profile</Label>
               <Input
                 id="twitter_url"
                 type="url"
                 value={formData.twitter_url}
                 onChange={(e) => handleInputChange('twitter_url', e.target.value)}
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 placeholder="https://twitter.com/yourusername"
               />
             </div>
@@ -279,14 +273,14 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
 
           {/* Privacy Settings */}
           <div className="space-y-4">
-            <h3 className="text-white text-lg font-semibold">Privacy Settings</h3>
+            <h3 className="text-foreground text-lg font-semibold">Privacy Settings</h3>
             
-            <div className="flex items-center justify-between p-4 bg-white/5 border border-white/20 rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-accent border border-border rounded-lg">
               <div className="flex-1">
-                <label htmlFor="show_email" className="text-white text-sm font-medium">
+                <label htmlFor="show_email" className="text-foreground text-sm font-medium">
                   Show email on profile
                 </label>
-                <p className="text-white/60 text-xs mt-1">
+                <p className="text-muted-foreground text-xs mt-1">
                   When enabled, your email address will be visible to other users on your profile
                 </p>
               </div>
@@ -304,7 +298,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="bg-white/10 border-white/20 text-white hover:bg-white/20"
             >
               <X className="h-4 w-4 mr-2" />
               Cancel
@@ -312,7 +305,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
             <Button
               type="submit"
               disabled={loading}
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
             >
               <Save className="h-4 w-4 mr-2" />
               {loading ? 'Saving...' : 'Save Changes'}

@@ -61,7 +61,7 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
   return (
     <Avatar className={className}>
       <AvatarImage src={userProfile?.avatar_url || undefined} />
-      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-sm">
+      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
         {userProfile?.full_name ? getInitials(userProfile.full_name) : <User className="h-4 w-4" />}
       </AvatarFallback>
     </Avatar>

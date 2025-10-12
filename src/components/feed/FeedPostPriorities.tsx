@@ -22,13 +22,13 @@ export const FeedPostPriorities = ({ post }: FeedPostPrioritiesProps) => {
             return (
               <div key={index} className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-purple-400 bg-transparent mt-0.5" />
-                <p className="text-white font-medium leading-relaxed">{objectiveText}</p>
+                <p className="text-foreground font-medium leading-relaxed">{objectiveText}</p>
               </div>
             );
           }
           
           return (
-            <p key={index} className="text-white/90 leading-relaxed">
+            <p key={index} className="text-foreground/90 leading-relaxed">
               {line}
             </p>
           );

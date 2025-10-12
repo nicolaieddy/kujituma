@@ -41,24 +41,24 @@ export const EnhancedFeedPostHeader = ({ post }: EnhancedFeedPostHeaderProps) =>
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Avatar 
-            className="h-12 w-12 ring-2 ring-white/20 cursor-pointer hover:ring-white/40 transition-all"
+            className="h-12 w-12 ring-2 ring-border cursor-pointer hover:ring-primary/40 transition-all"
             onClick={handleProfileClick}
           >
             <AvatarImage src={post.profiles?.avatar_url || undefined} />
-            <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold">
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
               {getInitials(post.profiles?.full_name || post.name)}
             </AvatarFallback>
           </Avatar>
           
           <div>
             <h3 
-              className="text-white font-semibold text-lg cursor-pointer hover:text-white/80 transition-colors"
+              className="text-foreground font-semibold text-lg cursor-pointer hover:text-foreground/80 transition-colors"
               onClick={handleProfileClick}
             >
               {post.profiles?.full_name || post.name}
             </h3>
             <div className="flex items-center gap-2">
-              <span className="text-white/60 text-sm">
+              <span className="text-muted-foreground text-sm">
                 {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })}
               </span>
             </div>
@@ -84,11 +84,11 @@ export const EnhancedFeedPostHeader = ({ post }: EnhancedFeedPostHeaderProps) =>
 
       {/* Week Info & Objectives Summary */}
       {post.week_start && post.week_end && (
-        <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-xl p-4 border border-white/10 backdrop-blur-sm">
+        <div className="bg-accent rounded-xl p-4 border border-border">
           {/* Week Range */}
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="h-4 w-4 text-blue-400" />
-            <span className="text-white font-medium text-sm">
+            <span className="text-foreground font-medium text-sm">
               Week of {formatWeekRange(post.week_start, post.week_end)}
             </span>
           </div>
@@ -121,13 +121,13 @@ export const EnhancedFeedPostHeader = ({ post }: EnhancedFeedPostHeaderProps) =>
               {/* Progress Bar */}
               <div className="flex-1 ml-4">
                 <div className="flex items-center gap-2">
-                  <div className="flex-1 bg-white/10 rounded-full h-2 overflow-hidden">
+                  <div className="flex-1 bg-muted/30 rounded-full h-2 overflow-hidden">
                     <div 
                       className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-500 ease-out"
                       style={{ width: `${completionPercentage}%` }}
                     />
                   </div>
-                  <span className="text-white/60 text-xs font-medium min-w-[3rem]">
+                  <span className="text-muted-foreground text-xs font-medium min-w-[3rem]">
                     {objectivesCompleted}/{totalObjectives}
                   </span>
                 </div>

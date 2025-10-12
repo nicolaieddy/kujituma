@@ -38,12 +38,12 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
   return (
     <div className="w-full flex justify-center mb-6">
       <Tabs value={currentSection} onValueChange={handleTabChange} className="w-full max-w-2xl">
-        <TabsList className={`grid w-full bg-white/10 backdrop-blur-lg border-white/20 h-12 ${
+        <TabsList className={`grid w-full bg-accent border-border h-12 ${
           isAdmin ? 'grid-cols-3' : 'grid-cols-2'
         }`}>
           <TabsTrigger 
             value="goals" 
-            className="flex items-center gap-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
+            className="flex items-center gap-2 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <Target className="h-4 w-4" />
             <span className="hidden sm:inline">Goals & Progress</span>
@@ -51,7 +51,7 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
           </TabsTrigger>
           <TabsTrigger 
             value="feed" 
-            className="flex items-center gap-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
+            className="flex items-center gap-2 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
           >
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Progress Feed</span>
@@ -60,7 +60,7 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
           {isAdmin && (
             <TabsTrigger 
               value="admin" 
-              className="flex items-center gap-2 text-white data-[state=active]:bg-white/20 data-[state=active]:text-white"
+              className="flex items-center gap-2 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
             >
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Admin</span>

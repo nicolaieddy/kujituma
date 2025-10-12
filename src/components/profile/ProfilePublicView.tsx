@@ -61,14 +61,14 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           {/* Profile Header */}
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Avatar className="h-32 w-32 border-4 border-white/20">
+              <Avatar className="h-32 w-32 border-4 border-border">
                 <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-4xl">
+                <AvatarFallback className="bg-primary text-primary-foreground text-4xl">
                   <User className="h-16 w-16" />
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">{profile.full_name}</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2">{profile.full_name}</h1>
             
             {/* Friendship Actions */}
             {!isOwnProfile && user && !statusLoading && (
@@ -127,8 +127,8 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           {/* About Me Section */}
           {profile.about_me && (
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">About Me</h2>
-              <p className="text-white/80 leading-relaxed whitespace-pre-wrap">
+              <h2 className="text-xl font-semibold text-foreground mb-4">About Me</h2>
+              <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
                 {profile.about_me}
               </p>
             </div>
@@ -137,7 +137,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           {/* Social Media Links */}
           {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
             <div className="mb-8">
-              <h2 className="text-xl font-semibold text-white mb-4">Connect</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-4">Connect</h2>
               <div className="flex flex-wrap gap-3">
                 {profile.linkedin_url && (
                   <Button

@@ -47,11 +47,11 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
             {sections.completed.map((objective, index) => (
               <div key={index} className="flex items-start gap-3">
                 <div className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center mt-0.5">
-                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-3 h-3 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 </div>
-                <p className="text-white font-medium leading-relaxed">{objective}</p>
+                <p className="text-foreground font-medium leading-relaxed">{objective}</p>
               </div>
             ))}
           </div>
@@ -76,7 +76,7 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
                 <div key={index} className="space-y-2">
                   <div className="flex items-start gap-3">
                     <div className="flex-shrink-0 w-5 h-5 rounded-full border-2 border-amber-400 bg-transparent mt-0.5" />
-                    <p className="text-white font-medium leading-relaxed">{objective}</p>
+                    <p className="text-foreground font-medium leading-relaxed">{objective}</p>
                   </div>
                   {reflection && (
                     <div className="ml-8 space-y-1">
@@ -101,7 +101,7 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
             <h4 className="text-blue-300 font-semibold text-lg">Weekly Reflection</h4>
           </div>
           <div className="space-y-3">
-            <p className="text-white/90 leading-relaxed">{post.reflection}</p>
+            <p className="text-foreground/90 leading-relaxed">{post.reflection}</p>
           </div>
         </div>
       )}
@@ -115,7 +115,7 @@ export const FeedPostContent = ({ post }: FeedPostContentProps) => {
           </div>
           <div className="space-y-3">
             {sections.generalReflections.map((reflection, index) => (
-              <p key={index} className="text-white/90 leading-relaxed">{reflection}</p>
+              <p key={index} className="text-foreground/90 leading-relaxed">{reflection}</p>
             ))}
           </div>
         </div>

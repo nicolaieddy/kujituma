@@ -73,35 +73,35 @@ export const ProgressPostComments = ({
       {/* Comments Section */}
       {post.comments.length > 0 && (
         <div>
-          <Separator className="bg-white/20 my-1" />
+          <Separator className="bg-border my-1" />
           <div className="space-y-1">
             {post.comments.map((comment) => (
-              <div key={comment.id} className="bg-white/5 rounded-lg p-2">
+              <div key={comment.id} className="bg-accent rounded-lg p-2">
                 <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center space-x-1">
                     <Avatar className="h-3 w-3">
                       <AvatarImage src={comment.avatar_url} />
-                      <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                      <AvatarFallback className="bg-primary text-primary-foreground">
                         <User className="h-1 w-1" />
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-white font-medium text-xs">{comment.name}</span>
+                    <span className="text-foreground font-medium text-xs">{comment.name}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => onCommentLike(comment.id)}
-                      className={`text-xs h-4 px-1 ${comment.user_liked ? 'text-orange-400 hover:bg-orange-500/20' : 'text-white/60 hover:bg-white/20'}`}
+                      className={`text-xs h-4 px-1 ${comment.user_liked ? 'text-orange-400 hover:bg-orange-500/20' : 'text-muted-foreground hover:bg-accent'}`}
                     >
                       🚀 {comment.likes || 0}
                     </Button>
-                    <span className="text-white/60 text-xs">
+                    <span className="text-muted-foreground text-xs">
                       {formatTimeAgo(comment.timestamp)}
                     </span>
                   </div>
                 </div>
-                <p className="text-white/80 whitespace-pre-wrap text-xs ml-4">{comment.message}</p>
+                <p className="text-foreground/80 whitespace-pre-wrap text-xs ml-4">{comment.message}</p>
               </div>
             ))}
           </div>
@@ -111,13 +111,13 @@ export const ProgressPostComments = ({
       {/* Comment Form */}
       {showCommentForm && isAuthenticated && (
         <div>
-          {post.comments.length > 0 || <Separator className="bg-white/20 my-1" />}
+          {post.comments.length > 0 || <Separator className="bg-border my-1" />}
           <form onSubmit={handleCommentSubmit} className="space-y-1">
             <Input
               placeholder="Your name"
               value={commentData.name}
               onChange={(e) => handleCommentChange("name", e.target.value)}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 h-6 text-xs"
+              className="h-6 text-xs"
               readOnly={!!userName}
             />
             {commentErrors.name && (
@@ -128,7 +128,7 @@ export const ProgressPostComments = ({
               placeholder="Write a supportive comment..."
               value={commentData.message}
               onChange={(e) => handleCommentChange("message", e.target.value)}
-              className="bg-white/10 border-white/20 text-white placeholder:text-white/60 text-xs min-h-[40px]"
+              className="text-xs min-h-[40px]"
             />
             {commentErrors.message && (
               <p className="text-red-400 text-xs">{commentErrors.message}</p>
@@ -138,7 +138,7 @@ export const ProgressPostComments = ({
               <Button
                 type="submit"
                 size="sm"
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 h-5 text-xs"
+                className="h-5 text-xs"
               >
                 <Send className="h-2 w-2 mr-1" />
                 Send
@@ -148,7 +148,7 @@ export const ProgressPostComments = ({
                 variant="ghost"
                 size="sm"
                 onClick={onCloseCommentForm}
-                className="text-white/80 hover:bg-white/20 h-5 text-xs"
+                className="h-5 text-xs"
               >
                 Cancel
               </Button>

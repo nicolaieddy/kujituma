@@ -21,18 +21,18 @@ export const ProgressPostHeader = ({ post, onViewUserHistory }: ProgressPostHead
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-2">
         <Avatar 
-          className="h-5 w-5 cursor-pointer hover:ring-1 hover:ring-white/20 transition-all"
+          className="h-5 w-5 cursor-pointer hover:ring-1 hover:ring-border transition-all"
           onClick={handleProfileClick}
         >
           <AvatarImage src={post.avatar_url} />
-          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
             <User className="h-2 w-2" />
           </AvatarFallback>
         </Avatar>
         <div>
           <div className="flex items-center space-x-1">
             <h3 
-              className="text-white font-semibold text-xs cursor-pointer hover:text-white/80 transition-colors"
+              className="text-foreground font-semibold text-xs cursor-pointer hover:text-foreground/80 transition-colors"
               onClick={handleProfileClick}
             >
               {post.name}
@@ -41,12 +41,12 @@ export const ProgressPostHeader = ({ post, onViewUserHistory }: ProgressPostHead
               variant="ghost"
               size="sm"
               onClick={onViewUserHistory}
-              className="text-white/60 hover:bg-white/20 text-xs h-4 px-1"
+              className="text-muted-foreground hover:bg-accent text-xs h-4 px-1"
             >
               <History className="h-2 w-2" />
             </Button>
           </div>
-          <div className="flex items-center space-x-1 text-white/60 text-xs">
+          <div className="flex items-center space-x-1 text-muted-foreground text-xs">
             <Clock className="h-2 w-2" />
             <span>{formatTimeAgo(post.timestamp)}</span>
           </div>
