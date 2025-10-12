@@ -5,8 +5,10 @@ import { formatTimeAgo } from '@/utils/timeUtils';
 import { Notification } from '@/types/notifications';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFriends } from '@/hooks/useFriends';
+import { accountabilityService } from '@/services/accountabilityService';
 import { useNavigate } from 'react-router-dom';
 import { User, UserCheck, UserMinus, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -27,6 +29,8 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
     // Navigate based on notification type
     if (notification.type === 'friend_request') {
       navigate('/friends?tab=requests');
+    } else if (notification.type === 'accountability_partner_request') {
+      navigate('/friends?tab=accountability');
     } else if (notification.related_post_id) {
       navigate('/feed');
     }
@@ -53,6 +57,34 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
     }
   };
 
+  const handlePartnerRequestResponse = async (response: 'accepted' | 'rejected') => {
+    if (!notification.related_request_id) {
+      console.error('No request ID found for partner request notification');
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const result = await accountabilityService.respondToPartnerRequest(
+        notification.related_request_id,
+        response
+      );
+      
+      if (result.success) {
+        toast.success(response === 'accepted' ? '🤝 Accountability partnership accepted!' : 'Request declined');
+        await markAsRead(notification.id);
+        onMarkRead();
+      } else {
+        toast.error(result.error || 'Failed to respond to request');
+      }
+    } catch (error) {
+      console.error('Error responding to partner request:', error);
+      toast.error('Failed to respond to request');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const getNotificationIcon = () => {
     switch (notification.type) {
       case 'post_like':
@@ -67,12 +99,17 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
         return '👋';
       case 'friend_request_accepted':
         return '🤝';
+      case 'accountability_partner_request':
+        return '🤝';
+      case 'accountability_partner_accepted':
+        return '✅';
       default:
         return '🔔';
     }
   };
 
   const isFriendRequest = notification.type === 'friend_request';
+  const isPartnerRequest = notification.type === 'accountability_partner_request';
 
   return (
     <div
@@ -101,7 +138,7 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
           
           {/* Friend Request Action Buttons */}
           {isFriendRequest && notification.related_request_id && (
-            <div className="flex gap-2 mt-3">
+            <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
               <Button
                 size="sm"
                 onClick={() => handleFriendRequestResponse('accepted')}
@@ -119,6 +156,39 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
                 size="sm"
                 variant="destructive"
                 onClick={() => handleFriendRequestResponse('rejected')}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <UserMinus className="h-3 w-3 mr-1" />
+                )}
+                Decline
+              </Button>
+            </div>
+          )}
+          
+          {/* Accountability Partner Request Action Buttons */}
+          {isPartnerRequest && notification.related_request_id && (
+            <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+              <Button
+                size="sm"
+                onClick={() => handlePartnerRequestResponse('accepted')}
+                disabled={isProcessing}
+                className="flex-1"
+              >
+                {isProcessing ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                ) : (
+                  <UserCheck className="h-3 w-3 mr-1" />
+                )}
+                Accept
+              </Button>
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={() => handlePartnerRequestResponse('rejected')}
                 disabled={isProcessing}
                 className="flex-1"
               >
