@@ -1,5 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Target } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -13,6 +15,11 @@ import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
+import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
+import { AccountabilityPartnerCard } from "@/components/accountability/AccountabilityPartnerCard";
+import { PartnerProgressView } from "@/components/accountability/PartnerProgressView";
+import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
+import { accountabilityService, AccountabilityPartner } from "@/services/accountabilityService";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -26,6 +33,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showShareConfirmation, setShowShareConfirmation] = useState(false);
+  const [showCommitmentSelector, setShowCommitmentSelector] = useState(false);
+  const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
+  const [accountabilityPartner, setAccountabilityPartner] = useState<AccountabilityPartner | null>(null);
   
   const {
     objectives,
@@ -207,6 +217,34 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
+  // Load commitments and accountability partner
+  useEffect(() => {
+    const loadCommitments = async () => {
+      if (user) {
+        const data = await commitmentsService.getPublicCommitments(user.id, currentWeekStart);
+        setCommitments(data);
+      }
+    };
+
+    const loadAccountabilityPartner = async () => {
+      const partner = await accountabilityService.getAccountabilityPartner();
+      setAccountabilityPartner(partner);
+    };
+
+    loadCommitments();
+    loadAccountabilityPartner();
+  }, [user, currentWeekStart]);
+
+  const handleCommitmentsSet = () => {
+    if (user) {
+      commitmentsService.getPublicCommitments(user.id, currentWeekStart).then(setCommitments);
+    }
+  };
+
+  const handlePartnerUpdate = () => {
+    accountabilityService.getAccountabilityPartner().then(setAccountabilityPartner);
+  };
+
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const hasShared = !!feedPost;
@@ -216,6 +254,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Enforce immutability: once a week is completed (shared), it becomes read-only
   const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
+
+  const hasCommitments = commitments.length === 3;
+  const committedIds = commitments.map(c => c.objective_id);
 
   // Show loading skeleton while data is being fetched
   if (weeklyDataLoading) {
@@ -233,6 +274,74 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         totalCount={totalCount}
         onNavigateWeek={onNavigateWeek}
       />
+
+      {/* Commitment Declaration */}
+      {!isReadOnly && isCurrentWeek && totalCount > 0 && (
+        <Card className={`${hasCommitments ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Target className={`h-5 w-5 ${hasCommitments ? 'text-primary' : 'text-muted-foreground'}`} />
+                <div>
+                  <h3 className="font-semibold">
+                    {hasCommitments ? '🎯 Your Top 3 Commitments' : 'Declare Your Top 3 Objectives'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {hasCommitments 
+                      ? 'Visible to your friends as public commitments'
+                      : 'Make a public commitment to stay accountable'}
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setShowCommitmentSelector(true)}
+                variant={hasCommitments ? 'outline' : 'default'}
+                className={hasCommitments ? '' : 'gradient-primary'}
+              >
+                {hasCommitments ? 'Change' : 'Select Top 3'}
+              </Button>
+            </div>
+            {hasCommitments && (
+              <div className="mt-4 space-y-2">
+                {commitments.map((commitment, index) => (
+                  <div
+                    key={commitment.id}
+                    className={`flex items-start gap-3 p-3 rounded-lg border ${
+                      commitment.is_completed
+                        ? 'bg-success/10 border-success/20'
+                        : 'bg-background border-primary/20'
+                    }`}
+                  >
+                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                      {index + 1}
+                    </div>
+                    <p className={`flex-1 text-sm ${commitment.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                      {commitment.objective_text}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Accountability Partner */}
+      {accountabilityPartner && (
+        <AccountabilityPartnerCard
+          partner={accountabilityPartner}
+          weekStart={currentWeekStart}
+          onStatusChange={handlePartnerUpdate}
+        />
+      )}
+
+      {/* Partner Progress */}
+      {accountabilityPartner && (
+        <PartnerProgressView
+          partnerId={accountabilityPartner.partner_id}
+          weekStart={currentWeekStart}
+        />
+      )}
 
       {/* Weekly Objectives */}
       <Card className="border-border">
@@ -284,6 +393,16 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onClose={() => setShowShareConfirmation(false)}
         onConfirm={handleConfirmShare}
         isSharing={isSharing}
+      />
+
+      {/* Commitment Selector */}
+      <CommitmentSelector
+        open={showCommitmentSelector}
+        onOpenChange={setShowCommitmentSelector}
+        objectives={objectives || []}
+        weekStart={currentWeekStart}
+        currentCommitments={committedIds}
+        onCommitmentsSet={handleCommitmentsSet}
       />
     </div>
   );

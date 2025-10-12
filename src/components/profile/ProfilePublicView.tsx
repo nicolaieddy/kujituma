@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck } from "lucide-react";
+import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck, Users } from "lucide-react";
 import linkedinIcon from "@/assets/linkedin-icon.png";
 import instagramIcon from "@/assets/instagram-icon.png";
 import xIcon from "@/assets/x-icon.png";
@@ -10,10 +10,15 @@ import tiktokIcon from "@/assets/tiktok-icon.png";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
+import { CommitmentCard } from "@/components/commitments/CommitmentCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriendshipStatus } from "@/hooks/useFriendshipStatus";
 import { useFriends } from "@/hooks/useFriends";
 import { supabase } from "@/integrations/supabase/client";
+import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
+import { accountabilityService } from "@/services/accountabilityService";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -37,9 +42,48 @@ interface ProfilePublicViewProps {
 export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
+  const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
+  const [hasPartner, setHasPartner] = useState(false);
+  const [isSendingRequest, setIsSendingRequest] = useState(false);
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status, loading: statusLoading } = useFriendshipStatus(profile.id);
   const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
+
+  const currentWeekStart = WeeklyProgressService.getWeekStart();
+
+  useEffect(() => {
+    const loadCommitments = async () => {
+      if (user && is_friend) {
+        const data = await commitmentsService.getPublicCommitments(profile.id, currentWeekStart);
+        setCommitments(data);
+      }
+    };
+
+    const checkPartnership = async () => {
+      const partner = await accountabilityService.getAccountabilityPartner();
+      setHasPartner(!!partner);
+    };
+
+    loadCommitments();
+    if (user) {
+      checkPartnership();
+    }
+  }, [profile.id, user, is_friend, currentWeekStart]);
+
+  const handleSendPartnerRequest = async () => {
+    setIsSendingRequest(true);
+    const result = await accountabilityService.sendPartnerRequest(
+      profile.id,
+      `Hi ${profile.full_name}! Would you like to be accountability partners?`
+    );
+
+    if (result.success) {
+      toast.success('🤝 Accountability partner request sent!');
+    } else {
+      toast.error(result.error || 'Failed to send request');
+    }
+    setIsSendingRequest(false);
+  };
 
   const handleUnfriend = () => {
     setShowUnfriendDialog(false);
@@ -73,52 +117,68 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
             
             {/* Friendship Actions */}
             {!isOwnProfile && user && !statusLoading && (
-              <div className="flex justify-center mt-4">
-                {is_friend ? (
-                  <Button
-                    variant="outline"
-                    className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                    onClick={() => setShowUnfriendDialog(true)}
-                  >
-                    <UserCheck className="h-4 w-4 mr-2" />
-                    Friends
-                  </Button>
-                ) : friend_request_status === 'sent' ? (
-                  <Button
-                    variant="outline"
-                    className="bg-accent/50 border-accent text-accent-foreground"
-                    disabled
-                  >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Request Sent
-                  </Button>
-                ) : friend_request_status === 'received' ? (
-                  <div className="flex gap-2">
+              <div className="flex flex-col items-center gap-2 mt-4">
+                <div className="flex justify-center">
+                  {is_friend ? (
                     <Button
                       variant="outline"
                       className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                      onClick={() => respondToFriendRequest(profile.id, 'accepted')}
+                      onClick={() => setShowUnfriendDialog(true)}
                     >
                       <UserCheck className="h-4 w-4 mr-2" />
-                      Accept
+                      Friends
                     </Button>
+                  ) : friend_request_status === 'sent' ? (
                     <Button
                       variant="outline"
-                      className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
-                      onClick={() => respondToFriendRequest(profile.id, 'rejected')}
+                      className="bg-accent/50 border-accent text-accent-foreground"
+                      disabled
                     >
-                      <UserMinus className="h-4 w-4 mr-2" />
-                      Decline
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Request Sent
                     </Button>
-                  </div>
-                ) : (
+                  ) : friend_request_status === 'received' ? (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
+                        onClick={() => respondToFriendRequest(profile.id, 'accepted')}
+                      >
+                        <UserCheck className="h-4 w-4 mr-2" />
+                        Accept
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
+                        onClick={() => respondToFriendRequest(profile.id, 'rejected')}
+                      >
+                        <UserMinus className="h-4 w-4 mr-2" />
+                        Decline
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
+                      onClick={() => sendFriendRequest(profile.id)}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Add Friend
+                    </Button>
+                  )}
+                </div>
+                
+                {/* Accountability Partner Request */}
+                {is_friend && !hasPartner && (
                   <Button
                     variant="outline"
-                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
-                    onClick={() => sendFriendRequest(profile.id)}
+                    size="sm"
+                    className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"
+                    onClick={handleSendPartnerRequest}
+                    disabled={isSendingRequest}
                   >
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add Friend
+                    <Users className="h-4 w-4 mr-2" />
+                    {isSendingRequest ? 'Sending...' : 'Become Accountability Partners'}
                   </Button>
                 )}
               </div>
@@ -233,6 +293,11 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Commitments Section */}
+      {commitments.length > 0 && (
+        <CommitmentCard commitments={commitments} userName={profile.full_name} />
+      )}
 
       {/* Goals Section */}
       <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />

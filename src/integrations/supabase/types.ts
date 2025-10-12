@@ -14,6 +14,141 @@ export type Database = {
   }
   public: {
     Tables: {
+      accountability_check_ins: {
+        Row: {
+          created_at: string
+          id: string
+          initiated_by: string
+          message: string | null
+          partnership_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          initiated_by: string
+          message?: string | null
+          partnership_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          initiated_by?: string
+          message?: string | null
+          partnership_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_check_ins_initiated_by_fkey"
+            columns: ["initiated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountability_check_ins_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accountability_partner_requests: {
+        Row: {
+          created_at: string
+          id: string
+          message: string | null
+          receiver_id: string
+          sender_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id: string
+          sender_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string | null
+          receiver_id?: string
+          sender_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_partner_requests_receiver_id_fkey"
+            columns: ["receiver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountability_partner_requests_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accountability_partnerships: {
+        Row: {
+          check_in_frequency: string
+          created_at: string
+          id: string
+          last_check_in_at: string | null
+          status: string
+          updated_at: string
+          user1_id: string
+          user2_id: string
+        }
+        Insert: {
+          check_in_frequency?: string
+          created_at?: string
+          id?: string
+          last_check_in_at?: string | null
+          status?: string
+          updated_at?: string
+          user1_id: string
+          user2_id: string
+        }
+        Update: {
+          check_in_frequency?: string
+          created_at?: string
+          id?: string
+          last_check_in_at?: string | null
+          status?: string
+          updated_at?: string
+          user1_id?: string
+          user2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_partnerships_user1_id_fkey"
+            columns: ["user1_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountability_partnerships_user2_id_fkey"
+            columns: ["user2_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_likes: {
         Row: {
           comment_id: string
@@ -441,6 +576,7 @@ export type Database = {
         Row: {
           about_me: string | null
           avatar_url: string | null
+          commitment_visibility: string | null
           created_at: string
           email: string
           full_name: string
@@ -457,6 +593,7 @@ export type Database = {
         Insert: {
           about_me?: string | null
           avatar_url?: string | null
+          commitment_visibility?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -473,6 +610,7 @@ export type Database = {
         Update: {
           about_me?: string | null
           avatar_url?: string | null
+          commitment_visibility?: string | null
           created_at?: string
           email?: string
           full_name?: string
@@ -487,6 +625,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      public_commitments: {
+        Row: {
+          created_at: string
+          id: string
+          objective_id: string
+          rank: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objective_id: string
+          rank: number
+          user_id: string
+          week_start: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objective_id?: string
+          rank?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "public_commitments_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: true
+            referencedRelation: "weekly_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "public_commitments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -650,6 +830,17 @@ export type Database = {
         Args: { _user_id: string; _week_start: string }
         Returns: number
       }
+      get_accountability_partner: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avatar_url: string
+          full_name: string
+          last_check_in_at: string
+          partner_id: string
+          partnership_id: string
+          status: string
+        }[]
+      }
       get_admin_users_data: {
         Args: Record<PropertyKey, never>
         Returns: {
@@ -670,6 +861,16 @@ export type Database = {
       get_profile_visibility_level: {
         Args: { profile_user_id: string; requesting_user_id: string }
         Returns: string
+      }
+      get_public_commitments: {
+        Args: { _user_id: string; _week_start: string }
+        Returns: {
+          id: string
+          is_completed: boolean
+          objective_id: string
+          objective_text: string
+          rank: number
+        }[]
       }
       get_user_friends: {
         Args: { _user_id?: string }
@@ -700,13 +901,25 @@ export type Database = {
         Args: { _friend_id: string }
         Returns: boolean
       }
+      respond_to_accountability_partner_request: {
+        Args: { _request_id: string; _response: string }
+        Returns: boolean
+      }
       respond_to_friend_request: {
         Args: { _request_id: string; _response: string }
         Returns: boolean
       }
+      send_accountability_partner_request: {
+        Args: { _message: string; _receiver_id: string }
+        Returns: string
+      }
       send_friend_request: {
         Args: { _receiver_id: string }
         Returns: string
+      }
+      set_public_commitments: {
+        Args: { _objective_ids: string[]; _week_start: string }
+        Returns: boolean
       }
       toggle_comment_like: {
         Args: { _comment_id: string; _user_id: string }

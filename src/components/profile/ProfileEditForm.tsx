@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { User, Upload, Save, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -22,6 +23,7 @@ interface Profile {
   tiktok_url?: string;
   twitter_url?: string;
   show_email?: boolean;
+  commitment_visibility?: 'private' | 'friends' | 'public';
   created_at: string;
   last_active_at?: string;
 }
@@ -45,7 +47,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     tiktok_url: profile.tiktok_url || '',
     twitter_url: profile.twitter_url || '',
     avatar_url: profile.avatar_url || '',
-    show_email: profile.show_email ?? false
+    show_email: profile.show_email ?? false,
+    commitment_visibility: profile.commitment_visibility || 'friends' as 'private' | 'friends' | 'public'
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -127,6 +130,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           twitter_url: formData.twitter_url,
           avatar_url: formData.avatar_url,
           show_email: formData.show_email,
+          commitment_visibility: formData.commitment_visibility,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -148,7 +152,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
         description: "Your profile has been updated successfully!",
       });
 
-      onUpdate(data);
+      onUpdate(data as Profile);
     } catch (error) {
       console.error('Update error:', error);
       toast({
@@ -289,6 +293,30 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 checked={formData.show_email}
                 onCheckedChange={(checked) => setFormData({ ...formData, show_email: checked })}
               />
+            </div>
+
+            <div className="p-4 bg-accent/50 border border-border rounded-lg hover:bg-accent transition-all">
+              <Label htmlFor="commitment_visibility" className="text-foreground text-sm font-medium">
+                Commitment Visibility
+              </Label>
+              <p className="text-muted-foreground text-xs mt-1 mb-3">
+                Control who can see your weekly top 3 commitments
+              </p>
+              <Select
+                value={formData.commitment_visibility}
+                onValueChange={(value: 'private' | 'friends' | 'public') => 
+                  setFormData({ ...formData, commitment_visibility: value })
+                }
+              >
+                <SelectTrigger id="commitment_visibility">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="private">Private (Only me)</SelectItem>
+                  <SelectItem value="friends">Friends only</SelectItem>
+                  <SelectItem value="public">Public (Everyone)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
