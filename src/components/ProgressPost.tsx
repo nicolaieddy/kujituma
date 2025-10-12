@@ -67,7 +67,7 @@ const ProgressPost = ({
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-all duration-300">
+    <Card className="border-border hover:bg-accent/50 transition-all duration-300">
       <CardHeader className="pb-1 px-3 pt-2">
         <div className="flex items-center justify-between">
           <ProgressPostHeader 

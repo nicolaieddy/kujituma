@@ -23,7 +23,7 @@ export const CompactFeedPostActions = ({
 
   return (
     <>
-      <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+      <div className="flex items-center gap-3 pt-2 border-t border-border">
         <Button
           variant="ghost"
           size="sm"

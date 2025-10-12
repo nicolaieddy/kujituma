@@ -23,13 +23,13 @@ export const FeedPostActions = ({
 
   return (
     <>
-      <div className="flex items-center gap-6 pt-6 border-t border-white/10">
+      <div className="flex items-center gap-6 pt-6 border-t border-border">
         <Button
           variant="ghost"
           size="sm"
           onClick={onLike}
           disabled={isLiking}
-          className="text-white/70 hover:text-red-400 hover:bg-red-400/10 transition-colors px-4 py-2 h-auto"
+          className="text-muted-foreground hover:text-red-400 hover:bg-red-400/10 transition-colors px-4 py-2 h-auto"
         >
           <Heart className={`h-5 w-5 mr-2 ${isLiking ? 'animate-pulse' : ''} ${post.user_liked ? 'fill-red-400 text-red-400' : ''}`} />
           <span 
@@ -49,7 +49,7 @@ export const FeedPostActions = ({
           variant="ghost"
           size="sm"
           onClick={onComment}
-          className="text-white/70 hover:text-blue-400 hover:bg-blue-400/10 transition-colors px-4 py-2 h-auto"
+          className="text-muted-foreground hover:text-blue-400 hover:bg-blue-400/10 transition-colors px-4 py-2 h-auto"
         >
           <MessageCircle className="h-5 w-5 mr-2" />
           <span className="font-medium">{commentsCount}</span>

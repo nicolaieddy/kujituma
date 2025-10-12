@@ -139,10 +139,10 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
           </div>
 
           <div>
-            <Label htmlFor="help" className="text-white font-medium">
+            <Label htmlFor="help" className="text-foreground font-medium">
               🤝 Where You Need Help
             </Label>
-            <p className="text-white/60 text-xs mt-1 mb-2">
+            <p className="text-muted-foreground text-xs mt-1 mb-2">
               Press Ctrl+Enter (Cmd+Enter on Mac) to add bullet points
             </p>
             <Textarea
@@ -150,7 +150,7 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
               value={formData.help}
               onChange={(e) => handleChange("help", e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, "help")}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+              className="mt-2 min-h-[100px]"
               placeholder="Any blockers or areas where you could use support or advice?"
             />
           </div>
@@ -158,7 +158,7 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
           <div className="flex space-x-4">
             <Button
               type="submit"
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 flex-1"
+              className="flex-1"
             >
               Share Progress
             </Button>
@@ -166,7 +166,6 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
               type="button"
               variant="outline"
               onClick={onCancel}
-              className="border-white/20 text-black hover:bg-white/10 bg-white"
             >
               Cancel
             </Button>

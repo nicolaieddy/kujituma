@@ -40,7 +40,7 @@ export const CompactFeedPostComments = ({
     <>
       {/* Comments */}
       {comments.length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-white/5">
+        <div className="space-y-2 pt-2 border-t border-border">
           {comments.map((comment) => (
             <div key={comment.id} className="flex items-start gap-2">
               <Avatar 
@@ -53,7 +53,7 @@ export const CompactFeedPostComments = ({
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <div className="bg-white/5 rounded-lg p-2">
+                <div className="bg-accent rounded-lg p-2">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span 
                       className="text-foreground font-medium text-xs cursor-pointer hover:text-foreground/80 transition-colors truncate"
@@ -75,13 +75,13 @@ export const CompactFeedPostComments = ({
 
       {/* Add Comment */}
       {isCommenting && (
-        <div className="pt-2 border-t border-white/5 space-y-2">
+        <div className="pt-2 border-t border-border space-y-2">
           <div className="relative">
             <MentionInput
               value={newComment}
               onChange={onCommentChange}
               placeholder="Write a comment... Use @ to mention someone"
-              className="w-full bg-white/10 border-white/20 text-foreground placeholder:text-muted-foreground resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-sm"
+              className="w-full resize-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 text-sm"
               onKeyPress={onKeyPress}
             />
           </div>

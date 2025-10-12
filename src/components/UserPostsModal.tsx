@@ -31,16 +31,16 @@ const UserPostsModal = ({ userId, onClose }: UserPostsModalProps) => {
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-900/95 border-white/20">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto border-border">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                <AvatarFallback className="bg-primary text-primary-foreground">
                   <User className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <DialogTitle className="text-white">
+              <DialogTitle className="text-foreground">
                 Posts by {userName}
               </DialogTitle>
             </div>
@@ -48,7 +48,6 @@ const UserPostsModal = ({ userId, onClose }: UserPostsModalProps) => {
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="text-white/80 hover:bg-white/20"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -57,29 +56,29 @@ const UserPostsModal = ({ userId, onClose }: UserPostsModalProps) => {
         
         <div className="space-y-4 mt-4">
           {userPosts.length === 0 ? (
-            <div className="text-center text-white/60 py-8">
+            <div className="text-center text-muted-foreground py-8">
               No other posts found for this user.
             </div>
           ) : (
             userPosts.map((post) => (
-              <Card key={post.id} className="bg-white/10 backdrop-blur-lg border-white/20">
+              <Card key={post.id} className="border-border">
                 <CardHeader className="pb-2 px-4 pt-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-5 w-5">
-                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                           <User className="h-3 w-3" />
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <h3 className="text-white font-semibold text-sm">{post.name}</h3>
-                        <div className="flex items-center space-x-1 text-white/60 text-xs">
+                        <h3 className="text-foreground font-semibold text-sm">{post.name}</h3>
+                        <div className="flex items-center space-x-1 text-muted-foreground text-xs">
                           <Clock className="h-3 w-3" />
                           <span>{formatTimeAgo(post.timestamp)}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-white/60 text-xs">
+                    <div className="text-muted-foreground text-xs">
                       {post.comments.length} comments
                     </div>
                   </div>
@@ -88,28 +87,28 @@ const UserPostsModal = ({ userId, onClose }: UserPostsModalProps) => {
                 <CardContent className="space-y-2 pt-0 px-4 pb-3">
                   {post.accomplishments && (
                     <div>
-                      <h4 className="text-white font-medium mb-1 flex items-center text-xs">
+                      <h4 className="text-foreground font-medium mb-1 flex items-center text-xs">
                         🎉 Accomplishments
                       </h4>
-                      <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.accomplishments}</p>
+                      <p className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">{post.accomplishments}</p>
                     </div>
                   )}
 
                   {post.priorities && (
                     <div>
-                      <h4 className="text-white font-medium mb-1 flex items-center text-xs">
+                      <h4 className="text-foreground font-medium mb-1 flex items-center text-xs">
                         🎯 Priorities
                       </h4>
-                      <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.priorities}</p>
+                      <p className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">{post.priorities}</p>
                     </div>
                   )}
 
                   {post.help && (
                     <div>
-                      <h4 className="text-white font-medium mb-1 flex items-center text-xs">
+                      <h4 className="text-foreground font-medium mb-1 flex items-center text-xs">
                         🤝 Help Needed
                       </h4>
-                      <p className="text-white/80 whitespace-pre-wrap text-xs leading-relaxed">{post.help}</p>
+                      <p className="text-muted-foreground whitespace-pre-wrap text-xs leading-relaxed">{post.help}</p>
                     </div>
                   )}
                 </CardContent>

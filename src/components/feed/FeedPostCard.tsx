@@ -60,7 +60,7 @@ export const FeedPostCard = memo(({ post, onLike, onComment, onCommentLike }: Fe
   }, [handleComment]);
 
   return (
-    <Card className="bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/[0.07] transition-all duration-300">
+    <Card className="border-border hover:bg-accent/50 transition-all duration-300">
       <CardHeader className="pb-4">
         <FeedPostHeader post={post} />
       </CardHeader>
