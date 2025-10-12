@@ -36,7 +36,14 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [formData, setFormData] = useState<CreateGoalData>({
+  const [formData, setFormData] = useState<CreateGoalData>(() => initialData ? {
+    title: initialData.title || '',
+    description: initialData.description || '',
+    timeframe: initialData.timeframe || '1 Month',
+    target_date: initialData.target_date || '',
+    category: initialData.category || '',
+    is_public: initialData.is_public ?? true
+  } : {
     title: '',
     description: '',
     timeframe: '1 Month',
