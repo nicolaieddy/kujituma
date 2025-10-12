@@ -6,6 +6,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useNotifications } from '@/hooks/useNotifications';
 import { NotificationItem } from './NotificationItem';
 import { Bell } from 'lucide-react';
+import { toast } from 'sonner';
 
 export const NotificationBell = () => {
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
@@ -13,6 +14,7 @@ export const NotificationBell = () => {
 
   const handleMarkAllRead = async () => {
     await markAllAsRead();
+    toast.success('All notifications marked as read');
   };
 
   return (

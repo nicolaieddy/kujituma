@@ -45,12 +45,13 @@ export const useNotifications = () => {
   const markAllAsRead = useCallback(async () => {
     try {
       await notificationsService.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
+      // Refresh notifications from server to get updated state
+      await fetchNotifications();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mark all notifications as read');
+      console.error('Error marking all as read:', err);
     }
-  }, []);
+  }, [fetchNotifications]);
 
   useEffect(() => {
     fetchNotifications();
