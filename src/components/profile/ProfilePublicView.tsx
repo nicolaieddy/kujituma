@@ -46,6 +46,11 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   const [hasPartner, setHasPartner] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [pendingRequest, setPendingRequest] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({
+    commitments: false,
+    partner: false,
+    pendingRequest: false
+  });
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status, loading: statusLoading } = useFriendshipStatus(profile.id);
   const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
@@ -53,44 +58,52 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   const currentWeekStart = WeeklyProgressService.getWeekStart();
 
   useEffect(() => {
-    const loadCommitments = async () => {
-      if (user && is_friend) {
-        const data = await commitmentsService.getPublicCommitments(profile.id, currentWeekStart);
-        setCommitments(data);
-      }
+    // Only fetch data if user is authenticated and not on own profile
+    if (!user || isOwnProfile) return;
+
+    // Fetch all data in parallel
+    const fetchData = async () => {
+      setLoadingStates({ commitments: true, partner: true, pendingRequest: true });
+      
+      await Promise.all([
+        // Load commitments
+        (async () => {
+          if (is_friend) {
+            const data = await commitmentsService.getPublicCommitments(profile.id, currentWeekStart);
+            setCommitments(data);
+          }
+          setLoadingStates(prev => ({ ...prev, commitments: false }));
+        })(),
+        
+        // Check partnership
+        (async () => {
+          const partner = await accountabilityService.getAccountabilityPartner();
+          setHasPartner(!!partner);
+          setLoadingStates(prev => ({ ...prev, partner: false }));
+        })(),
+        
+        // Check pending request
+        (async () => {
+          const { data } = await supabase
+            .from('accountability_partner_requests')
+            .select('*')
+            .eq('status', 'pending')
+            .or(`sender_id.eq.${user.id},sender_id.eq.${profile.id}`)
+            .or(`receiver_id.eq.${user.id},receiver_id.eq.${profile.id}`);
+          
+          const hasPending = data?.some(req => 
+            (req.sender_id === user.id && req.receiver_id === profile.id) ||
+            (req.sender_id === profile.id && req.receiver_id === user.id)
+          );
+          
+          setPendingRequest(!!hasPending);
+          setLoadingStates(prev => ({ ...prev, pendingRequest: false }));
+        })()
+      ]);
     };
 
-    const checkPartnership = async () => {
-      const partner = await accountabilityService.getAccountabilityPartner();
-      setHasPartner(!!partner);
-    };
-
-    const checkPendingRequest = async () => {
-      if (!user) return;
-      
-      // Check if there's a pending request between these users
-      const { data, error } = await supabase
-        .from('accountability_partner_requests')
-        .select('*')
-        .eq('status', 'pending')
-        .or(`sender_id.eq.${user.id},sender_id.eq.${profile.id}`)
-        .or(`receiver_id.eq.${user.id},receiver_id.eq.${profile.id}`);
-      
-      // Check if any request involves both users
-      const hasPending = data?.some(req => 
-        (req.sender_id === user.id && req.receiver_id === profile.id) ||
-        (req.sender_id === profile.id && req.receiver_id === user.id)
-      );
-      
-      setPendingRequest(!!hasPending);
-    };
-
-    loadCommitments();
-    if (user) {
-      checkPartnership();
-      checkPendingRequest();
-    }
-  }, [profile.id, user, is_friend, currentWeekStart]);
+    fetchData();
+  }, [profile.id, user, is_friend, currentWeekStart, isOwnProfile]);
 
   const handleSendPartnerRequest = async () => {
     setIsSendingRequest(true);
@@ -139,10 +152,15 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
             <h1 className="text-3xl font-bold text-foreground mb-2 font-serif">{profile.full_name}</h1>
             
             {/* Friendship Actions */}
-            {!isOwnProfile && user && !statusLoading && (
+            {!isOwnProfile && user && (
               <div className="flex flex-col items-center gap-2 mt-4">
                 <div className="flex justify-center">
-                  {is_friend ? (
+                  {statusLoading ? (
+                    <Button variant="outline" disabled className="bg-muted">
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Loading...
+                    </Button>
+                  ) : is_friend ? (
                     <Button
                       variant="outline"
                       className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
@@ -192,7 +210,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 </div>
                 
                 {/* Accountability Partner Request */}
-                {is_friend && !hasPartner && (
+                {is_friend && !hasPartner && !loadingStates.partner && (
                   <Button
                     variant="outline"
                     size="sm"
