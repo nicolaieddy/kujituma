@@ -86,20 +86,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "safe_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "comments_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "secure_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       custom_goal_categories: {
@@ -214,20 +200,6 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "goal_status_history_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "safe_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "goal_status_history_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "secure_profiles"
-            referencedColumns: ["id"]
-          },
         ]
       }
       goals: {
@@ -285,20 +257,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "goals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "safe_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "goals_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "secure_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -443,20 +401,6 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "safe_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "posts_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "secure_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -648,108 +592,7 @@ export type Database = {
       }
     }
     Views: {
-      safe_profiles: {
-        Row: {
-          about_me: string | null
-          avatar_url: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          google_id: string | null
-          id: string | null
-          instagram_url: string | null
-          last_active_at: string | null
-          linkedin_url: string | null
-          show_email: boolean | null
-          tiktok_url: string | null
-          twitter_url: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          about_me?: string | null
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: never
-          full_name?: string | null
-          google_id?: never
-          id?: string | null
-          instagram_url?: never
-          last_active_at?: string | null
-          linkedin_url?: never
-          show_email?: never
-          tiktok_url?: never
-          twitter_url?: never
-          updated_at?: string | null
-        }
-        Update: {
-          about_me?: string | null
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: never
-          full_name?: string | null
-          google_id?: never
-          id?: string | null
-          instagram_url?: never
-          last_active_at?: string | null
-          linkedin_url?: never
-          show_email?: never
-          tiktok_url?: never
-          twitter_url?: never
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      secure_profiles: {
-        Row: {
-          about_me: string | null
-          avatar_url: string | null
-          created_at: string | null
-          email: string | null
-          full_name: string | null
-          google_id: string | null
-          id: string | null
-          instagram_url: string | null
-          last_active_at: string | null
-          linkedin_url: string | null
-          show_email: boolean | null
-          tiktok_url: string | null
-          twitter_url: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          about_me?: string | null
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: never
-          full_name?: string | null
-          google_id?: never
-          id?: string | null
-          instagram_url?: never
-          last_active_at?: string | null
-          linkedin_url?: never
-          show_email?: never
-          tiktok_url?: never
-          twitter_url?: never
-          updated_at?: string | null
-        }
-        Update: {
-          about_me?: string | null
-          avatar_url?: string | null
-          created_at?: string | null
-          email?: never
-          full_name?: string | null
-          google_id?: never
-          id?: string | null
-          instagram_url?: never
-          last_active_at?: string | null
-          linkedin_url?: never
-          show_email?: never
-          tiktok_url?: never
-          twitter_url?: never
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
+      [_ in never]: never
     }
     Functions: {
       are_friends: {
@@ -785,13 +628,13 @@ export type Database = {
           role: string
         }[]
       }
+      get_filtered_profile: {
+        Args: { profile_id: string }
+        Returns: Json
+      }
       get_profile_visibility_level: {
         Args: { profile_user_id: string; requesting_user_id: string }
         Returns: string
-      }
-      get_secure_profile_data: {
-        Args: { profile_row: Database["public"]["Tables"]["profiles"]["Row"] }
-        Returns: Json
       }
       get_user_friends: {
         Args: { _user_id?: string }
