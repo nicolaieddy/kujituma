@@ -12,7 +12,6 @@ import { ProfileGoals } from "./ProfileGoals";
 import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
 import { CommitmentCard } from "@/components/commitments/CommitmentCard";
 import { useAuth } from "@/contexts/AuthContext";
-import { useFriendshipStatus } from "@/hooks/useFriendshipStatus";
 import { useFriends } from "@/hooks/useFriends";
 import { supabase } from "@/integrations/supabase/client";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
@@ -35,11 +34,19 @@ interface Profile {
   last_active_at?: string;
 }
 
-interface ProfilePublicViewProps {
-  profile: Profile;
+interface FriendshipStatus {
+  is_friend: boolean;
+  friend_request_status?: 'sent' | 'received';
+  request_id?: string;
 }
 
-export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
+interface ProfilePublicViewProps {
+  profile: Profile;
+  friendshipStatus?: FriendshipStatus;
+  onFriendshipChange?: (status: FriendshipStatus) => void;
+}
+
+export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChange }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
@@ -52,8 +59,8 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
     pendingRequest: false
   });
   const isOwnProfile = user?.id === profile.id;
-  const { is_friend, friend_request_status, loading: statusLoading } = useFriendshipStatus(profile.id);
-  const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
+  const { is_friend, friend_request_status } = friendshipStatus || { is_friend: false };
+  const { sendFriendRequest: sendFriendRequestBase, respondToFriendRequest: respondBase, removeFriend: removeFriendBase, refetch } = useFriends();
 
   const currentWeekStart = WeeklyProgressService.getWeekStart();
 
@@ -121,9 +128,24 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
     setIsSendingRequest(false);
   };
 
-  const handleUnfriend = () => {
+  const handleSendFriendRequest = async () => {
+    await sendFriendRequestBase(profile.id);
+    onFriendshipChange?.({ is_friend: false, friend_request_status: 'sent' });
+  };
+
+  const handleRespondToRequest = async (response: 'accepted' | 'rejected') => {
+    await respondBase(friendshipStatus?.request_id || '', response);
+    if (response === 'accepted') {
+      onFriendshipChange?.({ is_friend: true });
+    } else {
+      onFriendshipChange?.({ is_friend: false });
+    }
+  };
+
+  const handleUnfriend = async () => {
     setShowUnfriendDialog(false);
-    removeFriend(profile.id);
+    await removeFriendBase(profile.id);
+    onFriendshipChange?.({ is_friend: false });
   };
 
   const formatDate = (dateString: string) => {
@@ -178,7 +200,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                       <Button
                         variant="outline"
                         className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                        onClick={() => respondToFriendRequest(profile.id, 'accepted')}
+                        onClick={() => handleRespondToRequest('accepted')}
                       >
                         <UserCheck className="h-4 w-4 mr-2" />
                         Accept
@@ -186,7 +208,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                       <Button
                         variant="outline"
                         className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
-                        onClick={() => respondToFriendRequest(profile.id, 'rejected')}
+                        onClick={() => handleRespondToRequest('rejected')}
                       >
                         <UserMinus className="h-4 w-4 mr-2" />
                         Decline
@@ -196,8 +218,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                     <Button
                       variant="outline"
                       className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
-                      onClick={() => sendFriendRequest(profile.id)}
-                      disabled={statusLoading}
+                      onClick={handleSendFriendRequest}
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Add Friend

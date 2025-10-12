@@ -25,12 +25,19 @@ interface Profile {
   show_email?: boolean;
 }
 
+interface FriendshipStatus {
+  is_friend: boolean;
+  friend_request_status?: 'sent' | 'received';
+  request_id?: string;
+}
+
 const Profile = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const { userId } = useParams();
   const { isAdmin } = useAdminStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>({ is_friend: false });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -43,7 +50,7 @@ const Profile = () => {
   };
 
   useEffect(() => {
-    const fetchProfile = async () => {
+    const fetchProfileData = async () => {
       const targetUserId = userId || user?.id;
       if (!targetUserId) {
         setLoading(false);
@@ -68,31 +75,75 @@ const Profile = () => {
           selectColumns = 'id, full_name, avatar_url, about_me, created_at';
         }
 
-        const { data, error } = await supabase
-          .from('profiles')
-          .select(selectColumns)
-          .eq('id', targetUserId)
-          .maybeSingle();
+        // Fetch profile and friendship status in parallel
+        const [profileResult, friendshipResult] = await Promise.all([
+          supabase
+            .from('profiles')
+            .select(selectColumns)
+            .eq('id', targetUserId)
+            .maybeSingle(),
+          
+          // Only fetch friendship status if viewing someone else's profile and authenticated
+          isAuthenticated && !isOwner
+            ? (async () => {
+                // Check if friends
+                const { data: friendData } = await supabase
+                  .from('friends')
+                  .select('*')
+                  .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+                  .or(`user1_id.eq.${targetUserId},user2_id.eq.${targetUserId}`)
+                  .maybeSingle();
 
-        if (error) {
-          console.error('Error fetching profile:', error);
+                if (friendData) {
+                  return { is_friend: true };
+                }
+
+                // Check for pending friend requests
+                const { data: requestData } = await supabase
+                  .from('friend_requests')
+                  .select('id, sender_id, receiver_id, status')
+                  .eq('status', 'pending')
+                  .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
+                  .or(`sender_id.eq.${targetUserId},receiver_id.eq.${targetUserId}`)
+                  .maybeSingle();
+
+                if (requestData) {
+                  if (requestData.sender_id === user.id) {
+                    return { is_friend: false, friend_request_status: 'sent' as const, request_id: requestData.id };
+                  } else {
+                    return { is_friend: false, friend_request_status: 'received' as const, request_id: requestData.id };
+                  }
+                }
+
+                return { is_friend: false };
+              })()
+            : Promise.resolve({ is_friend: false })
+        ]);
+
+        const { data: profileData, error: profileError } = profileResult;
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
           setLoading(false);
           return;
         }
 
-        if (!data) {
+        if (!profileData) {
           setLoading(false);
           return;
         }
 
         // Filter email based on show_email preference for non-owners
-        const profileData: any = data;
-        if (!isOwner && profileData?.show_email === false) {
-          const { email, ...dataWithoutEmail } = profileData;
-          setProfile(dataWithoutEmail as Profile);
+        const typedProfileData: any = profileData;
+        if (!isOwner && typedProfileData.show_email === false) {
+          const { email, ...dataWithoutEmail } = typedProfileData;
+          setProfile(dataWithoutEmail);
         } else {
-          setProfile(profileData as Profile);
+          setProfile(typedProfileData);
         }
+
+        // Set friendship status
+        setFriendshipStatus(friendshipResult);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -102,7 +153,7 @@ const Profile = () => {
 
     // Only fetch if we have a user context established or a specific userId
     if (user !== null || userId) {
-      fetchProfile();
+      fetchProfileData();
     }
   }, [user, userId]);
 
@@ -171,7 +222,11 @@ const Profile = () => {
                   onCancel={() => setIsEditing(false)}
                 />
               ) : (
-                <ProfilePublicView profile={profile} />
+                <ProfilePublicView 
+                  profile={profile} 
+                  friendshipStatus={friendshipStatus}
+                  onFriendshipChange={setFriendshipStatus}
+                />
               )}
             </div>
           </>
