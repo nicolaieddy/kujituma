@@ -56,7 +56,8 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="bg-slate-800/40 backdrop-blur-lg border-slate-700/50">
+      <Card className="bg-card/95 backdrop-blur-sm border-border hover:border-primary/20 transition-all">
+
         <CardContent className="p-8">
           {/* Profile Header */}
           <div className="text-center mb-8">
@@ -76,7 +77,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 {is_friend ? (
                   <Button
                     variant="outline"
-                    className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
+                    className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
                     onClick={() => setShowUnfriendDialog(true)}
                   >
                     <UserCheck className="h-4 w-4 mr-2" />
@@ -85,7 +86,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 ) : friend_request_status === 'sent' ? (
                   <Button
                     variant="outline"
-                    className="bg-yellow-500/20 border-yellow-400 text-yellow-400"
+                    className="bg-accent/50 border-accent text-accent-foreground"
                     disabled
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
@@ -95,7 +96,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      className="bg-green-500/20 border-green-400 text-green-400 hover:bg-green-500/30"
+                      className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
                       onClick={() => respondToFriendRequest(profile.id, 'accepted')}
                     >
                       <UserCheck className="h-4 w-4 mr-2" />
@@ -103,7 +104,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                     </Button>
                     <Button
                       variant="outline"
-                      className="bg-red-500/20 border-red-400 text-red-400 hover:bg-red-500/30"
+                      className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
                       onClick={() => respondToFriendRequest(profile.id, 'rejected')}
                     >
                       <UserMinus className="h-4 w-4 mr-2" />
@@ -113,7 +114,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 ) : (
                   <Button
                     variant="outline"
-                    className="bg-blue-500/20 border-blue-400 text-blue-400 hover:bg-blue-500/30"
+                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
                     onClick={() => sendFriendRequest(profile.id)}
                   >
                     <UserPlus className="h-4 w-4 mr-2" />
@@ -128,7 +129,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           {profile.about_me && (
             <div className="mb-8">
               <h2 className="text-xl font-semibold text-foreground mb-4">About Me</h2>
-              <p className="text-foreground/80 leading-relaxed whitespace-pre-wrap">
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                 {profile.about_me}
               </p>
             </div>
@@ -142,40 +143,40 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 {profile.linkedin_url && (
                   <Button
                     variant="outline"
-                    className="bg-blue-600/20 border-blue-500/50 text-blue-300 hover:bg-blue-600/30 hover:border-blue-400/70 transition-all duration-200"
+                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary hover:shadow-md transition-all"
                     onClick={() => window.open(profile.linkedin_url, '_blank')}
                   >
-                    <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 mr-2 opacity-70" />
                     LinkedIn
                   </Button>
                 )}
                 {profile.instagram_url && (
                   <Button
                     variant="outline"
-                    className="bg-pink-600/20 border-pink-500/50 text-pink-300 hover:bg-pink-600/30 hover:border-pink-400/70 transition-all duration-200"
+                    className="bg-accent/50 border-accent text-accent-foreground hover:bg-accent hover:shadow-md transition-all"
                     onClick={() => window.open(profile.instagram_url, '_blank')}
                   >
-                    <img src={instagramIcon} alt="Instagram" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    <img src={instagramIcon} alt="Instagram" className="h-4 w-4 mr-2 opacity-70" />
                     Instagram
                   </Button>
                 )}
                 {profile.tiktok_url && (
                   <Button
                     variant="outline"
-                    className="bg-purple-600/20 border-purple-500/50 text-purple-300 hover:bg-purple-600/30 hover:border-purple-400/70 transition-all duration-200"
+                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary hover:shadow-md transition-all"
                     onClick={() => window.open(profile.tiktok_url, '_blank')}
                   >
-                    <img src={tiktokIcon} alt="TikTok" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    <img src={tiktokIcon} alt="TikTok" className="h-4 w-4 mr-2 opacity-70" />
                     TikTok
                   </Button>
                 )}
                 {profile.twitter_url && (
                   <Button
                     variant="outline"
-                    className="bg-slate-600/20 border-slate-500/50 text-slate-300 hover:bg-slate-600/30 hover:border-slate-400/70 transition-all duration-200"
+                    className="bg-muted border-border text-foreground hover:bg-muted/80 hover:shadow-md transition-all"
                     onClick={() => window.open(profile.twitter_url, '_blank')}
                   >
-                    <img src={xIcon} alt="X" className="h-4 w-4 mr-2 filter brightness-0 invert" />
+                    <img src={xIcon} alt="X" className="h-4 w-4 mr-2 opacity-70" />
                     X
                   </Button>
                 )}
@@ -184,9 +185,9 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
           )}
 
           {/* Member Info */}
-          <div className="border-t border-white/20 pt-8">
+          <div className="border-t border-border pt-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-white">Member Information</h2>
+              <h2 className="text-xl font-semibold text-foreground">Member Information</h2>
               {isOwnProfile && (
                 <Button
                   variant="outline"
@@ -203,28 +204,28 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                         window.location.reload();
                       });
                   }}
-                  className="bg-blue-500/20 border-blue-400/50 text-blue-300 hover:bg-blue-500/30 text-xs"
+                  className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all text-xs"
                 >
                   {profile.show_email ? 'Hide Email' : 'Show Email'}
                 </Button>
               )}
             </div>
             <div className="space-y-3">
-              <div className="flex items-center text-white/80">
-                <Calendar className="h-5 w-5 mr-3 text-purple-400" />
+              <div className="flex items-center text-muted-foreground">
+                <Calendar className="h-5 w-5 mr-3 text-primary" />
                 <span>Member since {formatDate(profile.created_at)}</span>
               </div>
               
               {profile.show_email && profile.email && (
-                <div className="flex items-center text-white/80">
-                  <User className="h-5 w-5 mr-3 text-green-400" />
+                <div className="flex items-center text-muted-foreground">
+                  <User className="h-5 w-5 mr-3 text-primary" />
                   <span>{profile.email}</span>
                 </div>
               )}
               
               {profile.last_active_at && (
-                <div className="flex items-center text-white/80">
-                  <Clock className="h-5 w-5 mr-3 text-blue-400" />
+                <div className="flex items-center text-muted-foreground">
+                  <Clock className="h-5 w-5 mr-3 text-primary" />
                   <span>Last active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
                 </div>
               )}

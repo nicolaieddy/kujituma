@@ -162,7 +162,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   };
 
   return (
-    <Card className="max-w-2xl mx-auto border-border">
+    <Card className="max-w-2xl mx-auto border-border hover:border-primary/20 transition-all">
       <CardHeader>
         <CardTitle className="text-foreground text-center">Edit Profile</CardTitle>
       </CardHeader>
@@ -275,7 +275,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           <div className="space-y-4">
             <h3 className="text-foreground text-lg font-semibold">Privacy Settings</h3>
             
-            <div className="flex items-center justify-between p-4 bg-accent border border-border rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-accent/50 border border-border rounded-lg hover:bg-accent transition-all">
               <div className="flex-1">
                 <label htmlFor="show_email" className="text-foreground text-sm font-medium">
                   Show email on profile
