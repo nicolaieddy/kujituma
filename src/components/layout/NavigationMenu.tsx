@@ -58,10 +58,10 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
   }
 
   return (
-    <nav className="flex items-center space-x-6 ml-8">
+    <nav className="flex items-center space-x-6">
       <button
         onClick={() => handleNavigation('/community')}
-        className={`text-base text-muted-foreground hover:text-foreground transition-all duration-200 ${
+        className={`text-base leading-none text-muted-foreground hover:text-foreground transition-all duration-200 ${
           currentSection === 'community' ? 'text-foreground font-medium' : ''
         }`}
       >
@@ -69,7 +69,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
       </button>
       <button
         onClick={() => handleNavigation('/goals')}
-        className={`text-base text-muted-foreground hover:text-foreground transition-all duration-200 ${
+        className={`text-base leading-none text-muted-foreground hover:text-foreground transition-all duration-200 ${
           currentSection === 'goals' ? 'text-foreground font-medium' : ''
         }`}
       >
@@ -77,7 +77,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
       </button>
       <button
         onClick={() => handleNavigation('/analytics')}
-        className={`text-base text-muted-foreground hover:text-foreground transition-all duration-200 ${
+        className={`text-base leading-none text-muted-foreground hover:text-foreground transition-all duration-200 ${
           currentSection === 'analytics' ? 'text-foreground font-medium' : ''
         }`}
       >
