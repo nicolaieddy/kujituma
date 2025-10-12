@@ -51,7 +51,7 @@ export const CompactFeedPostCard = memo(({ post, onLike, onComment, onCommentLik
   }, [handleComment]);
 
   return (
-    <Card className="bg-gradient-card backdrop-blur-lg border-border/50 hover:bg-card/80 transition-all duration-300 shadow-lg hover:shadow-xl hover:border-primary/20">
+    <Card className="border-border/50 hover:border-primary/20 transition-all duration-300">
       <CardHeader className="pb-2 pt-3 px-4">
         <CompactFeedPostHeader post={post} />
       </CardHeader>

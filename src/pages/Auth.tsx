@@ -35,38 +35,38 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-white mx-auto mb-4" />
-          <p className="text-white">Loading authentication...</p>
+          <Loader2 className="h-8 w-8 animate-spin text-foreground mx-auto mb-4" />
+          <p className="text-foreground">Loading authentication...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <Card className="w-full max-w-md">
         <CardHeader className="text-center pb-6">
-          <CardTitle className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+          <CardTitle className="text-2xl sm:text-3xl font-bold text-foreground">
             Welcome to Kujituma
           </CardTitle>
-          <p className="text-white/80 mt-3 text-sm sm:text-base">
+          <p className="text-muted-foreground mt-3 text-sm sm:text-base">
             Sign in to track your goals and manage your progress
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
           {error && (
-            <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 flex items-start space-x-3">
-              <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
-              <p className="text-red-300 text-sm leading-relaxed">{error}</p>
+            <div className="bg-destructive/10 border border-destructive/50 rounded-lg p-4 flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-destructive text-sm leading-relaxed">{error}</p>
             </div>
           )}
           
           <Button
             onClick={handleGoogleSignIn}
             disabled={signingIn}
-            className="w-full bg-white hover:bg-gray-100 text-gray-900 font-medium py-4 h-12 flex items-center justify-center space-x-3 text-base"
+            className="w-full h-12 flex items-center justify-center space-x-3 text-base"
           >
             {signingIn ? (
               <Loader2 className="h-5 w-5 animate-spin" />

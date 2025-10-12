@@ -55,22 +55,22 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
 
   return (
     <Card 
-      className="bg-white/10 backdrop-blur-lg border-white/20 hover:bg-white/15 transition-colors cursor-pointer group"
+      className="border-border hover:border-primary/20 transition-colors cursor-pointer group"
       onClick={() => onClick?.(goal)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <IconComponent className="h-4 w-4 text-white" />
+              <IconComponent className="h-4 w-4 text-primary" />
               <Badge className={`${config.color} text-xs`}>
                 {config.label}
               </Badge>
             </div>
-            <h3 className="font-semibold text-white text-lg leading-tight group-hover:text-blue-300 transition-colors">
+            <h3 className="font-semibold text-foreground text-lg leading-tight group-hover:text-primary transition-colors">
               {goal.title}
             </h3>
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-blue-300 flex items-center gap-1 mt-1">
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-primary flex items-center gap-1 mt-1">
               <MousePointer className="h-3 w-3" />
               Click to view details
             </div>
@@ -80,7 +80,6 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-white hover:bg-white/20"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -124,7 +123,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
       <CardContent className="pt-0">
         <div className="space-y-3">
           {goal.description && (
-            <p className="text-white/80 text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               {isExpanded ? goal.description : 
                 goal.description.length > 100 ? 
                   `${goal.description.substring(0, 100)}...` : 
@@ -133,7 +132,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
               {goal.description.length > 100 && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="text-blue-400 hover:text-blue-300 ml-1 text-sm"
+                  className="text-primary hover:text-primary/80 ml-1 text-sm"
                 >
                   {isExpanded ? 'Show less' : 'Show more'}
                 </button>
@@ -141,7 +140,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             </p>
           )}
           
-          <div className="flex flex-wrap gap-2 text-xs text-white/70">
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="h-3 w-3" />
               <span>{getTargetDateDisplay()}</span>
@@ -162,7 +161,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             )}
           </div>
           
-          <div className="flex justify-between items-center text-xs text-white/60 pt-2 border-t border-white/10">
+          <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t border-border">
             <span>Created {formatRelativeTime(new Date(goal.created_at).getTime())}</span>
             {goal.completed_at && (
               <span>Completed {formatRelativeTime(new Date(goal.completed_at).getTime())}</span>

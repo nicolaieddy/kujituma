@@ -42,8 +42,8 @@ const Friends = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Loading...</div>
       </div>
     );
   }
@@ -54,7 +54,7 @@ const Friends = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary">
+    <div className="min-h-screen bg-background">
       <DashboardHeader 
         isAdmin={isAdmin}
         onSignOut={handleSignOut}
@@ -62,8 +62,8 @@ const Friends = () => {
 
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Friends</h1>
-          <p className="text-white/80 text-base sm:text-lg max-w-2xl mx-auto">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">Friends</h1>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
             Connect with other members of the community and follow their progress.
           </p>
         </div>

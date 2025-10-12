@@ -116,8 +116,8 @@ const Goals = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex items-center justify-center">
-        <div className="text-white">Loading...</div>
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-foreground">Loading...</div>
       </div>
     );
   }
@@ -128,7 +128,7 @@ const Goals = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 transition-colors duration-300">
+    <div className="min-h-screen bg-background">
       <DashboardHeader 
         isAdmin={isAdmin}
         onSignOut={handleSignOut}
@@ -136,26 +136,26 @@ const Goals = () => {
 
       <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
         <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-white mb-4`}>Goals & Progress</h1>
-          <p className={`text-white/80 ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto`}>
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground mb-4`}>Goals & Progress</h1>
+          <p className={`text-muted-foreground ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto`}>
             Manage your long-term goals and track your weekly progress.
           </p>
         </div>
 
         <div className={`${isMobile ? 'max-w-full' : 'max-w-6xl'} mx-auto`}>
           <Tabs defaultValue="weekly" className="w-full">
-            <TabsList className={`grid w-full grid-cols-2 bg-white/10 backdrop-blur-lg border-white/20 ${isMobile ? 'h-11' : 'h-12'}`}>
+            <TabsList className={`grid w-full grid-cols-2 bg-muted ${isMobile ? 'h-11' : 'h-12'}`}>
               <TabsTrigger 
                 value="weekly" 
                 data-tour="weekly-tab"
-                className={`text-white data-[state=active]:bg-white/20 data-[state=active]:text-white ${isMobile ? 'text-sm' : 'text-base'}`}
+                className={isMobile ? 'text-sm' : 'text-base'}
               >
                 Weekly Plan
               </TabsTrigger>
               <TabsTrigger 
                 value="longterm" 
                 data-tour="goals-tab"
-                className={`text-white data-[state=active]:bg-white/20 data-[state=active]:text-white ${isMobile ? 'text-sm' : 'text-base'}`}
+                className={isMobile ? 'text-sm' : 'text-base'}
               >
                 Goals
               </TabsTrigger>
@@ -182,7 +182,7 @@ const Goals = () => {
                   <div className="text-center mb-8">
                     <Button
                       onClick={() => setShowForm(true)}
-                      className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-base px-6 py-3"
+                      size="lg"
                     >
                       <Plus className="h-5 w-5 mr-2" />
                       Add New Goal
@@ -190,7 +190,7 @@ const Goals = () => {
                   </div>
 
                   {goalsLoading ? (
-                    <div className="text-center text-white">Loading goals...</div>
+                    <div className="text-center text-muted-foreground">Loading goals...</div>
                   ) : (
                     <GoalsKanban
                       goalsByStatus={goalsByStatus}

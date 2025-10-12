@@ -113,9 +113,9 @@ const Profile = () => {
 
   if (!user && isOwnProfile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary">
+      <div className="min-h-screen bg-background">
         <div className="flex items-center justify-center min-h-screen">
-          <p className="text-white">Please sign in to view your profile.</p>
+          <p className="text-foreground">Please sign in to view your profile.</p>
         </div>
       </div>
     );
@@ -123,17 +123,17 @@ const Profile = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary">
+      <div className="min-h-screen bg-background">
         <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
         <div className="flex items-center justify-center min-h-[80vh]">
-          <p className="text-white">Loading profile...</p>
+          <p className="text-foreground">Loading profile...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary via-primary-dark to-secondary">
+    <div className="min-h-screen bg-background">
       <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
       
       <div className="container mx-auto px-4 py-8">

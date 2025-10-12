@@ -56,8 +56,8 @@ export function CommunitySidebar() {
   const getNavClass = (url: string) => {
     const isActive = location.pathname === url;
     return isActive 
-      ? "bg-gradient-primary text-primary-foreground shadow-lg" 
-      : "hover:bg-accent/50 text-muted-foreground hover:text-foreground";
+      ? "bg-primary text-primary-foreground" 
+      : "hover:bg-accent text-muted-foreground hover:text-foreground";
   };
 
   const getInitials = (name?: string) => {
@@ -67,14 +67,14 @@ export function CommunitySidebar() {
 
   return (
     <Sidebar className="border-r border-border/50">
-      <SidebarContent className="bg-gradient-card">
+      <SidebarContent className="bg-card">
         {/* User Profile Section */}
         {!isCollapsed && (
           <SidebarGroup>
             <div className="flex items-center gap-3 p-3 border-b border-border/50">
               <Avatar className="h-10 w-10 ring-2 ring-primary/20">
                 <AvatarImage src={user?.user_metadata?.avatar_url} />
-                <AvatarFallback className="bg-gradient-primary text-primary-foreground font-medium">
+                <AvatarFallback className="bg-primary text-primary-foreground font-medium">
                   {getInitials(user?.user_metadata?.full_name)}
                 </AvatarFallback>
               </Avatar>

@@ -27,15 +27,15 @@ export const WeeklyReflectionCard = ({
   });
 
   return (
-    <Card className={`bg-white/10 backdrop-blur-lg border-white/20 ${isReadOnly ? 'opacity-75' : ''}`}>
+    <Card className={`border-border ${isReadOnly ? 'opacity-75' : ''}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className={`text-white ${isReadOnly ? 'text-white/70' : ''}`}>
+            <CardTitle className={`text-foreground ${isReadOnly ? 'opacity-70' : ''}`}>
               Weekly Reflection
-              {isReadOnly && <span className="ml-2 text-xs text-yellow-400">🔒 Locked</span>}
+              {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
             </CardTitle>
-            <p className="text-white/60 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               {isReadOnly 
                 ? "This week has been shared and can no longer be edited"
                 : "This reflection will be included when you share your week with the community"
@@ -59,7 +59,7 @@ export const WeeklyReflectionCard = ({
             ? "No reflection added for this week" 
             : "How did this week go? What did you learn? Any insights or challenges? This will be shared with your weekly post."
           }
-          className={`bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px] ${
+          className={`min-h-[100px] ${
             isReadOnly ? 'cursor-not-allowed opacity-60' : ''
           }`}
           disabled={isReadOnly}
@@ -67,7 +67,7 @@ export const WeeklyReflectionCard = ({
         />
         {isReadOnly && (
           <div className="text-center py-2">
-            <span className="text-xs text-white/50 bg-white/5 px-3 py-1 rounded-full">
+            <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
               ✅ Week completed and shared with community
             </span>
           </div>

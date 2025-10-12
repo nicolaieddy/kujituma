@@ -25,7 +25,7 @@ const Feed = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-foreground">Loading...</div>
       </div>
     );
@@ -38,7 +38,7 @@ const Feed = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-gradient-background flex w-full">
+      <div className="min-h-screen bg-background flex w-full">
         <CommunitySidebar />
         
         <SidebarInset className="flex-1">
