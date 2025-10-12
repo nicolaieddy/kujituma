@@ -27,12 +27,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log('AuthProvider initializing...');
-    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state changed:', event, session?.user?.email || 'no user');
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
@@ -43,8 +40,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (error) {
         console.error('Error getting session:', error);
-      } else {
-        console.log('Initial session:', session?.user?.email || 'no session');
       }
       setSession(session);
       setUser(session?.user ?? null);
@@ -52,15 +47,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => {
-      console.log('Cleaning up auth subscription');
       subscription.unsubscribe();
     };
   }, []);
 
   const signInWithGoogle = async () => {
     try {
-      console.log('Attempting Google sign in...');
-      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google'
       });
@@ -69,8 +61,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Google sign in error:', error);
         throw error;
       }
-      
-      console.log('Google sign in initiated successfully');
     } catch (error) {
       console.error('Error in signInWithGoogle:', error);
       throw error;
@@ -79,14 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      console.log('Signing out...');
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
         console.error('Error signing out:', error);
         throw error;
       }
       // Force page reload for clean state and redirect to home
-      console.log('Sign out successful, reloading page');
       window.location.href = '/';
     } catch (error) {
       console.error('Error in signOut:', error);

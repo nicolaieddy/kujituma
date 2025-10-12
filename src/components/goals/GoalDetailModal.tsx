@@ -53,28 +53,11 @@ export const GoalDetailModal = ({
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
-  // Debug logging to check if modal is being rendered
-  console.log('=== GoalDetailModal RENDER START ===');
-  console.log('isOpen:', isOpen);
-  console.log('goal:', goal);
-  console.log('weeklyObjectives length:', weeklyObjectives?.length || 0);
-  console.log('=== GoalDetailModal RENDER END ===');
-
   if (!goal) return null;
 
   const config = STATUS_CONFIG[goal.status];
   const IconComponent = config.icon;
   const relatedObjectives = weeklyObjectives.filter(obj => obj.goal_id === goal.id);
-  
-  // Debug logging to help identify the linking issue
-  console.log('=== GoalDetailModal Debug START ===');
-  console.log('Goal ID:', goal.id);
-  console.log('Goal Title:', goal.title);
-  console.log('Total Weekly Objectives:', weeklyObjectives.length);
-  console.log('Weekly Objectives Data:', weeklyObjectives);
-  console.log('Related Objectives:', relatedObjectives);
-  console.log('Related Objectives Count:', relatedObjectives.length);
-  console.log('=== GoalDetailModal Debug END ===');
 
   const handleStatusChange = (newStatus: GoalStatus) => {
     if (newStatus !== goal.status) {

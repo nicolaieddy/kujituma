@@ -36,17 +36,11 @@ export const EnhancedFeedPostCard = memo(({ post, onLike, onComment, onCommentLi
   }, [isLiking, post.id, onLike]);
 
   const handleComment = useCallback(async () => {
-    console.log('handleComment called with:', newComment);
-    if (!newComment.trim()) {
-      console.log('handleComment: empty comment, returning');
-      return;
-    }
+    if (!newComment.trim()) return;
     try {
-      console.log('handleComment: posting comment for post:', post.id);
       await onComment(post.id, newComment.trim());
       setNewComment("");
       setIsCommenting(false);
-      console.log('handleComment: success');
     } catch (error) {
       console.error('Error adding comment:', error);
     }

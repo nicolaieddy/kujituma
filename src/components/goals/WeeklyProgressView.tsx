@@ -58,46 +58,26 @@ export const WeeklyProgressView = () => {
     isCarryingOver,
   } = useCarryOverObjectives(currentWeekStart);
 
-  // Debug auth state
-  useEffect(() => {
-    console.log('WeeklyProgressView - Current week start:', currentWeekStart);
-    console.log('WeeklyProgressView - Objectives count:', objectives?.length || 0);
-    console.log('WeeklyProgressView - Progress post:', progressPost ? 'exists' : 'null');
-  }, [currentWeekStart, objectives, progressPost]);
-
-  // Debug modal state
-  useEffect(() => {
-    console.log('Modal state changed:', showIncompleteModal);
-  }, [showIncompleteModal]);
-
   // Initialize progress notes when progressPost changes
   useEffect(() => {
-    console.log('Progress post changed:', progressPost);
     setProgressNotes(progressPost?.notes || "");
   }, [progressPost]);
 
   const handlePreviousWeek = () => {
-    console.log('Previous week button clicked!');
     const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    // Subtract exactly 7 days to move to previous week
     currentDate.setUTCDate(currentDate.getUTCDate() - 7);
     const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
-    console.log('Previous week navigation:', currentWeekStart, '->', newWeekStart);
     setCurrentWeekStart(newWeekStart);
   };
 
   const handleNextWeek = () => {
-    console.log('Next week button clicked!');
     const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    // Add exactly 7 days to move to next week
     currentDate.setUTCDate(currentDate.getUTCDate() + 7);
     const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
-    console.log('Next week navigation:', currentWeekStart, '->', newWeekStart);
     setCurrentWeekStart(newWeekStart);
   };
 
   const handleAddObjective = async (text: string, goalId?: string) => {
-    console.log('Adding objective:', text, 'with goal:', goalId);
     await createObjective({
       text,
       goal_id: goalId,
@@ -106,58 +86,40 @@ export const WeeklyProgressView = () => {
   };
 
   const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
-    console.log('Updating objective goal:', id, 'to:', goalId);
     updateObjective(id, { goal_id: goalId });
   };
 
   const handleToggleObjective = (id: string, isCompleted: boolean) => {
-    console.log('Toggling objective:', id, 'to', !isCompleted);
     updateObjective(id, { is_completed: !isCompleted });
   };
 
   const handleUpdateObjectiveText = (id: string, text: string) => {
-    console.log('Updating objective text:', id, text);
     updateObjective(id, { text });
   };
 
   const handleDeleteObjective = (id: string) => {
-    console.log('Deleting objective:', id);
     deleteObjective(id);
   };
 
   const handleSaveNotes = () => {
-    console.log('Saving notes:', progressNotes);
     updateProgressNotes(progressNotes);
   };
 
   const handleCompleteWeek = () => {
-    console.log('Completing week:', weekStart);
     completeWeek();
   };
 
   const handlePostToFeed = () => {
-    console.log('Attempting to post week to feed:', weekStart);
-    console.log('Current objectives:', objectives);
-    console.log('Objectives count:', objectives?.length || 0);
-    
-    // Check for incomplete objectives
     const incompleteObjectives = objectives?.filter(obj => !obj.is_completed) || [];
-    console.log('Incomplete objectives:', incompleteObjectives);
-    console.log('Incomplete objectives count:', incompleteObjectives.length);
     
     if (incompleteObjectives.length > 0) {
-      console.log('Should show modal - setting showIncompleteModal to true');
-      // Show modal for reflection on incomplete objectives
       setShowIncompleteModal(true);
     } else {
-      console.log('All objectives complete, proceeding to post');
-      // Proceed directly to posting
       performPostToFeed();
     }
   };
 
   const performPostToFeed = async (incompleteReflections?: Record<string, string>) => {
-    console.log('Posting week to feed:', weekStart);
     setIsPostingToFeed(true);
     
     try {

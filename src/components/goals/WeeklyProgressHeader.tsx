@@ -47,7 +47,6 @@ export const WeeklyProgressHeader = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            console.log('Next button clicked in header!');
             onNextWeek();
           }}
           className="text-white/80 hover:text-white hover:bg-white/10 relative z-10"

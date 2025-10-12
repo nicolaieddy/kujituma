@@ -33,13 +33,6 @@ const Goals = () => {
     WeeklyProgressService.getWeekStart()
   );
 
-  // Debug logging for objectives data
-  console.log('=== Goals.tsx Debug START ===');
-  console.log('Total Objectives from useAllWeeklyObjectives:', objectives.length);
-  console.log('Objectives with goal_id:', objectives.filter(obj => obj.goal_id));
-  console.log('Sample objectives:', objectives.slice(0, 3));
-  console.log('=== Goals.tsx Debug END ===');
-
   const handleSignOut = async () => {
     try {
       await signOut();

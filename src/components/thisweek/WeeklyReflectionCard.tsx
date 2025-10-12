@@ -16,7 +16,6 @@ export const WeeklyReflectionCard = ({
   isReadOnly,
   weekStart
 }: WeeklyReflectionCardProps) => {
-  console.log('WeeklyReflectionCard render:', { weekStart, initialNotes, isReadOnly });
   
   const reflection = useWeeklyReflection({
     weekStart,
