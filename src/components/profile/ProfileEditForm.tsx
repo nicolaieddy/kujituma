@@ -13,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 
 interface Profile {
   id: string;
-  email: string;
+  email?: string; // Optional - not all contexts have email
   full_name: string;
   avatar_url?: string;
   about_me?: string;

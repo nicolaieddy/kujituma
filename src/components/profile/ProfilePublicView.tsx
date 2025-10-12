@@ -17,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
   id: string;
-  email: string;
+  email?: string; // Optional - only visible based on show_email setting
   full_name: string;
   avatar_url?: string;
   about_me?: string;
@@ -215,7 +215,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 <span>Member since {formatDate(profile.created_at)}</span>
               </div>
               
-              {profile.show_email && (
+              {profile.show_email && profile.email && (
                 <div className="flex items-center text-white/80">
                   <User className="h-5 w-5 mr-3 text-green-400" />
                   <span>{profile.email}</span>

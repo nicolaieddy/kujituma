@@ -3,7 +3,7 @@ import { User } from "lucide-react";
 
 interface Profile {
   id: string;
-  email: string;
+  email?: string; // Optional for non-owners
   full_name: string;
   avatar_url?: string;
   about_me?: string;
@@ -28,7 +28,7 @@ export const ProfileHeader = ({ profile }: ProfileHeaderProps) => {
         </Avatar>
       </div>
       <h1 className="text-4xl font-bold text-white mb-2">{profile.full_name}</h1>
-      <p className="text-white/80 text-lg">{profile.email}</p>
+      {profile.email && <p className="text-white/80 text-lg">{profile.email}</p>}
     </div>
   );
 };

@@ -12,7 +12,7 @@ import { Edit3, Eye } from "lucide-react";
 
 interface Profile {
   id: string;
-  email: string;
+  email?: string; // Optional for non-owners
   full_name: string;
   avatar_url?: string;
   about_me?: string;
@@ -22,6 +22,7 @@ interface Profile {
   twitter_url?: string;
   created_at: string;
   last_active_at?: string;
+  show_email?: boolean;
 }
 
 const Profile = () => {
@@ -50,11 +51,28 @@ const Profile = () => {
       }
 
       try {
+        // Determine which columns to select based on viewer relationship
+        const isOwner = user?.id === targetUserId;
+        const isAuthenticated = !!user;
+        
+        let selectColumns = '';
+        
+        if (isOwner) {
+          // Owner gets all columns
+          selectColumns = '*';
+        } else if (isAuthenticated) {
+          // Authenticated users get limited data (respect show_email)
+          selectColumns = 'id, full_name, avatar_url, about_me, linkedin_url, instagram_url, tiktok_url, twitter_url, created_at, last_active_at, show_email, email';
+        } else {
+          // Anonymous users get minimal data
+          selectColumns = 'id, full_name, avatar_url, about_me, created_at';
+        }
+
         const { data, error } = await supabase
           .from('profiles')
-          .select('*')
+          .select(selectColumns)
           .eq('id', targetUserId)
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error('Error fetching profile:', error);
@@ -62,7 +80,19 @@ const Profile = () => {
           return;
         }
 
-        setProfile(data);
+        if (!data) {
+          setLoading(false);
+          return;
+        }
+
+        // Filter email based on show_email preference for non-owners
+        const profileData: any = data;
+        if (!isOwner && profileData?.show_email === false) {
+          const { email, ...dataWithoutEmail } = profileData;
+          setProfile(dataWithoutEmail as Profile);
+        } else {
+          setProfile(profileData as Profile);
+        }
       } catch (error) {
         console.error('Error:', error);
       } finally {
