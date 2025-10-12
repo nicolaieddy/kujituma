@@ -174,6 +174,7 @@ const Goals = () => {
               {showForm ? (
                 <div className="mb-8">
                   <GoalForm
+                    key={editingGoal ? editingGoal.id : 'new'}
                     onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
                     onCancel={handleCancelForm}
                     initialData={editingGoal}
