@@ -4,6 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { User, UserMinus, MessageCircle } from "lucide-react";
 import { Friend } from "@/services/friendsService";
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 interface FriendCardProps {
   friend: Friend;
@@ -25,7 +26,14 @@ export const FriendCard = ({
   };
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+    >
+      <Card className="hover:shadow-lg transition-shadow border-border hover:border-primary/20">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div 
@@ -72,5 +80,6 @@ export const FriendCard = ({
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 };

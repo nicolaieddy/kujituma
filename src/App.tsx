@@ -10,6 +10,7 @@ import { TourProvider } from "@/components/tour/TourProvider";
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense } from "react";
+import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -21,8 +22,8 @@ const Friends = lazy(() => import("./pages/Friends"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 
 const LoadingSpinner = () => (
-  <div className="min-h-screen bg-gradient-background flex items-center justify-center">
-    <div className="text-foreground">Loading...</div>
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <KilimanjaroLoader />
   </div>
 );
 

@@ -22,6 +22,8 @@ import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
 import { useObjectiveAutoSave } from "@/hooks/useObjectiveAutoSave";
 import { AutoSaveIndicator } from "@/components/thisweek/AutoSaveIndicator";
+import { motion, AnimatePresence } from "framer-motion";
+import { celebrateSuccess } from "@/utils/confetti";
 
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
@@ -175,22 +177,45 @@ export const WeeklyObjectivesList = ({
       )}
       
       <div className="mt-3 space-y-3">
-        {objectives.map((objective) => {
-          const goalName = getGoalName(objective.goal_id);
-          const isEditing = editingObjectiveId === objective.id;
-          
-          return (
-            <div key={objective.id} className="space-y-2">
-              <div className="flex items-center gap-3 group">
+        <AnimatePresence mode="popLayout">
+          {objectives.map((objective, index) => {
+            const goalName = getGoalName(objective.goal_id);
+            const isEditing = editingObjectiveId === objective.id;
+            
+            return (
+              <motion.div 
+                key={objective.id} 
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.2, delay: index * 0.05 }}
+                className="space-y-2"
+              >
+                <div className="flex items-center gap-3 group">
                 <div className="relative">
                   <Checkbox
                     checked={objective.is_completed}
-                    onCheckedChange={() => onToggleObjective(objective.id, objective.is_completed)}
+                    onCheckedChange={(checked) => {
+                      onToggleObjective(objective.id, objective.is_completed);
+                      if (checked) {
+                        celebrateSuccess();
+                      }
+                    }}
                     disabled={isWeekCompleted}
-                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all"
                   />
                   {objective.is_completed && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-bounce opacity-75"></div>
+                    <motion.div 
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"
+                    >
+                      <motion.div
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1, repeat: Infinity }}
+                        className="w-full h-full bg-primary rounded-full opacity-75"
+                      />
+                    </motion.div>
                   )}
                 </div>
                 
@@ -377,13 +402,19 @@ export const WeeklyObjectivesList = ({
                    </div>
                  )}
                </div>
-            </div>
-          );
-        })}
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
         
         {/* Add new objective with auto-save - only show if week is not completed */}
         {!isWeekCompleted && (
-          <div className="space-y-3 border-t border-border pt-3">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-3 border-t border-border pt-3"
+          >
             <div className="flex items-center gap-3">
               <Checkbox 
                 disabled 
@@ -404,7 +435,7 @@ export const WeeklyObjectivesList = ({
               )}
             </div>
             
-          </div>
+          </motion.div>
         )}
       </div>
     </div>

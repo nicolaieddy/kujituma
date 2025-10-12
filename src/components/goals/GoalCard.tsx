@@ -7,6 +7,7 @@ import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, P
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Goal, GoalStatus } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
+import { motion } from "framer-motion";
 
 interface GoalCardProps {
   goal: Goal;
@@ -54,10 +55,18 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
   };
 
   return (
-    <Card 
-      className="border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
-      onClick={() => onClick?.(goal)}
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
     >
+      <Card 
+        className="border-border hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer group"
+        onClick={() => onClick?.(goal)}
+      >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -170,5 +179,6 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 };

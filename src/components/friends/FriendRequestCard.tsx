@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Check, X, User } from "lucide-react";
 import { FriendRequest } from "@/services/friendsService";
+import { motion } from "framer-motion";
 
 interface FriendRequestCardProps {
   request: FriendRequest;
@@ -26,7 +27,14 @@ export const FriendRequestCard = ({
   if (!profile) return null;
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      transition={{ duration: 0.2 }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+    >
+      <Card className="hover:shadow-lg transition-shadow border-border hover:border-primary/20">
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
@@ -82,5 +90,6 @@ export const FriendRequestCard = ({
         </div>
       </CardContent>
     </Card>
+    </motion.div>
   );
 };
