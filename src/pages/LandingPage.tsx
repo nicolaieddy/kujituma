@@ -3,29 +3,34 @@ import { LandingFeatures } from "@/components/landing/LandingFeatures";
 import { LandingCTA } from "@/components/landing/LandingCTA";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+
 const LandingPage = () => {
   const navigate = useNavigate();
+  
   const handleGetStarted = () => {
     navigate("/auth");
   };
+  
   const handleSignIn = () => {
     navigate("/auth");
   };
-  return <div className="min-h-screen bg-gradient-background">
+  
+  return (
+    <div className="min-h-screen bg-background">
       {/* Navigation */}
-      <nav className="absolute top-0 left-0 right-0 z-50 bg-transparent">
+      <nav className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-xl font-semibold text-foreground">
                 Kujituma
               </h1>
             </div>
-            <div className="flex items-center gap-6">
-              <Button variant="ghost" onClick={handleSignIn} className="text-white hover:text-white/80 hover:bg-white/10">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" onClick={handleSignIn}>
                 Sign In
               </Button>
-              <Button onClick={handleGetStarted} className="bg-white text-primary hover:bg-white/90 px-6 py-2">
+              <Button onClick={handleGetStarted}>
                 Get Started
               </Button>
             </div>
@@ -36,23 +41,28 @@ const LandingPage = () => {
       {/* Main Content */}
       <main>
         <LandingHero onGetStarted={handleGetStarted} />
+        <LandingFeatures />
         <LandingCTA onGetStarted={handleGetStarted} />
       </main>
 
       {/* Footer */}
-      <footer className="bg-background/90 backdrop-blur-lg border-t border-white/10 py-16">
-        <div className="max-w-6xl mx-auto px-4 text-center">
-          <div className="space-y-6">
-            <h3 className="text-3xl font-bold text-white">
+      <footer className="border-t border-border py-12 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-foreground">
               Kujituma
             </h3>
-            <p className="text-white/70 text-lg max-w-2xl mx-auto"> "To have a burning fire in your stomach."</p>
-            <div className="text-white/50 pt-4 border-t border-white/10">
+            <p className="text-muted-foreground text-sm max-w-md mx-auto">
+              "To have a burning fire in your stomach."
+            </p>
+            <div className="text-muted-foreground text-xs pt-4">
               © 2025 Kujituma. Built with passion and love for my friends.
             </div>
           </div>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
+
 export default LandingPage;

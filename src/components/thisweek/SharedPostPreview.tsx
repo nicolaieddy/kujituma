@@ -97,10 +97,10 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
             {post.likes} likes • {post.comments.length} comments
           </div>
           <Button
-            variant="glass-outline"
+            variant="outline"
             size="sm"
             onClick={onViewInCommunity}
-            className="text-xs px-3 py-1 h-auto hover:bg-white/10"
+            className="text-xs px-3 py-1 h-auto hover:bg-accent"
           >
             <ExternalLink className="h-3 w-3 mr-1" />
             View Post

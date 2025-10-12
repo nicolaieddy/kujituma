@@ -28,7 +28,7 @@ export const WeekHeader = ({
             {onNavigateWeek && (
               <div className="flex items-center space-x-2">
                 <Button
-                  variant="glass-outline"
+                  variant="outline"
                   size="sm"
                   onClick={() => onNavigateWeek('previous')}
                   className="px-2"
@@ -36,7 +36,7 @@ export const WeekHeader = ({
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <Button
-                  variant="glass-outline"
+                  variant="outline"
                   size="sm"
                   onClick={() => onNavigateWeek('next')}
                   className="px-2"

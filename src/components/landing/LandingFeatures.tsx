@@ -26,19 +26,17 @@ export const LandingFeatures = () => {
     title: "Habit Building",
     description: "Transform goals into sustainable habits with consistent daily actions and positive reinforcement."
   }];
-  return <section className="py-20 px-4 bg-muted/20">
+  return <section className="py-24 px-4">
       <div className="max-w-6xl mx-auto">
-        
-
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <Card key={index} className="p-6 text-center hover:shadow-lg transition-shadow">
-                <Icon className="mx-auto mb-4 h-12 w-12 text-primary" />
-                <h3 className="font-semibold text-lg mb-2">{feature.title}</h3>
-                <p className="text-muted-foreground">{feature.description}</p>
-              </Card>
+              <div key={index} className="space-y-3">
+                <Icon className="h-10 w-10 text-primary" />
+                <h3 className="font-semibold text-lg text-foreground">{feature.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
+              </div>
             );
           })}
         </div>
