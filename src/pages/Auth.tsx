@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
+import { KilimanjaroLoader } from '@/components/ui/kilimanjaro-loader';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -36,10 +37,7 @@ const Auth = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-foreground mx-auto mb-4" />
-          <p className="text-foreground">Loading authentication...</p>
-        </div>
+        <KilimanjaroLoader />
       </div>
     );
   }
