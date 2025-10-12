@@ -182,7 +182,7 @@ export const MentionInput = ({
             >
               <Avatar className="h-8 w-8">
                 <AvatarImage src={suggestion.avatar_url || undefined} />
-                <AvatarFallback className="bg-purple-500 text-white text-xs">
+                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
                   {getInitials(suggestion.full_name)}
                 </AvatarFallback>
               </Avatar>

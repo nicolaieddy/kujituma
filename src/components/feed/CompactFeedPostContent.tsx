@@ -94,10 +94,10 @@ export const CompactFeedPostContent = ({ post }: CompactFeedPostContentProps) =>
 
       {/* Next Priorities */}
       {post.priorities && (
-        <div className="bg-purple-500/5 rounded-md p-2.5 border border-purple-500/15">
+        <div className="bg-primary/5 rounded-md p-2.5 border border-primary/15">
           <div className="flex items-center gap-1.5 mb-2">
-            <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
-            <h4 className="text-purple-300 font-medium text-xs">Next Priorities</h4>
+            <div className="w-1.5 h-1.5 bg-primary rounded-full"></div>
+            <h4 className="text-primary font-medium text-xs">Next Priorities</h4>
           </div>
           <div className="space-y-1">
             {post.priorities.split('\n').map((line, index) => {
@@ -107,7 +107,7 @@ export const CompactFeedPostContent = ({ post }: CompactFeedPostContentProps) =>
                 const objectiveText = line.substring(2);
                 return (
                   <div key={index} className="flex items-start gap-2">
-                    <div className="flex-shrink-0 w-3 h-3 rounded-full border border-purple-400 bg-transparent mt-0.5" />
+                    <div className="flex-shrink-0 w-3 h-3 rounded-full border border-primary bg-transparent mt-0.5" />
                     <p className="text-foreground text-xs leading-relaxed">{objectiveText}</p>
                   </div>
                 );

@@ -216,7 +216,7 @@ export const TourPopover = ({
             <Button 
               onClick={onNext}
               size="sm"
-              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white px-3 text-xs min-w-0"
+              className="gradient-primary shadow-elegant hover:shadow-lift px-3 text-xs min-w-0"
             >
               {step.actionText || (isLastStep ? 'Finish' : 'Next')}
               {!isLastStep && <ArrowRight className="h-3 w-3 ml-1" />}

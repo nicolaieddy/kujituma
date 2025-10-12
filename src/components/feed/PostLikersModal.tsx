@@ -93,7 +93,7 @@ export const PostLikersModal = ({ isOpen, onClose, postId }: PostLikersModalProp
               <div key={liker.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/50 transition-colors">
                 <Avatar className="h-10 w-10">
                   <AvatarImage src={liker.avatar_url || undefined} alt={liker.full_name} />
-                  <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
+                  <AvatarFallback className="bg-primary text-primary-foreground">
                     <User className="h-5 w-5" />
                   </AvatarFallback>
                 </Avatar>

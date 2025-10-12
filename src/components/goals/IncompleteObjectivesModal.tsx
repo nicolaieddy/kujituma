@@ -39,36 +39,36 @@ export const IncompleteObjectivesModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-900 border-white/20">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto glass-card shadow-elegant">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <AlertTriangle className="h-5 w-5 text-amber-400" />
+          <DialogTitle className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-amber-500" />
             Reflect on Incomplete Objectives
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-6">
-          <p className="text-white/80 text-sm">
+          <p className="text-muted-foreground text-sm">
             You have {incompleteObjectives.length} incomplete objective{incompleteObjectives.length > 1 ? 's' : ''}. 
             Please reflect on why you weren't able to complete {incompleteObjectives.length > 1 ? 'each one' : 'it'} 
             before posting to the feed. This helps with accountability and learning.
           </p>
 
           {incompleteObjectives.map((objective) => (
-            <div key={objective.id} className="space-y-3 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div key={objective.id} className="space-y-3 p-4 bg-muted/30 rounded-lg border">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-white/40 bg-transparent mt-0.5" />
+                <div className="flex-shrink-0 w-5 h-5 rounded border-2 border-muted-foreground bg-transparent mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="text-white font-medium mb-2">{objective.text}</h4>
+                  <h4 className="text-foreground font-medium mb-2">{objective.text}</h4>
                   <div className="space-y-2">
-                    <label className="text-white/60 text-sm block">
+                    <label className="text-muted-foreground text-sm block">
                       Why wasn't this objective completed?
                     </label>
                     <Textarea
                       value={reflections[objective.id] || ''}
                       onChange={(e) => handleReflectionChange(objective.id, e.target.value)}
                       placeholder="Reflect on what prevented you from completing this objective..."
-                      className="bg-white/10 border-white/20 text-white placeholder:text-white/40 resize-none"
+                      className="resize-none"
                       rows={3}
                     />
                   </div>
@@ -77,11 +77,10 @@ export const IncompleteObjectivesModal = ({
             </div>
           ))}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+          <div className="flex justify-end gap-3 pt-4 border-t">
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
-              className="border-white/20 text-white hover:bg-white/10"
               disabled={isPosting}
             >
               Cancel
@@ -91,8 +90,8 @@ export const IncompleteObjectivesModal = ({
               disabled={!allReflectionsProvided || isPosting}
               className={`${
                 allReflectionsProvided
-                  ? 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-                  : 'bg-gray-600 cursor-not-allowed'
+                  ? 'gradient-primary shadow-elegant hover:shadow-lift'
+                  : 'bg-muted cursor-not-allowed'
               }`}
             >
               {isPosting ? (

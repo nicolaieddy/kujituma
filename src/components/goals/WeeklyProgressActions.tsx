@@ -85,7 +85,7 @@ export const WeeklyProgressActions = ({
             <Button
               onClick={onPostToFeed}
               disabled={isCompletingWeek}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 px-6"
+              className="gradient-primary shadow-elegant hover:shadow-lift px-6"
             >
               <Share className="h-4 w-4 mr-2" />
               {isCompletingWeek ? "Posting..." : `Post Week ${weekNumber} to Feed`}

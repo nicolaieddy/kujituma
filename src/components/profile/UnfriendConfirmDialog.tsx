@@ -24,21 +24,21 @@ export const UnfriendConfirmDialog = ({
 }: UnfriendConfirmDialogProps) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="bg-slate-800 border-slate-700 text-white">
+      <AlertDialogContent className="glass-card shadow-elegant">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-white">Unfriend {friendName}?</AlertDialogTitle>
-          <AlertDialogDescription className="text-white/80">
+          <AlertDialogTitle>Unfriend {friendName}?</AlertDialogTitle>
+          <AlertDialogDescription>
             Are you sure you want to remove {friendName} from your friends list? 
             You'll need to send a new friend request to reconnect.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel className="bg-slate-700 border-slate-600 text-white hover:bg-slate-600">
+          <AlertDialogCancel>
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction 
             onClick={onConfirm}
-            className="bg-red-600 text-white hover:bg-red-700"
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
           >
             Unfriend
           </AlertDialogAction>
