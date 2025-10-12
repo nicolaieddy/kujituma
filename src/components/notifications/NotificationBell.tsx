@@ -52,7 +52,7 @@ export const NotificationBell = () => {
             </Button>
           )}
         </div>
-        <ScrollArea className="max-h-96">
+        <ScrollArea className="max-h-96 overflow-y-auto">
           {notifications.length === 0 ? (
             <div className="p-4 text-center text-muted-foreground">
               No notifications yet
