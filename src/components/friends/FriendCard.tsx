@@ -42,7 +42,6 @@ export const FriendCard = ({
               <h4 className="font-medium text-foreground hover:text-primary transition-colors">
                 {friend.full_name}
               </h4>
-              <p className="text-sm text-muted-foreground">{friend.email}</p>
               <p className="text-xs text-muted-foreground">
                 Friends since {new Date(friend.created_at).toLocaleDateString()}
               </p>

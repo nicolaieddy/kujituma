@@ -38,7 +38,6 @@ export const FriendRequestCard = ({
             </Avatar>
             <div>
               <h4 className="font-medium text-foreground">{profile.full_name}</h4>
-              <p className="text-sm text-muted-foreground">{profile.email}</p>
               <p className="text-xs text-muted-foreground">
                 {new Date(request.created_at).toLocaleDateString()}
               </p>

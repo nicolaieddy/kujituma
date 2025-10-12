@@ -10,12 +10,10 @@ export interface FriendRequest {
   sender_profile?: {
     full_name: string;
     avatar_url?: string;
-    email: string;
   };
   receiver_profile?: {
     full_name: string;
     avatar_url?: string;
-    email: string;
   };
 }
 
@@ -23,14 +21,12 @@ export interface Friend {
   friend_id: string;
   full_name: string;
   avatar_url?: string;
-  email: string;
   created_at: string;
 }
 
 export interface UserProfile {
   id: string;
   full_name: string;
-  email: string;
   avatar_url?: string;
   about_me?: string;
   linkedin_url?: string;
@@ -155,7 +151,7 @@ class FriendsService {
         (sentRequests || []).map(async (request) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url, email')
+            .select('full_name, avatar_url')
             .eq('id', request.receiver_id)
             .single();
           
@@ -170,7 +166,7 @@ class FriendsService {
         (receivedRequests || []).map(async (request) => {
           const { data: profile } = await supabase
             .from('profiles')
-            .select('full_name, avatar_url, email')
+            .select('full_name, avatar_url')
             .eq('id', request.sender_id)
             .single();
           
@@ -215,7 +211,7 @@ class FriendsService {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email, avatar_url, about_me, linkedin_url')
+        .select('id, full_name, avatar_url, about_me, linkedin_url')
         .ilike('full_name', `%${query}%`)
         .not('id', 'in', `(${excludeIds.join(',')})`)
         .limit(20);

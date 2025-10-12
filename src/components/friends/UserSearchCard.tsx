@@ -40,9 +40,8 @@ export const UserSearchCard = ({
               <h4 className="font-medium text-foreground hover:text-primary transition-colors">
                 {user.full_name}
               </h4>
-              <p className="text-sm text-muted-foreground">{user.email}</p>
               {user.about_me && (
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                   {user.about_me}
                 </p>
               )}
