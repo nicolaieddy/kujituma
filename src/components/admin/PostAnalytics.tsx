@@ -44,16 +44,16 @@ const PostAnalytics = ({
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <Card key={metric.title} className="bg-white/10 backdrop-blur-lg border-white/20">
+            <Card key={metric.title} className="border-border">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-white/80">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {metric.title}
                 </CardTitle>
-                <Icon className={`h-4 w-4 ${metric.color}`} />
+                <Icon className={`h-4 w-4 text-primary`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-white">{metric.value}</div>
-                <p className="text-xs text-white/60 mt-1">{metric.description}</p>
+                <div className="text-2xl font-bold text-foreground">{metric.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">{metric.description}</p>
               </CardContent>
             </Card>
           );

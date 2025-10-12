@@ -33,104 +33,103 @@ interface PostsManagementProps {
 
 const PostsManagement = ({ posts, onToggleVisibility, onDeletePost }: PostsManagementProps) => {
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-white">Posts Management</CardTitle>
+        <CardTitle className="text-foreground">Posts Management</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="border-white/20">
-                  <TableHead className="text-white/80">User</TableHead>
-                  <TableHead className="text-white/80">Content</TableHead>
-                  <TableHead className="text-white/80">Engagement</TableHead>
-                  <TableHead className="text-white/80">Created</TableHead>
-                  <TableHead className="text-white/80">Status</TableHead>
-                  <TableHead className="text-white/80">Actions</TableHead>
+                <TableRow className="border-border">
+                  <TableHead className="text-foreground">User</TableHead>
+                  <TableHead className="text-foreground">Content</TableHead>
+                  <TableHead className="text-foreground">Engagement</TableHead>
+                  <TableHead className="text-foreground">Created</TableHead>
+                  <TableHead className="text-foreground">Status</TableHead>
+                  <TableHead className="text-foreground">Actions</TableHead>
                 </TableRow>
               </TableHeader>
             <TableBody>
               {posts.map((post) => (
-                <TableRow key={post.id} className="border-white/20">
+                <TableRow key={post.id} className="border-border">
                   <TableCell>
                     <div className="flex items-center space-x-2">
                       <Avatar className="h-8 w-8">
                         <AvatarImage src={post.profiles?.avatar_url} />
-                        <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white">
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
+                <AvatarFallback className="bg-primary text-primary-foreground">
+                  <User className="h-4 w-4" />
+                </AvatarFallback>
                       </Avatar>
                       <div>
-                        <div className="text-white text-sm font-medium">
-                          {post.profiles?.full_name || post.name}
-                        </div>
-                        <div className="text-white/60 text-xs">
-                          {post.profiles?.email}
-                        </div>
+                <div className="text-foreground text-sm font-medium">
+                  {post.profiles?.full_name || post.name}
+                </div>
+                <div className="text-muted-foreground text-xs">
+                  {post.profiles?.email}
+                </div>
                       </div>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="max-w-md">
-                      {post.accomplishments && (
-                        <div className="text-white/80 text-sm mb-1">
-                          <strong>Accomplishments:</strong> {post.accomplishments.substring(0, 100)}...
-                        </div>
-                      )}
-                      {post.priorities && (
-                        <div className="text-white/80 text-sm mb-1">
-                          <strong>Priorities:</strong> {post.priorities.substring(0, 100)}...
-                        </div>
-                      )}
-                      {post.help && (
-                        <div className="text-white/80 text-sm">
-                          <strong>Help:</strong> {post.help.substring(0, 100)}...
-                        </div>
-                      )}
+                {post.accomplishments && (
+                  <div className="text-foreground text-sm mb-1">
+                    <strong>Accomplishments:</strong> {post.accomplishments.substring(0, 100)}...
+                  </div>
+                )}
+                {post.priorities && (
+                  <div className="text-foreground text-sm mb-1">
+                    <strong>Priorities:</strong> {post.priorities.substring(0, 100)}...
+                  </div>
+                )}
+                {post.help && (
+                  <div className="text-foreground text-sm">
+                    <strong>Help:</strong> {post.help.substring(0, 100)}...
+                  </div>
+                )}
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="space-y-1">
-                      <div className="flex items-center space-x-2 text-white/80 text-sm">
-                        <span>👍 {post.likes || 0}</span>
-                        <span>💬 {post.comments?.length || 0}</span>
-                      </div>
+              <div className="flex items-center space-x-2 text-muted-foreground text-sm">
+                <span>👍 {post.likes || 0}</span>
+                <span>💬 {post.comments?.length || 0}</span>
+              </div>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-white/60 text-sm">
-                      {formatTimeAgo(new Date(post.created_at).getTime())}
-                    </span>
+            <span className="text-muted-foreground text-sm">
+              {formatTimeAgo(new Date(post.created_at).getTime())}
+            </span>
                   </TableCell>
                   <TableCell>
-                    <Badge 
-                      variant={post.hidden ? "destructive" : "default"}
-                      className={post.hidden ? "bg-red-500/20 text-red-400" : "bg-green-500/20 text-green-400"}
-                    >
-                      {post.hidden ? "Hidden" : "Visible"}
-                    </Badge>
+            <Badge 
+              variant={post.hidden ? "destructive" : "secondary"}
+            >
+              {post.hidden ? "Hidden" : "Visible"}
+            </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onToggleVisibility(post.id, post.hidden)}
-                        className="text-white/80 hover:bg-white/20"
-                      >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onToggleVisibility(post.id, post.hidden)}
+            className="text-muted-foreground hover:bg-accent"
+          >
                         {post.hidden ? (
                           <Eye className="h-4 w-4" />
                         ) : (
                           <EyeOff className="h-4 w-4" />
                         )}
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => onDeletePost(post.id)}
-                        className="text-red-400 hover:bg-red-500/20"
-                      >
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onDeletePost(post.id)}
+            className="text-destructive hover:bg-destructive/10"
+          >
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
