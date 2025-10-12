@@ -55,7 +55,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
 
   return (
     <Card 
-      className="border-border hover:border-primary/20 transition-colors cursor-pointer group"
+      className="border-border hover:border-primary/30 hover:shadow-md transition-all cursor-pointer group"
       onClick={() => onClick?.(goal)}
     >
       <CardHeader className="pb-3">

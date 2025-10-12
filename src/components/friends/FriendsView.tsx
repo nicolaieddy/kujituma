@@ -115,7 +115,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="text-white">Loading...</div>
+        <div className="text-foreground">Loading...</div>
       </div>
     );
   }
@@ -124,21 +124,26 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   if (view === 'friends') {
     return (
       <div className="space-y-6">
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <Card className="border-border hover:border-primary/20 transition-colors">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-foreground flex items-center gap-2">
               <Users className="h-5 w-5" />
               Your Friends ({friends.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
             {friends.length === 0 ? (
-              <div className="text-center py-8">
-                <Users className="h-12 w-12 mx-auto text-white/60 mb-4" />
-                <p className="text-white/80 mb-2">No friends yet</p>
-                <p className="text-white/60 text-sm">
-                  Start connecting with other community members!
-                </p>
+              <div className="text-center py-12 space-y-4">
+                <div className="relative inline-block">
+                  <Users className="h-16 w-16 mx-auto text-muted-foreground animate-pulse" />
+                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary/10 animate-ping" />
+                </div>
+                <div>
+                  <p className="text-foreground font-medium mb-2">No friends yet</p>
+                  <p className="text-muted-foreground text-sm max-w-sm mx-auto">
+                    Build your network! Connect with other climbers and share your journey together.
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
@@ -165,9 +170,9 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
     return (
       <div className="space-y-6">
         {/* Received Requests */}
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <Card className="border-border hover:border-primary/20 transition-colors">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-foreground flex items-center gap-2">
               <Inbox className="h-5 w-5" />
               Received Requests ({friendRequests.received.length})
             </CardTitle>
@@ -175,7 +180,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
           <CardContent>
             {friendRequests.received.length === 0 ? (
               <div className="text-center py-6">
-                <p className="text-white/60">No pending friend requests</p>
+                <p className="text-muted-foreground">No pending friend requests</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -195,9 +200,9 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
         </Card>
 
         {/* Sent Requests */}
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <Card className="border-border hover:border-primary/20 transition-colors">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-foreground flex items-center gap-2">
               <UserPlus className="h-5 w-5" />
               Sent Requests ({friendRequests.sent.length})
             </CardTitle>
@@ -205,7 +210,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
           <CardContent>
             {friendRequests.sent.length === 0 ? (
               <div className="text-center py-6">
-                <p className="text-white/60">No outgoing friend requests</p>
+                <p className="text-muted-foreground">No outgoing friend requests</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -224,12 +229,16 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
         </Card>
 
         {!hasRequests && (
-          <div className="text-center py-12">
-            <Inbox className="h-16 w-16 mx-auto text-white/40 mb-4" />
-            <p className="text-white/80 text-lg mb-2">No friend requests</p>
-            <p className="text-white/60">
-              When someone sends you a friend request, it will appear here.
-            </p>
+          <div className="text-center py-12 space-y-4">
+            <div className="relative inline-block">
+              <Inbox className="h-16 w-16 mx-auto text-muted-foreground animate-pulse" />
+            </div>
+            <div>
+              <p className="text-foreground font-medium text-lg mb-2">No friend requests</p>
+              <p className="text-muted-foreground max-w-sm mx-auto">
+                When someone sends you a friend request, it will appear here.
+              </p>
+            </div>
           </div>
         )}
       </div>
@@ -240,9 +249,9 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   if (view === 'discover') {
     return (
       <div className="space-y-6">
-        <Card className="bg-white/10 backdrop-blur-sm border-white/20">
+        <Card className="border-border hover:border-primary/20 transition-colors">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-foreground flex items-center gap-2">
               <Search className="h-5 w-5" />
               Discover People
             </CardTitle>
@@ -262,14 +271,14 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
 
             {searchLoading && (
               <div className="text-center py-6">
-                <p className="text-white/60">Searching...</p>
+                <p className="text-muted-foreground">Searching...</p>
               </div>
             )}
 
             {!searchLoading && searchQuery && searchResults.length === 0 && (
-              <div className="text-center py-6">
-                <AlertCircle className="h-12 w-12 mx-auto text-white/40 mb-4" />
-                <p className="text-white/60">No users found matching "{searchQuery}"</p>
+              <div className="text-center py-8 space-y-3">
+                <AlertCircle className="h-12 w-12 mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground">No users found matching "{searchQuery}"</p>
               </div>
             )}
 
@@ -300,12 +309,17 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
             )}
 
             {!searchQuery && allUsers.length === 0 && !searchLoading && (
-              <div className="text-center py-12">
-                <Search className="h-16 w-16 mx-auto text-white/40 mb-4" />
-                <p className="text-white/80 text-lg mb-2">Find new friends</p>
-                <p className="text-white/60">
-                  Use the search above to find specific people, or browse all users below.
-                </p>
+              <div className="text-center py-12 space-y-4">
+                <div className="relative inline-block">
+                  <Search className="h-16 w-16 mx-auto text-muted-foreground animate-pulse" />
+                  <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary/10 animate-ping" />
+                </div>
+                <div>
+                  <p className="text-foreground font-medium text-lg mb-2">Find new friends</p>
+                  <p className="text-muted-foreground max-w-sm mx-auto">
+                    Use the search above to find specific people, or browse all users below.
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
