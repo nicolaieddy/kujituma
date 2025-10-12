@@ -72,10 +72,10 @@ export const CarryOverObjectivesModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-900 border-white/20">
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto glass-card shadow-elegant">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-white">
-            <RotateCcw className="h-5 w-5 text-blue-400" />
+          <DialogTitle className="flex items-center gap-2">
+            <RotateCcw className="h-5 w-5 text-primary" />
             Carry Over Incomplete Objectives
           </DialogTitle>
         </DialogHeader>
@@ -83,8 +83,8 @@ export const CarryOverObjectivesModal = ({
         <div className="space-y-6">
           {incompleteObjectives.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-white/80 text-lg mb-2">🎉 All caught up!</p>
-              <p className="text-white/60 text-sm">
+              <p className="text-foreground text-lg mb-2">🎉 All caught up!</p>
+              <p className="text-muted-foreground text-sm">
                 You don't have any incomplete objectives from previous weeks.
               </p>
             </div>
@@ -92,7 +92,7 @@ export const CarryOverObjectivesModal = ({
             <>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-white/80 text-sm">
+                  <p className="text-muted-foreground text-sm">
                     You have {incompleteObjectives.length} incomplete objective{incompleteObjectives.length > 1 ? 's' : ''} from previous weeks. 
                     Select which ones you'd like to carry over to this week.
                   </p>
@@ -100,7 +100,6 @@ export const CarryOverObjectivesModal = ({
                     variant="outline"
                     size="sm"
                     onClick={handleSelectAll}
-                    className="border-white/20 text-white hover:bg-white/10"
                   >
                     {selectedObjectives.size === incompleteObjectives.length ? 'Deselect All' : 'Select All'}
                   </Button>
@@ -108,7 +107,7 @@ export const CarryOverObjectivesModal = ({
 
                 {sortedWeeks.map(weekStart => (
                   <div key={weekStart} className="space-y-3">
-                    <h4 className="text-white/90 font-medium text-sm">
+                    <h4 className="text-foreground font-medium text-sm">
                       Week of {formatWeekDisplay(weekStart)}
                     </h4>
                     
@@ -121,8 +120,8 @@ export const CarryOverObjectivesModal = ({
                           key={objective.id} 
                           className={`p-4 rounded-lg border transition-all cursor-pointer ${
                             isSelected 
-                              ? 'bg-blue-500/20 border-blue-400/40' 
-                              : 'bg-white/5 border-white/10 hover:bg-white/10'
+                              ? 'bg-primary/20 border-primary/40' 
+                              : 'bg-muted/30 border-border hover:bg-muted/50'
                           }`}
                           onClick={() => handleToggleObjective(objective.id)}
                         >
@@ -133,11 +132,11 @@ export const CarryOverObjectivesModal = ({
                               className="mt-0.5"
                             />
                             <div className="flex-1 min-w-0">
-                              <p className="text-white font-medium mb-1">{objective.text}</p>
+                              <p className="text-foreground font-medium mb-1">{objective.text}</p>
                               {goalName && (
                                 <div className="flex items-center gap-1">
-                                  <Target className="h-3 w-3 text-white/60" />
-                                  <span className="text-xs text-white/60">Goal: {goalName}</span>
+                                  <Target className="h-3 w-3 text-muted-foreground" />
+                                  <span className="text-xs text-muted-foreground">Goal: {goalName}</span>
                                 </div>
                               )}
                             </div>
@@ -149,11 +148,10 @@ export const CarryOverObjectivesModal = ({
                 ))}
               </div>
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
+              <div className="flex justify-end gap-3 pt-4 border-t">
                 <Button
                   variant="outline"
                   onClick={() => onOpenChange(false)}
-                  className="border-white/20 text-white hover:bg-white/10"
                   disabled={isCarryingOver}
                 >
                   Cancel
@@ -161,7 +159,7 @@ export const CarryOverObjectivesModal = ({
                 <Button
                   onClick={handleConfirm}
                   disabled={selectedObjectives.size === 0 || isCarryingOver}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  className="gradient-primary shadow-elegant hover:shadow-lift"
                 >
                   {isCarryingOver ? (
                     "Carrying Over..."

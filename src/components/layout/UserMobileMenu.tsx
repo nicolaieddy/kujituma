@@ -27,7 +27,7 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
       </SheetTrigger>
       <SheetContent 
         side="right" 
-        className="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-border w-72"
+        className="glass-card w-72"
       >
         <div className="flex flex-col space-y-4 mt-8">
           <div className="text-foreground font-semibold text-lg mb-4">Navigation</div>

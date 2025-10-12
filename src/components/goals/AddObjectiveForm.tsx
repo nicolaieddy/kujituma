@@ -43,9 +43,9 @@ export const AddObjectiveForm = ({
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className="glass-card shadow-soft">
       <CardHeader>
-        <CardTitle className="text-white text-lg">Add Weekly Objective</CardTitle>
+        <CardTitle className="text-lg">Add Weekly Objective</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex gap-2">
@@ -53,13 +53,12 @@ export const AddObjectiveForm = ({
             value={newObjectiveText}
             onChange={(e) => setNewObjectiveText(e.target.value)}
             placeholder="Enter your objective for this week..."
-            className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
             onKeyPress={(e) => e.key === 'Enter' && handleCreateObjective()}
           />
           <Button
             onClick={handleCreateObjective}
             disabled={!newObjectiveText.trim() || isCreating}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+            className="gradient-primary"
           >
             <Plus className="h-4 w-4" />
           </Button>
@@ -67,10 +66,10 @@ export const AddObjectiveForm = ({
         
         <div>
           <Select value={selectedGoalId} onValueChange={setSelectedGoalId}>
-            <SelectTrigger className="w-full bg-white/10 border-white/20 text-white">
+            <SelectTrigger className="w-full">
               <SelectValue placeholder="Link to a goal (optional)" />
             </SelectTrigger>
-            <SelectContent className="bg-slate-800 border-white/20 z-50">
+            <SelectContent className="z-50">
               <SelectItem value="">
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
@@ -89,9 +88,9 @@ export const AddObjectiveForm = ({
                 <>
                   {groupedGoals.in_progress.length > 0 && (
                     <SelectGroup>
-                      <SelectLabel className="text-green-400 font-medium">In Progress</SelectLabel>
+                      <SelectLabel className="text-primary font-medium">In Progress</SelectLabel>
                       {groupedGoals.in_progress.map((goal) => (
-                        <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                        <SelectItem key={goal.id} value={goal.id} className="pl-6">
                           {goal.title}
                         </SelectItem>
                       ))}
@@ -100,9 +99,9 @@ export const AddObjectiveForm = ({
                   
                   {groupedGoals.not_started.length > 0 && (
                     <SelectGroup>
-                      <SelectLabel className="text-blue-400 font-medium">Not Started</SelectLabel>
+                      <SelectLabel className="text-primary/70 font-medium">Not Started</SelectLabel>
                       {groupedGoals.not_started.map((goal) => (
-                        <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                        <SelectItem key={goal.id} value={goal.id} className="pl-6">
                           {goal.title}
                         </SelectItem>
                       ))}
@@ -111,9 +110,9 @@ export const AddObjectiveForm = ({
                   
                   {groupedGoals.completed.length > 0 && (
                     <SelectGroup>
-                      <SelectLabel className="text-gray-400 font-medium">Completed</SelectLabel>
+                      <SelectLabel className="text-muted-foreground font-medium">Completed</SelectLabel>
                       {groupedGoals.completed.map((goal) => (
-                        <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
+                        <SelectItem key={goal.id} value={goal.id} className="pl-6">
                           {goal.title}
                         </SelectItem>
                       ))}

@@ -111,10 +111,10 @@ export const GoalObjectivesList = ({
   return (
     <div className="space-y-6">
       {/* Create new objective */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+      <Card className="glass-card shadow-soft">
         <CardHeader>
-          <CardTitle className="text-white text-lg">Add Weekly Objective</CardTitle>
-          <p className="text-white/60 text-sm">
+          <CardTitle className="text-lg">Add Weekly Objective</CardTitle>
+          <p className="text-muted-foreground text-sm">
             Create a new objective and assign it to a specific week
           </p>
         </CardHeader>
@@ -125,7 +125,6 @@ export const GoalObjectivesList = ({
                 value={newObjectiveText}
                 onChange={(e) => setNewObjectiveText(e.target.value)}
                 placeholder="What do you want to achieve?"
-                className="bg-white/10 border-white/20 text-white placeholder:text-white/60"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -136,12 +135,12 @@ export const GoalObjectivesList = ({
             </div>
             <div className="flex gap-2">
               <Select value={newObjectiveWeek} onValueChange={setNewObjectiveWeek}>
-                <SelectTrigger className="bg-white/10 border-white/20 text-white">
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-white/20">
+                <SelectContent>
                   {weekOptions.map((week) => (
-                    <SelectItem key={week} value={week} className="text-white">
+                    <SelectItem key={week} value={week}>
                       Week {getWeekNumber(week)} • {formatWeekRange(week)}
                     </SelectItem>
                   ))}
@@ -150,7 +149,7 @@ export const GoalObjectivesList = ({
               <Button
                 onClick={handleCreateObjective}
                 disabled={!newObjectiveText.trim() || isCreating}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
+                className="gradient-primary"
               >
                 <Plus className="h-4 w-4" />
               </Button>
@@ -161,39 +160,39 @@ export const GoalObjectivesList = ({
 
       {/* Objectives grid */}
       {sortedObjectives.length === 0 ? (
-        <Card className="bg-white/5 backdrop-blur-lg border-white/10 border-2 border-dashed">
+        <Card className="border-2 border-dashed">
           <CardContent className="p-8 text-center">
-            <Clock className="h-8 w-8 text-white/40 mx-auto mb-4" />
-            <p className="text-white/60">
+            <Clock className="h-8 w-8 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">
               No weekly objectives created for this goal yet.
             </p>
-            <p className="text-white/40 text-sm mt-2">
+            <p className="text-muted-foreground/60 text-sm mt-2">
               Create your first objective above to start working towards this goal.
             </p>
           </CardContent>
         </Card>
       ) : (
-        <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+        <Card className="glass-card shadow-soft">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-white" />
-              <CardTitle className="text-white text-lg">Weekly Objectives</CardTitle>
+              <Calendar className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Weekly Objectives</CardTitle>
             </div>
-            <p className="text-white/60 text-sm">
+            <p className="text-muted-foreground text-sm">
               {sortedObjectives.filter(obj => obj.is_completed).length} of {sortedObjectives.length} completed
             </p>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {/* Header */}
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pb-3 border-b border-white/10">
-                <div className="md:col-span-3 text-sm font-medium text-white/80 uppercase tracking-wide">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4 pb-3 border-b">
+                <div className="md:col-span-3 text-sm font-medium text-muted-foreground uppercase tracking-wide">
                   Objective
                 </div>
-                <div className="text-sm font-medium text-white/80 uppercase tracking-wide">
+                <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                   Week
                 </div>
-                <div className="text-sm font-medium text-white/80 uppercase tracking-wide">
+                <div className="text-sm font-medium text-muted-foreground uppercase tracking-wide">
                   Actions
                 </div>
               </div>
@@ -202,21 +201,21 @@ export const GoalObjectivesList = ({
               {sortedObjectives.map((objective) => (
                 <div
                   key={objective.id}
-                  className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors items-center"
+                  className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors items-center"
                 >
                   {/* Objective column */}
                   <div className="md:col-span-3 flex items-center gap-3">
                     <Checkbox
                       checked={objective.is_completed}
                       onCheckedChange={() => handleToggleComplete(objective)}
-                      className="data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500"
+                      className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                     />
                     <div className="flex-1">
-                      <p className={`text-white ${objective.is_completed ? 'line-through opacity-70' : ''}`}>
+                      <p className={`text-foreground ${objective.is_completed ? 'line-through opacity-70' : ''}`}>
                         {objective.text}
                       </p>
                       {objective.is_completed && (
-                        <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-primary mt-1 flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3" />
                           Completed
                         </p>
@@ -230,19 +229,19 @@ export const GoalObjectivesList = ({
                       value={objective.week_start} 
                       onValueChange={(value) => handleWeekChange(objective.id, value)}
                     >
-                      <SelectTrigger className="bg-white/10 border-white/20 text-white text-sm">
+                      <SelectTrigger className="text-sm">
                         <SelectValue>
                           <div className="flex flex-col text-left">
                             <span className="font-medium">Week {getWeekNumber(objective.week_start)}</span>
-                            <span className="text-xs text-white/60">
+                            <span className="text-xs text-muted-foreground">
                               {formatWeekRange(objective.week_start)}
                             </span>
                           </div>
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="bg-slate-800 border-white/20">
+                      <SelectContent>
                         {weekOptions.map((week) => (
-                          <SelectItem key={week} value={week} className="text-white">
+                          <SelectItem key={week} value={week}>
                             Week {getWeekNumber(week)} • {formatWeekRange(week)}
                           </SelectItem>
                         ))}
@@ -256,7 +255,7 @@ export const GoalObjectivesList = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => onDeleteObjective(objective.id)}
-                      className="text-red-400 hover:bg-red-500/20 h-8 w-8 p-0"
+                      className="text-destructive hover:bg-destructive/20 h-8 w-8 p-0"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
