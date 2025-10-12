@@ -78,8 +78,13 @@ export const GoalDetailModal = ({
     setIsEditing(false);
   };
 
+  const handleClose = () => {
+    setIsEditing(false);
+    onClose();
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
         <DialogHeader>
           <div className="flex items-start justify-between">
@@ -145,6 +150,7 @@ export const GoalDetailModal = ({
         {isEditing ? (
           <div className="mt-6">
             <GoalForm
+              key={`edit-${goal.id}`}
               onSubmit={handleSave}
               onCancel={handleCancel}
               initialData={goal}
