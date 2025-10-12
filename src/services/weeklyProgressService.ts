@@ -294,6 +294,23 @@ export class WeeklyProgressService {
     return `${start.toLocaleDateString('en-US', formatOptions)} - ${end.toLocaleDateString('en-US', formatOptions)}`;
   }
 
+  /**
+   * Check if today is within the week defined by weekStart (Mon-Sun)
+   */
+  static isCurrentWeek(weekStart: string, date: Date = new Date()): boolean {
+    const [year, month, day] = weekStart.split('-').map(Number);
+    const start = new Date(year, month - 1, day);
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+
+    // Normalize to local midnight for safe comparison
+    const todayLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const startLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+    const endLocal = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+
+    return todayLocal >= startLocal && todayLocal <= endLocal;
+  }
+
   static getWeekNumber(weekStart: string): number {
     // Parse the date string as local date (not UTC)
     const [year, month, day] = weekStart.split('-').map(Number);

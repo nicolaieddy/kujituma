@@ -248,7 +248,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const hasShared = !!feedPost;
-  const isCurrentWeek = WeeklyProgressService.getWeekStart() === currentWeekStart;
+  const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   const isPastWeek = currentWeekStart < WeeklyProgressService.getWeekStart();
   
   // Enforce immutability: once a week is completed (shared), it becomes read-only
