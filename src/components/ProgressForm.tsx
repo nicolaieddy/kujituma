@@ -81,21 +81,21 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
   };
 
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-white text-2xl">Share Your Weekly Progress</CardTitle>
+        <CardTitle className="text-foreground text-2xl">Share Your Weekly Progress</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <Label htmlFor="name" className="text-white font-medium">
+            <Label htmlFor="name" className="text-foreground font-medium">
               Your Name *
             </Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => handleChange("name", e.target.value)}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+              className="mt-2"
               placeholder="Enter your name"
               readOnly={!!user}
             />
@@ -105,10 +105,10 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
           </div>
 
           <div>
-            <Label htmlFor="accomplishments" className="text-white font-medium">
+            <Label htmlFor="accomplishments" className="text-foreground font-medium">
               🎉 This Week's Accomplishments
             </Label>
-            <p className="text-white/60 text-xs mt-1 mb-2">
+            <p className="text-muted-foreground text-xs mt-1 mb-2">
               Press Ctrl+Enter (Cmd+Enter on Mac) to add bullet points
             </p>
             <Textarea
@@ -116,16 +116,16 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
               value={formData.accomplishments}
               onChange={(e) => handleChange("accomplishments", e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, "accomplishments")}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+              className="mt-2 min-h-[100px]"
               placeholder="What did you achieve this week? Share your wins, big or small..."
             />
           </div>
 
           <div>
-            <Label htmlFor="priorities" className="text-white font-medium">
+            <Label htmlFor="priorities" className="text-foreground font-medium">
               🎯 Next Week's Priorities
             </Label>
-            <p className="text-white/60 text-xs mt-1 mb-2">
+            <p className="text-muted-foreground text-xs mt-1 mb-2">
               Press Ctrl+Enter (Cmd+Enter on Mac) to add bullet points
             </p>
             <Textarea
@@ -133,7 +133,7 @@ const ProgressForm = ({ onSubmit, onCancel }: ProgressFormProps) => {
               value={formData.priorities}
               onChange={(e) => handleChange("priorities", e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, "priorities")}
-              className="mt-2 bg-white/10 border-white/20 text-white placeholder:text-white/60 min-h-[100px]"
+              className="mt-2 min-h-[100px]"
               placeholder="What are your main goals for next week?"
             />
           </div>
