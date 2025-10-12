@@ -4,6 +4,8 @@ import { FeedSkeletonList } from "./FeedPostSkeleton";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List } from "lucide-react";
 import { useState, memo } from "react";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
+import { Loader2 } from "lucide-react";
 
 interface FeedViewProps {
   feedType: "all" | "my";
@@ -16,6 +18,14 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
   const { posts, loading: isLoading, addComment, togglePostLike, toggleCommentLike, loadMore, hasMore, loadingMore } = useUnifiedPosts({
     feedType: feedType === "all" ? "all" : "user",
     filterPeriod: "all"
+  });
+
+  // Infinite scroll implementation
+  const sentinelRef = useInfiniteScroll({
+    onLoadMore: loadMore,
+    hasMore,
+    isLoading: loadingMore,
+    threshold: 0.8
   });
 
   if (isLoading) {
@@ -78,16 +88,15 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
         onCommentLike={toggleCommentLike}
       />
       
-      {/* Load More Button */}
+      {/* Infinite Scroll Sentinel */}
       {hasMore && (
-        <div className="flex justify-center pt-6">
-          <Button
-            onClick={loadMore}
-            disabled={loadingMore}
-            variant="outline"
-          >
-            {loadingMore ? 'Loading...' : 'Load More Posts'}
-          </Button>
+        <div ref={sentinelRef} className="flex justify-center py-8">
+          {loadingMore && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span className="text-sm">Loading more posts...</span>
+            </div>
+          )}
         </div>
       )}
     </div>
