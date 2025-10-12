@@ -72,6 +72,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     deleteObjective(id);
   };
 
+  const handleReorderObjective = async (objectiveId: string, newOrderIndex: number) => {
+    try {
+      await updateObjective(objectiveId, { order_index: newOrderIndex });
+    } catch (error) {
+      console.error('Error reordering objective:', error);
+    }
+  };
+
   const handleViewInCommunity = () => {
     if (feedPost) {
       // Navigate to the specific post in the community feed
@@ -260,6 +268,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onDeleteAllObjectives={deleteAllObjectives}
             onAddObjective={handleAddObjective}
             isDeletingAll={isDeletingAll}
+            onReorderObjective={handleReorderObjective}
           />
         </CardContent>
       </Card>

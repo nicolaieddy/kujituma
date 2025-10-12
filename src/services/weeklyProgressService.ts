@@ -18,6 +18,7 @@ export class WeeklyProgressService {
       .select('*')
       .eq('week_start', weekStart)
       .eq('user_id', user.id)  // Explicitly filter by user_id
+      .order('order_index', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
     if (error) {

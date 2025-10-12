@@ -340,6 +340,38 @@ export type Database = {
           },
         ]
       }
+      post_reactions: {
+        Row: {
+          created_at: string | null
+          id: string
+          post_id: string
+          reaction: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          post_id: string
+          reaction: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          post_id?: string
+          reaction?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       posts: {
         Row: {
           accomplishments: string
@@ -519,6 +551,7 @@ export type Database = {
           goal_id: string | null
           id: string
           is_completed: boolean
+          order_index: number | null
           text: string
           updated_at: string
           user_id: string
@@ -529,6 +562,7 @@ export type Database = {
           goal_id?: string | null
           id?: string
           is_completed?: boolean
+          order_index?: number | null
           text: string
           updated_at?: string
           user_id: string
@@ -539,6 +573,7 @@ export type Database = {
           goal_id?: string | null
           id?: string
           is_completed?: boolean
+          order_index?: number | null
           text?: string
           updated_at?: string
           user_id?: string

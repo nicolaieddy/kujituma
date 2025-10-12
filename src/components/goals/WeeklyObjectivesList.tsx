@@ -24,6 +24,10 @@ import { useObjectiveAutoSave } from "@/hooks/useObjectiveAutoSave";
 import { AutoSaveIndicator } from "@/components/thisweek/AutoSaveIndicator";
 import { motion, AnimatePresence } from "framer-motion";
 import { celebrateSuccess } from "@/utils/confetti";
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import { SortableObjectiveItem } from "./SortableObjectiveItem";
+import { useEffect } from "react";
 
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
@@ -39,6 +43,7 @@ interface WeeklyObjectivesListProps {
   onOpenCarryOver?: () => void;
   hasIncompleteObjectives?: boolean;
   isDeletingAll?: boolean;
+  onReorderObjective?: (objectiveId: string, newOrderIndex: number) => void;
 }
 
 export const WeeklyObjectivesList = ({
@@ -55,12 +60,45 @@ export const WeeklyObjectivesList = ({
   onOpenCarryOver,
   hasIncompleteObjectives = false,
   isDeletingAll = false,
+  onReorderObjective,
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [savingObjectiveIds, setSavingObjectiveIds] = useState<Set<string>>(new Set());
+  const [localObjectives, setLocalObjectives] = useState(objectives);
+
+  useEffect(() => {
+    setLocalObjectives(objectives);
+  }, [objectives]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = localObjectives.findIndex((obj) => obj.id === active.id);
+    const newIndex = localObjectives.findIndex((obj) => obj.id === over.id);
+
+    if (oldIndex !== newIndex) {
+      const newObjectives = arrayMove(localObjectives, oldIndex, newIndex);
+      setLocalObjectives(newObjectives);
+
+      // Update order index
+      if (onReorderObjective) {
+        onReorderObjective(active.id as string, newIndex);
+      }
+    }
+  };
 
   const handleCreateNewGoal = () => {
     navigate('/goals');
@@ -177,21 +215,27 @@ export const WeeklyObjectivesList = ({
       )}
       
       <div className="mt-3 space-y-3">
-        <AnimatePresence mode="popLayout">
-          {objectives.map((objective, index) => {
-            const goalName = getGoalName(objective.goal_id);
-            const isEditing = editingObjectiveId === objective.id;
-            
-            return (
-              <motion.div 
-                key={objective.id} 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.2, delay: index * 0.05 }}
-                className="space-y-2"
-              >
-                <div className="flex items-center gap-3 group">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext items={localObjectives.map(obj => obj.id)} strategy={verticalListSortingStrategy}>
+            <AnimatePresence mode="popLayout">
+              {localObjectives.map((objective, index) => {
+                const goalName = getGoalName(objective.goal_id);
+                const isEditing = editingObjectiveId === objective.id;
+                
+                return (
+                  <SortableObjectiveItem key={objective.id} id={objective.id}>
+                    <motion.div 
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 20 }}
+                      transition={{ duration: 0.2, delay: index * 0.05 }}
+                      className="space-y-2"
+                    >
+                      <div className="flex items-center gap-3 group">
                 <div className="relative">
                   <Checkbox
                     checked={objective.is_completed}
@@ -403,9 +447,12 @@ export const WeeklyObjectivesList = ({
                  )}
                </div>
               </motion.div>
+            </SortableObjectiveItem>
             );
           })}
         </AnimatePresence>
+          </SortableContext>
+        </DndContext>
         
         {/* Add new objective with auto-save - only show if week is not completed */}
         {!isWeekCompleted && (

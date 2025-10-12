@@ -75,6 +75,14 @@ const Goals = () => {
     updateGoal(id, { status });
   };
 
+  const handleGoalReorder = async (goalId: string, newOrderIndex: number) => {
+    try {
+      await updateGoal(goalId, { order_index: newOrderIndex });
+    } catch (error) {
+      console.error('Error reordering goal:', error);
+    }
+  };
+
   const handleGoalClick = (goal: Goal) => {
     setSelectedGoal(goal);
     setShowDetailModal(true);
@@ -200,6 +208,7 @@ const Goals = () => {
                       onDelete={deleteGoal}
                       onStatusChange={handleStatusChange}
                       onGoalClick={handleGoalClick}
+                      onReorder={handleGoalReorder}
                     />
                   )}
                 </>
