@@ -45,6 +45,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
   const [hasPartner, setHasPartner] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
+  const [pendingRequest, setPendingRequest] = useState(false);
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status, loading: statusLoading } = useFriendshipStatus(profile.id);
   const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
@@ -64,9 +65,24 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
       setHasPartner(!!partner);
     };
 
+    const checkPendingRequest = async () => {
+      if (!user) return;
+      
+      const { data, error } = await supabase
+        .from('accountability_partner_requests')
+        .select('*')
+        .eq('sender_id', user.id)
+        .eq('receiver_id', profile.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+      
+      setPendingRequest(!!data);
+    };
+
     loadCommitments();
     if (user) {
       checkPartnership();
+      checkPendingRequest();
     }
   }, [profile.id, user, is_friend, currentWeekStart]);
 
@@ -79,6 +95,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
     if (result.success) {
       toast.success('🤝 Accountability partner request sent!');
+      setPendingRequest(true);
     } else {
       toast.error(result.error || 'Failed to send request');
     }
@@ -173,12 +190,12 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"
+                    className={pendingRequest ? "bg-accent/50 border-accent text-accent-foreground" : "bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"}
                     onClick={handleSendPartnerRequest}
-                    disabled={isSendingRequest}
+                    disabled={isSendingRequest || pendingRequest}
                   >
                     <Users className="h-4 w-4 mr-2" />
-                    {isSendingRequest ? 'Sending...' : 'Become Accountability Partners'}
+                    {isSendingRequest ? 'Sending...' : pendingRequest ? 'Request Pending' : 'Become Accountability Partners'}
                   </Button>
                 )}
               </div>
