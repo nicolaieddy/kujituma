@@ -20,7 +20,7 @@ export const NotificationBell = () => {
         <Button
           variant="ghost"
           size="sm"
-          className="relative text-white/80 hover:text-white hover:bg-white/10"
+          className="relative"
         >
           🔔
           {unreadCount > 0 && (
@@ -34,17 +34,17 @@ export const NotificationBell = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent 
-        className="w-96 p-0 bg-slate-800 border-white/20" 
+        className="w-96 p-0" 
         align="end"
       >
-        <div className="flex items-center justify-between p-4 border-b border-white/20">
-          <h3 className="font-semibold text-white">Notifications</h3>
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h3 className="font-semibold text-foreground">Notifications</h3>
           {unreadCount > 0 && (
             <Button
               variant="ghost"
               size="sm"
               onClick={handleMarkAllRead}
-              className="text-xs text-blue-400 hover:text-blue-300"
+              className="text-xs text-primary hover:text-primary/80"
             >
               Mark all read
             </Button>
@@ -52,7 +52,7 @@ export const NotificationBell = () => {
         </div>
         <ScrollArea className="max-h-96">
           {notifications.length === 0 ? (
-            <div className="p-4 text-center text-white/60">
+            <div className="p-4 text-center text-muted-foreground">
               No notifications yet
             </div>
           ) : (

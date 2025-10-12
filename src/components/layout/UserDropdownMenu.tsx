@@ -16,18 +16,18 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-white/10 transition-colors">
+        <button className="flex items-center space-x-2 p-1 rounded-full hover:bg-accent transition-colors">
           <UserProfileAvatar />
-          <ChevronDown className="h-4 w-4 text-white/60" />
+          <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent 
         align="end" 
-        className="w-56 bg-slate-800/95 backdrop-blur-lg border-white/20 text-white"
+        className="w-56"
       >
         <DropdownMenuItem 
           onClick={() => navigate('/profile')}
-          className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+          className="cursor-pointer"
         >
           <User className="h-4 w-4 mr-2" />
           Profile
@@ -35,7 +35,7 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
         
         <DropdownMenuItem 
           onClick={onRestartTour}
-          className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+          className="cursor-pointer"
         >
           <HelpCircle className="h-4 w-4 mr-2" />
           Restart Tour
@@ -43,10 +43,10 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
         
         {isAdmin && (
           <>
-            <DropdownMenuSeparator className="bg-white/20" />
+            <DropdownMenuSeparator />
             <DropdownMenuItem 
               onClick={() => navigate('/admin')}
-              className="cursor-pointer hover:bg-white/10 focus:bg-white/10"
+              className="cursor-pointer"
             >
               <Settings className="h-4 w-4 mr-2" />
               Admin
@@ -54,10 +54,10 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
           </>
         )}
         
-        <DropdownMenuSeparator className="bg-white/20" />
+        <DropdownMenuSeparator />
         <DropdownMenuItem 
           onClick={onSignOut}
-          className="cursor-pointer hover:bg-white/10 focus:bg-white/10 text-red-300"
+          className="cursor-pointer text-destructive"
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out
