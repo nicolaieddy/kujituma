@@ -436,15 +436,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "notifications_related_request_id_fkey"
-            columns: ["related_request_id"]
-            isOneToOne: false
-            referencedRelation: "friend_requests"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       post_likes: {
         Row: {
