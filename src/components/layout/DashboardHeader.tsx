@@ -2,7 +2,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useToast } from "@/hooks/use-toast";
 import { useTourContext } from "@/components/tour/TourProvider";
 import { NavigationMenu } from "./NavigationMenu";
-import { HelpButton } from "./HelpButton";
 import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
@@ -50,7 +49,6 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
         </div>
         
         <div className="flex items-center justify-end gap-3">
-          <HelpButton />
           <NotificationBell />
           
           
