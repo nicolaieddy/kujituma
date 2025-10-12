@@ -97,21 +97,21 @@ export const GoalDetailModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-slate-900/95 backdrop-blur-lg border-white/20">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <IconComponent className="h-5 w-5 text-white" />
+                <IconComponent className="h-5 w-5 text-primary" />
                 <Badge className={`${config.color} text-sm`}>
                   {config.label}
                 </Badge>
               </div>
-              <DialogTitle className="text-2xl text-white">
+              <DialogTitle className="text-2xl text-foreground">
                 {goal.title}
               </DialogTitle>
               {goal.description && (
-                <p className="text-white/80 mt-2">{goal.description}</p>
+                <p className="text-muted-foreground mt-2">{goal.description}</p>
               )}
             </div>
             <div className="flex gap-2">
@@ -121,7 +121,6 @@ export const GoalDetailModal = ({
                     variant="ghost"
                     size="sm"
                     onClick={handleEdit}
-                    className="text-white hover:bg-white/20"
                   >
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
@@ -131,7 +130,6 @@ export const GoalDetailModal = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleStatusChange('in_progress')}
-                      className="text-white hover:bg-white/20"
                     >
                       <Play className="h-4 w-4 mr-2" />
                       Start
@@ -142,7 +140,6 @@ export const GoalDetailModal = ({
                       variant="ghost"
                       size="sm"
                       onClick={() => handleStatusChange('completed')}
-                      className="text-white hover:bg-white/20"
                     >
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Complete
@@ -152,7 +149,7 @@ export const GoalDetailModal = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete(goal.id)}
-                    className="text-red-400 hover:bg-red-500/20"
+                    className="text-destructive hover:bg-destructive/20"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
