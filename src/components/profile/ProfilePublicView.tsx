@@ -155,12 +155,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
             {!isOwnProfile && user && (
               <div className="flex flex-col items-center gap-2 mt-4">
                 <div className="flex justify-center">
-                  {statusLoading ? (
-                    <Button variant="outline" disabled className="bg-muted">
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Loading...
-                    </Button>
-                  ) : is_friend ? (
+                  {is_friend ? (
                     <Button
                       variant="outline"
                       className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
@@ -202,6 +197,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                       variant="outline"
                       className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
                       onClick={() => sendFriendRequest(profile.id)}
+                      disabled={statusLoading}
                     >
                       <UserPlus className="h-4 w-4 mr-2" />
                       Add Friend
