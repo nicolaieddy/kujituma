@@ -77,25 +77,25 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
   return (
     <div
       onClick={handleClick}
-      className={`p-3 cursor-pointer hover:bg-white/5 transition-colors ${
-        !notification.is_read ? 'bg-blue-500/10 border-l-2 border-l-blue-400' : ''
+      className={`p-3 cursor-pointer hover:bg-accent transition-colors ${
+        !notification.is_read ? 'bg-accent border-l-2 border-l-primary' : ''
       }`}
     >
       <div className="flex items-start space-x-3">
         <Avatar className="h-8 w-8">
           <AvatarImage src={notification.triggered_by?.avatar_url} />
-          <AvatarFallback className="bg-gradient-to-r from-purple-500 to-blue-500 text-white text-xs">
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs">
             <User className="h-4 w-4" />
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2">
             <span className="text-lg">{getNotificationIcon()}</span>
-            <p className="text-sm text-white break-words">
+            <p className="text-sm text-foreground break-words">
               {notification.message}
             </p>
           </div>
-          <p className="text-xs text-white/60 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {formatTimeAgo(new Date(notification.created_at).getTime())}
           </p>
           
@@ -106,7 +106,7 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
                 size="sm"
                 onClick={() => handleFriendRequestResponse('accepted')}
                 disabled={isProcessing}
-                className="bg-green-600 hover:bg-green-700 text-white flex-1"
+                className="flex-1"
               >
                 {isProcessing ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
@@ -117,10 +117,10 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
               </Button>
               <Button
                 size="sm"
-                variant="outline"
+                variant="destructive"
                 onClick={() => handleFriendRequestResponse('rejected')}
                 disabled={isProcessing}
-                className="border-red-500 text-red-400 hover:bg-red-500/20 flex-1"
+                className="flex-1"
               >
                 {isProcessing ? (
                   <Loader2 className="h-3 w-3 animate-spin mr-1" />
@@ -133,7 +133,7 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
           )}
         </div>
         {!notification.is_read && (
-          <div className="w-2 h-2 bg-blue-400 rounded-full flex-shrink-0 mt-2" />
+          <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />
         )}
       </div>
     </div>
