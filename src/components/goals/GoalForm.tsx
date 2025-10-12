@@ -161,6 +161,12 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     ...PREDEFINED_CATEGORIES.map(cat => ({ name: cat, isCustom: false })),
     ...customCategories.map(cat => ({ name: cat.name, isCustom: true, id: cat.id }))
   ];
+  
+  const knownCategoryNames = new Set<string>([
+    ...PREDEFINED_CATEGORIES,
+    ...customCategories.map((c) => c.name)
+  ]);
+  const hasCurrentButMissing = !!formData.category && !knownCategoryNames.has(formData.category);
 
   return (
     <Card className={`w-full ${isMobile ? 'mx-4' : 'max-w-2xl mx-auto'} glass-card shadow-soft`}>
@@ -277,6 +283,16 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                   >
                     No Category
                   </SelectItem>
+
+                  {hasCurrentButMissing && (
+                    <SelectItem 
+                      value={formData.category} 
+                      className="cursor-pointer"
+                    >
+                      {formData.category}
+                    </SelectItem>
+                  )}
+
                   {PREDEFINED_CATEGORIES.map((category) => (
                     <SelectItem 
                       key={category} 
