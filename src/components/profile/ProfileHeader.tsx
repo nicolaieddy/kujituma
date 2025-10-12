@@ -27,7 +27,7 @@ export const ProfileHeader = ({ profile }: ProfileHeaderProps) => {
           </AvatarFallback>
         </Avatar>
       </div>
-      <h1 className="text-4xl font-bold text-foreground mb-2">{profile.full_name}</h1>
+      <h1 className="text-4xl font-bold text-foreground mb-2 font-serif">{profile.full_name}</h1>
       {profile.email && <p className="text-foreground/80 text-lg">{profile.email}</p>}
     </div>
   );

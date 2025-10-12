@@ -36,11 +36,11 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
   };
 
   return (
-    <header className="bg-background/80 backdrop-blur-xl border-b border-border/30 sticky top-0 z-50">
+    <header className="bg-card/95 backdrop-blur-xl border-b border-border/30 sticky top-0 z-50 shadow-soft">
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <h1 
-            className="text-xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors duration-200" 
+            className="text-xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors duration-200 font-serif" 
             onClick={() => navigate('/community')}
           >
             Kujituma

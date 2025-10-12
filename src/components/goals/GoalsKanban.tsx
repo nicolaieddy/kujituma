@@ -52,16 +52,16 @@ export const GoalsKanban = ({ goalsByStatus, onEdit, onDelete, onStatusChange, o
             <div className={`flex items-center justify-between ${isMobile ? 'py-3 px-4 bg-muted rounded-lg' : ''}`}>
               <div className="flex items-center gap-2">
                 <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-foreground`} />
-                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-foreground`}>{column.title}</h3>
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-foreground font-serif`}>{column.title}</h3>
               </div>
-              <Badge className={`${column.color} text-xs`}>
+              <Badge className={`${column.color} text-xs shadow-sm`}>
                 {goals.length}
               </Badge>
             </div>
             
             <div className={`space-y-3 ${isMobile ? 'min-h-[200px]' : 'min-h-[300px]'}`}>
               {goals.length === 0 ? (
-                <div className={`bg-muted/50 backdrop-blur-lg border-border border-2 border-dashed rounded-lg ${isMobile ? 'p-6' : 'p-8'} text-center hover:border-primary/30 transition-colors`}>
+                <div className={`glass-card border-2 border-dashed rounded-lg ${isMobile ? 'p-6' : 'p-8'} text-center hover:border-primary/30 transition-colors`}>
                   <IconComponent className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-muted-foreground mx-auto mb-2`} />
                   <p className="text-muted-foreground text-sm">
                     No {column.title.toLowerCase()} goals yet

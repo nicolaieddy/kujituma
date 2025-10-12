@@ -162,9 +162,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   };
 
   return (
-    <Card className="max-w-2xl mx-auto border-border hover:border-primary/20 transition-all">
+    <Card className="max-w-2xl mx-auto border-border hover:border-primary/20 transition-all shadow-soft">
       <CardHeader>
-        <CardTitle className="text-foreground text-center">Edit Profile</CardTitle>
+        <CardTitle className="text-foreground text-center font-serif text-2xl">Edit Profile</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -302,10 +302,11 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               <X className="h-4 w-4 mr-2" />
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-            >
+              <Button
+                type="submit"
+                disabled={loading}
+                className="gradient-primary shadow-elegant hover:shadow-lift transition-all duration-300"
+              >
               <Save className="h-4 w-4 mr-2" />
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>

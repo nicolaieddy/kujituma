@@ -66,6 +66,13 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+				serif: ['Playfair Display', 'Georgia', 'serif'],
+			},
+			boxShadow: {
+				'soft': '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
+				'elegant': '0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.05)',
+				'glow': '0 0 20px -5px rgba(34, 197, 94, 0.3)',
+				'lift': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
 			},
 			spacing: {
 				'18': '4.5rem',

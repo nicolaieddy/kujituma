@@ -56,7 +56,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="bg-card/95 backdrop-blur-sm border-border hover:border-primary/20 transition-all">
+      <Card className="glass-card shadow-elegant hover:shadow-lift transition-all">
 
         <CardContent className="p-8">
           {/* Profile Header */}
@@ -69,7 +69,7 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">{profile.full_name}</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2 font-serif">{profile.full_name}</h1>
             
             {/* Friendship Actions */}
             {!isOwnProfile && user && !statusLoading && (

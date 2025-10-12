@@ -28,12 +28,20 @@ export const LandingFeatures = () => {
   }];
   return <section className="py-24 px-4">
       <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif mb-4">
+            Everything You Need to Succeed
+          </h2>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
+            A complete toolkit designed to help you plan, track, and achieve your most important goals.
+          </p>
+        </div>
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
           {features.map((feature, index) => {
             const Icon = feature.icon;
             return (
-              <div key={index} className="space-y-3">
-                <Icon className="h-10 w-10 text-primary" />
+              <div key={index} className="space-y-4 p-6 rounded-lg glass-card hover:shadow-soft transition-all duration-300 group">
+                <Icon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform duration-300" />
                 <h3 className="font-semibold text-lg text-foreground">{feature.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
               </div>

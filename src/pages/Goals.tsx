@@ -137,8 +137,8 @@ const Goals = () => {
 
       <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
         <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground mb-4`}>Goals & Progress</h1>
-          <p className={`text-muted-foreground ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto`}>
+          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground mb-4 font-serif`}>Goals & Progress</h1>
+          <p className={`text-muted-foreground ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto leading-relaxed`}>
             Manage your long-term goals and track your weekly progress.
           </p>
         </div>
@@ -181,10 +181,11 @@ const Goals = () => {
               ) : (
                 <>
                   <div className="text-center mb-8">
-                    <Button
-                      onClick={() => setShowForm(true)}
-                      size="lg"
-                    >
+                  <Button
+                    onClick={() => setShowForm(true)}
+                    size="lg"
+                    className="gradient-primary shadow-elegant hover:shadow-lift transition-all duration-300"
+                  >
                       <Plus className="h-5 w-5 mr-2" />
                       Add New Goal
                     </Button>
