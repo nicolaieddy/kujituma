@@ -20,14 +20,14 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
   };
 
   return (
-    <Card className="bg-white/5 backdrop-blur-sm border-white/10">
+    <Card className="border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-white text-sm flex items-center">
+          <CardTitle className="text-foreground text-sm flex items-center">
             <ExternalLink className="h-4 w-4 mr-2" />
             Shared in Community
           </CardTitle>
-          <div className="flex items-center text-white/60 text-xs">
+          <div className="flex items-center text-muted-foreground text-xs">
             <Calendar className="h-3 w-3 mr-1" />
             {formatDate(post.created_at)}
           </div>
@@ -36,10 +36,10 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
       <CardContent className="space-y-4 pt-0">
         {/* Week Summary */}
         {post.total_objectives !== null && post.total_objectives > 0 && (
-          <div className="bg-gradient-to-r from-white/5 to-white/10 rounded-lg p-3 border border-white/10">
+          <div className="bg-muted/50 rounded-lg p-3 border border-border">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-white/80 text-xs font-medium">Week Summary</span>
-              <div className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-xs font-medium">
+              <span className="text-foreground text-xs font-medium">Week Summary</span>
+              <div className="px-2 py-1 rounded-full bg-emerald-500/20 text-emerald-700 text-xs font-medium">
                 {post.completion_percentage}% Complete
               </div>
             </div>
@@ -47,8 +47,8 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
             <div className="flex items-center gap-4">
               {/* Completed */}
               <div className="flex items-center gap-1">
-                <CheckCircle2 className="h-3 w-3 text-emerald-400" />
-                <span className="text-emerald-300 text-xs font-medium">
+                <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                <span className="text-emerald-700 text-xs font-medium">
                   {post.objectives_completed} Done
                 </span>
               </div>
@@ -56,8 +56,8 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
               {/* In Progress */}
               {(post.total_objectives - post.objectives_completed) > 0 && (
                 <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3 text-amber-400" />
-                  <span className="text-amber-300 text-xs font-medium">
+                  <Clock className="h-3 w-3 text-amber-600" />
+                  <span className="text-amber-700 text-xs font-medium">
                     {post.total_objectives - post.objectives_completed} Not Accomplished
                   </span>
                 </div>
@@ -65,9 +65,9 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
 
               {/* Progress Bar */}
               <div className="flex-1 ml-2">
-                <div className="bg-white/10 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-muted rounded-full h-1.5 overflow-hidden">
                   <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
+                    className="h-full bg-emerald-600"
                     style={{ width: `${post.completion_percentage}%` }}
                   />
                 </div>
@@ -78,12 +78,12 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
 
         {/* Quick Preview */}
         {post.accomplishments && (
-          <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-            <h4 className="text-white text-xs font-medium mb-2 flex items-center gap-1">
+          <div className="bg-muted/50 rounded-lg p-3 border border-border">
+            <h4 className="text-foreground text-xs font-medium mb-2 flex items-center gap-1">
               <Target className="h-3 w-3" />
               Progress Highlights
             </h4>
-            <p className="text-white/70 text-xs line-clamp-2 leading-relaxed">
+            <p className="text-muted-foreground text-xs line-clamp-2 leading-relaxed">
               {post.accomplishments.split('\n').find(line => 
                 line.includes('•') || line.trim().length > 0
               )?.replace('•', '').trim() || 'Weekly progress shared'}
@@ -92,8 +92,8 @@ export const SharedPostPreview = ({ post, onViewInCommunity }: SharedPostPreview
         )}
 
         {/* Engagement & Action */}
-        <div className="flex items-center justify-between pt-2 border-t border-white/10">
-          <div className="text-white/50 text-xs">
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="text-muted-foreground text-xs">
             {post.likes} likes • {post.comments.length} comments
           </div>
           <Button

@@ -24,14 +24,14 @@ export const ShareConfirmationDialog = ({
 }: ShareConfirmationDialogProps) => {
   return (
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <AlertDialogContent className="bg-gray-800 border-gray-700">
+      <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-white">
+          <AlertDialogTitle>
             Share Week with Community?
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-gray-300">
+          <AlertDialogDescription>
             <strong>Warning:</strong> Once you share your weekly progress, it becomes{" "}
-            <span className="text-yellow-400 font-semibold">permanent and uneditable</span>.
+            <span className="text-destructive font-semibold">permanent and uneditable</span>.
             <br />
             <br />
             You will not be able to:
@@ -46,7 +46,6 @@ export const ShareConfirmationDialog = ({
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel 
-            className="bg-gray-700 text-white hover:bg-gray-600"
             disabled={isSharing}
           >
             Cancel
@@ -54,7 +53,6 @@ export const ShareConfirmationDialog = ({
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isSharing}
-            className="bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
           >
             {isSharing ? "Sharing..." : "Share & Lock Week"}
           </AlertDialogAction>

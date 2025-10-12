@@ -9,7 +9,7 @@ interface AutoSaveIndicatorProps {
 export const AutoSaveIndicator = ({ isSaving, lastSaved, hasUnsavedChanges }: AutoSaveIndicatorProps) => {
   if (isSaving) {
     return (
-      <div className="flex items-center text-white/60 text-xs">
+      <div className="flex items-center text-muted-foreground text-xs">
         <Save className="h-3 w-3 mr-1 animate-pulse" />
         Saving...
       </div>

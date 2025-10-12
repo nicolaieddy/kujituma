@@ -86,7 +86,7 @@ export const WeeklyObjectivesList = ({
 
   // Don't render if goals are not loaded yet
   if (!goals) {
-    return <div className="text-white">Loading objectives...</div>;
+    return <div className="text-muted-foreground">Loading objectives...</div>;
   }
 
   const handleEditObjective = (objective: WeeklyObjective) => {

@@ -21,7 +21,7 @@ export const WeekHeader = ({
   onNavigateWeek
 }: WeekHeaderProps) => {
   return (
-    <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+    <Card className="border-border">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
@@ -46,16 +46,16 @@ export const WeekHeader = ({
               </div>
             )}
             <div>
-              <CardTitle className="text-white text-2xl">
+              <CardTitle className="text-foreground text-2xl">
                 Week {weekNumber}
               </CardTitle>
-              <p className="text-white/60 mt-1">{weekRange}</p>
+              <p className="text-muted-foreground mt-1">{weekRange}</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5 text-white/60" />
+            <Calendar className="h-5 w-5 text-muted-foreground" />
             {totalCount > 0 && (
-              <div className="text-white/80 text-sm">
+              <div className="text-foreground text-sm">
                 {completedCount}/{totalCount} completed
               </div>
             )}

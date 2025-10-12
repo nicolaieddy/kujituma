@@ -38,15 +38,15 @@ export const ShareWeekCard = ({
       )}
 
       {/* Share Week */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+      <Card className="border-border">
         <CardContent className="pt-6">
           {hasShared ? (
             <div className="text-center py-4">
-              <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-3" />
-              <p className="text-white text-lg font-medium">
+              <CheckCircle className="h-12 w-12 text-green-600 mx-auto mb-3" />
+              <p className="text-foreground text-lg font-medium">
                 Week Shared & Locked
               </p>
-              <p className="text-white/60 text-sm mt-1">
+              <p className="text-muted-foreground text-sm mt-1">
                 {isWeekCompleted 
                   ? "This week has been posted and is now permanent. Objectives and reflection are locked."
                   : "This week's progress was shared with the community."
@@ -63,21 +63,20 @@ export const ShareWeekCard = ({
             </div>
           ) : (
             <div className="text-center py-4">
-              <p className="text-white/80 mb-2">
+              <p className="text-foreground mb-2">
                 Ready to share your week's progress with the community?
               </p>
-              <p className="text-white/60 text-sm mb-4">
+              <p className="text-muted-foreground text-sm mb-4">
                 Your objectives{reflectionValue.trim() ? ' and weekly reflection' : ''} will be shared as a post
               </p>
               <Button
                 onClick={onShareWeek}
                 disabled={isSharing || (objectives?.length === 0 && !reflectionValue.trim())}
-                className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600"
               >
                 {isSharing ? "Sharing..." : "Share This Week"}
               </Button>
               {objectives?.length === 0 && !reflectionValue.trim() && (
-                <p className="text-white/40 text-xs mt-2">
+                <p className="text-muted-foreground text-xs mt-2">
                   Add some objectives or a reflection to share your week
                 </p>
               )}

@@ -243,9 +243,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       />
 
       {/* Weekly Objectives */}
-      <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+      <Card className="border-border">
         <CardHeader>
-          <CardTitle className="text-white">This Week's Focus</CardTitle>
+          <CardTitle className="text-foreground">This Week's Focus</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <WeeklyObjectivesList
