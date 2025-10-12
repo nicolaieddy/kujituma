@@ -20,6 +20,7 @@ export const LandingCTA = ({
             <Button 
               onClick={onGetStarted}
               size="lg"
+              className="gradient-primary shadow-elegant hover:shadow-lift transition-all duration-300"
             >
               Get Started Today
             </Button>
