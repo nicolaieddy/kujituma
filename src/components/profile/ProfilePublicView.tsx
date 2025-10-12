@@ -68,15 +68,21 @@ export const ProfilePublicView = ({ profile }: ProfilePublicViewProps) => {
     const checkPendingRequest = async () => {
       if (!user) return;
       
+      // Check if there's a pending request between these users
       const { data, error } = await supabase
         .from('accountability_partner_requests')
         .select('*')
-        .eq('sender_id', user.id)
-        .eq('receiver_id', profile.id)
         .eq('status', 'pending')
-        .maybeSingle();
+        .or(`sender_id.eq.${user.id},sender_id.eq.${profile.id}`)
+        .or(`receiver_id.eq.${user.id},receiver_id.eq.${profile.id}`);
       
-      setPendingRequest(!!data);
+      // Check if any request involves both users
+      const hasPending = data?.some(req => 
+        (req.sender_id === user.id && req.receiver_id === profile.id) ||
+        (req.sender_id === profile.id && req.receiver_id === user.id)
+      );
+      
+      setPendingRequest(!!hasPending);
     };
 
     loadCommitments();
