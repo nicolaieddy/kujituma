@@ -138,16 +138,16 @@ export const WeeklyObjectivesList = ({
   return (
     <div>
       <div className="mb-3 flex items-center justify-between">
-        <Label className="text-white font-medium text-lg flex items-center gap-2">
+        <Label className="text-foreground font-medium text-lg flex items-center gap-2">
           🎯 This Week's Objectives
-          {isWeekCompleted && <span className="text-xs text-yellow-400">🔒 Locked</span>}
+          {isWeekCompleted && <span className="text-xs text-muted-foreground">🔒 Locked</span>}
         </Label>
         {!isWeekCompleted && hasIncompleteObjectives && onOpenCarryOver && (
           <Button
             variant="outline"
             size="sm"
             onClick={onOpenCarryOver}
-            className="border-white/20 text-white hover:bg-white/10 text-xs"
+            className="text-xs"
           >
             <ArrowRight className="h-3 w-3 mr-1" />
             Carry Over From Previous Weeks
@@ -157,46 +157,17 @@ export const WeeklyObjectivesList = ({
       
       {/* Empty state with helpful description */}
       {objectives.length === 0 && (
-        <div className="bg-white/5 rounded-lg p-6 border border-white/10 mb-6">
+        <div className="bg-accent rounded-lg p-6 border border-border mb-6">
           <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="bg-purple-500/20 rounded-full p-3">
-                <Target className="h-8 w-8 text-purple-400" />
-              </div>
-            </div>
             <div className="space-y-2">
-              <h3 className="text-white font-semibold text-lg">
+              <h3 className="text-foreground font-semibold text-lg">
                 Plan Your Week for Success
               </h3>
-              <p className="text-white/70 text-sm max-w-md mx-auto">
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
                 Use your weekly plan to list your top priorities for the week. Focus on what matters most and make meaningful progress.
               </p>
             </div>
-            <div className="bg-white/5 rounded-lg p-4 space-y-3 text-left max-w-lg mx-auto">
-              <div className="flex items-start gap-3">
-                <div className="bg-blue-500/20 rounded-full p-1 mt-0.5">
-                  <Target className="h-3 w-3 text-blue-400" />
-                </div>
-                <div className="text-sm">
-                  <div className="text-white font-medium">Link to Long-term Goals</div>
-                  <div className="text-white/60">
-                    Connect weekly objectives to your bigger goals for better accountability and visibility into your progress.
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="bg-green-500/20 rounded-full p-1 mt-0.5">
-                  <Check className="h-3 w-3 text-green-400" />
-                </div>
-                <div className="text-sm">
-                  <div className="text-white font-medium">Not Everything Needs a Goal</div>
-                  <div className="text-white/60">
-                    Some weekly priorities might be standalone tasks - that's perfectly fine! The goal linking is optional.
-                  </div>
-                </div>
-              </div>
-            </div>
-            <p className="text-white/50 text-xs">
+            <p className="text-muted-foreground text-xs">
               Start by adding your first objective below ⬇️
             </p>
           </div>
@@ -216,14 +187,10 @@ export const WeeklyObjectivesList = ({
                     checked={objective.is_completed}
                     onCheckedChange={() => onToggleObjective(objective.id, objective.is_completed)}
                     disabled={isWeekCompleted}
-                    className={`border-white/40 transition-all duration-300 ${
-                      objective.is_completed 
-                        ? 'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-400 shadow-lg shadow-green-500/30' 
-                        : 'data-[state=checked]:bg-green-500 data-[state=checked]:border-green-500'
-                    }`}
+                    className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                   />
                   {objective.is_completed && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-bounce opacity-75"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-bounce opacity-75"></div>
                   )}
                 </div>
                 
@@ -238,41 +205,37 @@ export const WeeklyObjectivesList = ({
                          handleCancelEdit();
                        }
                      }}
-                     className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
+                     className="flex-1"
                      placeholder="Enter an objective..."
                      autoFocus
                    />
                  ) : (
-                   <div className={`flex-1 px-2 py-1 transition-all duration-300 ${
-                     objective.is_completed 
-                       ? 'text-green-100' 
-                       : 'text-white'
-                   }`}>
+                   <div className={`flex-1 px-2 py-1 transition-all duration-300 text-foreground`}>
                      <div className="flex items-center gap-2">
                        <span className={`${
                          objective.is_completed 
-                           ? 'line-through decoration-2 decoration-green-400' 
+                           ? 'line-through decoration-2 decoration-muted-foreground' 
                            : ''
                        } transition-all duration-300`}>
                          {objective.text}
                        </span>
                        {objective.is_completed && (
-                         <span className="text-green-400 font-medium animate-pulse">
+                         <span className="text-primary font-medium">
                            ✨ Complete!
                          </span>
                        )}
                        {/* Show goal inline with pencil edit */}
                        {goalName && (
                          <div className="flex items-center gap-1 ml-2">
-                           <Target className="h-3 w-3 text-white/60" />
-                           <span className="text-xs text-white/60">→ {goalName}</span>
+                           <Target className="h-3 w-3 text-muted-foreground" />
+                           <span className="text-xs text-muted-foreground">→ {goalName}</span>
                            {!isWeekCompleted && (
                              <Button
                                type="button"
                                variant="ghost"
                                size="sm"
                                onClick={() => handleEditGoal(objective.id, objective.goal_id)}
-                               className="h-4 w-4 p-0 text-white/40 hover:text-white hover:bg-white/10 ml-1"
+                               className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground hover:bg-accent ml-1"
                              >
                                <Pencil className="h-3 w-3" />
                              </Button>
@@ -287,82 +250,79 @@ export const WeeklyObjectivesList = ({
                               onValueChange={(value) => handleGoalChange(objective.id, value)}
                               onOpenChange={(open) => !open && setEditingGoalId(null)}
                             >
-                              <SelectTrigger className="w-48 bg-white/10 border-white/20 text-white">
+                              <SelectTrigger className="w-48">
                                 <SelectValue placeholder="Select a goal" />
                               </SelectTrigger>
-                               <SelectContent className="bg-slate-800 border-white/20 z-50">
-                                 <SelectItem value="none">
-                                   <div className="flex items-center gap-2">
-                                     <Target className="h-4 w-4" />
-                                     <span>No goal</span>
-                                   </div>
-                                 </SelectItem>
-                                 
-                                 {goals.length === 0 ? (
-                                   <SelectItem value="create-new" onSelect={handleCreateNewGoal}>
-                                     <div className="flex items-center gap-2 text-blue-400">
-                                       <Plus className="h-4 w-4" />
-                                       <span>Create your first goal</span>
-                                     </div>
-                                   </SelectItem>
-                                 ) : (
-                                   <>
-                                     {groupedGoals.in_progress.length > 0 && (
-                                       <SelectGroup>
-                                         <SelectLabel className="text-green-400 font-medium">In Progress</SelectLabel>
-                                         {groupedGoals.in_progress.map((goal) => (
-                                           <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
-                                             {goal.title}
-                                           </SelectItem>
-                                         ))}
-                                       </SelectGroup>
-                                     )}
-                                     
-                                     {groupedGoals.not_started.length > 0 && (
-                                       <SelectGroup>
-                                         <SelectLabel className="text-blue-400 font-medium">Not Started</SelectLabel>
-                                         {groupedGoals.not_started.map((goal) => (
-                                           <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
-                                             {goal.title}
-                                           </SelectItem>
-                                         ))}
-                                       </SelectGroup>
-                                     )}
-                                     
-                                     {groupedGoals.completed.length > 0 && (
-                                       <SelectGroup>
-                                         <SelectLabel className="text-gray-400 font-medium">Completed</SelectLabel>
-                                         {groupedGoals.completed.map((goal) => (
-                                           <SelectItem key={goal.id} value={goal.id} className="text-white pl-6">
-                                             {goal.title}
-                                           </SelectItem>
-                                         ))}
-                                       </SelectGroup>
-                                     )}
-                                   </>
-                                 )}
-                               </SelectContent>
+                              <SelectContent className="z-50">
+                                <SelectItem value="none">
+                                  <div className="flex items-center gap-2">
+                                    <Target className="h-4 w-4" />
+                                    <span>No goal</span>
+                                  </div>
+                                </SelectItem>
+                                {goals.length === 0 ? (
+                                  <SelectItem value="create-new" onSelect={handleCreateNewGoal}>
+                                    <div className="flex items-center gap-2 text-primary">
+                                      <Plus className="h-4 w-4" />
+                                      <span>Create your first goal</span>
+                                    </div>
+                                  </SelectItem>
+                                ) : (
+                                  <>
+                                    {groupedGoals.in_progress.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-muted-foreground font-medium">In Progress</SelectLabel>
+                                        {groupedGoals.in_progress.map((goal) => (
+                                          <SelectItem key={goal.id} value={goal.id} className="pl-6">
+                                            {goal.title}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                    {groupedGoals.not_started.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-muted-foreground font-medium">Not Started</SelectLabel>
+                                        {groupedGoals.not_started.map((goal) => (
+                                          <SelectItem key={goal.id} value={goal.id} className="pl-6">
+                                            {goal.title}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                    {groupedGoals.completed.length > 0 && (
+                                      <SelectGroup>
+                                        <SelectLabel className="text-muted-foreground font-medium">Completed</SelectLabel>
+                                        {groupedGoals.completed.map((goal) => (
+                                          <SelectItem key={goal.id} value={goal.id} className="pl-6">
+                                            {goal.title}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectGroup>
+                                    )}
+                                  </>
+                                )}
+                              </SelectContent>
                             </Select>
                           </div>
                         )}
-                       {/* Add goal button when no goal is linked */}
-                       {!goalName && !isWeekCompleted && editingGoalId !== objective.id && (
-                         <Button
-                           type="button"
-                           variant="ghost"
-                           size="sm"
-                           onClick={() => handleEditGoal(objective.id, objective.goal_id)}
-                           className="h-6 px-2 text-xs text-white/40 hover:text-white hover:bg-white/10 ml-2"
-                         >
-                           <Target className="h-3 w-3 mr-1" />
-                           Link goal
-                         </Button>
+                        {/* Add goal button when no goal is linked */}
+                        {!goalName && !isWeekCompleted && editingGoalId !== objective.id && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleEditGoal(objective.id, objective.goal_id)}
+                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent ml-2"
+                          >
+                            <Target className="h-3 w-3 mr-1" />
+                            Link goal
+                          </Button>
                         )}
                         {/* Show saving indicator */}
                         {savingObjectiveIds.has(objective.id) && (
                           <div className="flex items-center gap-1 ml-2">
-                            <div className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin"></div>
-                            <span className="text-xs text-white/60">Saving...</span>
+                            <div className="w-3 h-3 border border-border border-t-foreground rounded-full animate-spin"></div>
+                            <span className="text-xs text-muted-foreground">Saving...</span>
                           </div>
                         )}
                      </div>
@@ -378,7 +338,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSaveEdit(objective.id)}
-                          className="text-green-400 hover:text-green-300 hover:bg-white/20"
+                          className="text-primary hover:text-primary hover:bg-accent"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -387,7 +347,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={handleCancelEdit}
-                          className="text-white/60 hover:text-white hover:bg-white/20"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent"
                         >
                           <RotateCcw className="h-4 w-4" />
                         </Button>
@@ -399,7 +359,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditObjective(objective)}
-                          className="text-white/60 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -408,7 +368,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => onDeleteObjective(objective.id)}
-                          className="text-white/60 hover:text-white hover:bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -423,26 +383,25 @@ export const WeeklyObjectivesList = ({
         
         {/* Add new objective with auto-save - only show if week is not completed */}
         {!isWeekCompleted && (
-          <div className="space-y-3 border-t border-white/10 pt-3">
+          <div className="space-y-3 border-t border-border pt-3">
             <div className="flex items-center gap-3">
               <Checkbox 
                 disabled 
-                className="border-white/40 opacity-50"
+                className="border-border opacity-50"
               />
-               <Input
-                 value={autoSave.value}
-                 onChange={(e) => autoSave.setValue(e.target.value)}
-                 className="flex-1 bg-white/10 border-white/20 text-white placeholder:text-white/60"
-                 placeholder="Add a new objective..."
-               />
-               {/* Show auto-save indicator only when actively saving or recently saved */}
-               {(autoSave.isSaving || autoSave.lastSaved) && (
-                 <AutoSaveIndicator
-                   isSaving={autoSave.isSaving}
-                   lastSaved={autoSave.lastSaved}
-                   hasUnsavedChanges={autoSave.hasUnsavedChanges}
-                 />
-               )}
+              <Input
+                value={autoSave.value}
+                onChange={(e) => autoSave.setValue(e.target.value)}
+                className="flex-1"
+                placeholder="Add a new objective..."
+              />
+              {(autoSave.isSaving || autoSave.lastSaved) && (
+                <AutoSaveIndicator
+                  isSaving={autoSave.isSaving}
+                  lastSaved={autoSave.lastSaved}
+                  hasUnsavedChanges={autoSave.hasUnsavedChanges}
+                />
+              )}
             </div>
             
           </div>
