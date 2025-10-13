@@ -18,6 +18,7 @@ import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmation
 import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
 import { AccountabilityPartnerCard } from "@/components/accountability/AccountabilityPartnerCard";
 import { PartnerProgressView } from "@/components/accountability/PartnerProgressView";
+import { CheckInHistory } from "@/components/accountability/CheckInHistory";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
 import { accountabilityService, AccountabilityPartner } from "@/services/accountabilityService";
 
@@ -328,19 +329,26 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
 
       {/* Accountability Partner */}
       {accountabilityPartner && (
-        <AccountabilityPartnerCard
-          partner={accountabilityPartner}
-          weekStart={currentWeekStart}
-          onStatusChange={handlePartnerUpdate}
-        />
-      )}
+        <>
+          <AccountabilityPartnerCard
+            partner={accountabilityPartner}
+            weekStart={currentWeekStart}
+            onStatusChange={handlePartnerUpdate}
+          />
+          
+          <CheckInHistory
+            partnershipId={accountabilityPartner.partnership_id}
+            weekStart={currentWeekStart}
+            partnerId={accountabilityPartner.partner_id}
+            partnerName={accountabilityPartner.full_name}
+            partnerAvatar={accountabilityPartner.avatar_url}
+          />
 
-      {/* Partner Progress */}
-      {accountabilityPartner && (
-        <PartnerProgressView
-          partnerId={accountabilityPartner.partner_id}
-          weekStart={currentWeekStart}
-        />
+          <PartnerProgressView
+            partnerId={accountabilityPartner.partner_id}
+            weekStart={currentWeekStart}
+          />
+        </>
       )}
 
       {/* Weekly Objectives */}

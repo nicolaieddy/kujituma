@@ -119,6 +119,25 @@ class AccountabilityService {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
+      // Get partner ID and user name
+      const { data: partnership } = await supabase
+        .from('accountability_partnerships')
+        .select('user1_id, user2_id')
+        .eq('id', partnershipId)
+        .single();
+
+      if (!partnership) throw new Error('Partnership not found');
+
+      const partnerId = partnership.user1_id === user.id 
+        ? partnership.user2_id 
+        : partnership.user1_id;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
       const { error } = await supabase
         .from('accountability_check_ins')
         .insert({
@@ -135,6 +154,14 @@ class AccountabilityService {
         .from('accountability_partnerships')
         .update({ last_check_in_at: new Date().toISOString() })
         .eq('id', partnershipId);
+
+      // Create notification for partner
+      await supabase.rpc('create_notification', {
+        _user_id: partnerId,
+        _type: 'accountability_check_in',
+        _message: `${profile?.full_name || 'Your partner'} sent you a check-in message`,
+        _triggered_by_user_id: user.id
+      });
 
       return { success: true };
     } catch (error: any) {
