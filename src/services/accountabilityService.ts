@@ -9,6 +9,15 @@ export interface AccountabilityPartner {
   last_check_in_at: string | null;
 }
 
+export interface AccountabilityGroup {
+  group_id: string;
+  group_name: string;
+  group_description: string | null;
+  member_count: number;
+  last_check_in_at: string | null;
+  user_role: string;
+}
+
 export interface AccountabilityPartnerRequest {
   id: string;
   sender_id: string;
@@ -77,6 +86,32 @@ class AccountabilityService {
     }
   }
 
+  async getAccountabilityPartners(): Promise<AccountabilityPartner[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_accountability_partners');
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching accountability partners:', error);
+      return [];
+    }
+  }
+
+  async getAccountabilityGroups(): Promise<AccountabilityGroup[]> {
+    try {
+      const { data, error } = await supabase.rpc('get_accountability_groups');
+
+      if (error) throw error;
+
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching accountability groups:', error);
+      return [];
+    }
+  }
+
   async getPartnerRequests(): Promise<{ sent: AccountabilityPartnerRequest[]; received: AccountabilityPartnerRequest[] }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -114,23 +149,15 @@ class AccountabilityService {
     }
   }
 
-  async createCheckIn(partnershipId: string, weekStart: string, message?: string): Promise<{ success: boolean; error?: string }> {
+  async createCheckIn(
+    partnershipId: string | null, 
+    groupId: string | null,
+    weekStart: string, 
+    message?: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-
-      // Get partner ID and user name
-      const { data: partnership } = await supabase
-        .from('accountability_partnerships')
-        .select('user1_id, user2_id')
-        .eq('id', partnershipId)
-        .single();
-
-      if (!partnership) throw new Error('Partnership not found');
-
-      const partnerId = partnership.user1_id === user.id 
-        ? partnership.user2_id 
-        : partnership.user1_id;
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -142,6 +169,7 @@ class AccountabilityService {
         .from('accountability_check_ins')
         .insert({
           partnership_id: partnershipId,
+          group_id: groupId,
           initiated_by: user.id,
           week_start: weekStart,
           message: message || null,
@@ -149,19 +177,52 @@ class AccountabilityService {
 
       if (error) throw error;
 
-      // Update last check-in time
-      await supabase
-        .from('accountability_partnerships')
-        .update({ last_check_in_at: new Date().toISOString() })
-        .eq('id', partnershipId);
+      // Update last check-in time for partnerships
+      if (partnershipId) {
+        const { data: partnership } = await supabase
+          .from('accountability_partnerships')
+          .select('user1_id, user2_id')
+          .eq('id', partnershipId)
+          .single();
 
-      // Create notification for partner
-      await supabase.rpc('create_notification', {
-        _user_id: partnerId,
-        _type: 'accountability_check_in',
-        _message: `${profile?.full_name || 'Your partner'} sent you a check-in message`,
-        _triggered_by_user_id: user.id
-      });
+        if (partnership) {
+          await supabase
+            .from('accountability_partnerships')
+            .update({ last_check_in_at: new Date().toISOString() })
+            .eq('id', partnershipId);
+
+          const partnerId = partnership.user1_id === user.id 
+            ? partnership.user2_id 
+            : partnership.user1_id;
+
+          await supabase.rpc('create_notification', {
+            _user_id: partnerId,
+            _type: 'accountability_check_in',
+            _message: `${profile?.full_name || 'Your partner'} sent you a check-in message`,
+            _triggered_by_user_id: user.id
+          });
+        }
+      }
+
+      // Notify group members
+      if (groupId) {
+        const { data: members } = await supabase
+          .from('accountability_group_members')
+          .select('user_id')
+          .eq('group_id', groupId)
+          .neq('user_id', user.id);
+
+        if (members) {
+          for (const member of members) {
+            await supabase.rpc('create_notification', {
+              _user_id: member.user_id,
+              _type: 'accountability_check_in',
+              _message: `${profile?.full_name || 'A group member'} sent a check-in message`,
+              _triggered_by_user_id: user.id
+            });
+          }
+        }
+      }
 
       return { success: true };
     } catch (error: any) {
@@ -170,14 +231,21 @@ class AccountabilityService {
     }
   }
 
-  async getCheckIns(partnershipId: string, weekStart: string): Promise<CheckIn[]> {
+  async getCheckIns(partnershipId: string | null, groupId: string | null, weekStart: string): Promise<CheckIn[]> {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('accountability_check_ins')
         .select('*')
-        .eq('partnership_id', partnershipId)
         .eq('week_start', weekStart)
         .order('created_at', { ascending: false });
+
+      if (partnershipId) {
+        query = query.eq('partnership_id', partnershipId).is('group_id', null);
+      } else if (groupId) {
+        query = query.eq('group_id', groupId).is('partnership_id', null);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

@@ -9,7 +9,9 @@ import { toast } from 'sonner';
 interface CheckInDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  partner: AccountabilityPartner;
+  partner: AccountabilityPartner | null;
+  groupId?: string | null;
+  groupName?: string;
   weekStart: string;
   onCheckInComplete: () => void;
 }
@@ -18,6 +20,8 @@ export const CheckInDialog = ({
   open,
   onOpenChange,
   partner,
+  groupId = null,
+  groupName,
   weekStart,
   onCheckInComplete,
 }: CheckInDialogProps) => {
@@ -28,13 +32,15 @@ export const CheckInDialog = ({
     setIsSubmitting(true);
 
     const result = await accountabilityService.createCheckIn(
-      partner.partnership_id,
+      partner?.partnership_id || null,
+      groupId || null,
       weekStart,
       message || undefined
     );
 
     if (result.success) {
-      toast.success(`✅ Check-in sent to ${partner.full_name}!`);
+      const recipientName = partner?.full_name || groupName || 'the group';
+      toast.success(`✅ Check-in sent to ${recipientName}!`);
       setMessage('');
       onCheckInComplete();
       onOpenChange(false);
@@ -45,16 +51,21 @@ export const CheckInDialog = ({
     setIsSubmitting(false);
   };
 
+  const displayName = partner?.full_name || groupName || 'Accountability';
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
-            Check In with {partner.full_name}
+            Check In with {displayName}
           </DialogTitle>
           <DialogDescription>
-            Share your progress and encourage your accountability partner
+            {partner 
+              ? 'Share your progress and encourage your accountability partner'
+              : 'Send a message to your accountability group about your week'
+            }
           </DialogDescription>
         </DialogHeader>
 

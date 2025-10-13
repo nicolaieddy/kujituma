@@ -17,6 +17,7 @@ export type Database = {
       accountability_check_ins: {
         Row: {
           created_at: string
+          group_id: string | null
           id: string
           initiated_by: string
           message: string | null
@@ -25,6 +26,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          group_id?: string | null
           id?: string
           initiated_by: string
           message?: string | null
@@ -33,6 +35,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          group_id?: string | null
           id?: string
           initiated_by?: string
           message?: string | null
@@ -40,6 +43,13 @@ export type Database = {
           week_start?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "accountability_check_ins_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_groups"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "accountability_check_ins_initiated_by_fkey"
             columns: ["initiated_by"]
@@ -55,6 +65,68 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      accountability_group_members: {
+        Row: {
+          group_id: string
+          id: string
+          joined_at: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accountability_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accountability_groups: {
+        Row: {
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       accountability_partner_requests: {
         Row: {
@@ -822,7 +894,29 @@ export type Database = {
         Args: { _user_id: string; _week_start: string }
         Returns: number
       }
+      get_accountability_groups: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          group_description: string
+          group_id: string
+          group_name: string
+          last_check_in_at: string
+          member_count: number
+          user_role: string
+        }[]
+      }
       get_accountability_partner: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          avatar_url: string
+          full_name: string
+          last_check_in_at: string
+          partner_id: string
+          partnership_id: string
+          status: string
+        }[]
+      }
+      get_accountability_partners: {
         Args: Record<PropertyKey, never>
         Returns: {
           avatar_url: string

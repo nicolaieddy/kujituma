@@ -7,15 +7,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { formatTimeAgo } from '@/utils/timeUtils';
 
 interface CheckInHistoryProps {
-  partnershipId: string;
+  partnershipId: string | null;
+  groupId: string | null;
   weekStart: string;
-  partnerId: string;
+  partnerId: string | null;
   partnerName: string;
   partnerAvatar: string | null;
 }
 
 export const CheckInHistory = ({ 
-  partnershipId, 
+  partnershipId,
+  groupId,
   weekStart, 
   partnerId,
   partnerName,
@@ -28,7 +30,7 @@ export const CheckInHistory = ({
   useEffect(() => {
     const loadCheckIns = async () => {
       setLoading(true);
-      const data = await accountabilityService.getCheckIns(partnershipId, weekStart);
+      const data = await accountabilityService.getCheckIns(partnershipId, groupId, weekStart);
       setCheckIns(data);
       setLoading(false);
     };
@@ -42,6 +44,10 @@ export const CheckInHistory = ({
     loadCheckIns();
 
     // Subscribe to new check-ins
+    const filterCondition = partnershipId 
+      ? `partnership_id=eq.${partnershipId}`
+      : `group_id=eq.${groupId}`;
+
     const channel = supabase
       .channel('check-ins')
       .on(
@@ -50,7 +56,7 @@ export const CheckInHistory = ({
           event: 'INSERT',
           schema: 'public',
           table: 'accountability_check_ins',
-          filter: `partnership_id=eq.${partnershipId}`
+          filter: filterCondition
         },
         (payload) => {
           const newCheckIn = payload.new as CheckIn;
@@ -64,7 +70,7 @@ export const CheckInHistory = ({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [partnershipId, weekStart]);
+  }, [partnershipId, groupId, weekStart]);
 
   if (loading) {
     return (
@@ -111,8 +117,11 @@ export const CheckInHistory = ({
       <CardContent className="space-y-4">
         {checkIns.map((checkIn) => {
           const isFromCurrentUser = checkIn.initiated_by === currentUserId;
-          const displayName = isFromCurrentUser ? 'You' : partnerName;
-          const displayAvatar = isFromCurrentUser ? null : partnerAvatar;
+          
+          // For groups, we need to fetch the sender's profile
+          // For simplicity, we'll just show "You" or "Group Member" for now
+          const displayName = isFromCurrentUser ? 'You' : (groupId ? 'Group Member' : partnerName);
+          const displayAvatar = isFromCurrentUser ? null : (groupId ? null : partnerAvatar);
           
           return (
             <div

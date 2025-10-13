@@ -16,11 +16,9 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
-import { AccountabilityPartnerCard } from "@/components/accountability/AccountabilityPartnerCard";
-import { PartnerProgressView } from "@/components/accountability/PartnerProgressView";
-import { CheckInHistory } from "@/components/accountability/CheckInHistory";
+import { PublicCommitmentsBadge } from "@/components/commitments/PublicCommitmentsBadge";
+import { AccountabilitySection } from "@/components/accountability/AccountabilitySection";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
-import { accountabilityService, AccountabilityPartner } from "@/services/accountabilityService";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -36,7 +34,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [showShareConfirmation, setShowShareConfirmation] = useState(false);
   const [showCommitmentSelector, setShowCommitmentSelector] = useState(false);
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
-  const [accountabilityPartner, setAccountabilityPartner] = useState<AccountabilityPartner | null>(null);
   
   const {
     objectives,
@@ -227,23 +224,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       }
     };
 
-    const loadAccountabilityPartner = async () => {
-      const partner = await accountabilityService.getAccountabilityPartner();
-      setAccountabilityPartner(partner);
-    };
-
     loadCommitments();
-    loadAccountabilityPartner();
   }, [user, currentWeekStart]);
 
   const handleCommitmentsSet = () => {
     if (user) {
       commitmentsService.getPublicCommitments(user.id, currentWeekStart).then(setCommitments);
     }
-  };
-
-  const handlePartnerUpdate = () => {
-    accountabilityService.getAccountabilityPartner().then(setAccountabilityPartner);
   };
 
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
@@ -327,29 +314,11 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         </Card>
       )}
 
-      {/* Accountability Partner */}
-      {accountabilityPartner && (
-        <>
-          <AccountabilityPartnerCard
-            partner={accountabilityPartner}
-            weekStart={currentWeekStart}
-            onStatusChange={handlePartnerUpdate}
-          />
-          
-          <CheckInHistory
-            partnershipId={accountabilityPartner.partnership_id}
-            weekStart={currentWeekStart}
-            partnerId={accountabilityPartner.partner_id}
-            partnerName={accountabilityPartner.full_name}
-            partnerAvatar={accountabilityPartner.avatar_url}
-          />
-
-          <PartnerProgressView
-            partnerId={accountabilityPartner.partner_id}
-            weekStart={currentWeekStart}
-          />
-        </>
-      )}
+      {/* Accountability */}
+      <AccountabilitySection
+        weekStart={currentWeekStart}
+        onUpdate={() => {}}
+      />
 
       {/* Weekly Objectives */}
       <Card className="border-border">
