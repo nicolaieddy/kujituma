@@ -227,17 +227,29 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
                 </div>
                 
                 {/* Accountability Partner Request */}
-                {is_friend && !hasPartner && !loadingStates.partner && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className={pendingRequest ? "bg-accent/50 border-accent text-accent-foreground" : "bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"}
-                    onClick={handleSendPartnerRequest}
-                    disabled={isSendingRequest || pendingRequest}
-                  >
-                    <Users className="h-4 w-4 mr-2" />
-                    {isSendingRequest ? 'Sending...' : pendingRequest ? 'Request Pending' : 'Become Accountability Partners'}
-                  </Button>
+                {is_friend && !loadingStates.partner && (
+                  hasPartner ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-muted/50 border-muted text-muted-foreground cursor-not-allowed"
+                      disabled
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      You already have an accountability partner
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className={pendingRequest ? "bg-accent/50 border-accent text-accent-foreground" : "bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"}
+                      onClick={handleSendPartnerRequest}
+                      disabled={isSendingRequest || pendingRequest}
+                    >
+                      <Users className="h-4 w-4 mr-2" />
+                      {isSendingRequest ? 'Sending...' : pendingRequest ? 'Request Pending' : 'Become Accountability Partners'}
+                    </Button>
+                  )
                 )}
               </div>
             )}
