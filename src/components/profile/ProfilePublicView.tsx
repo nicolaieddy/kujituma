@@ -50,7 +50,7 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
-  const [hasPartner, setHasPartner] = useState(false);
+  const [isAlreadyPartner, setIsAlreadyPartner] = useState(false);
   const [isSendingRequest, setIsSendingRequest] = useState(false);
   const [pendingRequest, setPendingRequest] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
@@ -82,10 +82,11 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
           setLoadingStates(prev => ({ ...prev, commitments: false }));
         })(),
         
-        // Check partnership
+        // Check if already partners with this person
         (async () => {
-          const partner = await accountabilityService.getAccountabilityPartner();
-          setHasPartner(!!partner);
+          const partners = await accountabilityService.getAccountabilityPartners();
+          const isPartner = partners.some(p => p.partner_id === profile.id);
+          setIsAlreadyPartner(isPartner);
           setLoadingStates(prev => ({ ...prev, partner: false }));
         })(),
         
@@ -228,15 +229,15 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
                 
                 {/* Accountability Partner Request */}
                 {is_friend && !loadingStates.partner && (
-                  hasPartner ? (
+                  isAlreadyPartner ? (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="bg-muted/50 border-muted text-muted-foreground cursor-not-allowed"
+                      className="bg-primary/10 border-primary/30 text-primary"
                       disabled
                     >
                       <Users className="h-4 w-4 mr-2" />
-                      You already have an accountability partner
+                      Already Accountability Partners
                     </Button>
                   ) : (
                     <Button
