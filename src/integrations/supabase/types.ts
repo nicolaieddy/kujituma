@@ -319,6 +319,45 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_check_ins: {
+        Row: {
+          blocker: string | null
+          check_in_date: string
+          created_at: string
+          energy_level: number | null
+          focus_today: string | null
+          id: string
+          mood_rating: number | null
+          quick_win: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          blocker?: string | null
+          check_in_date?: string
+          created_at?: string
+          energy_level?: number | null
+          focus_today?: string | null
+          id?: string
+          mood_rating?: number | null
+          quick_win?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          blocker?: string | null
+          check_in_date?: string
+          created_at?: string
+          energy_level?: number | null
+          focus_today?: string | null
+          id?: string
+          mood_rating?: number | null
+          quick_win?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       friend_requests: {
         Row: {
           created_at: string
@@ -732,6 +771,57 @@ export type Database = {
           },
         ]
       }
+      quarterly_reviews: {
+        Row: {
+          challenges: string | null
+          completed_at: string | null
+          created_at: string
+          goals_review: Json | null
+          id: string
+          is_completed: boolean
+          lessons_learned: string | null
+          next_quarter_focus: string | null
+          quarter: number
+          quarter_start: string
+          updated_at: string
+          user_id: string
+          wins: string | null
+          year: number
+        }
+        Insert: {
+          challenges?: string | null
+          completed_at?: string | null
+          created_at?: string
+          goals_review?: Json | null
+          id?: string
+          is_completed?: boolean
+          lessons_learned?: string | null
+          next_quarter_focus?: string | null
+          quarter: number
+          quarter_start: string
+          updated_at?: string
+          user_id: string
+          wins?: string | null
+          year: number
+        }
+        Update: {
+          challenges?: string | null
+          completed_at?: string | null
+          created_at?: string
+          goals_review?: Json | null
+          id?: string
+          is_completed?: boolean
+          lessons_learned?: string | null
+          next_quarter_focus?: string | null
+          quarter?: number
+          quarter_start?: string
+          updated_at?: string
+          user_id?: string
+          wins?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -749,6 +839,45 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_streaks: {
+        Row: {
+          created_at: string
+          current_daily_streak: number
+          current_weekly_streak: number
+          id: string
+          last_check_in_date: string | null
+          last_week_completed: string | null
+          longest_daily_streak: number
+          longest_weekly_streak: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_daily_streak?: number
+          current_weekly_streak?: number
+          id?: string
+          last_check_in_date?: string | null
+          last_week_completed?: string | null
+          longest_daily_streak?: number
+          longest_weekly_streak?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_daily_streak?: number
+          current_weekly_streak?: number
+          id?: string
+          last_check_in_date?: string | null
+          last_week_completed?: string | null
+          longest_daily_streak?: number
+          longest_weekly_streak?: number
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -796,6 +925,8 @@ export type Database = {
           id: string
           is_completed: boolean
           order_index: number | null
+          scheduled_day: string | null
+          scheduled_time: string | null
           text: string
           updated_at: string
           user_id: string
@@ -807,6 +938,8 @@ export type Database = {
           id?: string
           is_completed?: boolean
           order_index?: number | null
+          scheduled_day?: string | null
+          scheduled_time?: string | null
           text: string
           updated_at?: string
           user_id: string
@@ -818,6 +951,8 @@ export type Database = {
           id?: string
           is_completed?: boolean
           order_index?: number | null
+          scheduled_day?: string | null
+          scheduled_time?: string | null
           text?: string
           updated_at?: string
           user_id?: string
@@ -832,6 +967,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      weekly_planning_sessions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          is_completed: boolean
+          last_week_reflection: string | null
+          updated_at: string
+          user_id: string
+          week_intention: string | null
+          week_start: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          last_week_reflection?: string | null
+          updated_at?: string
+          user_id: string
+          week_intention?: string | null
+          week_start: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          is_completed?: boolean
+          last_week_reflection?: string | null
+          updated_at?: string
+          user_id?: string
+          week_intention?: string | null
+          week_start?: string
+        }
+        Relationships: []
       }
       weekly_progress_posts: {
         Row: {
