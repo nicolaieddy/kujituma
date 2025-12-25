@@ -895,7 +895,7 @@ export type Database = {
         Returns: number
       }
       get_accountability_groups: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           group_description: string
           group_id: string
@@ -906,7 +906,7 @@ export type Database = {
         }[]
       }
       get_accountability_partner: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avatar_url: string
           full_name: string
@@ -917,7 +917,7 @@ export type Database = {
         }[]
       }
       get_accountability_partners: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avatar_url: string
           full_name: string
@@ -928,7 +928,7 @@ export type Database = {
         }[]
       }
       get_admin_users_data: {
-        Args: Record<PropertyKey, never>
+        Args: never
         Returns: {
           avatar_url: string
           created_at: string
@@ -940,10 +940,7 @@ export type Database = {
           role: string
         }[]
       }
-      get_filtered_profile: {
-        Args: { profile_id: string }
-        Returns: Json
-      }
+      get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
       get_profile_visibility_level: {
         Args: { profile_user_id: string; requesting_user_id: string }
         Returns: string
@@ -991,10 +988,7 @@ export type Database = {
         Args: { _notification_id: string; _user_id: string }
         Returns: boolean
       }
-      remove_friend: {
-        Args: { _friend_id: string }
-        Returns: boolean
-      }
+      remove_friend: { Args: { _friend_id: string }; Returns: boolean }
       respond_to_accountability_partner_request: {
         Args: { _request_id: string; _response: string }
         Returns: boolean
@@ -1007,10 +1001,7 @@ export type Database = {
         Args: { _message: string; _receiver_id: string }
         Returns: string
       }
-      send_friend_request: {
-        Args: { _receiver_id: string }
-        Returns: string
-      }
+      send_friend_request: { Args: { _receiver_id: string }; Returns: string }
       set_public_commitments: {
         Args: { _objective_ids: string[]; _week_start: string }
         Returns: boolean
@@ -1023,10 +1014,7 @@ export type Database = {
         Args: { _post_id: string; _user_id: string }
         Returns: boolean
       }
-      update_user_last_active: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      update_user_last_active: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
