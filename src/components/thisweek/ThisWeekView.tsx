@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { HabitsService } from "@/services/habitsService";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
@@ -18,6 +19,7 @@ import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmation
 import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
 import { PublicCommitmentsBadge } from "@/components/commitments/PublicCommitmentsBadge";
 import { AccountabilitySection } from "@/components/accountability/AccountabilitySection";
+import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
 
 interface ThisWeekViewProps {
@@ -87,6 +89,30 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       console.error('Error reordering objective:', error);
     }
   };
+
+  const handleUpdateObjectiveSchedule = (id: string, day: string | null, time: string | null) => {
+    updateObjective(id, { scheduled_day: day, scheduled_time: time });
+  };
+
+  // State for incomplete reflections
+  const [incompleteReflections, setIncompleteReflections] = useState<Record<string, string>>(
+    progressPost?.incomplete_reflections || {}
+  );
+
+  const handleUpdateIncompleteReflection = useCallback((objectiveId: string, reflection: string) => {
+    setIncompleteReflections(prev => ({
+      ...prev,
+      [objectiveId]: reflection
+    }));
+    // Auto-save the reflections
+    WeeklyProgressService.upsertWeeklyProgressPostWithReflections(
+      currentWeekStart,
+      progressPost?.notes || '',
+      { ...incompleteReflections, [objectiveId]: reflection }
+    );
+  }, [currentWeekStart, progressPost?.notes, incompleteReflections]);
+
+  const isEndOfWeek = HabitsService.isEndOfWeek();
 
   const handleViewInCommunity = () => {
     if (feedPost) {
@@ -339,9 +365,20 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onAddObjective={handleAddObjective}
             isDeletingAll={isDeletingAll}
             onReorderObjective={handleReorderObjective}
+            onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
           />
         </CardContent>
       </Card>
+
+      {/* End of Week Reflection - show on Fri/Sat if there are incomplete objectives */}
+      {isEndOfWeek && isCurrentWeek && !isReadOnly && objectives && objectives.some(obj => !obj.is_completed) && (
+        <EndOfWeekReflection
+          objectives={objectives}
+          incompleteReflections={incompleteReflections}
+          onUpdateReflection={handleUpdateIncompleteReflection}
+          isReadOnly={isReadOnly}
+        />
+      )}
 
       {/* Weekly Reflection */}
       <WeeklyReflectionCard

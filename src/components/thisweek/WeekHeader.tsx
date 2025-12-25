@@ -2,6 +2,7 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { StreakCounter } from "@/components/habits/StreakCounter";
 
 interface WeekHeaderProps {
   weekNumber: number;
@@ -20,6 +21,8 @@ export const WeekHeader = ({
   totalCount,
   onNavigateWeek
 }: WeekHeaderProps) => {
+  const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
+  
   return (
     <Card className="border-border">
       <CardHeader>
@@ -52,13 +55,18 @@ export const WeekHeader = ({
               <p className="text-muted-foreground mt-1">{weekRange}</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5 text-muted-foreground" />
-            {totalCount > 0 && (
-              <div className="text-foreground text-sm">
-                {completedCount}/{totalCount} completed
-              </div>
-            )}
+          <div className="flex items-center gap-6">
+            {/* Streak Counter - only show on current week */}
+            {isCurrentWeek && <StreakCounter variant="compact" />}
+            
+            <div className="flex items-center space-x-2">
+              <Calendar className="h-5 w-5 text-muted-foreground" />
+              {totalCount > 0 && (
+                <div className="text-foreground text-sm">
+                  {completedCount}/{totalCount} completed
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </CardHeader>

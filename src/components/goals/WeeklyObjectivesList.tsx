@@ -29,6 +29,8 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import { SortableObjectiveItem } from "./SortableObjectiveItem";
 import { useEffect } from "react";
 
+import { ObjectiveTimeBlocker } from "@/components/habits/ObjectiveTimeBlocker";
+
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
   goals: Goal[];
@@ -44,6 +46,7 @@ interface WeeklyObjectivesListProps {
   hasIncompleteObjectives?: boolean;
   isDeletingAll?: boolean;
   onReorderObjective?: (objectiveId: string, newOrderIndex: number) => void;
+  onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
 }
 
 export const WeeklyObjectivesList = ({
@@ -61,6 +64,7 @@ export const WeeklyObjectivesList = ({
   hasIncompleteObjectives = false,
   isDeletingAll = false,
   onReorderObjective,
+  onUpdateObjectiveSchedule,
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -386,6 +390,15 @@ export const WeeklyObjectivesList = ({
                             <Target className="h-3 w-3 mr-1" />
                             Link goal
                           </Button>
+                        )}
+                        {/* Time blocker */}
+                        {!isWeekCompleted && onUpdateObjectiveSchedule && (
+                          <ObjectiveTimeBlocker
+                            scheduledDay={objective.scheduled_day}
+                            scheduledTime={objective.scheduled_time}
+                            onUpdate={(day, time) => onUpdateObjectiveSchedule(objective.id, day, time)}
+                            disabled={isWeekCompleted}
+                          />
                         )}
                         {/* Show saving indicator */}
                         {savingObjectiveIds.has(objective.id) && (
