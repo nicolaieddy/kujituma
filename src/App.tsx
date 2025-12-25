@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TourProvider } from "@/components/tour/TourProvider";
+import { HabitsProvider } from "@/components/habits/HabitsProvider";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +81,7 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <TourProvider>
+              <HabitsProvider />
               <AppContent />
             </TourProvider>
           </AuthProvider>
