@@ -352,6 +352,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                   <Calendar
                     mode="single"
                     selected={formData.start_date ? parseISO(formData.start_date) : undefined}
+                    defaultMonth={formData.start_date ? parseISO(formData.start_date) : undefined}
                     onSelect={(date) => setFormData({ ...formData, start_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
@@ -380,6 +381,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                   <Calendar
                     mode="single"
                     selected={formData.target_date ? parseISO(formData.target_date) : undefined}
+                    defaultMonth={formData.target_date ? parseISO(formData.target_date) : undefined}
                     onSelect={(date) => setFormData({ ...formData, target_date: date ? format(date, 'yyyy-MM-dd') : '' })}
                     initialFocus
                     className={cn("p-3 pointer-events-auto")}
