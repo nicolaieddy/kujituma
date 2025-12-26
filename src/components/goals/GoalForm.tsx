@@ -332,26 +332,13 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                         Custom Categories
                       </div>
                       {customCategories.map((category) => (
-                        <div key={category.id} className="flex items-center justify-between px-2 py-1 hover:bg-accent group">
-                          <SelectItem 
-                            value={category.name} 
-                            className="flex-1 border-none p-0 hover:bg-transparent cursor-pointer"
-                          >
-                            {category.name}
-                          </SelectItem>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCustomCategory(category.id, category.name);
-                            }}
-                            className="h-6 w-6 p-0 text-destructive hover:bg-destructive/20"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
+                        <SelectItem 
+                          key={category.id}
+                          value={category.name} 
+                          className="cursor-pointer"
+                        >
+                          {category.name}
+                        </SelectItem>
                       ))}
                     </>
                   )}
