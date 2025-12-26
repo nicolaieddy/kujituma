@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GoalsService } from "@/services/goalsService";
+import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { Goal, CreateGoalData, UpdateGoalData } from "@/types/goals";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
@@ -18,8 +20,23 @@ export const useGoals = () => {
 
   const createGoalMutation = useMutation({
     mutationFn: GoalsService.createGoal,
-    onSuccess: () => {
+    onSuccess: async (goal) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      
+      // If it's a recurring goal, generate the objective for the current week immediately
+      if (goal.is_recurring) {
+        try {
+          const currentWeekStart = WeeklyProgressService.getWeekStart();
+          const created = await RecurringObjectivesService.createRecurringObjectiveIfNeeded(goal, currentWeekStart);
+          if (created) {
+            // Invalidate weekly objectives to show the new recurring objective
+            queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+          }
+        } catch (error) {
+          console.error('Error creating recurring objective:', error);
+        }
+      }
+      
       toast({
         title: "Success",
         description: "Goal created successfully!",
@@ -38,8 +55,23 @@ export const useGoals = () => {
   const updateGoalMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateGoalData }) =>
       GoalsService.updateGoal(id, data),
-    onSuccess: () => {
+    onSuccess: async (goal) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      
+      // If it's a recurring goal, ensure objective exists for current week
+      if (goal.is_recurring) {
+        try {
+          const currentWeekStart = WeeklyProgressService.getWeekStart();
+          const created = await RecurringObjectivesService.createRecurringObjectiveIfNeeded(goal, currentWeekStart);
+          if (created) {
+            // Invalidate weekly objectives to show the new recurring objective
+            queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+          }
+        } catch (error) {
+          console.error('Error creating recurring objective:', error);
+        }
+      }
+      
       toast({
         title: "Success",
         description: "Goal updated successfully!",
