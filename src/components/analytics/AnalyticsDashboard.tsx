@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
-import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, X, Circle, CheckCircle, ExternalLink } from 'lucide-react';
-import { useAnalytics, HeatmapWeek } from '@/hooks/useAnalytics';
+import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy } from 'lucide-react';
+import { useAnalytics, HeatmapWeek, CategoryBreakdown } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -474,6 +474,97 @@ export const AnalyticsDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Category Performance Breakdown */}
+      {analytics.categoryBreakdown.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Category Performance
+            </CardTitle>
+            <CardDescription>
+              Completion rates by goal category
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {analytics.categoryBreakdown.map((category, index) => {
+                const isTop = index === 0 && analytics.categoryBreakdown.length > 1;
+                const isBottom = index === analytics.categoryBreakdown.length - 1 && analytics.categoryBreakdown.length > 1;
+                
+                return (
+                  <div 
+                    key={category.category} 
+                    className={`p-3 rounded-lg border ${
+                      isTop 
+                        ? 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-900' 
+                        : isBottom 
+                          ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900'
+                          : 'bg-muted/30 border-border'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        {isTop && <Trophy className="h-4 w-4 text-green-600" />}
+                        {isBottom && <TrendingDown className="h-4 w-4 text-amber-600" />}
+                        <span className={`font-medium ${
+                          isTop ? 'text-green-700 dark:text-green-400' : 
+                          isBottom ? 'text-amber-700 dark:text-amber-400' : ''
+                        }`}>
+                          {category.category}
+                        </span>
+                        <Badge variant="secondary" className="text-xs">
+                          {category.goalCount} {category.goalCount === 1 ? 'goal' : 'goals'}
+                        </Badge>
+                      </div>
+                      <span className={`font-bold ${
+                        isTop ? 'text-green-600' : 
+                        isBottom ? 'text-amber-600' : ''
+                      }`}>
+                        {category.completionRate.toFixed(0)}%
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full rounded-full transition-all"
+                          style={{ 
+                            width: `${category.completionRate}%`,
+                            backgroundColor: isTop 
+                              ? 'hsl(142 76% 36%)' 
+                              : isBottom 
+                                ? 'hsl(45 93% 47%)'
+                                : getCompletionColor(category.completionRate)
+                          }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {category.completed}/{category.total} objectives
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            
+            {analytics.categoryBreakdown.length > 1 && (
+              <div className="mt-4 pt-4 border-t text-sm text-muted-foreground">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-4 w-4 text-green-600" />
+                    <span>Best performing</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <TrendingDown className="h-4 w-4 text-amber-600" />
+                    <span>Needs attention</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Activity Heatmap */}
       <Card>
