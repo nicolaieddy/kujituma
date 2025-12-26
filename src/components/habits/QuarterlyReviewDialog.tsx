@@ -135,6 +135,35 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
     };
   }, [quarterObjectives, prevQuarterObjectives]);
   
+  // Group objectives by goal for breakdown
+  const objectivesByGoal = useMemo(() => {
+    if (!quarterObjectives || !goals) return [];
+    
+    const goalMap = new Map<string | null, { goalTitle: string; total: number; completed: number }>();
+    
+    quarterObjectives.forEach(obj => {
+      const goalId = obj.goal_id;
+      const existing = goalMap.get(goalId);
+      
+      if (existing) {
+        existing.total += 1;
+        if (obj.is_completed) existing.completed += 1;
+      } else {
+        const goal = goals.find(g => g.id === goalId);
+        goalMap.set(goalId, {
+          goalTitle: goal?.title || 'Unlinked Objectives',
+          total: 1,
+          completed: obj.is_completed ? 1 : 0
+        });
+      }
+    });
+    
+    // Convert to array and sort by total objectives (most active first)
+    return Array.from(goalMap.values())
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5); // Top 5 goals
+  }, [quarterObjectives, goals]);
+  
   // Filter goals by the current quarter
   const quarterGoals = useMemo(() => {
     if (!goals) return { completed: [], inProgress: [], notStarted: [], deprioritized: [] };
@@ -260,7 +289,36 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
             </Card>
           )}
           
-          {/* Goals Summary Card */}
+          {/* Objectives by Goal Breakdown */}
+          {objectivesByGoal.length > 0 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Most Active Goals</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {objectivesByGoal.map((goalData, index) => (
+                  <div key={index} className="space-y-1">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="truncate flex-1 font-medium">{goalData.goalTitle}</span>
+                      <span className="text-xs text-muted-foreground ml-2">
+                        {goalData.completed}/{goalData.total} done
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Progress 
+                        value={goalData.total > 0 ? (goalData.completed / goalData.total) * 100 : 0} 
+                        className="h-1.5 flex-1" 
+                      />
+                      <span className="text-xs text-muted-foreground w-8">
+                        {goalData.total > 0 ? Math.round((goalData.completed / goalData.total) * 100) : 0}%
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+          
           {hasAnyGoals && (
             <Card>
               <CardHeader className="pb-3">
