@@ -152,7 +152,7 @@ export const AnalyticsDashboard = () => {
                 <CalendarIcon className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 z-[100]" align="end">
+            <PopoverContent className="w-auto p-0 z-[999] bg-popover border shadow-lg" align="end">
               <div className="p-3 border-b bg-popover">
                 <p className="text-sm font-medium">Select date range</p>
                 <p className="text-xs text-muted-foreground">Choose a single date or a range</p>
