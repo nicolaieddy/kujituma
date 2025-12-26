@@ -42,24 +42,28 @@ const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string; descripti
   { value: 'quarterly', label: 'Quarterly', description: 'Once per quarter' }
 ];
 
-const getFrequencyPreview = (frequency: RecurrenceFrequency | undefined): string => {
+const getFrequencyPreview = (frequency: RecurrenceFrequency | undefined, hasHabitItems: boolean): string => {
   switch (frequency) {
     case 'daily':
-      return 'Creates an objective every week for daily practice';
+      return hasHabitItems 
+        ? 'Track daily with checkboxes — no weekly objective created'
+        : 'Creates an objective every week for daily practice';
     case 'weekdays':
-      return 'Creates an objective every week for weekday practice (Mon-Fri)';
+      return hasHabitItems 
+        ? 'Track Mon-Fri with checkboxes — no weekly objective created'
+        : 'Creates an objective every week for weekday practice (Mon-Fri)';
     case 'weekly':
-      return 'Creates an objective every Monday';
+      return 'Creates a weekly task every Monday';
     case 'biweekly':
-      return 'Creates an objective every other Monday';
+      return 'Creates a task every other Monday';
     case 'monthly':
-      return 'Creates an objective on the first week of each month';
+      return 'Creates a task on the first week of each month';
     case 'monthly_last_week':
-      return 'Creates an objective on the last week of each month';
+      return 'Creates a task on the last week of each month';
     case 'quarterly':
-      return 'Creates an objective at the start of each quarter (Jan, Apr, Jul, Oct)';
+      return 'Creates a task at the start of each quarter (Jan, Apr, Jul, Oct)';
     default:
-      return 'Creates an objective every Monday';
+      return 'Creates a weekly task every Monday';
   }
 };
 
@@ -520,34 +524,60 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    {getFrequencyPreview(formData.recurrence_frequency)}
+                    {getFrequencyPreview(formData.recurrence_frequency, formData.habit_items.length > 0)}
                   </p>
                 </div>
 
-                <div>
-                  <Label htmlFor="recurring_objective_text" className="font-medium text-sm">
-                    Objective Text <span className="text-muted-foreground font-normal">(optional)</span>
-                  </Label>
-                  <Input
-                    id="recurring_objective_text"
-                    value={formData.recurring_objective_text}
-                    onChange={(e) => setFormData({ ...formData, recurring_objective_text: e.target.value })}
-                    placeholder={formData.title || "Uses goal title if empty"}
-                    className={`mt-1.5 ${isMobile ? 'h-12 text-base' : 'h-10'}`}
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    The text that will appear as your weekly objective
-                  </p>
-                </div>
+                {/* Habit Items Editor - shown first for daily/weekday to emphasize it's the tracking method */}
+                {(formData.recurrence_frequency === 'daily' || formData.recurrence_frequency === 'weekdays') && (
+                  <div className="pt-2 border-t border-border/50">
+                    <HabitItemsEditor
+                      habitItems={formData.habit_items}
+                      onChange={(items) => setFormData({ ...formData, habit_items: items })}
+                      defaultFrequency={formData.recurrence_frequency || 'daily'}
+                    />
+                    {formData.habit_items.length > 0 && (
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                        ✓ Your habits will be tracked with daily checkboxes
+                      </p>
+                    )}
+                  </div>
+                )}
 
-                {/* Habit Items Editor */}
-                <div className="pt-2 border-t border-border/50">
-                  <HabitItemsEditor
-                    habitItems={formData.habit_items}
-                    onChange={(items) => setFormData({ ...formData, habit_items: items })}
-                    defaultFrequency={formData.recurrence_frequency || 'daily'}
-                  />
-                </div>
+                {/* Objective Text - only show for weekly+ frequencies OR daily/weekday without habit items */}
+                {!(
+                  (formData.recurrence_frequency === 'daily' || formData.recurrence_frequency === 'weekdays') && 
+                  formData.habit_items.length > 0
+                ) && (
+                  <div>
+                    <Label htmlFor="recurring_objective_text" className="font-medium text-sm">
+                      {formData.recurrence_frequency === 'daily' || formData.recurrence_frequency === 'weekdays' 
+                        ? 'Objective Text' 
+                        : 'Task Description'} <span className="text-muted-foreground font-normal">(optional)</span>
+                    </Label>
+                    <Input
+                      id="recurring_objective_text"
+                      value={formData.recurring_objective_text}
+                      onChange={(e) => setFormData({ ...formData, recurring_objective_text: e.target.value })}
+                      placeholder={formData.title || "Uses goal title if empty"}
+                      className={`mt-1.5 ${isMobile ? 'h-12 text-base' : 'h-10'}`}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      The text that will appear as your periodic task
+                    </p>
+                  </div>
+                )}
+
+                {/* Habit Items Editor - shown after objective text for weekly+ frequencies */}
+                {formData.recurrence_frequency !== 'daily' && formData.recurrence_frequency !== 'weekdays' && (
+                  <div className="pt-2 border-t border-border/50">
+                    <HabitItemsEditor
+                      habitItems={formData.habit_items}
+                      onChange={(items) => setFormData({ ...formData, habit_items: items })}
+                      defaultFrequency={formData.recurrence_frequency || 'daily'}
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>
