@@ -18,6 +18,10 @@ import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
 import { PublicCommitmentsBadge } from "@/components/commitments/PublicCommitmentsBadge";
+import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
+import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
+import { useHabitStats } from "@/hooks/useHabitStats";
+import { HabitStats } from "@/services/habitStreaksService";
 
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
@@ -30,12 +34,15 @@ interface ThisWeekViewProps {
 export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) => {
   const { user } = useAuth();
   const { goals } = useGoals();
+  const { habitStats, refetch: refetchHabits } = useHabitStats();
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showShareConfirmation, setShowShareConfirmation] = useState(false);
   const [showCommitmentSelector, setShowCommitmentSelector] = useState(false);
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
+  const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
+  const [showHabitModal, setShowHabitModal] = useState(false);
   
   const {
     objectives,
@@ -272,6 +279,16 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const hasCommitments = commitments.length === 3;
   const committedIds = commitments.map(c => c.objective_id);
 
+  const handleHabitClick = (habit: HabitStats) => {
+    setSelectedHabit(habit);
+    setShowHabitModal(true);
+  };
+
+  const handleCloseHabitModal = () => {
+    setShowHabitModal(false);
+    setSelectedHabit(null);
+  };
+
   // Show loading skeleton while data is being fetched
   if (weeklyDataLoading) {
     return <ThisWeekSkeleton />;
@@ -340,6 +357,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         </Card>
       )}
 
+      {/* Habits Due This Week */}
+      {isCurrentWeek && habitStats.length > 0 && (
+        <HabitsDueThisWeek
+          habits={habitStats}
+          objectives={objectives || []}
+          onHabitClick={handleHabitClick}
+        />
+      )}
 
       {/* Weekly Objectives */}
       <Card className="border-border">
@@ -412,6 +437,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         weekStart={currentWeekStart}
         currentCommitments={committedIds}
         onCommitmentsSet={handleCommitmentsSet}
+      />
+
+      {/* Habit Detail Modal */}
+      <HabitDetailModal
+        habitStats={selectedHabit}
+        isOpen={showHabitModal}
+        onClose={handleCloseHabitModal}
+        onUpdate={refetchHabits}
       />
     </div>
   );
