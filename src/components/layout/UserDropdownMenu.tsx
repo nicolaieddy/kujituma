@@ -13,15 +13,7 @@ interface UserDropdownMenuProps {
 
 export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDropdownMenuProps) => {
   const navigate = useNavigate();
-  
-  // Safe access - may not be available if HabitsProvider hasn't mounted yet
-  let openQuarterlyHistory: (() => void) | undefined;
-  try {
-    const quarterlyContext = useQuarterlyReviewTrigger();
-    openQuarterlyHistory = quarterlyContext.openQuarterlyHistory;
-  } catch {
-    // Context not available yet
-  }
+  const { openQuarterlyHistory } = useQuarterlyReviewTrigger();
 
   return (
     <DropdownMenu>
@@ -43,16 +35,13 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
           Profile
         </DropdownMenuItem>
         
-        {openQuarterlyHistory && (
-          <DropdownMenuItem 
-            onClick={openQuarterlyHistory}
-            className="cursor-pointer"
-          >
-            <ClipboardList className="h-4 w-4 mr-2" />
-            Quarterly Reviews
-          </DropdownMenuItem>
-        )}
-        
+        <DropdownMenuItem 
+          onClick={openQuarterlyHistory}
+          className="cursor-pointer"
+        >
+          <ClipboardList className="h-4 w-4 mr-2" />
+          Quarterly Reviews
+        </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={onRestartTour}
           className="cursor-pointer"
