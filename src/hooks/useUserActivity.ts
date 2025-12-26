@@ -14,65 +14,37 @@ export const useUserActivity = () => {
     if (!user) return;
     
     const now = Date.now();
-    if (now - lastUpdateRef.current < ACTIVITY_THROTTLE) {
-      return;
-    }
+    if (now - lastUpdateRef.current < ACTIVITY_THROTTLE) return;
 
     try {
       await supabase.rpc('update_user_last_active');
       lastUpdateRef.current = now;
-      console.log('Updated user last active timestamp');
-    } catch (error) {
-      console.error('Error updating user last active:', error);
+    } catch {
+      // Silent fail for activity tracking
     }
-  };
-
-  const scheduleUpdate = () => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
-    
-    timeoutRef.current = setTimeout(() => {
-      updateLastActive();
-      scheduleUpdate(); // Schedule next update
-    }, ACTIVITY_UPDATE_INTERVAL);
   };
 
   useEffect(() => {
     if (!user) return;
 
-    // Update immediately when hook mounts
     updateLastActive();
     
-    // Schedule periodic updates
-    scheduleUpdate();
+    const intervalId = setInterval(updateLastActive, ACTIVITY_UPDATE_INTERVAL);
 
-    // Track user activity events
-    const handleUserActivity = () => {
-      updateLastActive();
-    };
-
-    // Listen for user interactions
-    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-    
     let activityTimer: NodeJS.Timeout;
     const throttledActivity = () => {
       clearTimeout(activityTimer);
-      activityTimer = setTimeout(handleUserActivity, 10000); // Update after 10 seconds of activity
+      activityTimer = setTimeout(updateLastActive, 10000);
     };
 
-    events.forEach(event => {
-      document.addEventListener(event, throttledActivity, true);
-    });
+    const events = ['mousedown', 'keypress', 'scroll', 'touchstart'];
+    events.forEach(event => document.addEventListener(event, throttledActivity, true));
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
+      clearInterval(intervalId);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
       clearTimeout(activityTimer);
-      events.forEach(event => {
-        document.removeEventListener(event, throttledActivity, true);
-      });
+      events.forEach(event => document.removeEventListener(event, throttledActivity, true));
     };
   }, [user]);
 };

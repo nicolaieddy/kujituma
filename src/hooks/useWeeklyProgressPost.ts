@@ -10,38 +10,26 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
   const { data: progressPost = null, isLoading: progressPostLoading, error: progressPostError } = useQuery({
     queryKey: ['weekly-progress-post', user?.id, currentWeekStart],
     queryFn: async () => {
-      console.log('Fetching progress post for user:', user?.id, 'week:', currentWeekStart);
       try {
         return await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
-      } catch (error) {
-        console.error('Progress post query failed:', error);
-        // Return null instead of throwing to prevent crashes
+      } catch {
         return null;
       }
     },
     enabled: !!user && !!currentWeekStart,
-    retry: (failureCount, error) => {
-      console.error('Progress post query failed, attempt:', failureCount + 1, error);
-      // Only retry on network errors, not on data integrity issues
-      return failureCount < 1 && !error?.message?.includes('multiple');
-    },
-    staleTime: 5000, // Consider data fresh for 5 seconds
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    retry: 1,
+    staleTime: 5000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const updateProgressPostMutation = useMutation({
     mutationFn: ({ weekStart, notes }: { weekStart: string; notes: string }) =>
       WeeklyProgressService.upsertWeeklyProgressPost(weekStart, notes),
     onSuccess: () => {
-      // Only invalidate the specific week being updated
       queryClient.invalidateQueries({ queryKey: ['weekly-progress-post', user?.id, currentWeekStart] });
-      // Remove toast to prevent potential React crashes
-      console.log('Progress notes saved successfully!');
     },
     onError: (error) => {
       console.error('Error updating progress post:', error);
-      // Remove toast to prevent potential React crashes  
-      console.error('Failed to save progress notes:', error);
     },
   });
 
@@ -49,18 +37,11 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     mutationFn: WeeklyProgressService.completeWeek,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
-      toast({
-        title: "Success",
-        description: "Week completed successfully!",
-      });
+      toast({ title: "Success", description: "Week completed successfully!" });
     },
     onError: (error) => {
       console.error('Error completing week:', error);
-      toast({
-        title: "Error",
-        description: "Failed to complete week. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to complete week.", variant: "destructive" });
     },
   });
 
@@ -68,32 +49,16 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     mutationFn: WeeklyProgressService.uncompleteWeek,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
-      toast({
-        title: "Success",
-        description: "Week reopened for editing!",
-      });
+      toast({ title: "Success", description: "Week reopened for editing!" });
     },
     onError: (error) => {
       console.error('Error uncompleting week:', error);
-      toast({
-        title: "Error",
-        description: "Failed to reopen week. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to reopen week.", variant: "destructive" });
     },
   });
 
   const updateProgressNotes = (notes: string) => {
-    console.log('UpdateProgressNotes called with:', { notes, currentWeekStart });
     return updateProgressPostMutation.mutateAsync({ weekStart: currentWeekStart, notes });
-  };
-
-  const completeWeek = () => {
-    completeWeekMutation.mutate(currentWeekStart);
-  };
-
-  const uncompleteWeek = () => {
-    uncompleteWeekMutation.mutate(currentWeekStart);
   };
 
   return {
@@ -101,8 +66,8 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     isLoading: progressPostLoading,
     error: progressPostError,
     updateProgressNotes,
-    completeWeek,
-    uncompleteWeek,
+    completeWeek: () => completeWeekMutation.mutate(currentWeekStart),
+    uncompleteWeek: () => uncompleteWeekMutation.mutate(currentWeekStart),
     isSavingNotes: updateProgressPostMutation.isPending,
     isCompletingWeek: completeWeekMutation.isPending,
     isUncompletingWeek: uncompleteWeekMutation.isPending,

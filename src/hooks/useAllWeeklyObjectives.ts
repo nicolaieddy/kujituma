@@ -11,10 +11,7 @@ export const useAllWeeklyObjectives = () => {
   const { data: objectives = [], isLoading, error } = useQuery({
     queryKey: ['all-weekly-objectives', user?.id],
     queryFn: async () => {
-      console.log('=== useAllWeeklyObjectives: Fetching objectives ===');
-      
       // Only get current week and previous 3 weeks for faster initial load
-      // User can navigate to see more weeks if needed
       const weeks = [];
       const currentDate = new Date();
       
@@ -24,27 +21,18 @@ export const useAllWeeklyObjectives = () => {
         weeks.push(WeeklyProgressService.getWeekStart(date));
       }
 
-      console.log('Fetching objectives for weeks:', weeks);
-
       // Fetch objectives in parallel for better performance
       const allWeekObjectives = await Promise.all(
         weeks.map(async (week) => {
           try {
-            const weekObjectives = await WeeklyProgressService.getWeeklyObjectives(week);
-            console.log(`Week ${week} objectives:`, weekObjectives);
-            return weekObjectives;
-          } catch (error) {
-            console.error(`Error fetching objectives for week ${week}:`, error);
+            return await WeeklyProgressService.getWeeklyObjectives(week);
+          } catch {
             return [];
           }
         })
       );
 
-      const flatObjectives = allWeekObjectives.flat();
-      console.log('Total objectives fetched:', flatObjectives.length);
-      console.log('Objectives with goal_id:', flatObjectives.filter(obj => obj.goal_id));
-      
-      return flatObjectives;
+      return allWeekObjectives.flat();
     },
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes

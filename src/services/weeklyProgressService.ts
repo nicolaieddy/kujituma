@@ -3,29 +3,20 @@ import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateW
 
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
-    console.log('Fetching objectives for week:', weekStart);
-    
-    // Check authentication first
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error('Authentication error:', authError);
       throw new Error('User not authenticated');
     }
-    console.log('Authenticated user:', user.id);
     
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
       .select('*')
       .eq('week_start', weekStart)
-      .eq('user_id', user.id)  // Explicitly filter by user_id
+      .eq('user_id', user.id)
       .order('order_index', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching objectives:', error);
-      throw error;
-    }
-    console.log('Fetched objectives:', objectives?.length || 0);
+    if (error) throw error;
     return (objectives || []) as WeeklyObjective[];
   }
 
@@ -33,7 +24,6 @@ export class WeeklyProgressService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    console.log('Creating objective:', data);
     const { data: objective, error } = await supabase
       .from('weekly_objectives')
       .insert({
@@ -45,16 +35,11 @@ export class WeeklyProgressService {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error creating objective:', error);
-      throw error;
-    }
-    console.log('Created objective:', objective);
+    if (error) throw error;
     return objective as WeeklyObjective;
   }
 
   static async updateWeeklyObjective(id: string, data: UpdateWeeklyObjectiveData): Promise<WeeklyObjective> {
-    console.log('Updating objective:', id, data);
     const { data: objective, error } = await supabase
       .from('weekly_objectives')
       .update(data)
@@ -62,88 +47,58 @@ export class WeeklyProgressService {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating objective:', error);
-      throw error;
-    }
-    console.log('Updated objective:', objective);
+    if (error) throw error;
     return objective as WeeklyObjective;
   }
 
   static async deleteWeeklyObjective(id: string): Promise<void> {
-    console.log('Deleting objective:', id);
     const { error } = await supabase
       .from('weekly_objectives')
       .delete()
       .eq('id', id);
 
-    if (error) {
-      console.error('Error deleting objective:', error);
-      throw error;
-    }
-    console.log('Deleted objective:', id);
+    if (error) throw error;
   }
 
   static async deleteAllWeeklyObjectives(weekStart: string): Promise<number> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
-    console.log('Deleting all objectives for user:', user.id, 'week:', weekStart);
     const { data, error } = await supabase.rpc('delete_all_weekly_objectives', {
       _user_id: user.id,
       _week_start: weekStart
     });
 
-    if (error) {
-      console.error('Error deleting all objectives:', error);
-      throw error;
-    }
-    
-    const deletedCount = data || 0;
-    console.log('Deleted', deletedCount, 'objectives');
-    return deletedCount;
+    if (error) throw error;
+    return data || 0;
   }
 
   static async getWeeklyProgressPost(weekStart: string): Promise<WeeklyProgressPost | null> {
-    console.log('Fetching progress post for week:', weekStart);
-    
-    // Check authentication first
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error('Authentication error:', authError);
       throw new Error('User not authenticated');
     }
-    console.log('Authenticated user:', user.id);
-    
-    // Add more specific logging
-    console.log('Query params:', { weekStart, userId: user.id });
     
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .select('*')
       .eq('week_start', weekStart)
       .eq('user_id', user.id)
-      .limit(1)  // Add explicit limit to prevent multiple rows
-      .single();  // Use single but with limit for safety
+      .limit(1)
+      .single();
 
     if (error) {
-      // If no data found, return null instead of throwing
       if (error.code === 'PGRST116') {
-        console.log('No progress post found for this week');
         return null;
       }
-      console.error('Error fetching progress post:', error);
       throw error;
     }
-    console.log('Fetched progress post:', post ? 'found' : 'not found');
     return post as WeeklyProgressPost | null;
   }
 
   static async upsertWeeklyProgressPost(weekStart: string, notes: string): Promise<WeeklyProgressPost> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
-
-    console.log('Upserting progress post:', { weekStart, userId: user.id, notesLength: notes.length });
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
@@ -153,18 +108,13 @@ export class WeeklyProgressService {
         notes: notes,
         updated_at: new Date().toISOString()
       }, {
-        onConflict: 'user_id,week_start', // Specify the conflict columns
-        ignoreDuplicates: false // We want to update, not ignore
+        onConflict: 'user_id,week_start',
+        ignoreDuplicates: false
       })
       .select()
       .single();
 
-    if (error) {
-      console.error('Error upserting progress post:', error);
-      throw error;
-    }
-    
-    console.log('Successfully upserted progress post');
+    if (error) throw error;
     return post as WeeklyProgressPost;
   }
 
@@ -175,8 +125,6 @@ export class WeeklyProgressService {
   ): Promise<WeeklyProgressPost> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
-
-    console.log('Upserting progress post with reflections:', { weekStart, userId: user.id });
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
@@ -192,19 +140,13 @@ export class WeeklyProgressService {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error upserting progress post with reflections:', error);
-      throw error;
-    }
-    console.log('Successfully upserted progress post with reflections');
+    if (error) throw error;
     return post as WeeklyProgressPost;
   }
 
   static async completeWeek(weekStart: string): Promise<WeeklyProgressPost> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
-
-    console.log('Completing week:', { weekStart, userId: user.id });
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
@@ -220,11 +162,7 @@ export class WeeklyProgressService {
       .select()
       .single();
 
-    if (error) {
-      console.error('Error completing week:', error);
-      throw error;
-    }
-    console.log('Successfully completed week');
+    if (error) throw error;
     return post as WeeklyProgressPost;
   }
 
@@ -252,37 +190,20 @@ export class WeeklyProgressService {
    * Returns date in YYYY-MM-DD format
    */
   static getWeekStart(date: Date = new Date()): string {
-    console.log('Getting week start for date:', date.toISOString());
-    
-    // Create a new date to avoid mutating the input and use local time
     const startOfWeek = new Date(date.getTime());
-    
-    // Get the day of the week (0 = Sunday, 1 = Monday, ..., 6 = Saturday) in local time
     const dayOfWeek = startOfWeek.getDay();
-    
-    // Calculate how many days to subtract to get to Monday
-    // If it's Sunday (0), we need to go back 6 days to get to Monday
-    // If it's Monday (1), we need to go back 0 days
-    // If it's Tuesday (2), we need to go back 1 day, etc.
     const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    
-    // Set to the start of the week (Monday) using local time methods
     startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
     
-    // Return in YYYY-MM-DD format using local time
     const year = startOfWeek.getFullYear();
     const month = String(startOfWeek.getMonth() + 1).padStart(2, '0');
     const day = String(startOfWeek.getDate()).padStart(2, '0');
-    const result = `${year}-${month}-${day}`;
-    
-    console.log('Week start calculated:', result);
-    return result;
+    return `${year}-${month}-${day}`;
   }
 
   static formatWeekRange(weekStart: string): string {
-    // Parse the date string as local date (not UTC)
     const [year, month, day] = weekStart.split('-').map(Number);
-    const start = new Date(year, month - 1, day); // month is 0-based in Date constructor
+    const start = new Date(year, month - 1, day);
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
     
@@ -303,7 +224,6 @@ export class WeeklyProgressService {
     const end = new Date(start);
     end.setDate(start.getDate() + 6);
 
-    // Normalize to local midnight for safe comparison
     const todayLocal = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const startLocal = new Date(start.getFullYear(), start.getMonth(), start.getDate());
     const endLocal = new Date(end.getFullYear(), end.getMonth(), end.getDate());
@@ -312,9 +232,8 @@ export class WeeklyProgressService {
   }
 
   static getWeekNumber(weekStart: string): number {
-    // Parse the date string as local date (not UTC)
     const [year, month, day] = weekStart.split('-').map(Number);
-    const start = new Date(year, month - 1, day); // month is 0-based in Date constructor
+    const start = new Date(year, month - 1, day);
     const startOfYear = new Date(start.getFullYear(), 0, 1);
     const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
     return Math.ceil((days + startOfYear.getDay() + 1) / 7);
@@ -323,11 +242,8 @@ export class WeeklyProgressService {
   static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
-      console.error('Authentication error:', authError);
       throw new Error('User not authenticated');
     }
-
-    console.log('Fetching incomplete objectives before week:', currentWeekStart);
     
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
@@ -338,12 +254,7 @@ export class WeeklyProgressService {
       .order('week_start', { ascending: false })
       .order('created_at', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching incomplete objectives:', error);
-      throw error;
-    }
-    
-    console.log('Fetched incomplete objectives:', objectives?.length || 0);
+    if (error) throw error;
     return (objectives || []) as WeeklyObjective[];
   }
 
@@ -353,25 +264,18 @@ export class WeeklyProgressService {
       throw new Error('User not authenticated');
     }
 
-    console.log('Carrying over objectives:', objectiveIds, 'to week:', newWeekStart);
-
-    // Get the original objectives to copy their data
     const { data: originalObjectives, error: fetchError } = await supabase
       .from('weekly_objectives')
       .select('*')
       .in('id', objectiveIds)
       .eq('user_id', user.id);
 
-    if (fetchError) {
-      console.error('Error fetching objectives to carry over:', fetchError);
-      throw fetchError;
-    }
+    if (fetchError) throw fetchError;
 
     if (!originalObjectives || originalObjectives.length === 0) {
       return [];
     }
 
-    // Create new objectives for the current week
     const objectivesToCreate = originalObjectives.map(obj => ({
       user_id: user.id,
       goal_id: obj.goal_id,
@@ -385,12 +289,7 @@ export class WeeklyProgressService {
       .insert(objectivesToCreate)
       .select();
 
-    if (createError) {
-      console.error('Error creating carried over objectives:', createError);
-      throw createError;
-    }
-
-    console.log('Successfully carried over objectives:', newObjectives?.length || 0);
+    if (createError) throw createError;
     return (newObjectives || []) as WeeklyObjective[];
   }
 
@@ -400,7 +299,6 @@ export class WeeklyProgressService {
       throw new Error('User not authenticated');
     }
 
-    // Calculate quarter date range
     const startMonth = (quarter - 1) * 3;
     const quarterStart = new Date(year, startMonth, 1);
     const quarterEnd = new Date(year, startMonth + 3, 0);
@@ -416,11 +314,7 @@ export class WeeklyProgressService {
       .lte('week_start', endDate)
       .order('week_start', { ascending: true });
 
-    if (error) {
-      console.error('Error fetching quarterly objectives:', error);
-      throw error;
-    }
-
+    if (error) throw error;
     return (objectives || []) as WeeklyObjective[];
   }
 }
