@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +20,86 @@ import { Goal, GoalStatus } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { startOfWeek, addWeeks, startOfMonth, endOfMonth, isBefore, format, getMonth } from "date-fns";
+
+const getNextScheduledDate = (goal: Goal): string | null => {
+  if (!goal.is_recurring) return null;
+  
+  const frequency = goal.recurrence_frequency || 'weekly';
+  const today = new Date();
+  const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+  
+  switch (frequency) {
+    case 'daily':
+    case 'weekdays':
+    case 'weekly':
+      return format(currentWeekStart, 'MMM d');
+    
+    case 'biweekly': {
+      const goalCreatedDate = new Date(goal.created_at);
+      const goalCreatedWeekStart = startOfWeek(goalCreatedDate, { weekStartsOn: 1 });
+      let nextDate = goalCreatedWeekStart;
+      while (isBefore(nextDate, currentWeekStart) || format(nextDate, 'yyyy-MM-dd') < format(currentWeekStart, 'yyyy-MM-dd')) {
+        nextDate = addWeeks(nextDate, 2);
+      }
+      return format(nextDate, 'MMM d');
+    }
+    
+    case 'monthly': {
+      let checkMonth = startOfMonth(today);
+      let firstWeek = startOfWeek(checkMonth, { weekStartsOn: 1 });
+      if (isBefore(firstWeek, checkMonth)) {
+        firstWeek = addWeeks(firstWeek, 1);
+      }
+      if (isBefore(firstWeek, currentWeekStart)) {
+        checkMonth = startOfMonth(addWeeks(today, 4));
+        firstWeek = startOfWeek(checkMonth, { weekStartsOn: 1 });
+        if (isBefore(firstWeek, checkMonth)) {
+          firstWeek = addWeeks(firstWeek, 1);
+        }
+      }
+      return format(firstWeek, 'MMM d');
+    }
+    
+    case 'monthly_last_week': {
+      let monthEnd = endOfMonth(today);
+      let lastWeek = startOfWeek(monthEnd, { weekStartsOn: 1 });
+      if (isBefore(lastWeek, currentWeekStart)) {
+        monthEnd = endOfMonth(addWeeks(today, 4));
+        lastWeek = startOfWeek(monthEnd, { weekStartsOn: 1 });
+      }
+      return format(lastWeek, 'MMM d');
+    }
+    
+    case 'quarterly': {
+      const quarterStartMonths = [0, 3, 6, 9];
+      let currentMonth = getMonth(today);
+      let nextQuarterMonth = quarterStartMonths.find(m => m >= currentMonth) ?? quarterStartMonths[0];
+      let year = today.getFullYear();
+      if (nextQuarterMonth < currentMonth) year++;
+      
+      const quarterStart = new Date(year, nextQuarterMonth, 1);
+      let firstWeek = startOfWeek(quarterStart, { weekStartsOn: 1 });
+      if (isBefore(firstWeek, quarterStart)) {
+        firstWeek = addWeeks(firstWeek, 1);
+      }
+      if (isBefore(firstWeek, currentWeekStart)) {
+        const nextQuarterIdx = (quarterStartMonths.indexOf(nextQuarterMonth) + 1) % 4;
+        nextQuarterMonth = quarterStartMonths[nextQuarterIdx];
+        if (nextQuarterIdx === 0) year++;
+        const nextQuarterStart = new Date(year, nextQuarterMonth, 1);
+        firstWeek = startOfWeek(nextQuarterStart, { weekStartsOn: 1 });
+        if (isBefore(firstWeek, nextQuarterStart)) {
+          firstWeek = addWeeks(firstWeek, 1);
+        }
+      }
+      return format(firstWeek, 'MMM d');
+    }
+    
+    default:
+      return format(currentWeekStart, 'MMM d');
+  }
+};
 
 interface GoalCardProps {
   goal: Goal;
@@ -194,6 +273,7 @@ export const GoalCard = ({
                     </TooltipTrigger>
                     <TooltipContent>
                       <p className="capitalize">{goal.recurrence_frequency?.replace('_', ' ') || 'Weekly'}</p>
+                      <p className="text-xs text-muted-foreground">Next: {getNextScheduledDate(goal)}</p>
                     </TooltipContent>
                   </Tooltip>
                 )}
