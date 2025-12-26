@@ -72,6 +72,13 @@ export interface CategoryBreakdown {
   goalCount: number;
 }
 
+export interface HabitDayData {
+  date: string;
+  completions: number;
+  dayOfWeek: number;
+  weekIndex: number;
+}
+
 export interface HabitAnalytics {
   totalHabits: number;
   totalCompletions: number;
@@ -94,6 +101,7 @@ export interface HabitAnalytics {
     current: number;
     longest: number;
   };
+  dailyHeatmap: HabitDayData[];
 }
 
 export interface AnalyticsData {
@@ -128,7 +136,8 @@ const defaultHabitAnalytics: HabitAnalytics = {
   dailyCompletionRate: 0,
   weeklyData: [],
   topHabits: [],
-  streaks: { current: 0, longest: 0 }
+  streaks: { current: 0, longest: 0 },
+  dailyHeatmap: []
 };
 
 const defaultAnalytics: AnalyticsData = {
@@ -597,7 +606,8 @@ const calculateHabitAnalytics = (completions: any[], goals: any[]): HabitAnalyti
       dailyCompletionRate: 0,
       weeklyData: [],
       topHabits: [],
-      streaks: { current: 0, longest: 0 }
+      streaks: { current: 0, longest: 0 },
+      dailyHeatmap: []
     };
   }
 
@@ -723,12 +733,47 @@ const calculateHabitAnalytics = (completions: any[], goals: any[]): HabitAnalyti
     longestStreak = Math.max(longestStreak, tempStreak);
   }
 
+  // Build daily heatmap data (last 365 days)
+  const dailyHeatmap: HabitDayData[] = [];
+  const nowDate = new Date();
+  const todayStr = format(nowDate, 'yyyy-MM-dd');
+  
+  // Group completions by date
+  const completionsByDate = new Map<string, number>();
+  completions.forEach(c => {
+    const dateStr = c.completion_date;
+    completionsByDate.set(dateStr, (completionsByDate.get(dateStr) || 0) + 1);
+  });
+  
+  // Generate last 52 weeks (364 days) + current partial week
+  const totalWeeks = 53;
+  for (let weekIndex = 0; weekIndex < totalWeeks; weekIndex++) {
+    for (let dayOfWeek = 0; dayOfWeek < 7; dayOfWeek++) {
+      const daysAgo = (totalWeeks - 1 - weekIndex) * 7 + (6 - dayOfWeek);
+      const heatmapDate = new Date(nowDate);
+      heatmapDate.setDate(heatmapDate.getDate() - daysAgo);
+      
+      const dateKey = format(heatmapDate, 'yyyy-MM-dd');
+      
+      // Skip future dates
+      if (dateKey > todayStr) continue;
+      
+      dailyHeatmap.push({
+        date: dateKey,
+        completions: completionsByDate.get(dateKey) || 0,
+        dayOfWeek,
+        weekIndex
+      });
+    }
+  }
+
   return {
     totalHabits,
     totalCompletions,
     dailyCompletionRate,
     weeklyData: last12Weeks,
     topHabits,
-    streaks: { current: currentStreak, longest: longestStreak }
+    streaks: { current: currentStreak, longest: longestStreak },
+    dailyHeatmap
   };
 };
