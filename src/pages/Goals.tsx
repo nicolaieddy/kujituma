@@ -77,6 +77,10 @@ const Goals = () => {
   const handleEditGoal = (goal: Goal) => {
     setEditingGoal(goal);
     setShowForm(true);
+    // Switch to Goals tab to show the form
+    if (activeTab !== "longterm") {
+      setActiveTab("longterm");
+    }
   };
 
   const handleUpdateGoal = (data: any) => {
@@ -222,7 +226,10 @@ const Goals = () => {
             </TabsContent>
 
             <TabsContent value="habits" className="mt-6">
-              <HabitsView onCreateGoal={handleCreateHabit} />
+              <HabitsView 
+                onCreateGoal={handleCreateHabit} 
+                onEditGoal={handleEditGoal}
+              />
             </TabsContent>
             
             <TabsContent value="longterm" className="mt-6">
