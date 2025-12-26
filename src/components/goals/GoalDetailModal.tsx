@@ -36,6 +36,11 @@ const STATUS_CONFIG = {
     color: "bg-green-100 text-green-800", 
     icon: CheckCircle, 
     label: "Completed" 
+  },
+  deprioritized: {
+    color: "bg-gray-100 text-gray-600",
+    icon: Clock,
+    label: "Deprioritized"
   }
 };
 
