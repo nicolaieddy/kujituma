@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw } from "lucide-react";
+import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
   AlertDialog,
@@ -178,11 +178,17 @@ export const GoalCard = ({
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <IconComponent className={cn("h-4 w-4", isDeprioritized ? "text-muted-foreground" : "text-primary")} />
                 <Badge className={`${config.color} text-xs`}>
                   {config.label}
                 </Badge>
+                {goal.is_recurring && (
+                  <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary bg-primary/5">
+                    <RefreshCw className="h-3 w-3" />
+                    Habit
+                  </Badge>
+                )}
               </div>
               <h3 className={cn(
                 "font-semibold text-lg leading-tight group-hover:text-primary transition-colors",
