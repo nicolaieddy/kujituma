@@ -34,7 +34,7 @@ const Goals = () => {
     deleteGoal,
     deprioritizeGoal,
     reprioritizeGoal,
-    reorderGoal
+    reorderGoals
   } = useGoals();
   const { objectives, createObjective, updateObjective, deleteObjective, isLoading: objectivesLoading } = useAllWeeklyObjectives();
   const [showForm, setShowForm] = useState(false);
@@ -80,8 +80,8 @@ const Goals = () => {
     updateGoal(id, { status });
   };
 
-  const handleGoalReorder = (goalId: string, newOrderIndex: number) => {
-    reorderGoal(goalId, newOrderIndex);
+  const handleGoalReorder = (reorderedGoals: { id: string; order_index: number }[]) => {
+    reorderGoals(reorderedGoals);
   };
 
   const handleCarryOverAll = () => {

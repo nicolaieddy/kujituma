@@ -27,7 +27,7 @@ interface OrganizedGoalsViewProps {
   onReprioritize: (id: string) => void;
   onCarryOverAll: () => void;
   onDeprioritizeAll: () => void;
-  onReorder?: (goalId: string, newOrderIndex: number) => void;
+  onReorder?: (reorderedGoals: { id: string; order_index: number }[]) => void;
   isLoading?: boolean;
 }
 
@@ -126,16 +126,25 @@ export const OrganizedGoalsView = ({
       // If same status, reorder within the column
       if (sourceStatus === targetStatus) {
         const goalsInColumn = sourceStatus === 'not_started' 
-          ? notStartedGoals 
+          ? [...notStartedGoals]
           : sourceStatus === 'in_progress' 
-            ? inProgressGoals 
-            : currentYearCompletedGoals;
+            ? [...inProgressGoals] 
+            : [...currentYearCompletedGoals];
             
         const oldIndex = goalsInColumn.findIndex(g => g.id === goalId);
         const newIndex = goalsInColumn.findIndex(g => g.id === overId);
         
         if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-          onReorder(goalId, newIndex);
+          // Use arrayMove to reorder the array
+          const reordered = arrayMove(goalsInColumn, oldIndex, newIndex);
+          
+          // Create the update payload with new order indices
+          const updates = reordered.map((g, index) => ({
+            id: g.id,
+            order_index: index
+          }));
+          
+          onReorder(updates);
         }
       } else {
         // Moving to different column - change status

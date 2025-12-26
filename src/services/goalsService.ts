@@ -122,4 +122,18 @@ export class GoalsService {
 
     if (error) throw error;
   }
+
+  static async reorderGoals(reorderedGoals: { id: string; order_index: number }[]): Promise<void> {
+    // Update all goals with their new order indices
+    const promises = reorderedGoals.map(({ id, order_index }) =>
+      supabase
+        .from('goals')
+        .update({ order_index })
+        .eq('id', id)
+    );
+
+    const results = await Promise.all(promises);
+    const error = results.find(r => r.error)?.error;
+    if (error) throw error;
+  }
 }
