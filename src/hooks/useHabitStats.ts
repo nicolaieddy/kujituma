@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { HabitStreaksService, HabitStats } from "@/services/habitStreaksService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Goal } from "@/types/goals";
 
 export const useHabitStats = () => {
   const { user } = useAuth();
@@ -15,6 +16,16 @@ export const useHabitStats = () => {
     gcTime: 10 * 60 * 1000, // 10 minutes
   });
 
+  const { data: futureHabits = [] } = useQuery<Goal[]>({
+    queryKey: ['future-habits', user?.id],
+    queryFn: async () => {
+      return HabitStreaksService.getFutureHabits();
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+  });
+
   // Calculate aggregate stats
   const totalHabits = habitStats.length;
   const activeHabits = habitStats.filter(h => 
@@ -27,6 +38,7 @@ export const useHabitStats = () => {
 
   return {
     habitStats,
+    futureHabits,
     isLoading,
     error,
     refetch,

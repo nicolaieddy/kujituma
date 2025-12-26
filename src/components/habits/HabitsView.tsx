@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle } from "lucide-react";
+import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock } from "lucide-react";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { useGoals } from "@/hooks/useGoals";
 import { HabitCard } from "./HabitCard";
@@ -11,13 +11,15 @@ import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
+import { format, parseISO } from "date-fns";
+import { Goal } from "@/types/goals";
 
 interface HabitsViewProps {
   onCreateGoal?: () => void;
 }
 
 export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
-  const { habitStats, isLoading, refetch, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
+  const { habitStats, futureHabits, isLoading, refetch, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
   const { togglePauseGoal } = useGoals();
   const isMobile = useIsMobile();
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
@@ -51,7 +53,8 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
     );
   }
 
-  if (habitStats.length === 0) {
+  // Show empty state only if no habits AND no future habits
+  if (habitStats.length === 0 && futureHabits.length === 0) {
     return (
       <div className="text-center py-12">
         <div className="mb-6">
@@ -71,6 +74,19 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
       </div>
     );
   }
+
+  const getFrequencyLabel = (frequency: string | null | undefined): string => {
+    const labels: Record<string, string> = {
+      daily: 'Daily',
+      weekdays: 'Weekdays',
+      weekly: 'Weekly',
+      biweekly: 'Bi-weekly',
+      monthly: 'Monthly',
+      monthly_last_week: 'Monthly (last week)',
+      quarterly: 'Quarterly'
+    };
+    return labels[frequency || ''] || 'Recurring';
+  };
 
   // Separate active, paused, and completed/deprioritized habits
   const activeHabitsList = habitStats.filter(h => 
@@ -202,6 +218,48 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
                   Resume
                 </Button>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Scheduled Habits (Future) */}
+      {futureHabits.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-muted-foreground">
+              <Calendar className="h-5 w-5" />
+              Scheduled Habits
+            </h3>
+            <Badge variant="outline" className="border-blue-500/30 text-blue-500">
+              {futureHabits.length}
+            </Badge>
+          </div>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+            {futureHabits.map((goal: Goal) => (
+              <Card key={goal.id} className="glass-card border-dashed border-blue-500/30">
+                <CardContent className="pt-4 pb-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h4 className="font-medium text-foreground">{goal.title}</h4>
+                      {goal.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {goal.description}
+                        </p>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="ml-2 bg-blue-500/10 text-blue-600">
+                      {getFrequencyLabel(goal.recurrence_frequency)}
+                    </Badge>
+                  </div>
+                  <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
+                    <Clock className="h-4 w-4" />
+                    <span>
+                      Starts {goal.start_date ? format(parseISO(goal.start_date), 'MMM d, yyyy') : 'Soon'}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>

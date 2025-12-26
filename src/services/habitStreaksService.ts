@@ -181,6 +181,31 @@ export class HabitStreaksService {
   }
 
   /**
+   * Get future recurring goals (habits that haven't started yet)
+   */
+  static async getFutureHabits(): Promise<Goal[]> {
+    const goals = await this.getRecurringGoals();
+    if (goals.length === 0) return [];
+
+    const today = new Date();
+    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    
+    return goals.filter(goal => {
+      if (goal.start_date) {
+        const goalStartDate = parseISO(goal.start_date);
+        const goalStartWeek = startOfWeek(goalStartDate, { weekStartsOn: 1 });
+        return isAfter(goalStartWeek, currentWeekStart);
+      }
+      return false;
+    }).sort((a, b) => {
+      // Sort by start date ascending
+      const dateA = a.start_date ? parseISO(a.start_date) : new Date();
+      const dateB = b.start_date ? parseISO(b.start_date) : new Date();
+      return dateA.getTime() - dateB.getTime();
+    });
+  }
+
+  /**
    * Check if completing an objective will result in a streak milestone
    * Call this BEFORE marking the objective as complete
    */
