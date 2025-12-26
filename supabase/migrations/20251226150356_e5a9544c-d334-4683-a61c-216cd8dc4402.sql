@@ -1,0 +1,1 @@
+DELETE FROM weekly_objectives WHERE id = '65baafc0-650a-431e-b234-bda8fa9c2218';
