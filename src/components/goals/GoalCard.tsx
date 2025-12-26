@@ -202,13 +202,14 @@ export const GoalCard = ({
       
       const totalDuration = endDate.getTime() - startDate.getTime();
       const elapsedDuration = now.getTime() - startDate.getTime();
+      const daysUntilStart = Math.ceil((startDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       
       if (totalDuration > 0) {
         const percentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
         
         return {
           percentage: Math.round(percentage),
-          daysRemaining,
+          daysRemaining: now < startDate ? daysUntilStart : daysRemaining,
           isOverdue,
           hasNotStarted: now < startDate,
           hasProgressBar: true
