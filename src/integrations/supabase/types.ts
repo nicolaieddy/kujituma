@@ -456,10 +456,12 @@ export type Database = {
           deprioritized_at: string | null
           description: string | null
           id: string
+          is_paused: boolean
           is_public: boolean
           is_recurring: boolean
           notes: string | null
           order_index: number | null
+          paused_at: string | null
           recurrence_frequency: string | null
           recurring_objective_text: string | null
           start_date: string | null
@@ -477,10 +479,12 @@ export type Database = {
           deprioritized_at?: string | null
           description?: string | null
           id?: string
+          is_paused?: boolean
           is_public?: boolean
           is_recurring?: boolean
           notes?: string | null
           order_index?: number | null
+          paused_at?: string | null
           recurrence_frequency?: string | null
           recurring_objective_text?: string | null
           start_date?: string | null
@@ -498,10 +502,12 @@ export type Database = {
           deprioritized_at?: string | null
           description?: string | null
           id?: string
+          is_paused?: boolean
           is_public?: boolean
           is_recurring?: boolean
           notes?: string | null
           order_index?: number | null
+          paused_at?: string | null
           recurrence_frequency?: string | null
           recurring_objective_text?: string | null
           start_date?: string | null

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw } from "lucide-react";
+import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -109,6 +109,7 @@ interface GoalCardProps {
   onClick?: (goal: Goal) => void;
   onDeprioritize?: (id: string) => void;
   onReprioritize?: (id: string) => void;
+  onPauseToggle?: (id: string, isPaused: boolean) => void;
   isDeprioritized?: boolean;
 }
 
@@ -143,6 +144,7 @@ export const GoalCard = ({
   onClick,
   onDeprioritize,
   onReprioritize,
+  onPauseToggle,
   isDeprioritized = false
 }: GoalCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -267,14 +269,28 @@ export const GoalCard = ({
                 {goal.is_recurring && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary bg-primary/5 cursor-help">
-                        <RefreshCw className="h-3 w-3" />
-                        Habit
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-xs gap-1 cursor-help",
+                          goal.is_paused 
+                            ? "border-amber-500/30 text-amber-600 bg-amber-500/5" 
+                            : "border-primary/30 text-primary bg-primary/5"
+                        )}
+                      >
+                        {goal.is_paused ? <Pause className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
+                        {goal.is_paused ? 'Paused' : 'Habit'}
                       </Badge>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p className="capitalize">{goal.recurrence_frequency?.replace('_', ' ') || 'Weekly'}</p>
-                      <p className="text-xs text-muted-foreground">Next: {getNextScheduledDate(goal)}</p>
+                      {goal.is_paused ? (
+                        <p className="text-amber-600">Habit paused - no new objectives will be created</p>
+                      ) : (
+                        <>
+                          <p className="capitalize">{goal.recurrence_frequency?.replace('_', ' ') || 'Weekly'}</p>
+                          <p className="text-xs text-muted-foreground">Next: {getNextScheduledDate(goal)}</p>
+                        </>
+                      )}
                     </TooltipContent>
                   </Tooltip>
                 )}
@@ -327,6 +343,23 @@ export const GoalCard = ({
                 )}
                 
                 <DropdownMenuSeparator />
+                
+                {/* Pause/Resume for recurring goals */}
+                {goal.is_recurring && onPauseToggle && goal.status !== 'completed' && goal.status !== 'deprioritized' && (
+                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPauseToggle(goal.id, !goal.is_paused); }}>
+                    {goal.is_paused ? (
+                      <>
+                        <PlayCircle className="h-4 w-4 mr-2" />
+                        Resume Habit
+                      </>
+                    ) : (
+                      <>
+                        <Pause className="h-4 w-4 mr-2" />
+                        Pause Habit
+                      </>
+                    )}
+                  </DropdownMenuItem>
+                )}
                 
                 {/* Deprioritize/Reprioritize actions */}
                 {goal.status === 'deprioritized' && onReprioritize && (

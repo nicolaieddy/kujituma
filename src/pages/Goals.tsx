@@ -35,6 +35,7 @@ const Goals = () => {
     deleteGoal,
     deprioritizeGoal,
     reprioritizeGoal,
+    togglePauseGoal,
     reorderGoals
   } = useGoals();
   const { objectives, createObjective, updateObjective, deleteObjective, isLoading: objectivesLoading } = useAllWeeklyObjectives();
@@ -253,6 +254,7 @@ const Goals = () => {
                       onGoalClick={handleGoalClick}
                       onDeprioritize={deprioritizeGoal}
                       onReprioritize={reprioritizeGoal}
+                      onPauseToggle={togglePauseGoal}
                       onCarryOverAll={handleCarryOverAll}
                       onDeprioritizeAll={handleDeprioritizeAll}
                       onReorder={handleGoalReorder}

@@ -206,6 +206,22 @@ export const useGoals = () => {
     reprioritizeMutation.mutate(id);
   };
 
+  const togglePauseGoal = (id: string, isPaused: boolean) => {
+    updateGoalMutation.mutate({ 
+      id, 
+      data: { 
+        is_paused: isPaused,
+        paused_at: isPaused ? new Date().toISOString() : null
+      } 
+    });
+    toast({
+      title: isPaused ? "Habit paused" : "Habit resumed",
+      description: isPaused 
+        ? "No new objectives will be created until you resume." 
+        : "Objectives will be created for upcoming weeks.",
+    });
+  };
+
   const reorderGoals = (reorderedGoals: { id: string; order_index: number }[]) => {
     reorderGoalMutation.mutate(reorderedGoals);
   };
@@ -261,6 +277,7 @@ export const useGoals = () => {
     deleteGoal,
     deprioritizeGoal,
     reprioritizeGoal,
+    togglePauseGoal,
     reorderGoals,
     isCreating: createGoalMutation.isPending,
     isUpdating: updateGoalMutation.isPending,

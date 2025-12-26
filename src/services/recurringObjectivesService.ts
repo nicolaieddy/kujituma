@@ -123,8 +123,13 @@ export class RecurringObjectivesService {
       }
     }
 
-    // Goal is completed or deprioritized
+    // Goal is completed, deprioritized, or paused
     if (goal.status === 'completed' || goal.status === 'deprioritized' || goal.status === 'deleted') {
+      return false;
+    }
+
+    // Goal is paused
+    if (goal.is_paused) {
       return false;
     }
 
