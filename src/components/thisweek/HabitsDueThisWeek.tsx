@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Flame, CheckCircle2, Circle, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Flame, CheckCircle2, Circle, ChevronRight, Check } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { cn } from "@/lib/utils";
@@ -61,25 +62,14 @@ export const HabitsDueThisWeek = ({ habits, objectives, onHabitClick, onToggleOb
                 : "bg-background/50 border-border hover:border-primary/30 hover:bg-primary/5"
             )}
           >
-            {/* Completion Status - Clickable Toggle */}
-            <button
-              type="button"
-              onClick={(e) => handleToggle(e, habit)}
-              disabled={!habit.objective}
-              className={cn(
-                "flex-shrink-0 p-1 -m-1 rounded-full transition-all",
-                habit.objective 
-                  ? "hover:bg-primary/10 hover:scale-110 active:scale-95" 
-                  : "opacity-50 cursor-not-allowed"
-              )}
-              title={habit.objective ? "Click to toggle completion" : "No objective for this week"}
-            >
+            {/* Completion Status Icon */}
+            <div className="flex-shrink-0">
               {habit.isCompletedThisWeek ? (
                 <CheckCircle2 className="h-5 w-5 text-success" />
               ) : (
-                <Circle className="h-5 w-5 text-muted-foreground hover:text-primary" />
+                <Circle className="h-5 w-5 text-muted-foreground" />
               )}
-            </button>
+            </div>
 
             {/* Habit Info */}
             <div className="flex-1 min-w-0">
@@ -108,8 +98,35 @@ export const HabitsDueThisWeek = ({ habits, objectives, onHabitClick, onToggleOb
               </div>
             )}
 
-            {/* Arrow */}
-            <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+            {/* Quick Complete Button */}
+            {habit.objective && !habit.isCompletedThisWeek && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="flex-shrink-0 h-7 px-2 text-xs gap-1 border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground"
+                onClick={(e) => handleToggle(e, habit)}
+              >
+                <Check className="h-3 w-3" />
+                <span className="hidden sm:inline">Complete</span>
+              </Button>
+            )}
+
+            {/* Undo button for completed */}
+            {habit.objective && habit.isCompletedThisWeek && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="flex-shrink-0 h-7 px-2 text-xs text-muted-foreground hover:text-foreground opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={(e) => handleToggle(e, habit)}
+              >
+                Undo
+              </Button>
+            )}
+
+            {/* Arrow - only show when no action buttons */}
+            {!habit.objective && (
+              <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+            )}
           </div>
         ))}
       </CardContent>
