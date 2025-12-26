@@ -141,6 +141,20 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     e.preventDefault();
     if (!formData.title.trim()) return;
     
+    // Validate that end date is after start date for custom date range
+    if (formData.timeframe === 'Custom Date' && formData.start_date && formData.target_date) {
+      const startDate = new Date(formData.start_date);
+      const endDate = new Date(formData.target_date);
+      if (endDate <= startDate) {
+        toast({
+          title: "Invalid Date Range",
+          description: "End date must be after the start date.",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     const submitData: CreateGoalData = {
       title: formData.title.trim(),
       description: formData.description?.trim() || '',
