@@ -69,7 +69,7 @@ export const AddObjectiveForm = ({
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Link to a goal (optional)" />
             </SelectTrigger>
-            <SelectContent className="z-50">
+            <SelectContent className="z-[300]">
               <SelectItem value="">
                 <div className="flex items-center gap-2">
                   <Target className="h-4 w-4" />
