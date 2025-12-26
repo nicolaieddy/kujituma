@@ -9,6 +9,8 @@ import { QuarterlyReviewsHistory } from "./QuarterlyReviewsHistory";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
 import { QuarterlyReviewProvider } from "@/contexts/QuarterlyReviewContext";
+import { useGoals } from "@/hooks/useGoals";
+import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 
 interface HabitsProviderProps {
   children: ReactNode;
@@ -22,6 +24,11 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   const weekStart = WeeklyProgressService.getWeekStart();
   const { hasCompletedPlanning } = useWeeklyPlanning(weekStart);
   const { hasCompletedReview, isEndOfQuarter } = useQuarterlyReview();
+  const { goals } = useGoals();
+  const { objectives } = useAllWeeklyObjectives();
+  
+  // Check if user has any activity (goals or objectives)
+  const hasUserActivity = (goals && goals.length > 0) || (objectives && objectives.length > 0);
   
   useEffect(() => {
     if (!user) return;
@@ -34,14 +41,14 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
       }
     }
     
-    // Show quarterly review prompt
-    if (isEndOfQuarter && !hasCompletedReview) {
+    // Show quarterly review prompt only if user has activity
+    if (isEndOfQuarter && !hasCompletedReview && hasUserActivity) {
       const dismissed = sessionStorage.getItem(`quarterly-dismissed-${weekStart}`);
       if (!dismissed) {
         setTimeout(() => setShowQuarterlyDialog(true), 3000);
       }
     }
-  }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter]);
+  }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter, hasUserActivity]);
   
   const handleClosePlanning = (open: boolean) => {
     if (!open) {
