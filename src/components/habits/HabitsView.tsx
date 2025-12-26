@@ -2,7 +2,13 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock, Pencil, Trash2 } from "lucide-react";
+import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { useGoals } from "@/hooks/useGoals";
 import { HabitCard } from "./HabitCard";
@@ -36,6 +42,7 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
+  const [scheduledSort, setScheduledSort] = useState<'date' | 'alpha' | 'frequency'>('date');
 
   const handleHabitClick = (stats: HabitStats) => {
     setSelectedHabit(stats);
@@ -252,12 +259,53 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
               <Calendar className="h-5 w-5" />
               Scheduled Habits
             </h3>
-            <Badge variant="outline" className="border-blue-500/30 text-blue-500">
-              {futureHabits.length}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-8 gap-1.5 text-muted-foreground">
+                    <ArrowUpDown className="h-3.5 w-3.5" />
+                    <span className="text-xs">
+                      {scheduledSort === 'date' ? 'Date' : scheduledSort === 'alpha' ? 'A-Z' : 'Frequency'}
+                    </span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setScheduledSort('date')}>
+                    By Start Date
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setScheduledSort('alpha')}>
+                    Alphabetically
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setScheduledSort('frequency')}>
+                    By Frequency
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Badge variant="outline" className="border-blue-500/30 text-blue-500">
+                {futureHabits.length}
+              </Badge>
+            </div>
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-            {futureHabits.map((goal: Goal) => (
+            {[...futureHabits]
+              .sort((a: Goal, b: Goal) => {
+                if (scheduledSort === 'date') {
+                  const dateA = a.start_date ? new Date(a.start_date).getTime() : Infinity;
+                  const dateB = b.start_date ? new Date(b.start_date).getTime() : Infinity;
+                  return dateA - dateB;
+                }
+                if (scheduledSort === 'alpha') {
+                  return a.title.localeCompare(b.title);
+                }
+                // frequency sort
+                const freqOrder: Record<string, number> = {
+                  daily: 1, weekdays: 2, weekly: 3, biweekly: 4, monthly: 5, monthly_last_week: 6, quarterly: 7
+                };
+                const orderA = freqOrder[a.recurrence_frequency || ''] || 99;
+                const orderB = freqOrder[b.recurrence_frequency || ''] || 99;
+                return orderA - orderB;
+              })
+              .map((goal: Goal) => (
               <Card key={goal.id} className="glass-card border-dashed border-blue-500/30">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-start justify-between mb-2">
