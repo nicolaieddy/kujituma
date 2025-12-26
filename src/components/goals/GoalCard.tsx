@@ -101,31 +101,48 @@ export const GoalCard = ({
   };
 
   const getTimeElapsedProgress = () => {
-    if (goal.timeframe !== 'Custom Date' || !goal.start_date || !goal.target_date) {
+    if (!goal.target_date) {
       return null;
     }
     
-    const startDate = new Date(goal.start_date);
     const endDate = new Date(goal.target_date);
     const now = new Date();
     
     // Set times to start of day for accurate comparison
-    startDate.setHours(0, 0, 0, 0);
     endDate.setHours(0, 0, 0, 0);
     now.setHours(0, 0, 0, 0);
     
-    const totalDuration = endDate.getTime() - startDate.getTime();
-    const elapsedDuration = now.getTime() - startDate.getTime();
+    const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const isOverdue = daysRemaining < 0;
     
-    if (totalDuration <= 0) return null;
+    // Only calculate percentage for custom date ranges with both dates
+    if (goal.timeframe === 'Custom Date' && goal.start_date) {
+      const startDate = new Date(goal.start_date);
+      startDate.setHours(0, 0, 0, 0);
+      
+      const totalDuration = endDate.getTime() - startDate.getTime();
+      const elapsedDuration = now.getTime() - startDate.getTime();
+      
+      if (totalDuration > 0) {
+        const percentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
+        
+        return {
+          percentage: Math.round(percentage),
+          daysRemaining,
+          isOverdue,
+          hasNotStarted: now < startDate,
+          hasProgressBar: true
+        };
+      }
+    }
     
-    // Clamp between 0 and 100
-    const percentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
-    
+    // For goals with only an end date, just show days remaining
     return {
-      percentage: Math.round(percentage),
-      isOverdue: now > endDate,
-      hasNotStarted: now < startDate
+      percentage: 0,
+      daysRemaining,
+      isOverdue,
+      hasNotStarted: false,
+      hasProgressBar: false
     };
   };
 
@@ -288,31 +305,51 @@ export const GoalCard = ({
               )}
             </div>
             
-            {/* Time elapsed progress bar for custom date range */}
+            {/* Days remaining countdown and progress bar */}
             {timeProgress && goal.status !== 'completed' && (
-              <div className="space-y-1">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-muted-foreground">
-                    {timeProgress.hasNotStarted 
-                      ? "Not started yet" 
-                      : timeProgress.isOverdue 
-                        ? "Overdue" 
-                        : "Time elapsed"}
-                  </span>
-                  <span className={cn(
-                    "font-medium",
-                    timeProgress.isOverdue ? "text-destructive" : "text-muted-foreground"
-                  )}>
-                    {timeProgress.percentage}%
-                  </span>
-                </div>
-                <Progress 
-                  value={timeProgress.percentage} 
-                  className={cn(
-                    "h-1.5",
-                    timeProgress.isOverdue && "[&>div]:bg-destructive"
+              <div className="space-y-2">
+                {/* Days remaining badge */}
+                <div className={cn(
+                  "inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium",
+                  timeProgress.isOverdue 
+                    ? "bg-destructive/10 text-destructive" 
+                    : timeProgress.daysRemaining <= 7 
+                      ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      : "bg-primary/10 text-primary"
+                )}>
+                  <Clock className="h-3 w-3" />
+                  {timeProgress.hasNotStarted ? (
+                    <span>Starts in {Math.abs(timeProgress.daysRemaining)} day{Math.abs(timeProgress.daysRemaining) !== 1 ? 's' : ''}</span>
+                  ) : timeProgress.isOverdue ? (
+                    <span>{Math.abs(timeProgress.daysRemaining)} day{Math.abs(timeProgress.daysRemaining) !== 1 ? 's' : ''} overdue</span>
+                  ) : timeProgress.daysRemaining === 0 ? (
+                    <span>Due today</span>
+                  ) : (
+                    <span>{timeProgress.daysRemaining} day{timeProgress.daysRemaining !== 1 ? 's' : ''} remaining</span>
                   )}
-                />
+                </div>
+                
+                {/* Progress bar only for custom date ranges with both dates */}
+                {timeProgress.hasProgressBar && (
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-muted-foreground">Time elapsed</span>
+                      <span className={cn(
+                        "font-medium",
+                        timeProgress.isOverdue ? "text-destructive" : "text-muted-foreground"
+                      )}>
+                        {timeProgress.percentage}%
+                      </span>
+                    </div>
+                    <Progress 
+                      value={timeProgress.percentage} 
+                      className={cn(
+                        "h-1.5",
+                        timeProgress.isOverdue && "[&>div]:bg-destructive"
+                      )}
+                    />
+                  </div>
+                )}
               </div>
             )}
             
