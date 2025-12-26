@@ -71,6 +71,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     title: initialData.title || '',
     description: initialData.description || '',
     timeframe: initialData.timeframe || '1 Month',
+    start_date: initialData.start_date || '',
     target_date: initialData.target_date || '',
     category: initialData.category || '',
     is_public: initialData.is_public ?? true,
@@ -81,6 +82,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     title: '',
     description: '',
     timeframe: '1 Month',
+    start_date: '',
     target_date: '',
     category: '',
     is_public: true,
@@ -110,6 +112,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         title: initialData.title || '',
         description: initialData.description || '',
         timeframe: initialData.timeframe || '1 Month',
+        start_date: initialData.start_date || '',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
         is_public: initialData.is_public ?? true,
@@ -123,6 +126,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         title: '',
         description: '',
         timeframe: '1 Month',
+        start_date: '',
         target_date: '',
         category: '',
         is_public: true,
@@ -150,9 +154,14 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         : undefined
     };
 
-    // Only include target_date if timeframe is Custom Date and date is provided
-    if (formData.timeframe === 'Custom Date' && formData.target_date) {
-      submitData.target_date = formData.target_date;
+    // Only include dates if timeframe is Custom Date and dates are provided
+    if (formData.timeframe === 'Custom Date') {
+      if (formData.start_date) {
+        submitData.start_date = formData.start_date;
+      }
+      if (formData.target_date) {
+        submitData.target_date = formData.target_date;
+      }
     }
 
     onSubmit(submitData);
@@ -288,18 +297,32 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
             </div>
 
             {formData.timeframe === 'Custom Date' && (
-              <div>
-                <Label htmlFor="target_date" className="font-medium text-sm">Target Date</Label>
-                <Input
-                  id="target_date"
-                  type="date"
-                  value={formData.target_date}
-                  onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                  className={`mt-1.5 ${
-                    isMobile ? 'h-12' : 'h-10'
-                  }`}
-                />
-              </div>
+              <>
+                <div>
+                  <Label htmlFor="start_date" className="font-medium text-sm">Start Date</Label>
+                  <Input
+                    id="start_date"
+                    type="date"
+                    value={formData.start_date}
+                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                    className={`mt-1.5 ${
+                      isMobile ? 'h-12' : 'h-10'
+                    }`}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="target_date" className="font-medium text-sm">End Date</Label>
+                  <Input
+                    id="target_date"
+                    type="date"
+                    value={formData.target_date}
+                    onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                    className={`mt-1.5 ${
+                      isMobile ? 'h-12' : 'h-10'
+                    }`}
+                  />
+                </div>
+              </>
             )}
           </div>
 
