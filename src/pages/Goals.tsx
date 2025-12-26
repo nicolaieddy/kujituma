@@ -9,7 +9,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
-import { GoalsKanban } from "@/components/goals/GoalsKanban";
+import { OrganizedGoalsView } from "@/components/goals/OrganizedGoalsView";
 import { GoalDetailModal } from "@/components/goals/GoalDetailModal";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
@@ -23,7 +23,18 @@ const Goals = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
-  const { goalsByStatus, isLoading: goalsLoading, createGoal, updateGoal, deleteGoal } = useGoals();
+  const { 
+    activeGoals,
+    deprioritizedGoals,
+    completedGoalsByYear,
+    previousYearUnfinishedGoals,
+    isLoading: goalsLoading, 
+    createGoal, 
+    updateGoal, 
+    deleteGoal,
+    deprioritizeGoal,
+    reprioritizeGoal
+  } = useGoals();
   const { objectives, createObjective, updateObjective, deleteObjective, isLoading: objectivesLoading } = useAllWeeklyObjectives();
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -74,6 +85,20 @@ const Goals = () => {
     } catch (error) {
       console.error('Error reordering goal:', error);
     }
+  };
+
+  const handleCarryOverAll = () => {
+    // Update all previous year goals to current year context (re-confirms as active)
+    previousYearUnfinishedGoals.forEach(goal => {
+      updateGoal(goal.id, { status: 'not_started' });
+    });
+  };
+
+  const handleDeprioritizeAll = () => {
+    // Deprioritize all previous year goals
+    previousYearUnfinishedGoals.forEach(goal => {
+      deprioritizeGoal(goal.id);
+    });
   };
 
   const handleGoalClick = (goal: Goal) => {
@@ -196,13 +221,20 @@ const Goals = () => {
                   {goalsLoading ? (
                     <div className="text-center text-muted-foreground">Loading goals...</div>
                   ) : (
-                    <GoalsKanban
-                      goalsByStatus={goalsByStatus}
+                    <OrganizedGoalsView
+                      activeGoals={activeGoals}
+                      deprioritizedGoals={deprioritizedGoals}
+                      completedGoalsByYear={completedGoalsByYear}
+                      previousYearUnfinishedGoals={previousYearUnfinishedGoals}
                       onEdit={handleEditGoal}
                       onDelete={deleteGoal}
                       onStatusChange={handleStatusChange}
                       onGoalClick={handleGoalClick}
-                      onReorder={handleGoalReorder}
+                      onDeprioritize={deprioritizeGoal}
+                      onReprioritize={reprioritizeGoal}
+                      onCarryOverAll={handleCarryOverAll}
+                      onDeprioritizeAll={handleDeprioritizeAll}
+                      isLoading={goalsLoading}
                     />
                   )}
                 </>
