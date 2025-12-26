@@ -13,12 +13,20 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
-import { Loader2, Trophy, AlertCircle, Lightbulb, Rocket, CheckCircle2, Clock, Pause, TrendingDown, Target } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, Lightbulb, Rocket, CheckCircle2, Clock, Pause, TrendingDown, Target, TrendingUp, Minus } from "lucide-react";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
 import { filterGoalsByQuarter, getQuarterName } from "@/utils/quarterUtils";
 import { Progress } from "@/components/ui/progress";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+
+// Helper to get previous quarter
+const getPreviousQuarter = (year: number, quarter: number): { year: number; quarter: number } => {
+  if (quarter === 1) {
+    return { year: year - 1, quarter: 4 };
+  }
+  return { year, quarter: quarter - 1 };
+};
 
 interface QuarterlyReviewDialogProps {
   open: boolean;
@@ -82,6 +90,9 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
   const [lessonsLearned, setLessonsLearned] = useState("");
   const [nextQuarterFocus, setNextQuarterFocus] = useState("");
   
+  // Get previous quarter info
+  const prevQuarter = useMemo(() => getPreviousQuarter(year, quarter), [year, quarter]);
+  
   // Fetch weekly objectives for this quarter
   const { data: quarterObjectives } = useQuery({
     queryKey: ['quarterly-objectives', user?.id, year, quarter],
@@ -89,14 +100,40 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
     enabled: !!user && open,
   });
   
-  // Calculate objectives stats
+  // Fetch weekly objectives for previous quarter
+  const { data: prevQuarterObjectives } = useQuery({
+    queryKey: ['quarterly-objectives', user?.id, prevQuarter.year, prevQuarter.quarter],
+    queryFn: () => WeeklyProgressService.getObjectivesForQuarter(prevQuarter.year, prevQuarter.quarter),
+    enabled: !!user && open,
+  });
+  
+  // Calculate objectives stats with comparison
   const objectivesStats = useMemo(() => {
-    if (!quarterObjectives) return { total: 0, completed: 0, percentage: 0 };
-    const total = quarterObjectives.length;
-    const completed = quarterObjectives.filter(o => o.is_completed).length;
+    const total = quarterObjectives?.length || 0;
+    const completed = quarterObjectives?.filter(o => o.is_completed).length || 0;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
-    return { total, completed, percentage };
-  }, [quarterObjectives]);
+    
+    // Previous quarter stats
+    const prevTotal = prevQuarterObjectives?.length || 0;
+    const prevCompleted = prevQuarterObjectives?.filter(o => o.is_completed).length || 0;
+    const prevPercentage = prevTotal > 0 ? Math.round((prevCompleted / prevTotal) * 100) : 0;
+    
+    // Calculate difference
+    const percentageDiff = prevTotal > 0 ? percentage - prevPercentage : null;
+    const completedDiff = prevTotal > 0 ? completed - prevCompleted : null;
+    
+    return { 
+      total, 
+      completed, 
+      percentage,
+      prevTotal,
+      prevCompleted,
+      prevPercentage,
+      percentageDiff,
+      completedDiff,
+      hasPreviousData: prevTotal > 0
+    };
+  }, [quarterObjectives, prevQuarterObjectives]);
   
   // Filter goals by the current quarter
   const quarterGoals = useMemo(() => {
@@ -178,6 +215,33 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
                       <Progress value={objectivesStats.percentage} className="h-2 flex-1" />
                       <span className="text-sm font-semibold text-primary">{objectivesStats.percentage}%</span>
                     </div>
+                    {/* Quarter comparison */}
+                    {objectivesStats.hasPreviousData && objectivesStats.percentageDiff !== null && (
+                      <div className="flex items-center gap-1.5 mt-2 text-xs">
+                        {objectivesStats.percentageDiff > 0 ? (
+                          <>
+                            <TrendingUp className="h-3.5 w-3.5 text-success" />
+                            <span className="text-success font-medium">
+                              +{objectivesStats.percentageDiff}% completion rate vs last quarter
+                            </span>
+                          </>
+                        ) : objectivesStats.percentageDiff < 0 ? (
+                          <>
+                            <TrendingDown className="h-3.5 w-3.5 text-orange-500" />
+                            <span className="text-orange-500 font-medium">
+                              {objectivesStats.percentageDiff}% completion rate vs last quarter
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-muted-foreground">
+                              Same completion rate as last quarter
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
