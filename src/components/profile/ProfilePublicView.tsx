@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck } from "lucide-react";
+import { User, Calendar, Clock, UserPlus, UserMinus, UserCheck } from "lucide-react";
 import linkedinIcon from "@/assets/linkedin-icon.png";
 import instagramIcon from "@/assets/instagram-icon.png";
 import xIcon from "@/assets/x-icon.png";
@@ -10,18 +10,13 @@ import tiktokIcon from "@/assets/tiktok-icon.png";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
-import { CommitmentCard } from "@/components/commitments/CommitmentCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { supabase } from "@/integrations/supabase/client";
-import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
-
-import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { toast } from "sonner";
 
 interface Profile {
   id: string;
-  email?: string; // Optional - only visible based on show_email setting
+  email?: string;
   full_name: string;
   avatar_url?: string;
   about_me?: string;
@@ -49,33 +44,9 @@ interface ProfilePublicViewProps {
 export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChange }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
-  const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
-  const [loadingStates, setLoadingStates] = useState({
-    commitments: false
-  });
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status } = friendshipStatus || { is_friend: false };
-  const { sendFriendRequest: sendFriendRequestBase, respondToFriendRequest: respondBase, removeFriend: removeFriendBase, refetch } = useFriends();
-
-  const currentWeekStart = WeeklyProgressService.getWeekStart();
-
-  useEffect(() => {
-    // Only fetch data if user is authenticated and not on own profile
-    if (!user || isOwnProfile) return;
-
-    // Fetch commitments if friends
-    const fetchData = async () => {
-      if (is_friend) {
-        setLoadingStates({ commitments: true });
-        const data = await commitmentsService.getPublicCommitments(profile.id, currentWeekStart);
-        setCommitments(data);
-        setLoadingStates({ commitments: false });
-      }
-    };
-
-    fetchData();
-  }, [profile.id, user, is_friend, currentWeekStart, isOwnProfile]);
-
+  const { sendFriendRequest: sendFriendRequestBase, respondToFriendRequest: respondBase, removeFriend: removeFriendBase } = useFriends();
 
   const handleSendFriendRequest = async () => {
     await sendFriendRequestBase(profile.id);
@@ -247,13 +218,11 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
                   size="sm"
                   onClick={() => {
                     const newShowEmail = !profile.show_email;
-                    // Update profile in database
                     supabase
                       .from('profiles')
                       .update({ show_email: newShowEmail })
                       .eq('id', profile.id)
                       .then(() => {
-                        // Force page refresh to show updated state
                         window.location.reload();
                       });
                   }}
@@ -286,11 +255,6 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
           </div>
         </CardContent>
       </Card>
-
-      {/* Commitments Section */}
-      {commitments.length > 0 && (
-        <CommitmentCard commitments={commitments} userName={profile.full_name} />
-      )}
 
       {/* Goals Section */}
       <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />

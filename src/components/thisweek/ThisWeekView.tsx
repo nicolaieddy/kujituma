@@ -1,7 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Target } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,15 +14,11 @@ import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
-import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
-import { PublicCommitmentsBadge } from "@/components/commitments/PublicCommitmentsBadge";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitStats } from "@/services/habitStreaksService";
-
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
-import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -39,8 +33,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showShareConfirmation, setShowShareConfirmation] = useState(false);
-  const [showCommitmentSelector, setShowCommitmentSelector] = useState(false);
-  const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showHabitModal, setShowHabitModal] = useState(false);
   
@@ -123,7 +115,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
 
   const handleViewInCommunity = () => {
     if (feedPost) {
-      // Navigate to the specific post in the community feed
       window.open(`/community?post=${feedPost.id}`, '_blank');
     } else {
       window.open('/community', '_blank');
@@ -131,7 +122,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   };
 
   const handleRequestShare = () => {
-    // Show confirmation dialog first
     setShowShareConfirmation(true);
   };
 
@@ -141,14 +131,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     setShowShareConfirmation(false);
     setIsSharing(true);
     try {
-      // Get user profile for name
       const { data: profile } = await supabase
         .from('profiles')
         .select('full_name')
         .eq('id', user.id)
         .single();
 
-      // Get the latest progress post data to ensure we have the most current reflection
       const latestProgressPost = await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
 
       const completedObjectives = objectives?.filter(obj => obj.is_completed) || [];
@@ -170,7 +158,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
           accomplishments += '\n\n';
           
-          // Add reflection notes for incomplete objectives if available
           const incompleteReflections = latestProgressPost?.incomplete_reflections || {};
           const reflectionEntries = Object.entries(incompleteReflections)
             .filter(([_, reflection]) => reflection && typeof reflection === 'string' && reflection.trim())
@@ -184,7 +171,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         }
       }
       
-      // Use the latest weekly reflection from the freshly fetched data
       const weeklyReflection = latestProgressPost?.notes?.trim() || '';
       
       if (!accomplishments.trim()) {
@@ -198,7 +184,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       const totalCount = objectives?.length || 0;
       const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
-      // Create the feed post
       const { error } = await supabase
         .from('posts')
         .insert({
@@ -223,7 +208,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           variant: "destructive",
         });
       } else {
-        // Mark week as completed using the proper service method
         await WeeklyProgressService.completeWeek(currentWeekStart);
         
         toast({
@@ -231,7 +215,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           description: "Your weekly progress has been shared with the community! This week is now locked.",
         });
         
-        // Force refresh both queries to ensure UI updates
         await queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
         await queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
         await queryClient.refetchQueries({ queryKey: ['weekly-progress-post', user.id, currentWeekStart] });
@@ -248,36 +231,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
-  // Load commitments and accountability partner
-  useEffect(() => {
-    const loadCommitments = async () => {
-      if (user) {
-        const data = await commitmentsService.getPublicCommitments(user.id, currentWeekStart);
-        setCommitments(data);
-      }
-    };
-
-    loadCommitments();
-  }, [user, currentWeekStart]);
-
-  const handleCommitmentsSet = () => {
-    if (user) {
-      commitmentsService.getPublicCommitments(user.id, currentWeekStart).then(setCommitments);
-    }
-  };
-
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const hasShared = !!feedPost;
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
-  const isPastWeek = currentWeekStart < WeeklyProgressService.getWeekStart();
   
   // Enforce immutability: once a week is completed (shared), it becomes read-only
   const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
-
-  const hasCommitments = commitments.length === 3;
-  const committedIds = commitments.map(c => c.objective_id);
 
   const handleHabitClick = (habit: HabitStats) => {
     setSelectedHabit(habit);
@@ -305,57 +266,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         totalCount={totalCount}
         onNavigateWeek={onNavigateWeek}
       />
-
-      {/* Commitment Declaration */}
-      {!isReadOnly && isCurrentWeek && totalCount > 0 && (
-        <Card className={`${hasCommitments ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-          <CardContent className="p-3 sm:p-4 md:p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex items-start sm:items-center gap-2 sm:gap-3">
-                <Target className={`h-5 w-5 flex-shrink-0 mt-0.5 sm:mt-0 ${hasCommitments ? 'text-primary' : 'text-muted-foreground'}`} />
-                <div className="min-w-0">
-                  <h3 className="font-semibold text-sm sm:text-base">
-                    {hasCommitments ? '🎯 Your Top 3 Commitments' : 'Declare Your Top 3 Objectives'}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {hasCommitments 
-                      ? 'Visible to your friends as public commitments'
-                      : 'Make a public commitment to stay accountable'}
-                  </p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setShowCommitmentSelector(true)}
-                variant={hasCommitments ? 'outline' : 'default'}
-                className={`w-full sm:w-auto text-sm ${hasCommitments ? '' : 'gradient-primary'}`}
-              >
-                {hasCommitments ? 'Change' : 'Select Top 3'}
-              </Button>
-            </div>
-            {hasCommitments && (
-              <div className="mt-3 sm:mt-4 space-y-2">
-                {commitments.map((commitment, index) => (
-                  <div
-                    key={commitment.id}
-                    className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border ${
-                      commitment.is_completed
-                        ? 'bg-success/10 border-success/20'
-                        : 'bg-background border-primary/20'
-                    }`}
-                  >
-                    <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs sm:text-sm font-semibold">
-                      {index + 1}
-                    </div>
-                    <p className={`flex-1 text-xs sm:text-sm ${commitment.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                      {commitment.objective_text}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Habits Due This Week */}
       {isCurrentWeek && habitStats.length > 0 && (
@@ -428,16 +338,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onClose={() => setShowShareConfirmation(false)}
         onConfirm={handleConfirmShare}
         isSharing={isSharing}
-      />
-
-      {/* Commitment Selector */}
-      <CommitmentSelector
-        open={showCommitmentSelector}
-        onOpenChange={setShowCommitmentSelector}
-        objectives={objectives || []}
-        weekStart={currentWeekStart}
-        currentCommitments={committedIds}
-        onCommitmentsSet={handleCommitmentsSet}
       />
 
       {/* Habit Detail Modal */}
