@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { HabitsService } from "@/services/habitsService";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
@@ -10,7 +10,11 @@ import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
 import { QuarterlyReviewProvider } from "@/contexts/QuarterlyReviewContext";
 
-export const HabitsProvider = () => {
+interface HabitsProviderProps {
+  children: ReactNode;
+}
+
+export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   const { user } = useAuth();
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
   const [showQuarterlyDialog, setShowQuarterlyDialog] = useState(false);
@@ -57,21 +61,25 @@ export const HabitsProvider = () => {
     setShowQuarterlyDialog(true);
   };
   
-  if (!user) return null;
-  
+  // Always render children, but only render habits UI when user is logged in
   return (
     <QuarterlyReviewProvider onOpenReview={handleOpenQuarterlyReview}>
-      <DailyCheckInButton />
-      <WeeklyPlanningDialog 
-        open={showPlanningDialog} 
-        onOpenChange={handleClosePlanning}
-        weekStart={weekStart}
-      />
-      <QuarterlyReviewDialog 
-        open={showQuarterlyDialog} 
-        onOpenChange={handleCloseQuarterly}
-      />
-      <QuarterlyReviewsHistory />
+      {children}
+      {user && (
+        <>
+          <DailyCheckInButton />
+          <WeeklyPlanningDialog 
+            open={showPlanningDialog} 
+            onOpenChange={handleClosePlanning}
+            weekStart={weekStart}
+          />
+          <QuarterlyReviewDialog 
+            open={showQuarterlyDialog} 
+            onOpenChange={handleCloseQuarterly}
+          />
+          <QuarterlyReviewsHistory />
+        </>
+      )}
     </QuarterlyReviewProvider>
   );
 };

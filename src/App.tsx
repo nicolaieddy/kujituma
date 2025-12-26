@@ -81,8 +81,9 @@ const App = () => {
         <BrowserRouter>
           <AuthProvider>
             <TourProvider>
-              <HabitsProvider />
-              <AppContent />
+              <HabitsProvider>
+                <AppContent />
+              </HabitsProvider>
             </TourProvider>
           </AuthProvider>
         </BrowserRouter>

@@ -25,14 +25,7 @@ export const WeekHeader = ({
 }: WeekHeaderProps) => {
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   
-  // Safe access to quarterly review context
-  let openQuarterlyHistory: (() => void) | undefined;
-  try {
-    const quarterlyContext = useQuarterlyReviewTrigger();
-    openQuarterlyHistory = quarterlyContext.openQuarterlyHistory;
-  } catch {
-    // Context not available
-  }
+  const { openQuarterlyHistory } = useQuarterlyReviewTrigger();
   
   return (
     <Card className="border-border">
@@ -68,7 +61,7 @@ export const WeekHeader = ({
           </div>
           <div className="flex items-center gap-4">
             {/* Quarterly Review Button */}
-            {isCurrentWeek && openQuarterlyHistory && (
+            {isCurrentWeek && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
