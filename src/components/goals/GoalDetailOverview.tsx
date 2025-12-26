@@ -1,15 +1,16 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Goal, HabitItem } from "@/types/goals";
+import { Goal } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { Calendar, Tag, StickyNote, Target, RefreshCw, Flame, TrendingUp } from "lucide-react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
-import { startOfWeek, isToday, isBefore } from "date-fns";
+import { startOfWeek, isToday, isBefore, subWeeks, format, eachDayOfInterval, endOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { useAuth } from "@/contexts/AuthContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface GoalDetailOverviewProps {
   goal: Goal;
@@ -31,19 +32,66 @@ interface HabitStats {
   currentStreak: number;
   longestStreak: number;
   completionRate: number;
+  weeklyHistory: { weekStart: string; completed: number; expected: number; rate: number }[];
 }
+
+// Mini chart component for 8-week history
+const MiniHistoryChart = ({ 
+  data 
+}: { 
+  data: { weekStart: string; completed: number; expected: number; rate: number }[] 
+}) => {
+  if (data.length === 0) return null;
+
+  const maxRate = Math.max(...data.map(d => d.rate), 100);
+
+  return (
+    <TooltipProvider delayDuration={100}>
+      <div className="flex items-end gap-0.5 h-8">
+        {data.map((week, index) => {
+          const height = week.expected > 0 ? (week.rate / maxRate) * 100 : 0;
+          const isCurrentWeek = index === data.length - 1;
+          
+          return (
+            <Tooltip key={week.weekStart}>
+              <TooltipTrigger asChild>
+                <div
+                  className={cn(
+                    "w-3 rounded-sm transition-all cursor-pointer hover:opacity-80",
+                    week.rate >= 80 ? "bg-emerald-500" :
+                    week.rate >= 50 ? "bg-yellow-500" :
+                    week.rate > 0 ? "bg-orange-400" :
+                    "bg-white/20",
+                    isCurrentWeek && "ring-1 ring-white/40"
+                  )}
+                  style={{ height: `${Math.max(height, 8)}%` }}
+                />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p className="font-medium">Week of {format(new Date(week.weekStart), 'MMM d')}</p>
+                <p className="text-muted-foreground">
+                  {week.completed}/{week.expected} ({week.rate}%)
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
+    </TooltipProvider>
+  );
+};
 
 export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
   const { user } = useAuth();
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
+  const { toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
 
   const habitItems = goal.habit_items || [];
   const hasHabits = habitItems.length > 0;
 
-  // Fetch all completions for each habit to calculate stats
+  // Fetch all completions for each habit to calculate stats and weekly history
   const { data: habitStats = {} } = useQuery({
-    queryKey: ['habit-stats', goal.id, habitItems.map(h => h.id).join(',')],
+    queryKey: ['habit-stats-detailed', goal.id, habitItems.map(h => h.id).join(',')],
     queryFn: async () => {
       const stats: Record<string, HabitStats> = {};
       
@@ -54,14 +102,59 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
             const streak = HabitCompletionsService.calculateHabitStreak(allCompletions, habit.frequency);
             const completionRate = HabitCompletionsService.calculateCompletionRate(allCompletions, habit.frequency);
             
+            // Calculate weekly history for last 8 weeks
+            const weeklyHistory: { weekStart: string; completed: number; expected: number; rate: number }[] = [];
+            const today = new Date();
+            
+            for (let i = 7; i >= 0; i--) {
+              const weekStart = startOfWeek(subWeeks(today, i), { weekStartsOn: 1 });
+              const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+              const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+              const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+              
+              // Count completions in this week
+              const weekCompletions = allCompletions.filter(
+                c => c.completion_date >= weekStartStr && c.completion_date <= weekEndStr
+              );
+              const uniqueDays = new Set(weekCompletions.map(c => c.completion_date)).size;
+              
+              // Calculate expected based on frequency
+              let expected = 0;
+              switch (habit.frequency) {
+                case 'daily':
+                  expected = 7;
+                  break;
+                case 'weekdays':
+                  expected = 5;
+                  break;
+                case 'weekly':
+                case 'biweekly':
+                case 'monthly':
+                case 'monthly_last_week':
+                case 'quarterly':
+                  expected = 1;
+                  break;
+                default:
+                  expected = 7;
+              }
+              
+              weeklyHistory.push({
+                weekStart: weekStartStr,
+                completed: uniqueDays,
+                expected,
+                rate: expected > 0 ? Math.round((uniqueDays / expected) * 100) : 0
+              });
+            }
+            
             stats[habit.id] = {
               currentStreak: streak.current,
               longestStreak: streak.longest,
-              completionRate
+              completionRate,
+              weeklyHistory
             };
           } catch (error) {
             console.error(`Error fetching stats for habit ${habit.id}:`, error);
-            stats[habit.id] = { currentStreak: 0, longestStreak: 0, completionRate: 0 };
+            stats[habit.id] = { currentStreak: 0, longestStreak: 0, completionRate: 0, weeklyHistory: [] };
           }
         })
       );
@@ -185,6 +278,14 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
                         </Badge>
                       </div>
                     </div>
+
+                    {/* Mini history chart */}
+                    {stats && stats.weeklyHistory.length > 0 && (
+                      <div className="flex items-center gap-3">
+                        <span className="text-[10px] text-white/40 uppercase tracking-wide">8 weeks</span>
+                        <MiniHistoryChart data={stats.weeklyHistory} />
+                      </div>
+                    )}
                     
                     {/* Day checkboxes */}
                     <div className="flex items-center justify-between gap-1">
