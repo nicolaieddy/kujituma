@@ -462,6 +462,7 @@ export type Database = {
           order_index: number | null
           recurrence_frequency: string | null
           recurring_objective_text: string | null
+          start_date: string | null
           status: string
           target_date: string | null
           timeframe: string
@@ -482,6 +483,7 @@ export type Database = {
           order_index?: number | null
           recurrence_frequency?: string | null
           recurring_objective_text?: string | null
+          start_date?: string | null
           status?: string
           target_date?: string | null
           timeframe: string
@@ -502,6 +504,7 @@ export type Database = {
           order_index?: number | null
           recurrence_frequency?: string | null
           recurring_objective_text?: string | null
+          start_date?: string | null
           status?: string
           target_date?: string | null
           timeframe?: string
