@@ -112,6 +112,22 @@ export const useGoals = () => {
     },
   });
 
+  const reorderGoalMutation = useMutation({
+    mutationFn: ({ goalId, newOrderIndex }: { goalId: string; newOrderIndex: number }) =>
+      GoalsService.updateGoalOrder(goalId, newOrderIndex),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    },
+    onError: (error) => {
+      console.error('Error reordering goal:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reorder goal. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const createGoal = (data: CreateGoalData) => {
     createGoalMutation.mutate(data);
   };
@@ -130,6 +146,10 @@ export const useGoals = () => {
 
   const reprioritizeGoal = (id: string) => {
     reprioritizeMutation.mutate(id);
+  };
+
+  const reorderGoal = (goalId: string, newOrderIndex: number) => {
+    reorderGoalMutation.mutate({ goalId, newOrderIndex });
   };
 
   // Organize goals by status
@@ -183,10 +203,12 @@ export const useGoals = () => {
     deleteGoal,
     deprioritizeGoal,
     reprioritizeGoal,
+    reorderGoal,
     isCreating: createGoalMutation.isPending,
     isUpdating: updateGoalMutation.isPending,
     isDeleting: deleteGoalMutation.isPending,
     isDeprioritizing: deprioritizeMutation.isPending,
     isReprioritizing: reprioritizeMutation.isPending,
+    isReordering: reorderGoalMutation.isPending,
   };
 };
