@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -12,13 +12,54 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
-import { Loader2, Trophy, AlertCircle, Lightbulb, Rocket } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, Lightbulb, Rocket, CheckCircle2, Clock, Pause, TrendingDown } from "lucide-react";
 import { useGoals } from "@/hooks/useGoals";
+import { filterGoalsByQuarter, getQuarterName } from "@/utils/quarterUtils";
+import { Progress } from "@/components/ui/progress";
 
 interface QuarterlyReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
+
+interface GoalsSectionProps {
+  title: string;
+  icon: React.ReactNode;
+  goals: { id: string; title: string; status: string }[];
+  emptyMessage: string;
+  variant: 'success' | 'primary' | 'muted' | 'warning';
+}
+
+const GoalsSection = ({ title, icon, goals, emptyMessage, variant }: GoalsSectionProps) => {
+  if (goals.length === 0) return null;
+  
+  const variantStyles = {
+    success: 'bg-success/10 text-success border-success/20',
+    primary: 'bg-primary/10 text-primary border-primary/20',
+    muted: 'bg-muted text-muted-foreground border-border',
+    warning: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  };
+  
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 text-sm font-medium">
+        {icon}
+        <span>{title}</span>
+        <span className="text-muted-foreground">({goals.length})</span>
+      </div>
+      <div className="space-y-1.5">
+        {goals.map(goal => (
+          <div 
+            key={goal.id} 
+            className={`text-sm px-3 py-2 rounded-md border ${variantStyles[variant]}`}
+          >
+            {goal.title}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDialogProps) => {
   const { goals } = useGoals();
@@ -36,6 +77,17 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
   const [challenges, setChallenges] = useState("");
   const [lessonsLearned, setLessonsLearned] = useState("");
   const [nextQuarterFocus, setNextQuarterFocus] = useState("");
+  
+  // Filter goals by the current quarter
+  const quarterGoals = useMemo(() => {
+    if (!goals) return { completed: [], inProgress: [], notStarted: [], deprioritized: [] };
+    return filterGoalsByQuarter(goals, year, quarter);
+  }, [goals, year, quarter]);
+  
+  const totalRelevantGoals = quarterGoals.completed.length + quarterGoals.inProgress.length + quarterGoals.notStarted.length;
+  const completionPercentage = totalRelevantGoals > 0 
+    ? Math.round((quarterGoals.completed.length / totalRelevantGoals) * 100) 
+    : 0;
   
   useEffect(() => {
     if (currentReview) {
@@ -71,7 +123,7 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
     });
   };
   
-  const quarterNames = ['', 'Q1 (Jan-Mar)', 'Q2 (Apr-Jun)', 'Q3 (Jul-Sep)', 'Q4 (Oct-Dec)'];
+  const hasAnyGoals = totalRelevantGoals > 0 || quarterGoals.deprioritized.length > 0;
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,34 +134,59 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
             Quarterly Review
           </DialogTitle>
           <DialogDescription>
-            {quarterNames[quarter]} {year} — Reflect on your progress and plan ahead
+            {getQuarterName(quarter)} {year} — Reflect on your progress and plan ahead
           </DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6 py-4">
-          {/* Goals Summary */}
-          {goals && goals.length > 0 && (
+          {/* Goals Summary Card */}
+          {hasAnyGoals && (
             <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Your Goals This Quarter</CardTitle>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-medium flex items-center justify-between">
+                  <span>Goals This Quarter</span>
+                  {totalRelevantGoals > 0 && (
+                    <span className="text-xs font-normal text-muted-foreground">
+                      {quarterGoals.completed.length} of {totalRelevantGoals} completed
+                    </span>
+                  )}
+                </CardTitle>
+                {totalRelevantGoals > 0 && (
+                  <div className="flex items-center gap-3 pt-2">
+                    <Progress value={completionPercentage} className="h-2 flex-1" />
+                    <span className="text-sm font-medium text-primary">{completionPercentage}%</span>
+                  </div>
+                )}
               </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {goals.slice(0, 5).map(goal => (
-                    <div key={goal.id} className="flex items-center justify-between text-sm">
-                      <span className="truncate flex-1">{goal.title}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded ${
-                        goal.status === 'completed' 
-                          ? 'bg-success/20 text-success' 
-                          : goal.status === 'in_progress'
-                          ? 'bg-primary/20 text-primary'
-                          : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {goal.status.replace('_', ' ')}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <CardContent className="space-y-4">
+                <GoalsSection
+                  title="Completed"
+                  icon={<CheckCircle2 className="h-4 w-4 text-success" />}
+                  goals={quarterGoals.completed}
+                  emptyMessage="No goals completed yet"
+                  variant="success"
+                />
+                <GoalsSection
+                  title="In Progress"
+                  icon={<Clock className="h-4 w-4 text-primary" />}
+                  goals={quarterGoals.inProgress}
+                  emptyMessage="No goals in progress"
+                  variant="primary"
+                />
+                <GoalsSection
+                  title="Not Started"
+                  icon={<Pause className="h-4 w-4 text-muted-foreground" />}
+                  goals={quarterGoals.notStarted}
+                  emptyMessage="No pending goals"
+                  variant="muted"
+                />
+                <GoalsSection
+                  title="Deprioritized"
+                  icon={<TrendingDown className="h-4 w-4 text-orange-500" />}
+                  goals={quarterGoals.deprioritized}
+                  emptyMessage="No deprioritized goals"
+                  variant="warning"
+                />
               </CardContent>
             </Card>
           )}
