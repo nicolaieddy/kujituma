@@ -32,6 +32,7 @@ export const DraggableGoalCard = ({
     transform,
     transition,
     isDragging,
+    isOver,
   } = useSortable({ 
     id: goal.id, 
     data: { goal, status: goal.status } 
@@ -40,12 +41,21 @@ export const DraggableGoalCard = ({
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.4 : 1,
     zIndex: isDragging ? 50 : 'auto',
   };
 
   return (
     <div ref={setNodeRef} style={style} className="relative group touch-none">
+      {/* Drop indicator line - shows above the card when hovering */}
+      {isOver && !isDragging && (
+        <div className="absolute -top-1.5 left-0 right-0 z-20">
+          <div className="h-0.5 bg-primary rounded-full animate-pulse" />
+          <div className="absolute -left-1 -top-1 w-2.5 h-2.5 rounded-full bg-primary" />
+          <div className="absolute -right-1 -top-1 w-2.5 h-2.5 rounded-full bg-primary" />
+        </div>
+      )}
+      
       <div
         {...attributes}
         {...listeners}
