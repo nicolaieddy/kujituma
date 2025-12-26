@@ -9,6 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Flame, TrendingUp, CheckCircle2, Circle, RefreshCw, 
   Calendar, Edit2, Save, X, Pause, Play, Trash2 
@@ -33,8 +43,9 @@ const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
 ];
 
 export const HabitDetailModal = ({ habitStats, isOpen, onClose, onUpdate }: HabitDetailModalProps) => {
-  const { updateGoal, deprioritizeGoal, reprioritizeGoal, deleteGoal } = useGoals();
+  const { updateGoal, togglePauseGoal, deleteGoal } = useGoals();
   const [isEditing, setIsEditing] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
   const [editData, setEditData] = useState({
     recurring_objective_text: '',
     recurrence_frequency: 'weekly' as RecurrenceFrequency
@@ -44,7 +55,7 @@ export const HabitDetailModal = ({ habitStats, isOpen, onClose, onUpdate }: Habi
 
   const { goal, currentStreak, longestStreak, completionRate, totalWeeks, completedWeeks, weeklyHistory } = habitStats;
 
-  const isPaused = goal.status === 'deprioritized';
+  const isPaused = goal.is_paused;
   const isCompleted = goal.status === 'completed';
 
   const handleStartEdit = () => {
@@ -76,29 +87,15 @@ export const HabitDetailModal = ({ habitStats, isOpen, onClose, onUpdate }: Habi
     }
   };
 
-  const handleTogglePause = async () => {
-    try {
-      if (isPaused) {
-        await reprioritizeGoal(goal.id);
-        toast({
-          title: "Habit Resumed",
-          description: "Weekly objectives will be created again."
-        });
-      } else {
-        await deprioritizeGoal(goal.id);
-        toast({
-          title: "Habit Paused",
-          description: "No new weekly objectives will be created."
-        });
-      }
-      onUpdate?.();
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to update habit status.",
-        variant: "destructive"
-      });
-    }
+  const handleResume = () => {
+    togglePauseGoal(goal.id, false);
+    onUpdate?.();
+  };
+
+  const handlePauseConfirm = () => {
+    togglePauseGoal(goal.id, true);
+    setShowPauseDialog(false);
+    onUpdate?.();
   };
 
   const handleDelete = async () => {
@@ -321,23 +318,25 @@ export const HabitDetailModal = ({ habitStats, isOpen, onClose, onUpdate }: Habi
             {/* Actions */}
             <div className="flex gap-2 pt-2 border-t">
               {!isCompleted && (
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={handleTogglePause}
-                >
-                  {isPaused ? (
-                    <>
-                      <Play className="h-4 w-4 mr-2" />
-                      Resume Habit
-                    </>
-                  ) : (
-                    <>
-                      <Pause className="h-4 w-4 mr-2" />
-                      Pause Habit
-                    </>
-                  )}
-                </Button>
+                isPaused ? (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={handleResume}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Resume Habit
+                  </Button>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1"
+                    onClick={() => setShowPauseDialog(true)}
+                  >
+                    <Pause className="h-4 w-4 mr-2" />
+                    Pause Habit
+                  </Button>
+                )
               )}
               <Button 
                 variant="destructive" 
@@ -349,6 +348,39 @@ export const HabitDetailModal = ({ habitStats, isOpen, onClose, onUpdate }: Habi
             </div>
           </div>
         </ScrollArea>
+
+        {/* Pause Confirmation Dialog */}
+        <AlertDialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle className="flex items-center gap-2">
+                <Pause className="h-5 w-5 text-amber-500" />
+                Pause Habit
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-3">
+                <p>Are you sure you want to pause "{goal.title}"?</p>
+                {currentStreak > 0 && (
+                  <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-md p-3 text-destructive text-sm">
+                    <span className="text-2xl font-bold">{currentStreak}</span>
+                    <span>week streak will be lost!</span>
+                  </div>
+                )}
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3 text-amber-700 dark:text-amber-400 text-sm">
+                  <strong>Note:</strong> Pausing will end your current streak and no new weekly objectives will be created until you resume.
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={handlePauseConfirm}
+                className="bg-amber-500 text-white hover:bg-amber-600"
+              >
+                Pause Habit
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </DialogContent>
     </Dialog>
   );
