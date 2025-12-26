@@ -37,7 +37,7 @@ export const WeeklyReflectionCard = ({
             <div className="flex items-center justify-between gap-4">
               <div className="flex-1">
                 <div className="flex items-center justify-between">
-                  <CardTitle className={`text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
+                  <CardTitle className={`text-lg text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
                     <Share2 className="h-5 w-5 text-primary" />
                     Weekly Summary
                     {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
