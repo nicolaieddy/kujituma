@@ -163,25 +163,38 @@ export const GoalCard = ({
   };
 
   const getDateDisplay = () => {
-    // For custom date range with both dates
-    if (goal.timeframe === 'Custom Date' && (goal.start_date || goal.target_date)) {
-      const startDate = goal.start_date ? new Date(goal.start_date).toLocaleDateString() : null;
-      const endDate = goal.target_date ? new Date(goal.target_date).toLocaleDateString() : null;
-      
-      if (startDate && endDate) {
-        return `${startDate} → ${endDate}`;
-      } else if (startDate) {
-        return `From ${startDate}`;
-      } else if (endDate) {
-        return `Until ${endDate}`;
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return format(date, 'MMM d, yyyy');
+    };
+    
+    const formatDateShort = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return format(date, 'MMM d');
+    };
+    
+    // Check if both dates are in the same year
+    const sameYear = (start: string, end: string) => {
+      return new Date(start).getFullYear() === new Date(end).getFullYear();
+    };
+    
+    // For goals with dates
+    if (goal.start_date || goal.target_date) {
+      if (goal.start_date && goal.target_date) {
+        // Both dates: "Jan 1 → Mar 31, 2025" or "Dec 15, 2024 → Jan 31, 2025"
+        if (sameYear(goal.start_date, goal.target_date)) {
+          return `${formatDateShort(goal.start_date)} → ${formatDate(goal.target_date)}`;
+        } else {
+          return `${formatDate(goal.start_date)} → ${formatDate(goal.target_date)}`;
+        }
+      } else if (goal.start_date) {
+        return `From ${formatDate(goal.start_date)}`;
+      } else if (goal.target_date) {
+        return `Due ${formatDate(goal.target_date)}`;
       }
     }
     
-    // For other timeframes or when no custom dates set
-    if (goal.target_date) {
-      const targetDate = new Date(goal.target_date);
-      return targetDate.toLocaleDateString();
-    }
+    // Fallback to timeframe
     return goal.timeframe;
   };
 
