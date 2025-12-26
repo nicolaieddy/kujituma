@@ -6,6 +6,7 @@ import { RefreshCw, Flame, Target, TrendingUp, Plus } from "lucide-react";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitCard } from "./HabitCard";
 import { HabitDetailModal } from "./HabitDetailModal";
+import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -130,6 +131,12 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Streak Leaderboard */}
+      <HabitStreakLeaderboard 
+        habitStats={habitStats} 
+        onHabitClick={handleHabitClick}
+      />
 
       {/* Active Habits */}
       {activeHabitsList.length > 0 && (
