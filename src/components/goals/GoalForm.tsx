@@ -307,21 +307,27 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 { label: '6 months', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(addMonths(new Date(), 6), 'yyyy-MM-dd') }) },
                 { label: 'End of quarter', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(endOfQuarter(new Date()), 'yyyy-MM-dd') }) },
                 { label: 'End of year', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(endOfYear(new Date()), 'yyyy-MM-dd') }) },
-              ].map((preset) => (
-                <Button
-                  key={preset.label}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="text-xs h-7 px-2.5"
-                  onClick={() => {
-                    const dates = preset.getDates();
-                    setFormData({ ...formData, start_date: dates.start, target_date: dates.target });
-                  }}
-                >
-                  {preset.label}
-                </Button>
-              ))}
+              ].map((preset) => {
+                const presetDates = preset.getDates();
+                const isSelected = formData.start_date === presetDates.start && formData.target_date === presetDates.target;
+                return (
+                  <Button
+                    key={preset.label}
+                    type="button"
+                    variant={isSelected ? "default" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "text-xs h-7 px-2.5 transition-all",
+                      isSelected && "ring-2 ring-primary/20"
+                    )}
+                    onClick={() => {
+                      setFormData({ ...formData, start_date: presetDates.start, target_date: presetDates.target });
+                    }}
+                  >
+                    {preset.label}
+                  </Button>
+                );
+              })}
             </div>
           </div>
 
