@@ -5,7 +5,8 @@ import { Goal } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { Calendar, Tag, StickyNote, Target, RefreshCw } from "lucide-react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
-import { format } from "date-fns";
+import { startOfWeek, isToday, isBefore } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface GoalDetailOverviewProps {
   goal: Goal;
@@ -21,10 +22,11 @@ const frequencyLabels: Record<string, string> = {
   quarterly: 'Quarterly'
 };
 
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+
 export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
-  const { completions, toggleCompletion, isToggling } = useHabitCompletions();
-  const today = new Date();
-  const todayKey = format(today, 'yyyy-MM-dd');
+  const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
 
   const getTargetDateDisplay = () => {
     if (goal.target_date) {
@@ -37,19 +39,31 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
   const habitItems = goal.habit_items || [];
   const hasHabits = habitItems.length > 0;
 
-  const isHabitCompletedToday = (habitItemId: string) => {
-    return completions.some(
-      c => c.habit_item_id === habitItemId && c.completion_date === todayKey
-    );
+  const handleDayToggle = (habitItemId: string, dayIndex: number) => {
+    const date = weekDates[dayIndex];
+    if (!date) return;
+    toggleCompletion(goal.id, habitItemId, date);
   };
 
-  const handleToggleHabit = (habitItemId: string) => {
-    toggleCompletion(goal.id, habitItemId, today);
+  const getDaysToShow = (frequency: string): number[] => {
+    switch (frequency) {
+      case 'daily':
+        return [0, 1, 2, 3, 4, 5, 6];
+      case 'weekdays':
+        return [0, 1, 2, 3, 4];
+      default:
+        return [0, 1, 2, 3, 4, 5, 6];
+    }
+  };
+
+  const getHabitItemCompletionCount = (habitItemId: string): number => {
+    const status = getCompletionStatus(habitItemId);
+    return Object.values(status).filter(Boolean).length;
   };
 
   return (
     <div className="space-y-6">
-      {/* Habit Items */}
+      {/* Habit Items with weekly checkboxes */}
       {hasHabits && (
         <Card className="bg-white/10 backdrop-blur-lg border-white/20">
           <CardHeader>
@@ -59,37 +73,82 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-white/60 text-xs mb-3">Check off today's habits</p>
-            <div className="space-y-3">
+            <p className="text-white/60 text-xs mb-4">Track your habits for this week</p>
+            <div className="space-y-4">
               {habitItems.map((habit) => {
-                const isCompleted = isHabitCompletedToday(habit.id);
+                const completionStatus = getCompletionStatus(habit.id);
+                const daysToShow = getDaysToShow(habit.frequency);
+                const completedDays = getHabitItemCompletionCount(habit.id);
+                
                 return (
                   <div 
                     key={habit.id} 
-                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-                      isCompleted 
-                        ? 'bg-emerald-500/20 border-emerald-500/30' 
-                        : 'bg-white/5 border-white/10'
-                    }`}
+                    className="p-3 rounded-lg bg-white/5 border border-white/10 space-y-3"
                   >
-                    <div className="flex items-center gap-3">
-                      <Checkbox
-                        checked={isCompleted}
-                        onCheckedChange={() => handleToggleHabit(habit.id)}
-                        disabled={isToggling}
-                        className={`border-white/40 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 ${
-                          isToggling ? 'opacity-50' : ''
-                        }`}
-                      />
-                      <span className={`font-medium transition-all ${
-                        isCompleted ? 'text-white/60 line-through' : 'text-white/90'
-                      }`}>
-                        {habit.text}
-                      </span>
+                    {/* Habit header */}
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/90 font-medium">{habit.text}</span>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-white/10 text-white/80 border-white/20">
+                          {frequencyLabels[habit.frequency] || habit.frequency}
+                        </Badge>
+                        <Badge 
+                          variant="secondary" 
+                          className={cn(
+                            "text-xs",
+                            completedDays === daysToShow.length 
+                              ? "bg-emerald-500/20 text-emerald-300" 
+                              : "bg-white/10 text-white/70"
+                          )}
+                        >
+                          {completedDays}/{daysToShow.length}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant="outline" className="bg-white/10 text-white/80 border-white/20">
-                      {frequencyLabels[habit.frequency] || habit.frequency}
-                    </Badge>
+                    
+                    {/* Day checkboxes */}
+                    <div className="flex items-center justify-between gap-1">
+                      {DAY_LABELS.map((label, index) => {
+                        const isActiveDay = daysToShow.includes(index);
+                        const isChecked = completionStatus[index] || false;
+                        const date = weekDates[index];
+                        const isTodayDate = date && isToday(date);
+                        const isPast = date && isBefore(date, new Date()) && !isTodayDate;
+                        
+                        return (
+                          <div
+                            key={index}
+                            className={cn(
+                              "flex flex-col items-center gap-1 flex-1",
+                              !isActiveDay && "opacity-30"
+                            )}
+                          >
+                            <span className={cn(
+                              "text-xs font-medium",
+                              isTodayDate ? "text-emerald-400" : "text-white/60"
+                            )}>
+                              {label}
+                            </span>
+                            <Checkbox
+                              checked={isChecked}
+                              disabled={!isActiveDay || isToggling}
+                              onCheckedChange={() => {
+                                if (isActiveDay) {
+                                  handleDayToggle(habit.id, index);
+                                }
+                              }}
+                              className={cn(
+                                "h-7 w-7 rounded border-white/40",
+                                isTodayDate && "ring-2 ring-emerald-400/50 ring-offset-1 ring-offset-transparent",
+                                isChecked && "bg-emerald-500 border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
+                                !isActiveDay && "cursor-not-allowed",
+                                isPast && !isChecked && "border-white/20"
+                              )}
+                            />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}
