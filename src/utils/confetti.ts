@@ -76,3 +76,99 @@ export const celebrateWeekComplete = () => {
     startVelocity: 45,
   });
 };
+
+// Streak milestone celebrations with increasing intensity
+export const celebrateStreakMilestone = (streak: number) => {
+  const milestoneConfig: Record<number, { particleCount: number; spread: number; colors: string[] }> = {
+    4: {
+      particleCount: 80,
+      spread: 60,
+      colors: ['#22c55e', '#4ade80', '#86efac'] // Green for 4 weeks
+    },
+    8: {
+      particleCount: 120,
+      spread: 80,
+      colors: ['#eab308', '#facc15', '#fde047'] // Yellow/Gold for 8 weeks
+    },
+    12: {
+      particleCount: 200,
+      spread: 100,
+      colors: ['#f97316', '#fb923c', '#fdba74'] // Orange/Fire for 12 weeks
+    }
+  };
+
+  const config = milestoneConfig[streak];
+  if (!config) return;
+
+  // Initial burst
+  confetti({
+    particleCount: config.particleCount,
+    spread: config.spread,
+    origin: { y: 0.6 },
+    colors: config.colors,
+    startVelocity: 45
+  });
+
+  // For higher streaks, add more celebration bursts
+  if (streak >= 8) {
+    setTimeout(() => {
+      confetti({
+        particleCount: config.particleCount / 2,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0 },
+        colors: config.colors
+      });
+      confetti({
+        particleCount: config.particleCount / 2,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1 },
+        colors: config.colors
+      });
+    }, 250);
+  }
+
+  // For 12+ streaks, add a grand finale
+  if (streak >= 12) {
+    setTimeout(() => {
+      const duration = 1500;
+      const animationEnd = Date.now() + duration;
+      
+      const interval = setInterval(() => {
+        const timeLeft = animationEnd - Date.now();
+        if (timeLeft <= 0) return clearInterval(interval);
+        
+        confetti({
+          particleCount: 3,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0, y: 0.6 },
+          colors: config.colors
+        });
+        confetti({
+          particleCount: 3,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1, y: 0.6 },
+          colors: config.colors
+        });
+      }, 100);
+    }, 500);
+  }
+};
+
+// Check if a streak is a milestone
+export const isStreakMilestone = (streak: number): boolean => {
+  return streak === 4 || streak === 8 || streak === 12;
+};
+
+// Get milestone message
+export const getStreakMilestoneMessage = (streak: number): string | null => {
+  const messages: Record<number, string> = {
+    4: "🔥 4 Week Streak! You're building momentum!",
+    8: "⭐ 8 Week Streak! Incredible consistency!",
+    12: "🏆 12 Week Streak! You're unstoppable!"
+  };
+  return messages[streak] || null;
+};

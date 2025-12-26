@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Flame, TrendingUp, CheckCircle2, Circle, RefreshCw, Target } from "lucide-react";
+import { Flame, TrendingUp, CheckCircle2, Circle, RefreshCw, Target, Trophy, Star, Zap } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { format, parseISO } from "date-fns";
 
@@ -14,18 +14,21 @@ export const HabitCard = ({ habitStats, onClick }: HabitCardProps) => {
   const { goal, currentStreak, longestStreak, completionRate, totalWeeks, completedWeeks, weeklyHistory } = habitStats;
 
   const getStreakColor = (streak: number) => {
-    if (streak >= 8) return "text-orange-500";
-    if (streak >= 4) return "text-yellow-500";
-    if (streak >= 1) return "text-green-500";
+    if (streak >= 12) return "text-orange-500";
+    if (streak >= 8) return "text-yellow-500";
+    if (streak >= 4) return "text-green-500";
+    if (streak >= 1) return "text-emerald-400";
     return "text-muted-foreground";
   };
 
-  const getCompletionColor = (rate: number) => {
-    if (rate >= 80) return "bg-green-500";
-    if (rate >= 60) return "bg-yellow-500";
-    if (rate >= 40) return "bg-orange-500";
-    return "bg-red-500";
+  const getStreakBadge = (streak: number) => {
+    if (streak >= 12) return { icon: Trophy, label: "12+ weeks!", color: "bg-orange-500/20 text-orange-500 border-orange-500/30" };
+    if (streak >= 8) return { icon: Star, label: "8+ weeks!", color: "bg-yellow-500/20 text-yellow-500 border-yellow-500/30" };
+    if (streak >= 4) return { icon: Zap, label: "4+ weeks!", color: "bg-green-500/20 text-green-500 border-green-500/30" };
+    return null;
   };
+
+  const streakBadge = getStreakBadge(currentStreak);
 
   const frequencyLabel = {
     weekly: "Weekly",
@@ -58,11 +61,21 @@ export const HabitCard = ({ habitStats, onClick }: HabitCardProps) => {
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {/* Streak Milestone Badge */}
+        {streakBadge && (
+          <div className="flex justify-center">
+            <Badge variant="outline" className={`${streakBadge.color} flex items-center gap-1.5 py-1 px-3 animate-fade-in`}>
+              <streakBadge.icon className="h-3.5 w-3.5" />
+              {streakBadge.label}
+            </Badge>
+          </div>
+        )}
+
         {/* Streak Display */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <Flame className={`h-5 w-5 ${getStreakColor(currentStreak)}`} />
+              <Flame className={`h-5 w-5 ${getStreakColor(currentStreak)} ${currentStreak >= 4 ? 'animate-pulse' : ''}`} />
               <span className={`font-bold text-lg ${getStreakColor(currentStreak)}`}>
                 {currentStreak}
               </span>

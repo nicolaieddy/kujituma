@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
+import { HabitStreaksService } from "@/services/habitStreaksService";
 import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useEffect, useRef } from "react";
+import { celebrateStreakMilestone, getStreakMilestoneMessage } from "@/utils/confetti";
 
 export const useWeeklyObjectives = (currentWeekStart: string) => {
   const { user } = useAuth();
@@ -127,7 +129,28 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     createObjectiveMutation.mutate({ ...data, week_start: currentWeekStart });
   };
 
-  const updateObjective = (id: string, data: UpdateWeeklyObjectiveData) => {
+  const updateObjective = async (id: string, data: UpdateWeeklyObjectiveData) => {
+    // Check for streak milestone before completing
+    if (data.is_completed === true) {
+      try {
+        const milestoneCheck = await HabitStreaksService.checkStreakMilestone(id);
+        if (milestoneCheck?.isMilestone) {
+          // Delay celebration slightly to let the UI update first
+          setTimeout(() => {
+            celebrateStreakMilestone(milestoneCheck.newStreak);
+            const message = getStreakMilestoneMessage(milestoneCheck.newStreak);
+            if (message) {
+              toast({
+                title: "Streak Milestone!",
+                description: message,
+              });
+            }
+          }, 300);
+        }
+      } catch (error) {
+        console.error('Error checking streak milestone:', error);
+      }
+    }
     updateObjectiveMutation.mutate({ id, data });
   };
 
