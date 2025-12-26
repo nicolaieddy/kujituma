@@ -487,15 +487,36 @@ export const AnalyticsDashboard = () => {
 };
 
 // Activity Heatmap Component
+import { useState } from 'react';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+
 const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
-  const getHeatmapColor = (rate: number, hasActivity: boolean) => {
-    if (!hasActivity) return 'bg-muted/50';
-    if (rate >= 80) return 'bg-green-600';
-    if (rate >= 60) return 'bg-green-500';
-    if (rate >= 40) return 'bg-green-400';
-    if (rate >= 20) return 'bg-green-300';
-    if (rate > 0) return 'bg-green-200';
-    return 'bg-muted/50';
+  const [displayMode, setDisplayMode] = useState<'rate' | 'count'>('rate');
+
+  // Find max count for scaling
+  const maxCount = Math.max(...data.map(w => w.total), 1);
+
+  const getHeatmapColor = (week: HeatmapWeek) => {
+    if (week.total === 0) return 'bg-muted/50';
+    
+    if (displayMode === 'rate') {
+      const rate = week.completionRate;
+      if (rate >= 80) return 'bg-green-600';
+      if (rate >= 60) return 'bg-green-500';
+      if (rate >= 40) return 'bg-green-400';
+      if (rate >= 20) return 'bg-green-300';
+      if (rate > 0) return 'bg-green-200';
+      return 'bg-muted/50';
+    } else {
+      // Count mode - scale by total objectives
+      const intensity = week.total / maxCount;
+      if (intensity >= 0.8) return 'bg-blue-600';
+      if (intensity >= 0.6) return 'bg-blue-500';
+      if (intensity >= 0.4) return 'bg-blue-400';
+      if (intensity >= 0.2) return 'bg-blue-300';
+      if (intensity > 0) return 'bg-blue-200';
+      return 'bg-muted/50';
+    }
   };
 
   // Group by month for labels
@@ -514,6 +535,34 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
 
   return (
     <div className="space-y-3">
+      {/* Toggle between modes */}
+      <div className="flex items-center justify-between">
+        <ToggleGroup 
+          type="single" 
+          value={displayMode} 
+          onValueChange={(value) => value && setDisplayMode(value as 'rate' | 'count')}
+          className="bg-muted/50 p-0.5 rounded-lg"
+        >
+          <ToggleGroupItem 
+            value="rate" 
+            size="sm" 
+            className="text-xs px-3 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+          >
+            Completion Rate
+          </ToggleGroupItem>
+          <ToggleGroupItem 
+            value="count" 
+            size="sm" 
+            className="text-xs px-3 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+          >
+            Objective Count
+          </ToggleGroupItem>
+        </ToggleGroup>
+        <span className="text-xs text-muted-foreground">
+          {displayMode === 'rate' ? 'Color = % completed' : 'Color = # of objectives'}
+        </span>
+      </div>
+
       {/* Month labels */}
       <div className="flex text-xs text-muted-foreground pl-1">
         {months.map((month, i) => (
@@ -537,7 +586,7 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
             <UITooltip key={index}>
               <TooltipTrigger asChild>
                 <div
-                  className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 ${getHeatmapColor(week.completionRate, week.total > 0)}`}
+                  className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 ${getHeatmapColor(week)}`}
                 />
               </TooltipTrigger>
               <TooltipContent side="top" className="text-xs">
@@ -560,11 +609,23 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
         <span className="text-muted-foreground">Less</span>
         <div className="flex gap-0.5">
           <div className="w-2.5 h-2.5 rounded-sm bg-muted/50"></div>
-          <div className="w-2.5 h-2.5 rounded-sm bg-green-200"></div>
-          <div className="w-2.5 h-2.5 rounded-sm bg-green-300"></div>
-          <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
-          <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
-          <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
+          {displayMode === 'rate' ? (
+            <>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-200"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-300"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
+            </>
+          ) : (
+            <>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-200"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-300"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>
+              <div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>
+            </>
+          )}
         </div>
         <span className="text-muted-foreground">More</span>
       </div>
