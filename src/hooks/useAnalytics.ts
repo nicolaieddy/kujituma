@@ -47,6 +47,16 @@ interface BestWorstWeek {
   worst: WeeklyActivity | null;
 }
 
+export interface HeatmapWeek {
+  date: string;
+  completionRate: number;
+  completed: number;
+  total: number;
+  weekNumber: number;
+  month: number;
+  year: number;
+}
+
 export interface AnalyticsData {
   weeklyCompletionRate: number;
   currentStreak: number;
@@ -68,6 +78,7 @@ export interface AnalyticsData {
     inProgress: number;
     notStarted: number;
   };
+  heatmapData: HeatmapWeek[];
 }
 
 const defaultAnalytics: AnalyticsData = {
@@ -90,7 +101,8 @@ const defaultAnalytics: AnalyticsData = {
   averageObjectivesPerWeek: 0,
   totalActiveWeeks: 0,
   consistencyScore: 0,
-  goalsStats: { total: 0, completed: 0, inProgress: 0, notStarted: 0 }
+  goalsStats: { total: 0, completed: 0, inProgress: 0, notStarted: 0 },
+  heatmapData: []
 };
 
 export const useAnalytics = () => {
@@ -334,6 +346,30 @@ const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
   const consistentWeeks = Array.from(weeklyData.values()).filter(w => w.completionRate >= 50).length;
   const consistencyScore = totalActiveWeeks > 0 ? (consistentWeeks / totalActiveWeeks) * 100 : 0;
 
+  // Heatmap data - last 52 weeks (1 year)
+  const heatmapData: HeatmapWeek[] = [];
+  const today = new Date();
+  
+  // Generate last 52 weeks
+  for (let i = 51; i >= 0; i--) {
+    const weekDate = new Date(today);
+    weekDate.setDate(weekDate.getDate() - (i * 7));
+    const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 }); // Monday start
+    const weekKey = format(weekStart, 'yyyy-MM-dd');
+    
+    const weekActivity = weeklyData.get(weekKey);
+    
+    heatmapData.push({
+      date: weekKey,
+      completionRate: weekActivity?.completionRate || 0,
+      completed: weekActivity?.completed || 0,
+      total: weekActivity?.total || 0,
+      weekNumber: Math.ceil((weekStart.getTime() - new Date(weekStart.getFullYear(), 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000)),
+      month: weekStart.getMonth(),
+      year: weekStart.getFullYear()
+    });
+  }
+
   return {
     weeklyCompletionRate,
     currentStreak,
@@ -349,6 +385,7 @@ const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
     averageObjectivesPerWeek,
     totalActiveWeeks,
     consistencyScore,
-    goalsStats
+    goalsStats,
+    heatmapData
   };
 };

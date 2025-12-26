@@ -2,9 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, PieChart, Pie } from 'recharts';
-import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react';
-import { useAnalytics } from '@/hooks/useAnalytics';
+import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3 } from 'lucide-react';
+import { useAnalytics, HeatmapWeek } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export const AnalyticsDashboard = () => {
   const { analytics, isLoading } = useAnalytics();
@@ -464,6 +465,108 @@ export const AnalyticsDashboard = () => {
             )}
           </CardContent>
         </Card>
+      </div>
+
+      {/* Activity Heatmap */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Grid3X3 className="h-5 w-5" />
+            Year in Review
+          </CardTitle>
+          <CardDescription>
+            Weekly activity over the past year
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ActivityHeatmap data={analytics.heatmapData} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+// Activity Heatmap Component
+const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
+  const getHeatmapColor = (rate: number, hasActivity: boolean) => {
+    if (!hasActivity) return 'bg-muted/50';
+    if (rate >= 80) return 'bg-green-600';
+    if (rate >= 60) return 'bg-green-500';
+    if (rate >= 40) return 'bg-green-400';
+    if (rate >= 20) return 'bg-green-300';
+    if (rate > 0) return 'bg-green-200';
+    return 'bg-muted/50';
+  };
+
+  // Group by month for labels
+  const months: { label: string; startIndex: number }[] = [];
+  let currentMonth = -1;
+  
+  data.forEach((week, index) => {
+    if (week.month !== currentMonth) {
+      currentMonth = week.month;
+      months.push({
+        label: format(parseISO(week.date), 'MMM'),
+        startIndex: index
+      });
+    }
+  });
+
+  return (
+    <div className="space-y-3">
+      {/* Month labels */}
+      <div className="flex text-xs text-muted-foreground pl-1">
+        {months.map((month, i) => (
+          <div 
+            key={i} 
+            className="flex-shrink-0"
+            style={{ 
+              marginLeft: i === 0 ? 0 : `${(month.startIndex - (months[i-1]?.startIndex || 0) - 1) * 12}px`,
+              minWidth: '30px'
+            }}
+          >
+            {month.label}
+          </div>
+        ))}
+      </div>
+      
+      {/* Heatmap grid */}
+      <div className="flex gap-0.5 flex-wrap">
+        <TooltipProvider delayDuration={100}>
+          {data.map((week, index) => (
+            <UITooltip key={index}>
+              <TooltipTrigger asChild>
+                <div
+                  className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 ${getHeatmapColor(week.completionRate, week.total > 0)}`}
+                />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="text-xs">
+                <p className="font-medium">{format(parseISO(week.date), 'MMM d, yyyy')}</p>
+                {week.total > 0 ? (
+                  <p className="text-muted-foreground">
+                    {week.completed}/{week.total} completed ({week.completionRate.toFixed(0)}%)
+                  </p>
+                ) : (
+                  <p className="text-muted-foreground">No activity</p>
+                )}
+              </TooltipContent>
+            </UITooltip>
+          ))}
+        </TooltipProvider>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-between text-xs pt-2">
+        <span className="text-muted-foreground">Less</span>
+        <div className="flex gap-0.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-muted/50"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-green-200"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-green-300"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
+        </div>
+        <span className="text-muted-foreground">More</span>
       </div>
     </div>
   );
