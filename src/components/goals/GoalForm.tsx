@@ -173,19 +173,21 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       }
     }
     
-    const submitData: CreateGoalData = {
+    // When updating, we need to use a type that allows null for clearing values
+    const submitData: any = {
       title: formData.title.trim(),
       description: formData.description?.trim() || '',
       timeframe: 'Custom Date',
       category: formData.category === 'none' ? '' : (formData.category?.trim() || ''),
       is_public: formData.is_public,
       is_recurring: formData.is_recurring,
-      recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : undefined,
+      // Explicitly set to null if not recurring to clear any existing value
+      recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : null,
       recurring_objective_text: formData.is_recurring && formData.recurring_objective_text?.trim() 
         ? formData.recurring_objective_text.trim() 
-        : undefined,
+        : null,
       habit_items: formData.is_recurring ? formData.habit_items : [],
-      start_date: formData.start_date || undefined,
+      start_date: formData.start_date || null,
       target_date: formData.target_date
     };
 
