@@ -6,6 +6,7 @@ import { Goal, GoalStatus } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalObjectivesList } from "./GoalObjectivesList";
+import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
 import { Edit, CheckCircle, Play, Clock, Trash2 } from "lucide-react";
 
 interface GoalDetailModalProps {
@@ -162,7 +163,13 @@ export const GoalDetailModal = ({
             />
           </div>
         ) : (
-          <div className="mt-6">
+          <div className="mt-6 space-y-6">
+            {goal.is_recurring && (
+              <HabitCompletionTimeline 
+                goal={goal} 
+                objectives={relatedObjectives} 
+              />
+            )}
             <GoalObjectivesList
               goal={goal}
               objectives={relatedObjectives}
