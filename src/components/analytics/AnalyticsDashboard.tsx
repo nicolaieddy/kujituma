@@ -4,7 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
 import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar as CalendarIcon, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange, RefreshCw, Activity } from 'lucide-react';
-import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter, CustomDateRange, HabitAnalytics } from '@/hooks/useAnalytics';
+import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter, CustomDateRange, HabitAnalytics, HabitDayData } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -778,6 +778,14 @@ export const AnalyticsDashboard = () => {
                   </div>
                 </div>
               )}
+
+              {/* Daily Habit Heatmap */}
+              {analytics.habitAnalytics.dailyHeatmap.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-sm font-medium mb-3">Daily Check-ins</p>
+                  <HabitHeatmap data={analytics.habitAnalytics.dailyHeatmap} />
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -1187,5 +1195,133 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
         onOpenChange={setDialogOpen} 
       />
     </>
+  );
+};
+
+// Habit Heatmap Component (GitHub-style for daily habits)
+const HabitHeatmap = ({ data }: { data: HabitDayData[] }) => {
+  // Group by week
+  const weeks = new Map<number, HabitDayData[]>();
+  data.forEach(day => {
+    if (!weeks.has(day.weekIndex)) {
+      weeks.set(day.weekIndex, []);
+    }
+    weeks.get(day.weekIndex)!.push(day);
+  });
+
+  // Sort weeks and days
+  const sortedWeeks = Array.from(weeks.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([, days]) => days.sort((a, b) => a.dayOfWeek - b.dayOfWeek));
+
+  // Find max completions for scaling
+  const maxCompletions = Math.max(...data.map(d => d.completions), 1);
+
+  const getHeatmapColor = (completions: number) => {
+    if (completions === 0) return 'bg-muted/50';
+    const intensity = completions / maxCompletions;
+    if (intensity >= 0.8) return 'bg-emerald-600 dark:bg-emerald-500';
+    if (intensity >= 0.6) return 'bg-emerald-500 dark:bg-emerald-400';
+    if (intensity >= 0.4) return 'bg-emerald-400 dark:bg-emerald-600/70';
+    if (intensity >= 0.2) return 'bg-emerald-300 dark:bg-emerald-700/60';
+    return 'bg-emerald-200 dark:bg-emerald-800/50';
+  };
+
+  // Get month labels
+  const months: { label: string; weekIndex: number }[] = [];
+  let currentMonth = -1;
+  data.forEach(day => {
+    const month = parseISO(day.date).getMonth();
+    if (month !== currentMonth && day.dayOfWeek === 0) {
+      currentMonth = month;
+      months.push({
+        label: format(parseISO(day.date), 'MMM'),
+        weekIndex: day.weekIndex
+      });
+    }
+  });
+
+  const dayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+  return (
+    <div className="space-y-2">
+      {/* Month labels */}
+      <div className="flex text-xs text-muted-foreground ml-8">
+        {months.map((month, i) => {
+          const prevWeekIndex = i > 0 ? months[i - 1].weekIndex : 0;
+          const gap = month.weekIndex - prevWeekIndex;
+          return (
+            <div 
+              key={i} 
+              className="flex-shrink-0"
+              style={{ 
+                marginLeft: i === 0 ? `${month.weekIndex * 10}px` : `${(gap - 1) * 10}px`,
+                minWidth: '24px'
+              }}
+            >
+              {month.label}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-1">
+        {/* Day labels */}
+        <div className="flex flex-col gap-0.5 text-xs text-muted-foreground pr-1">
+          {dayLabels.map((label, i) => (
+            <div key={i} className="h-2.5 flex items-center justify-end" style={{ fontSize: '9px' }}>
+              {i % 2 === 1 ? label.substring(0, 1) : ''}
+            </div>
+          ))}
+        </div>
+
+        {/* Heatmap grid */}
+        <div className="flex gap-0.5 overflow-x-auto">
+          <TooltipProvider delayDuration={100}>
+            {sortedWeeks.map((week, weekIdx) => (
+              <div key={weekIdx} className="flex flex-col gap-0.5">
+                {[0, 1, 2, 3, 4, 5, 6].map(dayOfWeek => {
+                  const day = week.find(d => d.dayOfWeek === dayOfWeek);
+                  if (!day) {
+                    return <div key={dayOfWeek} className="w-2.5 h-2.5" />;
+                  }
+                  return (
+                    <UITooltip key={dayOfWeek}>
+                      <TooltipTrigger asChild>
+                        <div
+                          className={`w-2.5 h-2.5 rounded-sm transition-all hover:ring-1 hover:ring-primary/50 hover:scale-125 ${getHeatmapColor(day.completions)}`}
+                        />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="text-xs">
+                        <p className="font-medium">{format(parseISO(day.date), 'EEEE, MMM d, yyyy')}</p>
+                        <p className="text-muted-foreground">
+                          {day.completions === 0 
+                            ? 'No check-ins' 
+                            : `${day.completions} habit${day.completions > 1 ? 's' : ''} completed`}
+                        </p>
+                      </TooltipContent>
+                    </UITooltip>
+                  );
+                })}
+              </div>
+            ))}
+          </TooltipProvider>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center justify-end gap-2 text-xs pt-2">
+        <span className="text-muted-foreground">Less</span>
+        <div className="flex items-center gap-0.5">
+          <div className="w-2.5 h-2.5 rounded-sm bg-muted/50 border border-border/30"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-200 dark:bg-emerald-800/50"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-300 dark:bg-emerald-700/60"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-400 dark:bg-emerald-600/70"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-500 dark:bg-emerald-400"></div>
+          <div className="w-2.5 h-2.5 rounded-sm bg-emerald-600 dark:bg-emerald-500"></div>
+        </div>
+        <span className="text-muted-foreground">More</span>
+      </div>
+    </div>
   );
 };
