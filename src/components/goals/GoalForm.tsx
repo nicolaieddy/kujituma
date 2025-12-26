@@ -41,6 +41,27 @@ const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string; descripti
   { value: 'quarterly', label: 'Quarterly', description: 'Once per quarter' }
 ];
 
+const getFrequencyPreview = (frequency: RecurrenceFrequency | undefined): string => {
+  switch (frequency) {
+    case 'daily':
+      return 'Creates an objective every week for daily practice';
+    case 'weekdays':
+      return 'Creates an objective every week for weekday practice (Mon-Fri)';
+    case 'weekly':
+      return 'Creates an objective every Monday';
+    case 'biweekly':
+      return 'Creates an objective every other Monday';
+    case 'monthly':
+      return 'Creates an objective on the first week of each month';
+    case 'monthly_last_week':
+      return 'Creates an objective on the last week of each month';
+    case 'quarterly':
+      return 'Creates an objective at the start of each quarter (Jan, Apr, Jul, Oct)';
+    default:
+      return 'Creates an objective every Monday';
+  }
+};
+
 export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
   const isMobile = useIsMobile();
   const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
@@ -445,6 +466,9 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {getFrequencyPreview(formData.recurrence_frequency)}
+                  </p>
                 </div>
 
                 <div>
