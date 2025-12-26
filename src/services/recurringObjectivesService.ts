@@ -47,6 +47,22 @@ export class RecurringObjectivesService {
   }
 
   /**
+   * Check if a goal should use habit tracking instead of objectives
+   * Daily/weekday habits with habit items should NOT create objectives
+   */
+  static shouldUseHabitTrackingOnly(goal: Goal): boolean {
+    const frequency = goal.recurrence_frequency || 'weekly';
+    const hasHabitItems = goal.habit_items && Array.isArray(goal.habit_items) && goal.habit_items.length > 0;
+    
+    // Daily/weekday frequencies with habit items = track via checkboxes, no objectives needed
+    if ((frequency === 'daily' || frequency === 'weekdays') && hasHabitItems) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
    * Create a recurring objective for a specific week if it doesn't exist
    */
   static async createRecurringObjectiveIfNeeded(
@@ -55,6 +71,11 @@ export class RecurringObjectivesService {
   ): Promise<boolean> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
+
+    // Skip objective creation for daily/weekday habits that use habit tracking
+    if (this.shouldUseHabitTrackingOnly(goal)) {
+      return false;
+    }
 
     // Check if goal is still valid for this week
     if (!this.isGoalActiveForWeek(goal, weekStart)) {
