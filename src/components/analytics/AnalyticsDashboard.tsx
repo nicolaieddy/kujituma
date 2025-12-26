@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
-import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange } from 'lucide-react';
-import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter } from '@/hooks/useAnalytics';
+import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar as CalendarIcon, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange } from 'lucide-react';
+import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter, CustomDateRange } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -15,16 +15,52 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { cn } from '@/lib/utils';
+import { DateRange } from 'react-day-picker';
 
 export const AnalyticsDashboard = () => {
   const [dateRange, setDateRange] = useState<DateRangeFilter>('all_time');
-  const { analytics, isLoading } = useAnalytics(dateRange);
+  const [customRange, setCustomRange] = useState<CustomDateRange | undefined>();
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>();
+  const { analytics, isLoading } = useAnalytics(dateRange, customRange);
 
   const dateRangeLabels: Record<DateRangeFilter, string> = {
     this_week: 'This Week',
     this_month: 'This Month',
     this_quarter: 'This Quarter',
-    all_time: 'All Time'
+    all_time: 'All Time',
+    custom: customRange?.from 
+      ? customRange.to && customRange.from.getTime() !== customRange.to.getTime()
+        ? `${format(customRange.from, 'MMM d')} - ${format(customRange.to, 'MMM d, yyyy')}`
+        : format(customRange.from, 'MMM d, yyyy')
+      : 'Custom Range'
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    if (value === 'custom') {
+      setCalendarOpen(true);
+    } else {
+      setDateRange(value as DateRangeFilter);
+      setCustomRange(undefined);
+    }
+  };
+
+  const handleCalendarSelect = (range: DateRange | undefined) => {
+    setTempDateRange(range);
+  };
+
+  const handleApplyCustomRange = () => {
+    if (tempDateRange?.from) {
+      setCustomRange({
+        from: tempDateRange.from,
+        to: tempDateRange.to
+      });
+      setDateRange('custom');
+      setCalendarOpen(false);
+    }
   };
 
   if (isLoading) {
@@ -84,22 +120,62 @@ export const AnalyticsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Date Range Filter */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <CalendarRange className="h-4 w-4" />
           <span>Showing data for: <span className="font-medium text-foreground">{dateRangeLabels[dateRange]}</span></span>
         </div>
-        <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRangeFilter)}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue placeholder="Select range" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="this_week">This Week</SelectItem>
-            <SelectItem value="this_month">This Month</SelectItem>
-            <SelectItem value="this_quarter">This Quarter</SelectItem>
-            <SelectItem value="all_time">All Time</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={dateRange} onValueChange={handleDateRangeChange}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Select range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="this_week">This Week</SelectItem>
+              <SelectItem value="this_month">This Month</SelectItem>
+              <SelectItem value="this_quarter">This Quarter</SelectItem>
+              <SelectItem value="all_time">All Time</SelectItem>
+              <SelectItem value="custom">Custom Range...</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn(
+                  "h-10 w-10",
+                  dateRange === 'custom' && "border-primary"
+                )}
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <div className="p-3 border-b">
+                <p className="text-sm font-medium">Select date range</p>
+                <p className="text-xs text-muted-foreground">Choose a single date or a range</p>
+              </div>
+              <Calendar
+                mode="range"
+                selected={tempDateRange}
+                onSelect={handleCalendarSelect}
+                numberOfMonths={2}
+                className={cn("p-3 pointer-events-auto")}
+                disabled={(date) => date > new Date()}
+              />
+              <div className="p-3 border-t flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setCalendarOpen(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" onClick={handleApplyCustomRange} disabled={!tempDateRange?.from}>
+                  Apply
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
       </div>
 
       {/* Key Metrics - Row 1 */}
