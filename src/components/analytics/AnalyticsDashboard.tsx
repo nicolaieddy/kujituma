@@ -41,11 +41,22 @@ export const AnalyticsDashboard = () => {
 
   const handleDateRangeChange = (value: string) => {
     if (value === 'custom') {
+      // Keep the Select in sync and open the calendar modal
+      setDateRange('custom');
       setCalendarOpen(true);
-    } else {
-      setDateRange(value as DateRangeFilter);
-      setCustomRange(undefined);
+      setTempDateRange(
+        customRange?.from
+          ? { from: customRange.from, to: customRange.to }
+          : undefined
+      );
+      return;
     }
+
+    // Switching away from custom: always close the calendar and clear custom state
+    setCalendarOpen(false);
+    setTempDateRange(undefined);
+    setCustomRange(undefined);
+    setDateRange(value as DateRangeFilter);
   };
 
   const handleCalendarSelect = (range: DateRange | undefined) => {
@@ -62,6 +73,13 @@ export const AnalyticsDashboard = () => {
       setCalendarOpen(false);
     }
   };
+
+  // Safety: never allow the calendar popover to remain open outside of custom mode
+  useEffect(() => {
+    if (dateRange !== 'custom' && calendarOpen) {
+      setCalendarOpen(false);
+    }
+  }, [dateRange, calendarOpen]);
 
   if (isLoading) {
     return (
@@ -139,7 +157,7 @@ export const AnalyticsDashboard = () => {
             </SelectContent>
           </Select>
           
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen} modal={true}>
+          <Popover open={calendarOpen && dateRange === 'custom'} onOpenChange={setCalendarOpen} modal={true}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
