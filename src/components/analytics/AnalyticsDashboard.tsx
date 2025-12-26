@@ -139,7 +139,7 @@ export const AnalyticsDashboard = () => {
             </SelectContent>
           </Select>
           
-          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen} modal={true}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
@@ -152,8 +152,8 @@ export const AnalyticsDashboard = () => {
                 <CalendarIcon className="h-4 w-4" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 z-[999] bg-popover border shadow-lg" align="end">
-              <div className="p-3 border-b bg-popover">
+            <PopoverContent className="w-auto p-0 z-[9999]" align="end" sideOffset={4}>
+              <div className="p-3 border-b">
                 <p className="text-sm font-medium">Select date range</p>
                 <p className="text-xs text-muted-foreground">Choose a single date or a range</p>
               </div>
@@ -162,10 +162,10 @@ export const AnalyticsDashboard = () => {
                 selected={tempDateRange}
                 onSelect={handleCalendarSelect}
                 numberOfMonths={2}
-                className={cn("p-3 pointer-events-auto bg-popover")}
+                className={cn("p-3 pointer-events-auto")}
                 disabled={(date) => date > new Date()}
               />
-              <div className="p-3 border-t flex justify-end gap-2 bg-popover">
+              <div className="p-3 border-t flex justify-end gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setCalendarOpen(false)}>
                   Cancel
                 </Button>
