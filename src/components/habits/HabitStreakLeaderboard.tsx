@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Trophy, Flame, Medal } from "lucide-react";
+import { Trophy, Flame, Medal, Sparkles } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { cn } from "@/lib/utils";
 
@@ -56,6 +56,8 @@ export const HabitStreakLeaderboard = ({ habitStats, onHabitClick }: HabitStreak
       <CardContent className="space-y-2">
         {rankedHabits.map((stats, index) => {
           const rank = index + 1;
+          const isPersonalBest = stats.currentStreak > 0 && stats.currentStreak >= stats.longestStreak;
+          
           return (
             <div
               key={stats.goal.id}
@@ -76,7 +78,15 @@ export const HabitStreakLeaderboard = ({ habitStats, onHabitClick }: HabitStreak
 
               {/* Habit Info */}
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate">{stats.goal.title}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm truncate">{stats.goal.title}</p>
+                  {isPersonalBest && (
+                    <Badge className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] px-1.5 py-0 h-5 flex items-center gap-1 border-0">
+                      <Sparkles className="h-3 w-3" />
+                      PB
+                    </Badge>
+                  )}
+                </div>
                 {stats.goal.category && (
                   <Badge variant="outline" className="text-xs mt-1">
                     {stats.goal.category}
