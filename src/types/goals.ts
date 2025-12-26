@@ -5,6 +5,7 @@ export interface Goal {
   title: string;
   description: string;
   timeframe: GoalTimeframe;
+  start_date: string | null;
   target_date: string | null;
   status: GoalStatus;
   category: string;
@@ -46,6 +47,7 @@ export interface CreateGoalData {
   title: string;
   description?: string;
   timeframe: GoalTimeframe;
+  start_date?: string;
   target_date?: string;
   category?: string;
   is_public?: boolean;
@@ -58,6 +60,7 @@ export interface UpdateGoalData {
   title?: string;
   description?: string;
   timeframe?: GoalTimeframe;
+  start_date?: string;
   target_date?: string;
   status?: GoalStatus;
   category?: string;

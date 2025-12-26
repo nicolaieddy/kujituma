@@ -10,6 +10,7 @@ export class GoalsService {
         title: data.title,
         description: data.description || '',
         timeframe: data.timeframe,
+        start_date: data.start_date || null,
         target_date: data.target_date || null,
         category: data.category || '',
         is_public: data.is_public ?? true,
