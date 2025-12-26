@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -184,10 +185,17 @@ export const GoalCard = ({
                   {config.label}
                 </Badge>
                 {goal.is_recurring && (
-                  <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary bg-primary/5">
-                    <RefreshCw className="h-3 w-3" />
-                    Habit
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge variant="outline" className="text-xs gap-1 border-primary/30 text-primary bg-primary/5 cursor-help">
+                        <RefreshCw className="h-3 w-3" />
+                        Habit
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="capitalize">{goal.recurrence_frequency?.replace('_', ' ') || 'Weekly'}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 )}
               </div>
               <h3 className={cn(
