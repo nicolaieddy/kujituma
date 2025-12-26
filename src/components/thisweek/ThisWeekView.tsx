@@ -278,7 +278,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Week Header */}
       <WeekHeader
         weekNumber={weekNumber}
@@ -292,15 +292,15 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       {/* Commitment Declaration */}
       {!isReadOnly && isCurrentWeek && totalCount > 0 && (
         <Card className={`${hasCommitments ? 'border-primary/30 bg-primary/5' : 'border-border'}`}>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Target className={`h-5 w-5 ${hasCommitments ? 'text-primary' : 'text-muted-foreground'}`} />
-                <div>
-                  <h3 className="font-semibold">
+          <CardContent className="p-3 sm:p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+                <Target className={`h-5 w-5 flex-shrink-0 mt-0.5 sm:mt-0 ${hasCommitments ? 'text-primary' : 'text-muted-foreground'}`} />
+                <div className="min-w-0">
+                  <h3 className="font-semibold text-sm sm:text-base">
                     {hasCommitments ? '🎯 Your Top 3 Commitments' : 'Declare Your Top 3 Objectives'}
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs sm:text-sm text-muted-foreground">
                     {hasCommitments 
                       ? 'Visible to your friends as public commitments'
                       : 'Make a public commitment to stay accountable'}
@@ -310,26 +310,26 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
               <Button
                 onClick={() => setShowCommitmentSelector(true)}
                 variant={hasCommitments ? 'outline' : 'default'}
-                className={hasCommitments ? '' : 'gradient-primary'}
+                className={`w-full sm:w-auto text-sm ${hasCommitments ? '' : 'gradient-primary'}`}
               >
                 {hasCommitments ? 'Change' : 'Select Top 3'}
               </Button>
             </div>
             {hasCommitments && (
-              <div className="mt-4 space-y-2">
+              <div className="mt-3 sm:mt-4 space-y-2">
                 {commitments.map((commitment, index) => (
                   <div
                     key={commitment.id}
-                    className={`flex items-start gap-3 p-3 rounded-lg border ${
+                    className={`flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg border ${
                       commitment.is_completed
                         ? 'bg-success/10 border-success/20'
                         : 'bg-background border-primary/20'
                     }`}
                   >
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-semibold">
+                    <div className="flex-shrink-0 w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-xs sm:text-sm font-semibold">
                       {index + 1}
                     </div>
-                    <p className={`flex-1 text-sm ${commitment.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                    <p className={`flex-1 text-xs sm:text-sm ${commitment.is_completed ? 'line-through text-muted-foreground' : ''}`}>
                       {commitment.objective_text}
                     </p>
                   </div>

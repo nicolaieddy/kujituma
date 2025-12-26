@@ -39,7 +39,7 @@ const Feed = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background flex w-full">
+      <div className="min-h-screen min-h-[100dvh] bg-background flex w-full">
         <CommunitySidebar />
         
         <SidebarInset className="flex-1">
@@ -50,20 +50,20 @@ const Feed = () => {
 
           <div className="flex-1 flex">
             {/* Main Feed Content */}
-            <div className="flex-1 p-6">
+            <div className="flex-1 p-3 sm:p-4 md:p-6">
               <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-8">
-                  <div className="flex items-center gap-3 justify-center mb-4">
+                <div className="text-center mb-4 sm:mb-6 md:mb-8">
+                  <div className="flex items-center gap-2 sm:gap-3 justify-center mb-2 sm:mb-4">
                     <SidebarTrigger />
-                    <h1 className="text-3xl sm:text-4xl font-bold text-foreground">Community</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Community</h1>
                   </div>
-                  <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
+                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2">
                     See how everyone in the community is progressing on their weekly journeys.
                   </p>
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <button
                       onClick={() => navigate('/friends')}
-                      className="text-primary hover:text-primary/80 transition-colors text-sm underline"
+                      className="text-primary hover:text-primary/80 transition-colors text-xs sm:text-sm underline"
                     >
                       Find friends to connect with →
                     </button>
