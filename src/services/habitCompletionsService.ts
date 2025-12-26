@@ -118,4 +118,144 @@ export class HabitCompletionsService {
       end: endOfWeek(weekStart, { weekStartsOn: 1 }),
     });
   }
+
+  /**
+   * Get all completions for a specific habit item
+   */
+  static async getHabitItemCompletions(
+    habitItemId: string
+  ): Promise<HabitCompletion[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error("User not authenticated");
+
+    const { data, error } = await supabase
+      .from("habit_completions")
+      .select("*")
+      .eq("user_id", user.user.id)
+      .eq("habit_item_id", habitItemId)
+      .order("completion_date", { ascending: false });
+
+    if (error) throw error;
+    return (data || []) as HabitCompletion[];
+  }
+
+  /**
+   * Calculate streak for a habit item based on completions
+   * Returns current streak and longest streak
+   */
+  static calculateHabitStreak(
+    completions: HabitCompletion[],
+    frequency: string
+  ): { current: number; longest: number } {
+    if (completions.length === 0) {
+      return { current: 0, longest: 0 };
+    }
+
+    // Sort by date descending
+    const sortedDates = [...new Set(completions.map(c => c.completion_date))]
+      .sort((a, b) => b.localeCompare(a));
+
+    if (sortedDates.length === 0) {
+      return { current: 0, longest: 0 };
+    }
+
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const yesterday = format(new Date(Date.now() - 86400000), 'yyyy-MM-dd');
+
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const date = sortedDates[i];
+      const prevDate = i > 0 ? sortedDates[i - 1] : null;
+
+      if (i === 0) {
+        // Check if streak is current (today or yesterday)
+        if (date === today || date === yesterday) {
+          tempStreak = 1;
+          currentStreak = 1;
+        } else {
+          tempStreak = 1;
+          currentStreak = 0; // Streak is broken
+        }
+      } else if (prevDate) {
+        const prevDateObj = parseISO(prevDate);
+        const currDateObj = parseISO(date);
+        const dayDiff = Math.round(
+          (prevDateObj.getTime() - currDateObj.getTime()) / (1000 * 60 * 60 * 24)
+        );
+
+        // For daily habits, consecutive means 1 day apart
+        // For weekly habits, we'd use 7 days, but for simplicity we use 1
+        if (dayDiff === 1) {
+          tempStreak++;
+          if (currentStreak > 0) {
+            currentStreak = tempStreak;
+          }
+        } else {
+          longestStreak = Math.max(longestStreak, tempStreak);
+          tempStreak = 1;
+        }
+      }
+    }
+
+    longestStreak = Math.max(longestStreak, tempStreak);
+
+    return { current: currentStreak, longest: longestStreak };
+  }
+
+  /**
+   * Calculate completion rate for a habit over the last N days
+   */
+  static calculateCompletionRate(
+    completions: HabitCompletion[],
+    frequency: string,
+    days: number = 28 // 4 weeks
+  ): number {
+    const today = new Date();
+    const startDate = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const todayStr = format(today, 'yyyy-MM-dd');
+
+    // Filter completions within the date range
+    const recentCompletions = completions.filter(
+      c => c.completion_date >= startDateStr && c.completion_date <= todayStr
+    );
+
+    // Calculate expected completions based on frequency
+    let expectedCompletions = 0;
+    switch (frequency) {
+      case 'daily':
+        expectedCompletions = days;
+        break;
+      case 'weekdays':
+        // Roughly 5/7 of the days
+        expectedCompletions = Math.round(days * (5 / 7));
+        break;
+      case 'weekly':
+        expectedCompletions = Math.ceil(days / 7);
+        break;
+      case 'biweekly':
+        expectedCompletions = Math.ceil(days / 14);
+        break;
+      case 'monthly':
+      case 'monthly_last_week':
+        expectedCompletions = Math.ceil(days / 30);
+        break;
+      case 'quarterly':
+        expectedCompletions = Math.ceil(days / 90);
+        break;
+      default:
+        expectedCompletions = days;
+    }
+
+    if (expectedCompletions === 0) return 0;
+
+    // Count unique completion dates
+    const uniqueDates = new Set(recentCompletions.map(c => c.completion_date));
+    const actualCompletions = uniqueDates.size;
+
+    return Math.min(100, Math.round((actualCompletions / expectedCompletions) * 100));
+  }
 }
