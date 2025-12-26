@@ -154,10 +154,29 @@ export class HabitStreaksService {
     const goals = await this.getRecurringGoals();
     if (goals.length === 0) return [];
 
-    const goalIds = goals.map(g => g.id);
+    // Filter out goals that haven't started yet
+    const today = new Date();
+    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+    
+    const activeGoals = goals.filter(goal => {
+      // If goal has a start_date, check if it's in the future
+      if (goal.start_date) {
+        const goalStartDate = parseISO(goal.start_date);
+        const goalStartWeek = startOfWeek(goalStartDate, { weekStartsOn: 1 });
+        // Goal hasn't started yet if its start week is after current week
+        if (isAfter(goalStartWeek, currentWeekStart)) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    if (activeGoals.length === 0) return [];
+
+    const goalIds = activeGoals.map(g => g.id);
     const objectives = await this.getRecurringObjectives(goalIds);
 
-    return goals.map(goal => this.calculateHabitStats(goal, objectives));
+    return activeGoals.map(goal => this.calculateHabitStats(goal, objectives));
   }
 
   /**
