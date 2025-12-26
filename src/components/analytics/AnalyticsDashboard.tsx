@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
-import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy } from 'lucide-react';
-import { useAnalytics, HeatmapWeek, CategoryBreakdown } from '@/hooks/useAnalytics';
+import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange } from 'lucide-react';
+import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -14,9 +14,18 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export const AnalyticsDashboard = () => {
-  const { analytics, isLoading } = useAnalytics();
+  const [dateRange, setDateRange] = useState<DateRangeFilter>('all_time');
+  const { analytics, isLoading } = useAnalytics(dateRange);
+
+  const dateRangeLabels: Record<DateRangeFilter, string> = {
+    this_week: 'This Week',
+    this_month: 'This Month',
+    this_quarter: 'This Quarter',
+    all_time: 'All Time'
+  };
 
   if (isLoading) {
     return (
@@ -74,6 +83,25 @@ export const AnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Date Range Filter */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <CalendarRange className="h-4 w-4" />
+          <span>Showing data for: <span className="font-medium text-foreground">{dateRangeLabels[dateRange]}</span></span>
+        </div>
+        <Select value={dateRange} onValueChange={(value) => setDateRange(value as DateRangeFilter)}>
+          <SelectTrigger className="w-[160px]">
+            <SelectValue placeholder="Select range" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="this_week">This Week</SelectItem>
+            <SelectItem value="this_month">This Month</SelectItem>
+            <SelectItem value="this_quarter">This Quarter</SelectItem>
+            <SelectItem value="all_time">All Time</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       {/* Key Metrics - Row 1 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
