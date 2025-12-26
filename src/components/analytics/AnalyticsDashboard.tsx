@@ -844,6 +844,11 @@ export const AnalyticsDashboard = () => {
         </div>
       )}
 
+      {/* Habit Comparison View */}
+      {analytics.habitAnalytics.topHabits.length > 1 && (
+        <HabitComparisonView habits={analytics.habitAnalytics.topHabits} avgRate={analytics.habitAnalytics.dailyCompletionRate} />
+      )}
+
       {/* Activity Heatmap */}
       <Card>
         <CardHeader>
@@ -1323,5 +1328,135 @@ const HabitHeatmap = ({ data }: { data: HabitDayData[] }) => {
         <span className="text-muted-foreground">More</span>
       </div>
     </div>
+  );
+};
+
+// Habit Comparison View Component
+interface HabitComparisonProps {
+  habits: {
+    goalTitle: string;
+    habitText: string;
+    frequency: string;
+    completions: number;
+    possible: number;
+    rate: number;
+  }[];
+  avgRate: number;
+}
+
+const HabitComparisonView = ({ habits, avgRate }: HabitComparisonProps) => {
+  // Sort habits by rate for comparison
+  const sortedHabits = [...habits].sort((a, b) => b.rate - a.rate);
+  const maxRate = Math.max(...habits.map(h => h.rate), 100);
+
+  const getPerformanceLabel = (rate: number) => {
+    const diff = rate - avgRate;
+    if (diff >= 20) return { label: 'Excellent', color: 'text-emerald-500', bg: 'bg-emerald-500/10' };
+    if (diff >= 5) return { label: 'Above avg', color: 'text-green-500', bg: 'bg-green-500/10' };
+    if (diff >= -5) return { label: 'Average', color: 'text-blue-500', bg: 'bg-blue-500/10' };
+    if (diff >= -20) return { label: 'Below avg', color: 'text-amber-500', bg: 'bg-amber-500/10' };
+    return { label: 'Needs work', color: 'text-red-500', bg: 'bg-red-500/10' };
+  };
+
+  const getBarColor = (rate: number) => {
+    if (rate >= avgRate + 10) return 'bg-emerald-500';
+    if (rate >= avgRate) return 'bg-green-500';
+    if (rate >= avgRate - 10) return 'bg-amber-500';
+    return 'bg-red-400';
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Habit Comparison
+        </CardTitle>
+        <CardDescription>
+          Compare habits relative to your average ({avgRate.toFixed(0)}%)
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* Average line indicator */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground pb-2 border-b">
+            <div className="w-3 h-0.5 bg-blue-500"></div>
+            <span>Average completion: {avgRate.toFixed(0)}%</span>
+          </div>
+
+          {/* Habit bars */}
+          <div className="space-y-3">
+            {sortedHabits.map((habit, index) => {
+              const performance = getPerformanceLabel(habit.rate);
+              const barWidth = (habit.rate / maxRate) * 100;
+              const avgLinePosition = (avgRate / maxRate) * 100;
+
+              return (
+                <div key={index} className="space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <span className="text-sm font-medium text-muted-foreground w-5">{index + 1}.</span>
+                      <span className="text-sm font-medium truncate">{habit.habitText}</span>
+                    </div>
+                    <Badge variant="outline" className={cn("text-xs flex-shrink-0", performance.color, performance.bg)}>
+                      {performance.label}
+                    </Badge>
+                  </div>
+                  
+                  <div className="relative">
+                    {/* Background bar */}
+                    <div className="h-6 bg-muted rounded-md overflow-hidden relative">
+                      {/* Actual rate bar */}
+                      <div 
+                        className={cn("h-full rounded-md transition-all", getBarColor(habit.rate))}
+                        style={{ width: `${barWidth}%` }}
+                      />
+                      
+                      {/* Average line */}
+                      <div 
+                        className="absolute top-0 bottom-0 w-0.5 bg-blue-500 z-10"
+                        style={{ left: `${avgLinePosition}%` }}
+                      />
+                    </div>
+
+                    {/* Rate label */}
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-white drop-shadow-sm">
+                      {habit.rate.toFixed(0)}%
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="truncate">{habit.goalTitle}</span>
+                    <span>{habit.completions}/{habit.possible} check-ins</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary */}
+          <div className="pt-4 border-t grid grid-cols-3 gap-4 text-center">
+            <div>
+              <p className="text-2xl font-bold text-emerald-500">
+                {sortedHabits.filter(h => h.rate >= avgRate + 5).length}
+              </p>
+              <p className="text-xs text-muted-foreground">Above average</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-blue-500">
+                {sortedHabits.filter(h => h.rate >= avgRate - 5 && h.rate < avgRate + 5).length}
+              </p>
+              <p className="text-xs text-muted-foreground">At average</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-amber-500">
+                {sortedHabits.filter(h => h.rate < avgRate - 5).length}
+              </p>
+              <p className="text-xs text-muted-foreground">Below average</p>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
