@@ -1,11 +1,19 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, LineChart, Line, PieChart, Pie } from 'recharts';
-import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3 } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
+import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, X, Circle, CheckCircle, ExternalLink } from 'lucide-react';
 import { useAnalytics, HeatmapWeek } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Button } from '@/components/ui/button';
+import { useNavigate } from 'react-router-dom';
 
 export const AnalyticsDashboard = () => {
   const { analytics, isLoading } = useAnalytics();
@@ -486,12 +494,178 @@ export const AnalyticsDashboard = () => {
   );
 };
 
-// Activity Heatmap Component
-import { useState } from 'react';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+// Week Drill-Down Dialog
+interface WeekObjective {
+  id: string;
+  text: string;
+  is_completed: boolean;
+  goal_title?: string;
+}
 
+const WeekDrillDownDialog = ({ 
+  week, 
+  open, 
+  onOpenChange 
+}: { 
+  week: HeatmapWeek | null; 
+  open: boolean; 
+  onOpenChange: (open: boolean) => void;
+}) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [objectives, setObjectives] = useState<WeekObjective[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!week || !user || !open) return;
+
+    const fetchObjectives = async () => {
+      setIsLoading(true);
+      try {
+        const { data } = await supabase
+          .from('weekly_objectives')
+          .select('id, text, is_completed, goals(title)')
+          .eq('user_id', user.id)
+          .eq('week_start', week.date)
+          .order('is_completed', { ascending: false })
+          .order('created_at', { ascending: true });
+
+        if (data) {
+          setObjectives(data.map(obj => ({
+            id: obj.id,
+            text: obj.text,
+            is_completed: obj.is_completed,
+            goal_title: (obj.goals as any)?.title
+          })));
+        }
+      } catch (error) {
+        console.error('Error fetching objectives:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchObjectives();
+  }, [week, user, open]);
+
+  if (!week) return null;
+
+  const completedCount = objectives.filter(o => o.is_completed).length;
+  const incompleteCount = objectives.filter(o => !o.is_completed).length;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Week of {format(parseISO(week.date), 'MMM d, yyyy')}
+          </DialogTitle>
+          <DialogDescription>
+            {week.total > 0 ? (
+              <span className="flex items-center gap-2">
+                <span className="font-medium text-foreground">{week.completed}/{week.total}</span> objectives completed
+                <Badge variant={week.completionRate >= 80 ? "default" : week.completionRate >= 50 ? "secondary" : "outline"}>
+                  {week.completionRate.toFixed(0)}%
+                </Badge>
+              </span>
+            ) : (
+              'No objectives this week'
+            )}
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="space-y-2 py-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-12 bg-muted animate-pulse rounded-lg" />
+            ))}
+          </div>
+        ) : objectives.length > 0 ? (
+          <ScrollArea className="max-h-[400px] pr-4">
+            <div className="space-y-2">
+              {/* Completed objectives */}
+              {completedCount > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Completed ({completedCount})
+                  </p>
+                  {objectives.filter(o => o.is_completed).map(obj => (
+                    <div 
+                      key={obj.id} 
+                      className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900"
+                    >
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm line-through text-muted-foreground">{obj.text}</p>
+                        {obj.goal_title && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Goal: {obj.goal_title}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Incomplete objectives */}
+              {incompleteCount > 0 && (
+                <div className="space-y-2 mt-4">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                    Not Completed ({incompleteCount})
+                  </p>
+                  {objectives.filter(o => !o.is_completed).map(obj => (
+                    <div 
+                      key={obj.id} 
+                      className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border"
+                    >
+                      <Circle className="h-4 w-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm">{obj.text}</p>
+                        {obj.goal_title && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Goal: {obj.goal_title}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </ScrollArea>
+        ) : (
+          <div className="text-center py-8 text-muted-foreground">
+            <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p className="text-sm">No objectives were set this week</p>
+          </div>
+        )}
+
+        <div className="flex justify-end pt-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              onOpenChange(false);
+              navigate('/goals');
+            }}
+            className="gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Go to Goals
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// Activity Heatmap Component
 const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
   const [displayMode, setDisplayMode] = useState<'rate' | 'count'>('rate');
+  const [selectedWeek, setSelectedWeek] = useState<HeatmapWeek | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
   // Find max count for scaling
   const maxCount = Math.max(...data.map(w => w.total), 1);
@@ -519,6 +693,11 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
     }
   };
 
+  const handleWeekClick = (week: HeatmapWeek) => {
+    setSelectedWeek(week);
+    setDialogOpen(true);
+  };
+
   // Group by month for labels
   const months: { label: string; startIndex: number }[] = [];
   let currentMonth = -1;
@@ -534,101 +713,111 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
   });
 
   return (
-    <div className="space-y-3">
-      {/* Toggle between modes */}
-      <div className="flex items-center justify-between">
-        <ToggleGroup 
-          type="single" 
-          value={displayMode} 
-          onValueChange={(value) => value && setDisplayMode(value as 'rate' | 'count')}
-          className="bg-muted/50 p-0.5 rounded-lg"
-        >
-          <ToggleGroupItem 
-            value="rate" 
-            size="sm" 
-            className="text-xs px-3 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+    <>
+      <div className="space-y-3">
+        {/* Toggle between modes */}
+        <div className="flex items-center justify-between">
+          <ToggleGroup 
+            type="single" 
+            value={displayMode} 
+            onValueChange={(value) => value && setDisplayMode(value as 'rate' | 'count')}
+            className="bg-muted/50 p-0.5 rounded-lg"
           >
-            Completion Rate
-          </ToggleGroupItem>
-          <ToggleGroupItem 
-            value="count" 
-            size="sm" 
-            className="text-xs px-3 data-[state=on]:bg-background data-[state=on]:shadow-sm"
-          >
-            Objective Count
-          </ToggleGroupItem>
-        </ToggleGroup>
-        <span className="text-xs text-muted-foreground">
-          {displayMode === 'rate' ? 'Color = % completed' : 'Color = # of objectives'}
-        </span>
-      </div>
-
-      {/* Month labels */}
-      <div className="flex text-xs text-muted-foreground pl-1">
-        {months.map((month, i) => (
-          <div 
-            key={i} 
-            className="flex-shrink-0"
-            style={{ 
-              marginLeft: i === 0 ? 0 : `${(month.startIndex - (months[i-1]?.startIndex || 0) - 1) * 12}px`,
-              minWidth: '30px'
-            }}
-          >
-            {month.label}
-          </div>
-        ))}
-      </div>
-      
-      {/* Heatmap grid */}
-      <div className="flex gap-0.5 flex-wrap">
-        <TooltipProvider delayDuration={100}>
-          {data.map((week, index) => (
-            <UITooltip key={index}>
-              <TooltipTrigger asChild>
-                <div
-                  className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 ${getHeatmapColor(week)}`}
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                <p className="font-medium">{format(parseISO(week.date), 'MMM d, yyyy')}</p>
-                {week.total > 0 ? (
-                  <p className="text-muted-foreground">
-                    {week.completed}/{week.total} completed ({week.completionRate.toFixed(0)}%)
-                  </p>
-                ) : (
-                  <p className="text-muted-foreground">No activity</p>
-                )}
-              </TooltipContent>
-            </UITooltip>
-          ))}
-        </TooltipProvider>
-      </div>
-
-      {/* Legend */}
-      <div className="flex items-center justify-between text-xs pt-2">
-        <span className="text-muted-foreground">Less</span>
-        <div className="flex gap-0.5">
-          <div className="w-2.5 h-2.5 rounded-sm bg-muted/50"></div>
-          {displayMode === 'rate' ? (
-            <>
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-200"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-300"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
-            </>
-          ) : (
-            <>
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-200"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-300"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>
-              <div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>
-            </>
-          )}
+            <ToggleGroupItem 
+              value="rate" 
+              size="sm" 
+              className="text-xs px-3 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+            >
+              Completion Rate
+            </ToggleGroupItem>
+            <ToggleGroupItem 
+              value="count" 
+              size="sm" 
+              className="text-xs px-3 data-[state=on]:bg-background data-[state=on]:shadow-sm"
+            >
+              Objective Count
+            </ToggleGroupItem>
+          </ToggleGroup>
+          <span className="text-xs text-muted-foreground">
+            Click a week to see details
+          </span>
         </div>
-        <span className="text-muted-foreground">More</span>
+
+        {/* Month labels */}
+        <div className="flex text-xs text-muted-foreground pl-1">
+          {months.map((month, i) => (
+            <div 
+              key={i} 
+              className="flex-shrink-0"
+              style={{ 
+                marginLeft: i === 0 ? 0 : `${(month.startIndex - (months[i-1]?.startIndex || 0) - 1) * 12}px`,
+                minWidth: '30px'
+              }}
+            >
+              {month.label}
+            </div>
+          ))}
+        </div>
+        
+        {/* Heatmap grid */}
+        <div className="flex gap-0.5 flex-wrap">
+          <TooltipProvider delayDuration={100}>
+            {data.map((week, index) => (
+              <UITooltip key={index}>
+                <TooltipTrigger asChild>
+                  <div
+                    onClick={() => handleWeekClick(week)}
+                    className={`w-2.5 h-2.5 rounded-sm cursor-pointer transition-all hover:ring-2 hover:ring-primary/50 hover:scale-125 ${getHeatmapColor(week)}`}
+                  />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">
+                  <p className="font-medium">{format(parseISO(week.date), 'MMM d, yyyy')}</p>
+                  {week.total > 0 ? (
+                    <p className="text-muted-foreground">
+                      {week.completed}/{week.total} completed ({week.completionRate.toFixed(0)}%)
+                    </p>
+                  ) : (
+                    <p className="text-muted-foreground">No activity</p>
+                  )}
+                  <p className="text-primary mt-1">Click to view details</p>
+                </TooltipContent>
+              </UITooltip>
+            ))}
+          </TooltipProvider>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center justify-between text-xs pt-2">
+          <span className="text-muted-foreground">Less</span>
+          <div className="flex gap-0.5">
+            <div className="w-2.5 h-2.5 rounded-sm bg-muted/50"></div>
+            {displayMode === 'rate' ? (
+              <>
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-200"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-300"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
+              </>
+            ) : (
+              <>
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-200"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-300"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>
+                <div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>
+              </>
+            )}
+          </div>
+          <span className="text-muted-foreground">More</span>
+        </div>
       </div>
-    </div>
+
+      <WeekDrillDownDialog 
+        week={selectedWeek} 
+        open={dialogOpen} 
+        onOpenChange={setDialogOpen} 
+      />
+    </>
   );
 };
