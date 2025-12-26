@@ -7,11 +7,14 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { TourProvider } from "@/components/tour/TourProvider";
 import { HabitsProvider } from "@/components/habits/HabitsProvider";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense } from "react";
 import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
+
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
 const Auth = lazy(() => import("./pages/Auth"));
@@ -21,6 +24,7 @@ const Profile = lazy(() => import("./pages/Profile"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
+const Install = lazy(() => import("./pages/Install"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -55,6 +59,7 @@ const AppContent = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<Profile />} />
+        <Route path="/install" element={<Install />} />
         <Route path="*" element={<Feed />} />
       </Routes>
     </Suspense>
@@ -78,11 +83,13 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
+        <OfflineIndicator />
         <BrowserRouter>
           <AuthProvider>
             <TourProvider>
               <HabitsProvider>
                 <AppContent />
+                <InstallPrompt />
               </HabitsProvider>
             </TourProvider>
           </AuthProvider>
