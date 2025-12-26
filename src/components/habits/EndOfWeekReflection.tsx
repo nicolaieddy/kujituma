@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Sparkles, HelpCircle } from "lucide-react";
+import { Sparkles, HelpCircle, Lock } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -52,10 +51,11 @@ export const EndOfWeekReflection = ({
   return (
     <Card className="border-amber-500/30 bg-amber-500/5">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-amber-500" />
-          Incomplete Objectives Review
-          <TooltipProvider>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-amber-500" />
+            Incomplete Objectives Review
+            <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
                 <HelpCircle className="h-4 w-4 text-muted-foreground" />
@@ -66,8 +66,13 @@ export const EndOfWeekReflection = ({
             </Tooltip>
           </TooltipProvider>
         </CardTitle>
+          <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center gap-1">
+            <Lock className="h-3 w-3" />
+            Private
+          </span>
+        </div>
         <p className="text-sm text-muted-foreground">
-          Quick notes on why these specific tasks weren't finished (private, not shared)
+          Quick notes on why these specific tasks weren't finished — only visible to you
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useWeeklyReflection } from "@/hooks/useWeeklyReflection";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { Share2 } from "lucide-react";
+import { Share2, Globe } from "lucide-react";
 
 interface WeeklyReflectionCardProps {
   initialNotes: string;
@@ -29,17 +29,25 @@ export const WeeklyReflectionCard = ({
   return (
     <Card className={`border-primary/30 bg-primary/5 ${isReadOnly ? 'opacity-75' : ''}`}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className={`text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
-              <Share2 className="h-5 w-5 text-primary" />
-              Weekly Summary
-              {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
-            </CardTitle>
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center justify-between">
+              <CardTitle className={`text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
+                <Share2 className="h-5 w-5 text-primary" />
+                Weekly Summary
+                {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
+              </CardTitle>
+              {!isReadOnly && (
+                <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/20 text-primary flex items-center gap-1">
+                  <Globe className="h-3 w-3" />
+                  Public
+                </span>
+              )}
+            </div>
             <p className="text-muted-foreground text-sm mt-1">
               {isReadOnly 
                 ? "This week has been shared and can no longer be edited"
-                : "Share your overall week highlights with the community (public when you post)"
+                : "Share your overall week highlights — visible to the community when you post"
               }
             </p>
           </div>
