@@ -12,6 +12,7 @@ interface DraggableGoalCardProps {
   onClick?: (goal: Goal) => void;
   onDeprioritize?: (id: string) => void;
   onReprioritize?: (id: string) => void;
+  onPauseToggle?: (id: string, isPaused: boolean) => void;
   isDeprioritized?: boolean;
 }
 
@@ -23,6 +24,7 @@ export const DraggableGoalCard = ({
   onClick,
   onDeprioritize,
   onReprioritize,
+  onPauseToggle,
   isDeprioritized
 }: DraggableGoalCardProps) => {
   const {
@@ -78,6 +80,7 @@ export const DraggableGoalCard = ({
           onClick={onClick}
           onDeprioritize={onDeprioritize}
           onReprioritize={onReprioritize}
+          onPauseToggle={onPauseToggle}
           isDeprioritized={isDeprioritized}
         />
       </div>

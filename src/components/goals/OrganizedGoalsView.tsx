@@ -25,6 +25,7 @@ interface OrganizedGoalsViewProps {
   onGoalClick?: (goal: Goal) => void;
   onDeprioritize: (id: string) => void;
   onReprioritize: (id: string) => void;
+  onPauseToggle?: (id: string, isPaused: boolean) => void;
   onCarryOverAll: () => void;
   onDeprioritizeAll: () => void;
   onReorder?: (reorderedGoals: { id: string; order_index: number }[]) => void;
@@ -49,6 +50,7 @@ export const OrganizedGoalsView = ({
   onGoalClick,
   onDeprioritize,
   onReprioritize,
+  onPauseToggle,
   onCarryOverAll,
   onDeprioritizeAll,
   onReorder,
@@ -342,6 +344,7 @@ export const OrganizedGoalsView = ({
                               onClick={onGoalClick}
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
+                              onPauseToggle={onPauseToggle}
                             />
                           ))
                         )}
@@ -378,6 +381,7 @@ export const OrganizedGoalsView = ({
                               onClick={onGoalClick}
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
+                              onPauseToggle={onPauseToggle}
                             />
                           ))
                         )}
@@ -414,6 +418,7 @@ export const OrganizedGoalsView = ({
                               onClick={onGoalClick}
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
+                              onPauseToggle={onPauseToggle}
                             />
                           ))
                         )}
@@ -460,6 +465,7 @@ export const OrganizedGoalsView = ({
                       onClick={onGoalClick}
                       onDeprioritize={onDeprioritize}
                       onReprioritize={onReprioritize}
+                      onPauseToggle={onPauseToggle}
                       isDeprioritized
                     />
                   ))}

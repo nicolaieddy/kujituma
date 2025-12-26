@@ -19,6 +19,8 @@ export interface Goal {
   is_recurring: boolean;
   recurrence_frequency: RecurrenceFrequency | null;
   recurring_objective_text: string | null;
+  is_paused: boolean;
+  paused_at: string | null;
 }
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
@@ -70,4 +72,6 @@ export interface UpdateGoalData {
   is_recurring?: boolean;
   recurrence_frequency?: RecurrenceFrequency;
   recurring_objective_text?: string;
+  is_paused?: boolean;
+  paused_at?: string | null;
 }
