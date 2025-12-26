@@ -14,6 +14,7 @@ import { GoalDetailModal } from "@/components/goals/GoalDetailModal";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
+import { HabitsView } from "@/components/habits/HabitsView";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
@@ -44,6 +45,8 @@ const Goals = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
+  const [activeTab, setActiveTab] = useState("weekly");
+  const [createWithRecurring, setCreateWithRecurring] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -56,6 +59,7 @@ const Goals = () => {
   const handleCreateGoal = (data: any) => {
     createGoal(data);
     setShowForm(false);
+    setCreateWithRecurring(false);
   };
 
   const handleEditGoal = (goal: Goal) => {
@@ -74,6 +78,13 @@ const Goals = () => {
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingGoal(null);
+    setCreateWithRecurring(false);
+  };
+
+  const handleCreateHabit = () => {
+    setCreateWithRecurring(true);
+    setActiveTab("longterm");
+    setShowForm(true);
   };
 
   const handleStatusChange = (id: string, status: any) => {
@@ -167,14 +178,20 @@ const Goals = () => {
         </div>
 
         <div className={`${isMobile ? 'max-w-full' : 'max-w-6xl'} mx-auto`}>
-          <Tabs defaultValue="weekly" className="w-full">
-            <TabsList className={`grid w-full grid-cols-2 bg-muted ${isMobile ? 'h-11' : 'h-12'}`}>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className={`grid w-full grid-cols-3 bg-muted ${isMobile ? 'h-11' : 'h-12'}`}>
               <TabsTrigger 
                 value="weekly" 
                 data-tour="weekly-tab"
                 className={isMobile ? 'text-sm' : 'text-base'}
               >
                 Weekly Plan
+              </TabsTrigger>
+              <TabsTrigger 
+                value="habits" 
+                className={isMobile ? 'text-sm' : 'text-base'}
+              >
+                Habits
               </TabsTrigger>
               <TabsTrigger 
                 value="longterm" 
@@ -191,15 +208,22 @@ const Goals = () => {
                 onNavigateWeek={navigateToWeek}
               />
             </TabsContent>
+
+            <TabsContent value="habits" className="mt-6">
+              <HabitsView onCreateGoal={handleCreateHabit} />
+            </TabsContent>
             
             <TabsContent value="longterm" className="mt-6">
               {showForm ? (
                 <div className="mb-8">
                   <GoalForm
-                    key={editingGoal ? editingGoal.id : 'new'}
+                    key={editingGoal ? editingGoal.id : (createWithRecurring ? 'new-recurring' : 'new')}
                     onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
                     onCancel={handleCancelForm}
-                    initialData={editingGoal}
+                    initialData={editingGoal || (createWithRecurring ? { 
+                      is_recurring: true, 
+                      recurrence_frequency: 'weekly' 
+                    } as any : null)}
                   />
                 </div>
               ) : (
