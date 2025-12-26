@@ -2,13 +2,15 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Flame, Target, TrendingUp, Plus } from "lucide-react";
+import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle } from "lucide-react";
 import { useHabitStats } from "@/hooks/useHabitStats";
+import { useGoals } from "@/hooks/useGoals";
 import { HabitCard } from "./HabitCard";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { toast } from "sonner";
 
 interface HabitsViewProps {
   onCreateGoal?: () => void;
@@ -16,6 +18,7 @@ interface HabitsViewProps {
 
 export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
   const { habitStats, isLoading, refetch, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
+  const { togglePauseGoal } = useGoals();
   const isMobile = useIsMobile();
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
@@ -31,6 +34,12 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
   };
 
   const handleUpdate = () => {
+    refetch();
+  };
+
+  const handleResume = (goalId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    togglePauseGoal(goalId, false);
     refetch();
   };
 
@@ -63,9 +72,12 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
     );
   }
 
-  // Separate active and completed/deprioritized habits
+  // Separate active, paused, and completed/deprioritized habits
   const activeHabitsList = habitStats.filter(h => 
-    h.goal.status === 'not_started' || h.goal.status === 'in_progress'
+    (h.goal.status === 'not_started' || h.goal.status === 'in_progress') && !h.goal.is_paused
+  );
+  const pausedHabitsList = habitStats.filter(h => 
+    h.goal.is_paused && h.goal.status !== 'completed' && h.goal.status !== 'deprioritized'
   );
   const inactiveHabitsList = habitStats.filter(h => 
     h.goal.status === 'completed' || h.goal.status === 'deprioritized'
@@ -160,12 +172,47 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
         </div>
       )}
 
+      {/* Paused Habits */}
+      {pausedHabitsList.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2 text-muted-foreground">
+              <Pause className="h-5 w-5" />
+              Paused Habits
+            </h3>
+            <Badge variant="outline" className="border-slate-500/30 text-slate-500">
+              {pausedHabitsList.length}
+            </Badge>
+          </div>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+            {pausedHabitsList.map(stats => (
+              <div key={stats.goal.id} className="relative">
+                <HabitCard 
+                  habitStats={stats} 
+                  onClick={() => handleHabitClick(stats)}
+                  isPaused
+                />
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="absolute top-3 right-3 gap-1.5 bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground"
+                  onClick={(e) => handleResume(stats.goal.id, e)}
+                >
+                  <PlayCircle className="h-4 w-4" />
+                  Resume
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Inactive Habits */}
       {inactiveHabitsList.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-muted-foreground">
-              Completed / Paused Habits
+              Completed / Archived Habits
             </h3>
             <Badge variant="outline">{inactiveHabitsList.length}</Badge>
           </div>
