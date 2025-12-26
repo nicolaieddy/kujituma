@@ -115,16 +115,42 @@ export const useGoals = () => {
   const reorderGoalMutation = useMutation({
     mutationFn: (reorderedGoals: { id: string; order_index: number }[]) =>
       GoalsService.reorderGoals(reorderedGoals),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    onMutate: async (reorderedGoals) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['goals', user?.id] });
+
+      // Snapshot the previous value
+      const previousGoals = queryClient.getQueryData<Goal[]>(['goals', user?.id]);
+
+      // Optimistically update the cache with new order
+      if (previousGoals) {
+        const orderMap = new Map(reorderedGoals.map(g => [g.id, g.order_index]));
+        const updatedGoals = previousGoals.map(goal => {
+          const newIndex = orderMap.get(goal.id);
+          return newIndex !== undefined ? { ...goal, order_index: newIndex } : goal;
+        });
+        // Sort by order_index to reflect new order
+        updatedGoals.sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+        queryClient.setQueryData(['goals', user?.id], updatedGoals);
+      }
+
+      return { previousGoals };
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousGoals) {
+        queryClient.setQueryData(['goals', user?.id], context.previousGoals);
+      }
       console.error('Error reordering goals:', error);
       toast({
         title: "Error",
         description: "Failed to reorder goals. Please try again.",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Refetch after mutation settles to ensure sync with server
+      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
     },
   });
 
