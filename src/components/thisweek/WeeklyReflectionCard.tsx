@@ -2,13 +2,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useWeeklyReflection } from "@/hooks/useWeeklyReflection";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { Share2, Globe } from "lucide-react";
+import { Share2, Globe, ChevronDown } from "lucide-react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { useState } from "react";
 
 interface WeeklyReflectionCardProps {
   initialNotes: string;
   onUpdateNotes: (notes: string) => void;
   isReadOnly: boolean;
-  weekStart: string; // Critical for proper week isolation
+  weekStart: string;
 }
 
 export const WeeklyReflectionCard = ({
@@ -17,6 +19,7 @@ export const WeeklyReflectionCard = ({
   isReadOnly,
   weekStart
 }: WeeklyReflectionCardProps) => {
+  const [isOpen, setIsOpen] = useState(true);
   
   const reflection = useWeeklyReflection({
     weekStart,
@@ -28,60 +31,71 @@ export const WeeklyReflectionCard = ({
 
   return (
     <Card className={`border-primary/30 bg-primary/5 ${isReadOnly ? 'opacity-75' : ''}`}>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center justify-between">
-              <CardTitle className={`text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
-                <Share2 className="h-5 w-5 text-primary" />
-                Weekly Summary
-                {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
-              </CardTitle>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CardHeader className="pb-3">
+          <CollapsibleTrigger className="w-full text-left">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center justify-between">
+                  <CardTitle className={`text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
+                    <Share2 className="h-5 w-5 text-primary" />
+                    Weekly Summary
+                    {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    {!isReadOnly && (
+                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/20 text-primary flex items-center gap-1">
+                        <Globe className="h-3 w-3" />
+                        Public
+                      </span>
+                    )}
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+                <p className="text-muted-foreground text-sm mt-1">
+                  {isReadOnly 
+                    ? "This week has been shared and can no longer be edited"
+                    : "Share your overall week highlights — visible to the community when you post"
+                  }
+                </p>
+              </div>
               {!isReadOnly && (
-                <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/20 text-primary flex items-center gap-1">
-                  <Globe className="h-3 w-3" />
-                  Public
-                </span>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <AutoSaveIndicator
+                    isSaving={reflection.isSaving}
+                    lastSaved={reflection.lastSaved}
+                    hasUnsavedChanges={reflection.hasUnsavedChanges}
+                  />
+                </div>
               )}
             </div>
-            <p className="text-muted-foreground text-sm mt-1">
-              {isReadOnly 
-                ? "This week has been shared and can no longer be edited"
-                : "Share your overall week highlights — visible to the community when you post"
+          </CollapsibleTrigger>
+        </CardHeader>
+        <CollapsibleContent>
+          <CardContent className="space-y-4 pt-0">
+            <Textarea
+              value={reflection.value}
+              onChange={(e) => reflection.setValue(e.target.value)}
+              placeholder={isReadOnly 
+                ? "No reflection added for this week" 
+                : "What were your wins this week? Any lessons learned or insights to share?"
               }
-            </p>
-          </div>
-          {!isReadOnly && (
-            <AutoSaveIndicator
-              isSaving={reflection.isSaving}
-              lastSaved={reflection.lastSaved}
-              hasUnsavedChanges={reflection.hasUnsavedChanges}
+              className={`min-h-[100px] ${
+                isReadOnly ? 'cursor-not-allowed opacity-60' : ''
+              }`}
+              disabled={isReadOnly}
+              readOnly={isReadOnly}
             />
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Textarea
-          value={reflection.value}
-          onChange={(e) => reflection.setValue(e.target.value)}
-          placeholder={isReadOnly 
-            ? "No reflection added for this week" 
-            : "What were your wins this week? Any lessons learned or insights to share?"
-          }
-          className={`min-h-[100px] ${
-            isReadOnly ? 'cursor-not-allowed opacity-60' : ''
-          }`}
-          disabled={isReadOnly}
-          readOnly={isReadOnly}
-        />
-        {isReadOnly && (
-          <div className="text-center py-2">
-            <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-              ✅ Week completed and shared with community
-            </span>
-          </div>
-        )}
-      </CardContent>
+            {isReadOnly && (
+              <div className="text-center py-2">
+                <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                  ✅ Week completed and shared with community
+                </span>
+              </div>
+            )}
+          </CardContent>
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };
