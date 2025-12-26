@@ -298,18 +298,18 @@ export const WeeklyObjectivesList = ({
                            ✨ Complete!
                          </span>
                        )}
-                       {/* Show goal inline with pencil edit */}
+                       {/* Show goal inline with pencil edit - truncate on mobile */}
                        {goalName && (
-                         <div className="flex items-center gap-1 ml-2">
-                           <Target className="h-3 w-3 text-muted-foreground" />
-                           <span className="text-xs text-muted-foreground">→ {goalName}</span>
+                         <div className="flex items-center gap-1 ml-1 sm:ml-2 max-w-[100px] sm:max-w-none">
+                           <Target className="h-3 w-3 text-muted-foreground flex-shrink-0 hidden sm:block" />
+                           <span className="text-xs text-muted-foreground truncate">→ {goalName}</span>
                            {!isWeekCompleted && (
                              <Button
                                type="button"
                                variant="ghost"
                                size="sm"
                                onClick={() => handleEditGoal(objective.id, objective.goal_id)}
-                               className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground hover:bg-accent ml-1"
+                               className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground hover:bg-accent flex-shrink-0 hidden sm:flex"
                              >
                                <Pencil className="h-3 w-3" />
                              </Button>
@@ -379,27 +379,29 @@ export const WeeklyObjectivesList = ({
                             </Select>
                           </div>
                         )}
-                        {/* Add goal button when no goal is linked */}
+                        {/* Add goal button when no goal is linked - hidden on mobile */}
                         {!goalName && !isWeekCompleted && editingGoalId !== objective.id && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditGoal(objective.id, objective.goal_id)}
-                            className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent ml-2"
+                            className="hidden sm:flex h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent ml-2"
                           >
                             <Target className="h-3 w-3 mr-1" />
                             Link goal
                           </Button>
                         )}
-                        {/* Time blocker */}
+                        {/* Time blocker - hidden on mobile */}
                         {!isWeekCompleted && onUpdateObjectiveSchedule && (
-                          <ObjectiveTimeBlocker
-                            scheduledDay={objective.scheduled_day}
-                            scheduledTime={objective.scheduled_time}
-                            onUpdate={(day, time) => onUpdateObjectiveSchedule(objective.id, day, time)}
-                            disabled={isWeekCompleted}
-                          />
+                          <div className="hidden sm:block">
+                            <ObjectiveTimeBlocker
+                              scheduledDay={objective.scheduled_day}
+                              scheduledTime={objective.scheduled_time}
+                              onUpdate={(day, time) => onUpdateObjectiveSchedule(objective.id, day, time)}
+                              disabled={isWeekCompleted}
+                            />
+                          </div>
                         )}
                         {/* Show saving indicator */}
                         {savingObjectiveIds.has(objective.id) && (
