@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Goal } from "@/types/goals";
-import { startOfWeek, addWeeks, addMonths, isBefore, isAfter, parseISO, format } from "date-fns";
+import { startOfWeek, addWeeks, addMonths, isBefore, isAfter, parseISO, format, getMonth, endOfMonth, getWeek, startOfMonth, getDay } from "date-fns";
 
 export class RecurringObjectivesService {
   /**
@@ -131,33 +131,64 @@ export class RecurringObjectivesService {
     const weekDate = parseISO(weekStart);
     const goalCreatedWeekStart = startOfWeek(goalCreatedDate, { weekStartsOn: 1 });
 
-    if (frequency === 'weekly') {
-      // Always create for weekly
-      return true;
-    }
+    switch (frequency) {
+      case 'daily':
+      case 'weekdays':
+        // For daily/weekday frequencies, always create a weekly objective
+        // The actual daily tracking could be handled separately if needed
+        return true;
 
-    if (frequency === 'biweekly') {
-      // Calculate weeks since goal creation
-      let checkDate = goalCreatedWeekStart;
-      while (isBefore(checkDate, weekDate)) {
-        checkDate = addWeeks(checkDate, 2);
+      case 'weekly':
+        // Always create for weekly
+        return true;
+
+      case 'biweekly': {
+        // Calculate weeks since goal creation
+        let checkDate = goalCreatedWeekStart;
+        while (isBefore(checkDate, weekDate)) {
+          checkDate = addWeeks(checkDate, 2);
+        }
+        // Check if weekStart matches a biweekly interval
+        return format(checkDate, 'yyyy-MM-dd') === weekStart;
       }
-      // Check if weekStart matches a biweekly interval
-      return format(checkDate, 'yyyy-MM-dd') === weekStart;
-    }
 
-    if (frequency === 'monthly') {
-      // Check if this is the first week of the month or matches monthly pattern
-      let checkDate = goalCreatedWeekStart;
-      while (isBefore(checkDate, weekDate)) {
-        checkDate = addMonths(checkDate, 1);
-        // Adjust to the start of the week
-        checkDate = startOfWeek(checkDate, { weekStartsOn: 1 });
+      case 'monthly': {
+        // Create objective for the first week of each month
+        const monthStart = startOfMonth(weekDate);
+        const firstWeekOfMonth = startOfWeek(monthStart, { weekStartsOn: 1 });
+        // If month starts mid-week, use the next Monday
+        const effectiveFirstWeek = isBefore(firstWeekOfMonth, monthStart) 
+          ? addWeeks(firstWeekOfMonth, 1) 
+          : firstWeekOfMonth;
+        return format(weekDate, 'yyyy-MM-dd') === format(effectiveFirstWeek, 'yyyy-MM-dd');
       }
-      return format(checkDate, 'yyyy-MM-dd') === weekStart;
-    }
 
-    return true;
+      case 'monthly_last_week': {
+        // Create objective for the last week of each month
+        const monthEnd = endOfMonth(weekDate);
+        const lastWeekStart = startOfWeek(monthEnd, { weekStartsOn: 1 });
+        return format(weekDate, 'yyyy-MM-dd') === format(lastWeekStart, 'yyyy-MM-dd');
+      }
+
+      case 'quarterly': {
+        // Create objective for the first week of each quarter (Jan, Apr, Jul, Oct)
+        const month = getMonth(weekDate);
+        const quarterStartMonths = [0, 3, 6, 9]; // Jan, Apr, Jul, Oct
+        if (!quarterStartMonths.includes(month)) {
+          return false;
+        }
+        // Check if this is the first week of the quarter month
+        const monthStart = startOfMonth(weekDate);
+        const firstWeekOfMonth = startOfWeek(monthStart, { weekStartsOn: 1 });
+        const effectiveFirstWeek = isBefore(firstWeekOfMonth, monthStart) 
+          ? addWeeks(firstWeekOfMonth, 1) 
+          : firstWeekOfMonth;
+        return format(weekDate, 'yyyy-MM-dd') === format(effectiveFirstWeek, 'yyyy-MM-dd');
+      }
+
+      default:
+        return true;
+    }
   }
 
   /**

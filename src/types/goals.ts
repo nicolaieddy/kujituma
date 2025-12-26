@@ -24,7 +24,14 @@ export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'E
 
 export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'deprioritized' | 'deleted';
 
-export type RecurrenceFrequency = 'weekly' | 'biweekly' | 'monthly';
+export type RecurrenceFrequency = 
+  | 'daily' 
+  | 'weekly' 
+  | 'biweekly' 
+  | 'monthly' 
+  | 'monthly_last_week'
+  | 'quarterly'
+  | 'weekdays';
 
 export interface GoalStatusHistory {
   id: string;

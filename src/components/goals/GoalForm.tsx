@@ -31,10 +31,14 @@ const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
   'Custom Date'
 ];
 
-const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
-  { value: 'weekly', label: 'Weekly' },
-  { value: 'biweekly', label: 'Bi-weekly' },
-  { value: 'monthly', label: 'Monthly' }
+const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string; description?: string }[] = [
+  { value: 'daily', label: 'Daily', description: 'Every day of the week' },
+  { value: 'weekdays', label: 'Every weekday', description: 'Monday to Friday' },
+  { value: 'weekly', label: 'Weekly', description: 'Once every week' },
+  { value: 'biweekly', label: 'Every 2 weeks', description: 'Once every two weeks' },
+  { value: 'monthly', label: 'Monthly', description: 'Once per month' },
+  { value: 'monthly_last_week', label: 'Monthly (last week)', description: 'Last week of each month' },
+  { value: 'quarterly', label: 'Quarterly', description: 'Once per quarter' }
 ];
 
 export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
