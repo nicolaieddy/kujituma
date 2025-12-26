@@ -25,7 +25,6 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
       try {
         const created = await RecurringObjectivesService.generateRecurringObjectivesForWeek(currentWeekStart);
         if (created > 0) {
-          console.log(`Generated ${created} recurring objective(s) for week ${currentWeekStart}`);
           // Invalidate to refresh the list with new objectives
           queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
         }
@@ -39,17 +38,11 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
 
   const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
-    queryFn: async () => {
-      console.log('Fetching objectives for user:', user?.id, 'week:', currentWeekStart);
-      return WeeklyProgressService.getWeeklyObjectives(currentWeekStart);
-    },
+    queryFn: () => WeeklyProgressService.getWeeklyObjectives(currentWeekStart),
     enabled: !!user && !!currentWeekStart,
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
     gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
-    retry: (failureCount, error) => {
-      console.error('Objectives query failed:', error);
-      return failureCount < 2;
-    }
+    retry: 1,
   });
 
   const createObjectiveMutation = useMutation({

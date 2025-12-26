@@ -111,7 +111,6 @@ export class RecurringObjectivesService {
       return false;
     }
 
-    console.log(`Created recurring objective for goal "${goal.title}" for week ${weekStart}`);
     return true;
   }
 
