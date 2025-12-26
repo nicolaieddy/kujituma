@@ -67,28 +67,37 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [formData, setFormData] = useState<CreateGoalData>(() => initialData ? {
-    title: initialData.title || '',
-    description: initialData.description || '',
-    timeframe: initialData.timeframe || '1 Month',
-    start_date: initialData.start_date || '',
-    target_date: initialData.target_date || '',
-    category: initialData.category || '',
-    is_public: initialData.is_public ?? true,
-    is_recurring: initialData.is_recurring ?? false,
-    recurrence_frequency: initialData.recurrence_frequency || 'weekly',
-    recurring_objective_text: initialData.recurring_objective_text || ''
-  } : {
-    title: '',
-    description: '',
-    timeframe: '1 Month',
-    start_date: '',
-    target_date: '',
-    category: '',
-    is_public: true,
-    is_recurring: false,
-    recurrence_frequency: 'weekly',
-    recurring_objective_text: ''
+  const [formData, setFormData] = useState<CreateGoalData>(() => {
+    if (initialData) {
+      // If the goal has custom dates, ensure timeframe is set to 'Custom Date'
+      const hasCustomDates = initialData.start_date || initialData.target_date;
+      const timeframe = hasCustomDates ? 'Custom Date' : (initialData.timeframe || '1 Month');
+      
+      return {
+        title: initialData.title || '',
+        description: initialData.description || '',
+        timeframe: timeframe as GoalTimeframe,
+        start_date: initialData.start_date || '',
+        target_date: initialData.target_date || '',
+        category: initialData.category || '',
+        is_public: initialData.is_public ?? true,
+        is_recurring: initialData.is_recurring ?? false,
+        recurrence_frequency: initialData.recurrence_frequency || 'weekly',
+        recurring_objective_text: initialData.recurring_objective_text || ''
+      };
+    }
+    return {
+      title: '',
+      description: '',
+      timeframe: '1 Month',
+      start_date: '',
+      target_date: '',
+      category: '',
+      is_public: true,
+      is_recurring: false,
+      recurrence_frequency: 'weekly',
+      recurring_objective_text: ''
+    };
   });
 
   // Load custom categories
@@ -108,10 +117,14 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   // Initialize form data when initialData changes (for editing)
   useEffect(() => {
     if (initialData) {
+      // If the goal has custom dates, ensure timeframe is set to 'Custom Date'
+      const hasCustomDates = initialData.start_date || initialData.target_date;
+      const timeframe = hasCustomDates ? 'Custom Date' : (initialData.timeframe || '1 Month');
+      
       setFormData({
         title: initialData.title || '',
         description: initialData.description || '',
-        timeframe: initialData.timeframe || '1 Month',
+        timeframe: timeframe as GoalTimeframe,
         start_date: initialData.start_date || '',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
