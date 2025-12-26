@@ -7,7 +7,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { X, Calendar, Eye, EyeOff, Plus, Trash2, RefreshCw } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { X, CalendarIcon, Eye, EyeOff, Plus, Trash2, RefreshCw } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal, RecurrenceFrequency, HabitItem } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
@@ -15,6 +17,8 @@ import { CustomCategoriesService } from "@/services/customCategoriesService";
 import { CustomGoalCategory } from "@/types/customCategories";
 import { toast } from "@/hooks/use-toast";
 import { HabitItemsEditor } from "./HabitItemsEditor";
+import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface GoalFormProps {
   onSubmit: (data: CreateGoalData) => void;
@@ -22,15 +26,6 @@ interface GoalFormProps {
   isLoading?: boolean;
   initialData?: Goal | null;
 }
-
-const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
-  '1 Month',
-  '3 Months', 
-  'Quarter',
-  '6 Months',
-  'End of Year',
-  'Custom Date'
-];
 
 const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string; description?: string }[] = [
   { value: 'daily', label: 'Daily', description: 'Every day of the week' },
@@ -74,13 +69,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   const [newCategoryName, setNewCategoryName] = useState("");
   const [formData, setFormData] = useState<CreateGoalData & { habit_items: HabitItem[] }>(() => {
     if (initialData) {
-      const hasCustomDates = initialData.start_date || initialData.target_date;
-      const timeframe = hasCustomDates ? 'Custom Date' : (initialData.timeframe || '1 Month');
-      
       return {
         title: initialData.title || '',
         description: initialData.description || '',
-        timeframe: timeframe as GoalTimeframe,
+        timeframe: 'Custom Date' as GoalTimeframe,
         start_date: initialData.start_date || '',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
@@ -94,7 +86,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     return {
       title: '',
       description: '',
-      timeframe: '1 Month',
+      timeframe: 'Custom Date' as GoalTimeframe,
       start_date: '',
       target_date: '',
       category: '',
@@ -123,13 +115,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   // Initialize form data when initialData changes (for editing)
   useEffect(() => {
     if (initialData) {
-      const hasCustomDates = initialData.start_date || initialData.target_date;
-      const timeframe = hasCustomDates ? 'Custom Date' : (initialData.timeframe || '1 Month');
-      
       setFormData({
         title: initialData.title || '',
         description: initialData.description || '',
-        timeframe: timeframe as GoalTimeframe,
+        timeframe: 'Custom Date' as GoalTimeframe,
         start_date: initialData.start_date || '',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
@@ -143,7 +132,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       setFormData({
         title: '',
         description: '',
-        timeframe: '1 Month',
+        timeframe: 'Custom Date' as GoalTimeframe,
         start_date: '',
         target_date: '',
         category: '',
@@ -160,14 +149,24 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     e.preventDefault();
     if (!formData.title.trim()) return;
     
-    // Validate that end date is after start date for custom date range
-    if (formData.timeframe === 'Custom Date' && formData.start_date && formData.target_date) {
+    // Require target date
+    if (!formData.target_date) {
+      toast({
+        title: "Target Date Required",
+        description: "Please select a target date for your goal.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Validate that target date is after start date if both are provided
+    if (formData.start_date && formData.target_date) {
       const startDate = new Date(formData.start_date);
       const endDate = new Date(formData.target_date);
       if (endDate <= startDate) {
         toast({
           title: "Invalid Date Range",
-          description: "End date must be after the start date.",
+          description: "Target date must be after the start date.",
           variant: "destructive",
         });
         return;
@@ -177,7 +176,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     const submitData: CreateGoalData = {
       title: formData.title.trim(),
       description: formData.description?.trim() || '',
-      timeframe: formData.timeframe,
+      timeframe: 'Custom Date',
       category: formData.category === 'none' ? '' : (formData.category?.trim() || ''),
       is_public: formData.is_public,
       is_recurring: formData.is_recurring,
@@ -185,18 +184,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       recurring_objective_text: formData.is_recurring && formData.recurring_objective_text?.trim() 
         ? formData.recurring_objective_text.trim() 
         : undefined,
-      habit_items: formData.is_recurring ? formData.habit_items : []
+      habit_items: formData.is_recurring ? formData.habit_items : [],
+      start_date: formData.start_date || undefined,
+      target_date: formData.target_date
     };
-
-    // Only include dates if timeframe is Custom Date and dates are provided
-    if (formData.timeframe === 'Custom Date') {
-      if (formData.start_date) {
-        submitData.start_date = formData.start_date;
-      }
-      if (formData.target_date) {
-        submitData.target_date = formData.target_date;
-      }
-    }
 
     onSubmit(submitData);
   };
@@ -304,60 +295,63 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
             />
           </div>
 
-          <div className={`grid ${isMobile ? 'grid-cols-1 gap-5' : 'grid-cols-1 md:grid-cols-2 gap-4'}`}>
+          <div className={`grid ${isMobile ? 'grid-cols-1 gap-5' : 'grid-cols-2 gap-4'}`}>
             <div>
-              <Label htmlFor="timeframe" className="font-medium text-sm">Timeframe *</Label>
-              <Select
-                value={formData.timeframe}
-                onValueChange={(value: GoalTimeframe) => setFormData({ ...formData, timeframe: value })}
-              >
-                <SelectTrigger className={`mt-1.5 ${
-                  isMobile ? 'h-12' : 'h-10'
-                }`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-[300]">
-                  {TIMEFRAME_OPTIONS.map((option) => (
-                    <SelectItem 
-                      key={option} 
-                      value={option} 
-                      className="cursor-pointer"
-                    >
-                      {option}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="font-medium text-sm">Start Date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full mt-1.5 justify-start text-left font-normal",
+                      isMobile ? 'h-12' : 'h-10',
+                      !formData.start_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.start_date ? format(parseISO(formData.start_date), "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[300]" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.start_date ? parseISO(formData.start_date) : undefined}
+                    onSelect={(date) => setFormData({ ...formData, start_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">When you'll start working on this goal</p>
             </div>
-
-            {formData.timeframe === 'Custom Date' && (
-              <>
-                <div>
-                  <Label htmlFor="start_date" className="font-medium text-sm">Start Date</Label>
-                  <Input
-                    id="start_date"
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                    className={`mt-1.5 ${
-                      isMobile ? 'h-12' : 'h-10'
-                    }`}
+            <div>
+              <Label className="font-medium text-sm">Target Date *</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full mt-1.5 justify-start text-left font-normal",
+                      isMobile ? 'h-12' : 'h-10',
+                      !formData.target_date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.target_date ? format(parseISO(formData.target_date), "PPP") : <span>Pick a date</span>}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 z-[300]" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.target_date ? parseISO(formData.target_date) : undefined}
+                    onSelect={(date) => setFormData({ ...formData, target_date: date ? format(date, 'yyyy-MM-dd') : '' })}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
                   />
-                </div>
-                <div>
-                  <Label htmlFor="target_date" className="font-medium text-sm">End Date</Label>
-                  <Input
-                    id="target_date"
-                    type="date"
-                    value={formData.target_date}
-                    onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                    className={`mt-1.5 ${
-                      isMobile ? 'h-12' : 'h-10'
-                    }`}
-                  />
-                </div>
-              </>
-            )}
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground mt-1">When you want to complete this goal</p>
+            </div>
           </div>
 
           <div>
