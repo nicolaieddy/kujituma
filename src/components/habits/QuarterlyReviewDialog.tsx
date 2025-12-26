@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -12,10 +13,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
-import { Loader2, Trophy, AlertCircle, Lightbulb, Rocket, CheckCircle2, Clock, Pause, TrendingDown } from "lucide-react";
+import { Loader2, Trophy, AlertCircle, Lightbulb, Rocket, CheckCircle2, Clock, Pause, TrendingDown, Target } from "lucide-react";
 import { useGoals } from "@/hooks/useGoals";
+import { useAuth } from "@/contexts/AuthContext";
 import { filterGoalsByQuarter, getQuarterName } from "@/utils/quarterUtils";
 import { Progress } from "@/components/ui/progress";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 interface QuarterlyReviewDialogProps {
   open: boolean;
@@ -62,6 +65,7 @@ const GoalsSection = ({ title, icon, goals, emptyMessage, variant }: GoalsSectio
 };
 
 export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDialogProps) => {
+  const { user } = useAuth();
   const { goals } = useGoals();
   const { 
     currentReview,
@@ -77,6 +81,22 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
   const [challenges, setChallenges] = useState("");
   const [lessonsLearned, setLessonsLearned] = useState("");
   const [nextQuarterFocus, setNextQuarterFocus] = useState("");
+  
+  // Fetch weekly objectives for this quarter
+  const { data: quarterObjectives } = useQuery({
+    queryKey: ['quarterly-objectives', user?.id, year, quarter],
+    queryFn: () => WeeklyProgressService.getObjectivesForQuarter(year, quarter),
+    enabled: !!user && open,
+  });
+  
+  // Calculate objectives stats
+  const objectivesStats = useMemo(() => {
+    if (!quarterObjectives) return { total: 0, completed: 0, percentage: 0 };
+    const total = quarterObjectives.length;
+    const completed = quarterObjectives.filter(o => o.is_completed).length;
+    const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, percentage };
+  }, [quarterObjectives]);
   
   // Filter goals by the current quarter
   const quarterGoals = useMemo(() => {
@@ -139,6 +159,31 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
         </DialogHeader>
         
         <div className="space-y-6 py-4">
+          {/* Weekly Objectives Stats */}
+          {objectivesStats.total > 0 && (
+            <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+              <CardContent className="pt-4 pb-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 rounded-full bg-primary/10">
+                    <Target className="h-5 w-5 text-primary" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium">Weekly Objectives</span>
+                      <span className="text-sm text-muted-foreground">
+                        {objectivesStats.completed} of {objectivesStats.total} completed
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Progress value={objectivesStats.percentage} className="h-2 flex-1" />
+                      <span className="text-sm font-semibold text-primary">{objectivesStats.percentage}%</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
           {/* Goals Summary Card */}
           {hasAnyGoals && (
             <Card>
