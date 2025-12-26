@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Goal } from "@/types/goals";
+import { parseGoals } from "@/utils/goalUtils";
 import { startOfWeek, addWeeks, addMonths, isBefore, isAfter, parseISO, format, getMonth, endOfMonth, getWeek, startOfMonth, getDay } from "date-fns";
 
 export class RecurringObjectivesService {
@@ -19,7 +20,7 @@ export class RecurringObjectivesService {
       .neq('status', 'deleted');
 
     if (error) throw error;
-    return (data || []) as Goal[];
+    return parseGoals(data);
   }
 
   /**

@@ -8,12 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { X, Calendar, Eye, EyeOff, Plus, Trash2, RefreshCw } from "lucide-react";
-import { CreateGoalData, GoalTimeframe, Goal, RecurrenceFrequency } from "@/types/goals";
+import { CreateGoalData, GoalTimeframe, Goal, RecurrenceFrequency, HabitItem } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
 import { CustomCategoriesService } from "@/services/customCategoriesService";
 import { CustomGoalCategory } from "@/types/customCategories";
 import { toast } from "@/hooks/use-toast";
+import { HabitItemsEditor } from "./HabitItemsEditor";
 
 interface GoalFormProps {
   onSubmit: (data: CreateGoalData) => void;
@@ -67,9 +68,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
-  const [formData, setFormData] = useState<CreateGoalData>(() => {
+  const [formData, setFormData] = useState<CreateGoalData & { habit_items: HabitItem[] }>(() => {
     if (initialData) {
-      // If the goal has custom dates, ensure timeframe is set to 'Custom Date'
       const hasCustomDates = initialData.start_date || initialData.target_date;
       const timeframe = hasCustomDates ? 'Custom Date' : (initialData.timeframe || '1 Month');
       
@@ -83,7 +83,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         is_public: initialData.is_public ?? true,
         is_recurring: initialData.is_recurring ?? false,
         recurrence_frequency: initialData.recurrence_frequency || 'weekly',
-        recurring_objective_text: initialData.recurring_objective_text || ''
+        recurring_objective_text: initialData.recurring_objective_text || '',
+        habit_items: initialData.habit_items || []
       };
     }
     return {
@@ -96,7 +97,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       is_public: true,
       is_recurring: false,
       recurrence_frequency: 'weekly',
-      recurring_objective_text: ''
+      recurring_objective_text: '',
+      habit_items: []
     };
   });
 
@@ -117,7 +119,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
   // Initialize form data when initialData changes (for editing)
   useEffect(() => {
     if (initialData) {
-      // If the goal has custom dates, ensure timeframe is set to 'Custom Date'
       const hasCustomDates = initialData.start_date || initialData.target_date;
       const timeframe = hasCustomDates ? 'Custom Date' : (initialData.timeframe || '1 Month');
       
@@ -131,10 +132,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         is_public: initialData.is_public ?? true,
         is_recurring: initialData.is_recurring ?? false,
         recurrence_frequency: initialData.recurrence_frequency || 'weekly',
-        recurring_objective_text: initialData.recurring_objective_text || ''
+        recurring_objective_text: initialData.recurring_objective_text || '',
+        habit_items: initialData.habit_items || []
       });
     } else {
-      // Reset form for new goal
       setFormData({
         title: '',
         description: '',
@@ -145,7 +146,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         is_public: true,
         is_recurring: false,
         recurrence_frequency: 'weekly',
-        recurring_objective_text: ''
+        recurring_objective_text: '',
+        habit_items: []
       });
     }
   }, [initialData]);
@@ -178,7 +180,8 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : undefined,
       recurring_objective_text: formData.is_recurring && formData.recurring_objective_text?.trim() 
         ? formData.recurring_objective_text.trim() 
-        : undefined
+        : undefined,
+      habit_items: formData.is_recurring ? formData.habit_items : []
     };
 
     // Only include dates if timeframe is Custom Date and dates are provided
@@ -535,6 +538,15 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                   <p className="text-xs text-muted-foreground mt-1">
                     The text that will appear as your weekly objective
                   </p>
+                </div>
+
+                {/* Habit Items Editor */}
+                <div className="pt-2 border-t border-border/50">
+                  <HabitItemsEditor
+                    habitItems={formData.habit_items}
+                    onChange={(items) => setFormData({ ...formData, habit_items: items })}
+                    defaultFrequency={formData.recurrence_frequency || 'daily'}
+                  />
                 </div>
               </div>
             )}

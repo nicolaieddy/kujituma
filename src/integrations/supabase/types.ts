@@ -455,6 +455,7 @@ export type Database = {
           created_at: string
           deprioritized_at: string | null
           description: string | null
+          habit_items: Json | null
           id: string
           is_paused: boolean
           is_public: boolean
@@ -478,6 +479,7 @@ export type Database = {
           created_at?: string
           deprioritized_at?: string | null
           description?: string | null
+          habit_items?: Json | null
           id?: string
           is_paused?: boolean
           is_public?: boolean
@@ -501,6 +503,7 @@ export type Database = {
           created_at?: string
           deprioritized_at?: string | null
           description?: string | null
+          habit_items?: Json | null
           id?: string
           is_paused?: boolean
           is_public?: boolean
@@ -524,6 +527,41 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      habit_completions: {
+        Row: {
+          completion_date: string
+          created_at: string
+          goal_id: string
+          habit_item_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completion_date: string
+          created_at?: string
+          goal_id: string
+          habit_item_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completion_date?: string
+          created_at?: string
+          goal_id?: string
+          habit_item_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "habit_completions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
             referencedColumns: ["id"]
           },
         ]

@@ -1,4 +1,10 @@
 
+export interface HabitItem {
+  id: string;
+  text: string;
+  frequency: RecurrenceFrequency;
+}
+
 export interface Goal {
   id: string;
   user_id: string;
@@ -21,6 +27,7 @@ export interface Goal {
   recurring_objective_text: string | null;
   is_paused: boolean;
   paused_at: string | null;
+  habit_items: HabitItem[];
 }
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
@@ -56,6 +63,7 @@ export interface CreateGoalData {
   is_recurring?: boolean;
   recurrence_frequency?: RecurrenceFrequency;
   recurring_objective_text?: string;
+  habit_items?: HabitItem[];
 }
 
 export interface UpdateGoalData {
@@ -74,4 +82,14 @@ export interface UpdateGoalData {
   recurring_objective_text?: string;
   is_paused?: boolean;
   paused_at?: string | null;
+  habit_items?: HabitItem[];
+}
+
+export interface HabitCompletion {
+  id: string;
+  user_id: string;
+  goal_id: string;
+  habit_item_id: string;
+  completion_date: string;
+  created_at: string;
 }
