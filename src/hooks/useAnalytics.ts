@@ -72,6 +72,30 @@ export interface CategoryBreakdown {
   goalCount: number;
 }
 
+export interface HabitAnalytics {
+  totalHabits: number;
+  totalCompletions: number;
+  dailyCompletionRate: number;
+  weeklyData: {
+    date: string;
+    completed: number;
+    possible: number;
+    rate: number;
+  }[];
+  topHabits: {
+    goalTitle: string;
+    habitText: string;
+    frequency: string;
+    completions: number;
+    possible: number;
+    rate: number;
+  }[];
+  streaks: {
+    current: number;
+    longest: number;
+  };
+}
+
 export interface AnalyticsData {
   weeklyCompletionRate: number;
   currentStreak: number;
@@ -95,7 +119,17 @@ export interface AnalyticsData {
     notStarted: number;
   };
   heatmapData: HeatmapWeek[];
+  habitAnalytics: HabitAnalytics;
 }
+
+const defaultHabitAnalytics: HabitAnalytics = {
+  totalHabits: 0,
+  totalCompletions: 0,
+  dailyCompletionRate: 0,
+  weeklyData: [],
+  topHabits: [],
+  streaks: { current: 0, longest: 0 }
+};
 
 const defaultAnalytics: AnalyticsData = {
   weeklyCompletionRate: 0,
@@ -119,7 +153,8 @@ const defaultAnalytics: AnalyticsData = {
   totalActiveWeeks: 0,
   consistencyScore: 0,
   goalsStats: { total: 0, completed: 0, inProgress: 0, notStarted: 0 },
-  heatmapData: []
+  heatmapData: [],
+  habitAnalytics: defaultHabitAnalytics
 };
 
 const getDateRangeFilter = (range: DateRangeFilter, customRange?: CustomDateRange): { start: Date; end: Date } | null => {
@@ -168,7 +203,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
         // Fetch weekly objectives with goal info
         const { data: objectives } = await supabase
           .from('weekly_objectives')
-          .select('*, goals(id, title, status, category)')
+          .select('*, goals(id, title, status, category, habit_items)')
           .eq('user_id', user.id)
           .order('week_start', { ascending: false });
 
@@ -179,6 +214,13 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
           .eq('user_id', user.id)
           .neq('status', 'deleted');
 
+        // Fetch habit completions
+        const { data: habitCompletions } = await supabase
+          .from('habit_completions')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('completion_date', { ascending: false });
+
         if (objectives && goals) {
           // Filter objectives by date range
           const dateFilter = getDateRangeFilter(dateRange, customRange);
@@ -188,8 +230,16 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
                 return weekDate >= dateFilter.start && weekDate <= dateFilter.end;
               })
             : objectives;
+
+          // Filter habit completions by date range
+          const filteredCompletions = dateFilter && habitCompletions
+            ? habitCompletions.filter(hc => {
+                const date = parseISO(hc.completion_date);
+                return date >= dateFilter.start && date <= dateFilter.end;
+              })
+            : habitCompletions || [];
           
-          const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives);
+          const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives, filteredCompletions);
           setAnalytics(analyticsData);
         }
       } catch (error) {
@@ -210,7 +260,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
     try {
       const { data: objectives } = await supabase
         .from('weekly_objectives')
-        .select('*, goals(id, title, status, category)')
+        .select('*, goals(id, title, status, category, habit_items)')
         .eq('user_id', user.id)
         .order('week_start', { ascending: false });
 
@@ -220,6 +270,12 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
         .eq('user_id', user.id)
         .neq('status', 'deleted');
 
+      const { data: habitCompletions } = await supabase
+        .from('habit_completions')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('completion_date', { ascending: false });
+
       if (objectives && goals) {
         const dateFilter = getDateRangeFilter(dateRange);
         const filteredObjectives = dateFilter 
@@ -228,8 +284,15 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
               return weekDate >= dateFilter.start && weekDate <= dateFilter.end;
             })
           : objectives;
+
+        const filteredCompletions = dateFilter && habitCompletions
+          ? habitCompletions.filter(hc => {
+              const date = parseISO(hc.completion_date);
+              return date >= dateFilter.start && date <= dateFilter.end;
+            })
+          : habitCompletions || [];
         
-        const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives);
+        const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives, filteredCompletions);
         setAnalytics(analyticsData);
       }
     } catch (error) {
@@ -242,7 +305,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
   return { analytics, isLoading, refetchAnalytics };
 };
 
-const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any[]): AnalyticsData => {
+const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any[], habitCompletions?: any[]): AnalyticsData => {
   // Use allObjectives for heatmap if provided (to always show full year)
   const heatmapObjectives = allObjectives || objectives;
   const now = new Date();
@@ -495,6 +558,9 @@ const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any
     });
   }
 
+  // Calculate habit analytics from habit_completions
+  const habitAnalytics = calculateHabitAnalytics(habitCompletions || [], goals);
+
   return {
     weeklyCompletionRate,
     currentStreak,
@@ -512,6 +578,157 @@ const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any
     totalActiveWeeks,
     consistencyScore,
     goalsStats,
-    heatmapData
+    heatmapData,
+    habitAnalytics
+  };
+};
+
+const calculateHabitAnalytics = (completions: any[], goals: any[]): HabitAnalytics => {
+  // Get all goals with habit_items
+  const goalsWithHabits = goals.filter(g => {
+    const habitItems = g.habit_items;
+    return habitItems && Array.isArray(habitItems) && habitItems.length > 0;
+  });
+
+  if (goalsWithHabits.length === 0) {
+    return {
+      totalHabits: 0,
+      totalCompletions: 0,
+      dailyCompletionRate: 0,
+      weeklyData: [],
+      topHabits: [],
+      streaks: { current: 0, longest: 0 }
+    };
+  }
+
+  // Count total habits across all goals
+  let totalHabits = 0;
+  const habitItemsMap = new Map<string, { goalTitle: string; habitText: string; frequency: string; goalId: string }>();
+
+  goalsWithHabits.forEach(goal => {
+    const habitItems = goal.habit_items as any[];
+    habitItems.forEach((item: any) => {
+      totalHabits++;
+      habitItemsMap.set(item.id, {
+        goalTitle: goal.title,
+        habitText: item.text,
+        frequency: item.frequency,
+        goalId: goal.id
+      });
+    });
+  });
+
+  const totalCompletions = completions.length;
+
+  // Group completions by week
+  const weeklyCompletions = new Map<string, { completed: number; possible: number }>();
+  
+  completions.forEach(c => {
+    const weekStart = format(startOfWeek(parseISO(c.completion_date), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    if (!weeklyCompletions.has(weekStart)) {
+      weeklyCompletions.set(weekStart, { completed: 0, possible: 0 });
+    }
+    weeklyCompletions.get(weekStart)!.completed++;
+  });
+
+  // Calculate possible completions per week (simplified: daily habits = 7/week, weekdays = 5/week)
+  const now = new Date();
+  const last12Weeks: { date: string; completed: number; possible: number; rate: number }[] = [];
+  
+  for (let i = 11; i >= 0; i--) {
+    const weekStart = startOfWeek(subWeeks(now, i), { weekStartsOn: 1 });
+    const weekKey = format(weekStart, 'yyyy-MM-dd');
+    
+    let possibleForWeek = 0;
+    habitItemsMap.forEach((item) => {
+      if (item.frequency === 'daily') possibleForWeek += 7;
+      else if (item.frequency === 'weekdays') possibleForWeek += 5;
+      else possibleForWeek += 1; // weekly, biweekly, etc.
+    });
+
+    const weekData = weeklyCompletions.get(weekKey) || { completed: 0, possible: 0 };
+    last12Weeks.push({
+      date: weekKey,
+      completed: weekData.completed,
+      possible: possibleForWeek,
+      rate: possibleForWeek > 0 ? (weekData.completed / possibleForWeek) * 100 : 0
+    });
+  }
+
+  // Calculate overall daily completion rate
+  const totalPossible = last12Weeks.reduce((sum, w) => sum + w.possible, 0);
+  const totalActual = last12Weeks.reduce((sum, w) => sum + w.completed, 0);
+  const dailyCompletionRate = totalPossible > 0 ? (totalActual / totalPossible) * 100 : 0;
+
+  // Top habits by completion count
+  const habitCompletionCounts = new Map<string, number>();
+  completions.forEach(c => {
+    const count = habitCompletionCounts.get(c.habit_item_id) || 0;
+    habitCompletionCounts.set(c.habit_item_id, count + 1);
+  });
+
+  const topHabits = Array.from(habitItemsMap.entries())
+    .map(([habitId, info]) => {
+      const completionCount = habitCompletionCounts.get(habitId) || 0;
+      // Calculate possible based on frequency over 12 weeks
+      let possibleCount = 0;
+      if (info.frequency === 'daily') possibleCount = 12 * 7;
+      else if (info.frequency === 'weekdays') possibleCount = 12 * 5;
+      else possibleCount = 12;
+
+      return {
+        goalTitle: info.goalTitle,
+        habitText: info.habitText,
+        frequency: info.frequency,
+        completions: completionCount,
+        possible: possibleCount,
+        rate: possibleCount > 0 ? (completionCount / possibleCount) * 100 : 0
+      };
+    })
+    .sort((a, b) => b.rate - a.rate)
+    .slice(0, 5);
+
+  // Calculate streaks (consecutive days with at least one completion)
+  const completionDates = [...new Set(completions.map(c => c.completion_date))].sort().reverse();
+  let currentStreak = 0;
+  let longestStreak = 0;
+  let tempStreak = 0;
+  
+  const today = format(new Date(), 'yyyy-MM-dd');
+  const yesterday = format(subWeeks(new Date(), 0), 'yyyy-MM-dd');
+  
+  for (let i = 0; i < completionDates.length; i++) {
+    const date = completionDates[i];
+    const prevDate = i > 0 ? completionDates[i - 1] : null;
+    
+    if (i === 0) {
+      // Check if streak is current (today or yesterday)
+      if (date === today || date === yesterday) {
+        tempStreak = 1;
+        currentStreak = 1;
+      } else {
+        tempStreak = 1;
+      }
+    } else if (prevDate) {
+      const dayDiff = Math.abs(
+        (parseISO(prevDate).getTime() - parseISO(date).getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (dayDiff === 1) {
+        tempStreak++;
+        if (i < 2) currentStreak = tempStreak;
+      } else {
+        tempStreak = 1;
+      }
+    }
+    longestStreak = Math.max(longestStreak, tempStreak);
+  }
+
+  return {
+    totalHabits,
+    totalCompletions,
+    dailyCompletionRate,
+    weeklyData: last12Weeks,
+    topHabits,
+    streaks: { current: currentStreak, longest: longestStreak }
   };
 };
