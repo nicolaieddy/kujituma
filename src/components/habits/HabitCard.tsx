@@ -1,16 +1,18 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Flame, TrendingUp, CheckCircle2, Circle, RefreshCw, Target, Trophy, Star, Zap } from "lucide-react";
+import { Flame, TrendingUp, CheckCircle2, Circle, RefreshCw, Target, Trophy, Star, Zap, Pause } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 interface HabitCardProps {
   habitStats: HabitStats;
   onClick?: () => void;
+  isPaused?: boolean;
 }
 
-export const HabitCard = ({ habitStats, onClick }: HabitCardProps) => {
+export const HabitCard = ({ habitStats, onClick, isPaused = false }: HabitCardProps) => {
   const { goal, currentStreak, longestStreak, completionRate, totalWeeks, completedWeeks, weeklyHistory } = habitStats;
 
   const getStreakColor = (streak: number) => {
@@ -38,14 +40,21 @@ export const HabitCard = ({ habitStats, onClick }: HabitCardProps) => {
 
   return (
     <Card 
-      className="glass-card hover:shadow-lift transition-all duration-300 cursor-pointer"
+      className={cn(
+        "glass-card hover:shadow-lift transition-all duration-300 cursor-pointer",
+        isPaused && "opacity-75 border-slate-500/30"
+      )}
       onClick={onClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="flex-1 pr-16">
             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <RefreshCw className="h-4 w-4 text-primary" />
+              {isPaused ? (
+                <Pause className="h-4 w-4 text-slate-500" />
+              ) : (
+                <RefreshCw className="h-4 w-4 text-primary" />
+              )}
               {goal.title}
             </CardTitle>
             {goal.recurring_objective_text && goal.recurring_objective_text !== goal.title && (
