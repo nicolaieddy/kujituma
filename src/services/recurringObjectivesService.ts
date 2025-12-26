@@ -106,6 +106,15 @@ export class RecurringObjectivesService {
       return false;
     }
 
+    // Check if goal has a start date and we're before it
+    if (goal.start_date) {
+      const startDate = parseISO(goal.start_date);
+      const startDateWeekStart = startOfWeek(startDate, { weekStartsOn: 1 });
+      if (isBefore(weekDate, startDateWeekStart)) {
+        return false;
+      }
+    }
+
     // Check if goal has a target date and we're past it
     if (goal.target_date) {
       const targetDate = parseISO(goal.target_date);
