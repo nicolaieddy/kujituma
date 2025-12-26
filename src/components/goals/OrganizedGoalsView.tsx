@@ -120,7 +120,21 @@ export const OrganizedGoalsView = ({
   const notStartedGoals = filteredActiveGoals.filter(g => g.status === 'not_started');
   const inProgressGoals = filteredActiveGoals.filter(g => g.status === 'in_progress');
   
-  const completedYears = Object.keys(filteredCompletedGoalsByYear)
+  // Get current year's completed goals for the main view
+  const currentYearCompletedGoals = filteredCompletedGoalsByYear[currentYear] || [];
+  
+  // Get previous years' completed goals for the collapsible section
+  const previousYearsCompletedGoals = useMemo(() => {
+    const filtered: Record<number, Goal[]> = {};
+    for (const [year, goals] of Object.entries(filteredCompletedGoalsByYear)) {
+      if (Number(year) !== currentYear && goals.length > 0) {
+        filtered[Number(year)] = goals;
+      }
+    }
+    return filtered;
+  }, [filteredCompletedGoalsByYear, currentYear]);
+  
+  const previousCompletedYears = Object.keys(previousYearsCompletedGoals)
     .map(Number)
     .sort((a, b) => b - a);
 
@@ -130,7 +144,10 @@ export const OrganizedGoalsView = ({
   const totalCompleted = Object.values(filteredCompletedGoalsByYear).reduce(
     (acc, goals) => acc + goals.length, 0
   );
-
+  
+  const previousYearsCompletedCount = Object.values(previousYearsCompletedGoals).reduce(
+    (acc, goals) => acc + goals.length, 0
+  );
   const hasActiveFilters = filters.search || filters.statuses.length > 0 || 
     filters.categories.length > 0 || filters.timeframes.length > 0;
 
@@ -166,16 +183,16 @@ export const OrganizedGoalsView = ({
           )}
 
           {/* Active Goals Section */}
-          {(filteredActiveGoals.length > 0 || !hasActiveFilters) && (
+          {(filteredActiveGoals.length > 0 || currentYearCompletedGoals.length > 0 || !hasActiveFilters) && (
             <section>
               <div className="flex items-center gap-2 mb-4">
                 <h2 className="text-xl font-semibold text-foreground font-serif">Active Goals</h2>
                 <Badge variant="secondary" className="text-xs">
-                  {filteredActiveGoals.length}
+                  {filteredActiveGoals.length + currentYearCompletedGoals.length}
                 </Badge>
               </div>
 
-              <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-2 gap-6'}`}>
+              <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'}`}>
                 {/* Not Started Column */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2 pb-2 border-b border-border">
@@ -243,6 +260,40 @@ export const OrganizedGoalsView = ({
                     )}
                   </div>
                 </div>
+
+                {/* Completed Column (Current Year) */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border">
+                    <Trophy className="h-4 w-4 text-green-600" />
+                    <span className="font-medium text-foreground">Completed</span>
+                    <Badge className="bg-green-100 text-green-800 text-xs ml-auto">
+                      {currentYearCompletedGoals.length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-3 min-h-[100px]">
+                    {currentYearCompletedGoals.length === 0 ? (
+                      <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                        <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-muted-foreground text-sm">
+                          {hasActiveFilters ? 'No matching goals' : 'Complete a goal to see it here'}
+                        </p>
+                      </div>
+                    ) : (
+                      currentYearCompletedGoals.map((goal) => (
+                        <GoalCard
+                          key={goal.id}
+                          goal={goal}
+                          onEdit={onEdit}
+                          onDelete={onDelete}
+                          onStatusChange={onStatusChange}
+                          onClick={onGoalClick}
+                          onDeprioritize={onDeprioritize}
+                          onReprioritize={onReprioritize}
+                        />
+                      ))
+                    )}
+                  </div>
+                </div>
               </div>
             </section>
           )}
@@ -257,7 +308,7 @@ export const OrganizedGoalsView = ({
                 variant="muted"
                 defaultOpen={hasActiveFilters ? true : false}
               >
-                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
+                <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-3`}>
                   {filteredDeprioritizedGoals.map((goal) => (
                     <GoalCard
                       key={goal.id}
@@ -276,33 +327,33 @@ export const OrganizedGoalsView = ({
             </section>
           )}
 
-          {/* Completed Goals Section */}
-          {totalCompleted > 0 && (
+          {/* Previous Years Completed Goals Section */}
+          {previousYearsCompletedCount > 0 && (
             <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Trophy className="h-5 w-5 text-primary" />
-                <h2 className="text-xl font-semibold text-foreground font-serif">Completed Goals</h2>
-                <Badge className="bg-primary/10 text-primary text-xs">
-                  {totalCompleted}
-                </Badge>
-              </div>
-
-              <div className="space-y-3">
-                {completedYears.map((year) => (
-                  <GoalYearGroup
-                    key={year}
-                    year={year}
-                    goals={filteredCompletedGoalsByYear[year]}
-                    currentYear={currentYear}
-                    onEdit={onEdit}
-                    onDelete={onDelete}
-                    onStatusChange={onStatusChange}
-                    onClick={onGoalClick}
-                    onDeprioritize={onDeprioritize}
-                    onReprioritize={onReprioritize}
-                  />
-                ))}
-              </div>
+              <CollapsibleGoalSection
+                title="Previous Years"
+                count={previousYearsCompletedCount}
+                icon={<Trophy className="h-4 w-4 text-green-600" />}
+                variant="muted"
+                defaultOpen={false}
+              >
+                <div className="space-y-3">
+                  {previousCompletedYears.map((year) => (
+                    <GoalYearGroup
+                      key={year}
+                      year={year}
+                      goals={previousYearsCompletedGoals[year]}
+                      currentYear={currentYear}
+                      onEdit={onEdit}
+                      onDelete={onDelete}
+                      onStatusChange={onStatusChange}
+                      onClick={onGoalClick}
+                      onDeprioritize={onDeprioritize}
+                      onReprioritize={onReprioritize}
+                    />
+                  ))}
+                </div>
+              </CollapsibleGoalSection>
             </section>
           )}
 
