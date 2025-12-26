@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import {
@@ -98,6 +99,37 @@ export const GoalCard = ({
     }
     return goal.timeframe;
   };
+
+  const getTimeElapsedProgress = () => {
+    if (goal.timeframe !== 'Custom Date' || !goal.start_date || !goal.target_date) {
+      return null;
+    }
+    
+    const startDate = new Date(goal.start_date);
+    const endDate = new Date(goal.target_date);
+    const now = new Date();
+    
+    // Set times to start of day for accurate comparison
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+    
+    const totalDuration = endDate.getTime() - startDate.getTime();
+    const elapsedDuration = now.getTime() - startDate.getTime();
+    
+    if (totalDuration <= 0) return null;
+    
+    // Clamp between 0 and 100
+    const percentage = Math.max(0, Math.min(100, (elapsedDuration / totalDuration) * 100));
+    
+    return {
+      percentage: Math.round(percentage),
+      isOverdue: now > endDate,
+      hasNotStarted: now < startDate
+    };
+  };
+
+  const timeProgress = getTimeElapsedProgress();
 
   const handleDeleteConfirm = () => {
     onDelete(goal.id);
@@ -255,6 +287,34 @@ export const GoalCard = ({
                 </div>
               )}
             </div>
+            
+            {/* Time elapsed progress bar for custom date range */}
+            {timeProgress && goal.status !== 'completed' && (
+              <div className="space-y-1">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="text-muted-foreground">
+                    {timeProgress.hasNotStarted 
+                      ? "Not started yet" 
+                      : timeProgress.isOverdue 
+                        ? "Overdue" 
+                        : "Time elapsed"}
+                  </span>
+                  <span className={cn(
+                    "font-medium",
+                    timeProgress.isOverdue ? "text-destructive" : "text-muted-foreground"
+                  )}>
+                    {timeProgress.percentage}%
+                  </span>
+                </div>
+                <Progress 
+                  value={timeProgress.percentage} 
+                  className={cn(
+                    "h-1.5",
+                    timeProgress.isOverdue && "[&>div]:bg-destructive"
+                  )}
+                />
+              </div>
+            )}
             
             <div className="flex justify-between items-center text-xs text-muted-foreground pt-2 border-t border-border">
               <span>Created {formatRelativeTime(new Date(goal.created_at).getTime())}</span>
