@@ -27,11 +27,11 @@ const MOOD_OPTIONS = [
 ];
 
 const ENERGY_OPTIONS = [
-  { value: 1, emoji: "🔋", label: "Depleted" },
-  { value: 2, emoji: "🪫", label: "Low" },
+  { value: 1, emoji: "😴", label: "Depleted" },
+  { value: 2, emoji: "🥱", label: "Low" },
   { value: 3, emoji: "⚡", label: "Moderate" },
   { value: 4, emoji: "💪", label: "High" },
-  { value: 5, emoji: "🚀", label: "Peak" },
+  { value: 5, emoji: "🔥", label: "Peak" },
 ];
 
 export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogProps) => {
