@@ -50,24 +50,24 @@ export const EndOfWeekReflection = ({
   }
   
   return (
-    <Card>
+    <Card className="border-amber-500/30 bg-amber-500/5">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          End of Week Reflection
+          <Sparkles className="h-5 w-5 text-amber-500" />
+          Incomplete Objectives Review
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger>
                 <HelpCircle className="h-4 w-4 text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">
-                <p>Reflecting on incomplete objectives helps you understand patterns and improve your planning.</p>
+                <p>Understanding why objectives weren't completed helps you plan better next week.</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </CardTitle>
         <p className="text-sm text-muted-foreground">
-          Take a moment to reflect on objectives you didn't complete
+          Quick notes on why these specific tasks weren't finished (private, not shared)
         </p>
       </CardHeader>
       <CardContent className="space-y-4">

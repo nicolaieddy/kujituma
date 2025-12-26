@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useWeeklyReflection } from "@/hooks/useWeeklyReflection";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
+import { Share2 } from "lucide-react";
 
 interface WeeklyReflectionCardProps {
   initialNotes: string;
@@ -26,18 +27,19 @@ export const WeeklyReflectionCard = ({
   });
 
   return (
-    <Card className={`border-border ${isReadOnly ? 'opacity-75' : ''}`}>
+    <Card className={`border-primary/30 bg-primary/5 ${isReadOnly ? 'opacity-75' : ''}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className={`text-foreground ${isReadOnly ? 'opacity-70' : ''}`}>
-              Weekly Reflection
+            <CardTitle className={`text-foreground flex items-center gap-2 ${isReadOnly ? 'opacity-70' : ''}`}>
+              <Share2 className="h-5 w-5 text-primary" />
+              Weekly Summary
               {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
             </CardTitle>
             <p className="text-muted-foreground text-sm mt-1">
               {isReadOnly 
                 ? "This week has been shared and can no longer be edited"
-                : "This reflection will be included when you share your week with the community"
+                : "Share your overall week highlights with the community (public when you post)"
               }
             </p>
           </div>
@@ -56,7 +58,7 @@ export const WeeklyReflectionCard = ({
           onChange={(e) => reflection.setValue(e.target.value)}
           placeholder={isReadOnly 
             ? "No reflection added for this week" 
-            : "How did this week go? What did you learn? Any insights or challenges? This will be shared with your weekly post."
+            : "What were your wins this week? Any lessons learned or insights to share?"
           }
           className={`min-h-[100px] ${
             isReadOnly ? 'cursor-not-allowed opacity-60' : ''
