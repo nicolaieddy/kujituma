@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Goal } from "@/types/goals";
-import { startOfWeek, subWeeks, format, parseISO, isBefore, isAfter } from "date-fns";
+import { startOfWeek, format, parseISO, isBefore, isAfter } from "date-fns";
 
 export interface HabitStats {
   goal: Goal;
@@ -17,6 +17,13 @@ export interface WeeklyCompletion {
   weekStart: string;
   isCompleted: boolean;
   objectiveId?: string;
+}
+
+export interface StreakCheckResult {
+  previousStreak: number;
+  newStreak: number;
+  isMilestone: boolean;
+  goalTitle: string;
 }
 
 export class HabitStreaksService {
@@ -151,5 +158,58 @@ export class HabitStreaksService {
     const objectives = await this.getRecurringObjectives(goalIds);
 
     return goals.map(goal => this.calculateHabitStats(goal, objectives));
+  }
+
+  /**
+   * Check if completing an objective will result in a streak milestone
+   * Call this BEFORE marking the objective as complete
+   */
+  static async checkStreakMilestone(objectiveId: string): Promise<StreakCheckResult | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    // Get the objective
+    const { data: objective, error: objError } = await supabase
+      .from('weekly_objectives')
+      .select('*, goals(*)')
+      .eq('id', objectiveId)
+      .single();
+
+    if (objError || !objective || !objective.goal_id) return null;
+    
+    const goal = objective.goals as Goal;
+    if (!goal?.is_recurring) return null;
+
+    // Get all objectives for this goal
+    const { data: allObjectives, error: allError } = await supabase
+      .from('weekly_objectives')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('goal_id', objective.goal_id)
+      .order('week_start', { ascending: false });
+
+    if (allError || !allObjectives) return null;
+
+    // Calculate current streak (before this completion)
+    const stats = this.calculateHabitStats(goal, allObjectives);
+    const previousStreak = stats.currentStreak;
+
+    // Simulate what the streak would be if this objective is completed
+    const simulatedObjectives = allObjectives.map(obj => 
+      obj.id === objectiveId ? { ...obj, is_completed: true } : obj
+    );
+    const simulatedStats = this.calculateHabitStats(goal, simulatedObjectives);
+    const newStreak = simulatedStats.currentStreak;
+
+    // Check if hitting a milestone (4, 8, or 12)
+    const milestones = [4, 8, 12];
+    const isMilestone = milestones.includes(newStreak) && newStreak > previousStreak;
+
+    return {
+      previousStreak,
+      newStreak,
+      isMilestone,
+      goalTitle: goal.title
+    };
   }
 }
