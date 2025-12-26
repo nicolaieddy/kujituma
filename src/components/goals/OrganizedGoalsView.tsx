@@ -314,7 +314,7 @@ export const OrganizedGoalsView = ({
                       </Badge>
                     </div>
                     <SortableContext items={notStartedGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
-                      <DroppableColumn id="not_started">
+                      <DroppableColumn id="not_started" isEmpty={notStartedGoals.length === 0}>
                         {notStartedGoals.length === 0 ? (
                           <div className="border-2 border-dashed rounded-lg p-6 text-center">
                             <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
@@ -350,7 +350,7 @@ export const OrganizedGoalsView = ({
                       </Badge>
                     </div>
                     <SortableContext items={inProgressGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
-                      <DroppableColumn id="in_progress">
+                      <DroppableColumn id="in_progress" isEmpty={inProgressGoals.length === 0}>
                         {inProgressGoals.length === 0 ? (
                           <div className="border-2 border-dashed rounded-lg p-6 text-center">
                             <Play className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
@@ -386,7 +386,7 @@ export const OrganizedGoalsView = ({
                       </Badge>
                     </div>
                     <SortableContext items={currentYearCompletedGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
-                      <DroppableColumn id="completed">
+                      <DroppableColumn id="completed" isEmpty={currentYearCompletedGoals.length === 0}>
                         {currentYearCompletedGoals.length === 0 ? (
                           <div className="border-2 border-dashed rounded-lg p-6 text-center">
                             <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
@@ -404,12 +404,12 @@ export const OrganizedGoalsView = ({
                               onStatusChange={onStatusChange}
                               onClick={onGoalClick}
                               onDeprioritize={onDeprioritize}
-                            onReprioritize={onReprioritize}
-                          />
-                        ))
-                      )}
-                    </DroppableColumn>
-                  </SortableContext>
+                              onReprioritize={onReprioritize}
+                            />
+                          ))
+                        )}
+                      </DroppableColumn>
+                    </SortableContext>
                   </div>
                 </div>
 
