@@ -76,7 +76,22 @@ export const GoalCard = ({
     }
   };
 
-  const getTargetDateDisplay = () => {
+  const getDateDisplay = () => {
+    // For custom date range with both dates
+    if (goal.timeframe === 'Custom Date' && (goal.start_date || goal.target_date)) {
+      const startDate = goal.start_date ? new Date(goal.start_date).toLocaleDateString() : null;
+      const endDate = goal.target_date ? new Date(goal.target_date).toLocaleDateString() : null;
+      
+      if (startDate && endDate) {
+        return `${startDate} → ${endDate}`;
+      } else if (startDate) {
+        return `From ${startDate}`;
+      } else if (endDate) {
+        return `Until ${endDate}`;
+      }
+    }
+    
+    // For other timeframes or when no custom dates set
     if (goal.target_date) {
       const targetDate = new Date(goal.target_date);
       return targetDate.toLocaleDateString();
@@ -223,7 +238,7 @@ export const GoalCard = ({
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
               <div className="flex items-center gap-1">
                 <Calendar className="h-3 w-3" />
-                <span>{getTargetDateDisplay()}</span>
+                <span>{getDateDisplay()}</span>
               </div>
               
               {goal.category && (
