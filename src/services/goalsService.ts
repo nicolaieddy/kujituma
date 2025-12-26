@@ -1,6 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 import { Goal, CreateGoalData, UpdateGoalData, GoalStatusHistory } from "@/types/goals";
+import { parseGoal, parseGoals } from "@/utils/goalUtils";
 
 export class GoalsService {
   static async createGoal(data: CreateGoalData): Promise<Goal> {
@@ -17,13 +18,14 @@ export class GoalsService {
         is_recurring: data.is_recurring ?? false,
         recurrence_frequency: data.is_recurring ? (data.recurrence_frequency || 'weekly') : null,
         recurring_objective_text: data.is_recurring ? (data.recurring_objective_text || null) : null,
+        habit_items: data.habit_items ? JSON.parse(JSON.stringify(data.habit_items)) : [],
         user_id: (await supabase.auth.getUser()).data.user?.id
       })
       .select()
       .single();
 
     if (error) throw error;
-    return goal as Goal;
+    return parseGoal(goal);
   }
 
   static async getGoals(): Promise<Goal[]> {
@@ -39,7 +41,7 @@ export class GoalsService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (goals || []) as Goal[];
+    return parseGoals(goals);
   }
 
   static async deprioritizeGoal(id: string): Promise<Goal> {
@@ -54,7 +56,7 @@ export class GoalsService {
       .single();
 
     if (error) throw error;
-    return goal as Goal;
+    return parseGoal(goal);
   }
 
   static async reprioritizeGoal(id: string): Promise<Goal> {
@@ -69,7 +71,7 @@ export class GoalsService {
       .single();
 
     if (error) throw error;
-    return goal as Goal;
+    return parseGoal(goal);
   }
 
   static async getPublicGoals(userId: string): Promise<Goal[]> {
@@ -83,19 +85,25 @@ export class GoalsService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (goals || []) as Goal[];
+    return parseGoals(goals);
   }
 
   static async updateGoal(id: string, data: UpdateGoalData): Promise<Goal> {
+    // Convert habit_items to JSON-compatible format for Supabase
+    const updateData: any = { ...data };
+    if (data.habit_items) {
+      updateData.habit_items = JSON.parse(JSON.stringify(data.habit_items));
+    }
+    
     const { data: goal, error } = await supabase
       .from('goals')
-      .update(data)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
 
     if (error) throw error;
-    return goal as Goal;
+    return parseGoal(goal);
   }
 
   static async deleteGoal(id: string): Promise<void> {

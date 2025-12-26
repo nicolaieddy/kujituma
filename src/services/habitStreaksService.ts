@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { Goal } from "@/types/goals";
+import { parseGoal, parseGoals } from "@/utils/goalUtils";
 import { startOfWeek, format, parseISO, isBefore, isAfter } from "date-fns";
 
 export interface HabitStats {
@@ -43,7 +44,7 @@ export class HabitStreaksService {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return (data || []) as Goal[];
+    return parseGoals(data);
   }
 
   /**
@@ -195,8 +196,8 @@ export class HabitStreaksService {
       .single();
 
     if (objError || !objective || !objective.goal_id) return null;
-    
-    const goal = objective.goals as Goal;
+
+    const goal = parseGoal(objective.goals);
     if (!goal?.is_recurring) return null;
 
     // Get all objectives for this goal
