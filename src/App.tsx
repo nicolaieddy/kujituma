@@ -12,8 +12,9 @@ import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
+import { GoalsService } from "@/services/goalsService";
 
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
@@ -32,6 +33,22 @@ const LoadingSpinner = () => (
   </div>
 );
 
+// Prefetch goals data when user is authenticated
+const usePrefetchGoals = (queryClient: QueryClient) => {
+  const { user } = useAuth();
+  
+  useEffect(() => {
+    if (user?.id) {
+      // Prefetch goals data in background
+      queryClient.prefetchQuery({
+        queryKey: ['goals', user.id],
+        queryFn: GoalsService.getGoals,
+        staleTime: 1000 * 60 * 5,
+      });
+    }
+  }, [user?.id, queryClient]);
+};
+
 // Component to conditionally render landing page or dashboard based on auth
 const HomePage = () => {
   const { user, loading } = useAuth();
@@ -43,9 +60,11 @@ const HomePage = () => {
   return user ? <Goals /> : <LandingPage />;
 };
 
-const AppContent = () => {
+const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
   // Track user activity to update last_active_at timestamp
   useUserActivity();
+  // Prefetch goals data when user is authenticated
+  usePrefetchGoals(queryClient);
 
   return (
     <Suspense fallback={<LoadingSpinner />}>
@@ -88,7 +107,7 @@ const App = () => {
           <AuthProvider>
             <TourProvider>
               <HabitsProvider>
-                <AppContent />
+                <AppContent queryClient={queryClient} />
                 <InstallPrompt />
               </HabitsProvider>
             </TourProvider>

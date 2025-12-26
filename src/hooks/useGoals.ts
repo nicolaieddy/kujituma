@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GoalsService } from "@/services/goalsService";
 import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
@@ -16,6 +16,8 @@ export const useGoals = () => {
     queryKey: ['goals', user?.id],
     queryFn: GoalsService.getGoals,
     enabled: !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes - goals don't change often
+    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
   });
 
   const createGoalMutation = useMutation({
@@ -226,41 +228,52 @@ export const useGoals = () => {
     reorderGoalMutation.mutate(reorderedGoals);
   };
 
-  // Organize goals by status
-  const activeGoals = goals.filter(goal => 
-    goal.status === 'not_started' || goal.status === 'in_progress'
-  );
-  
-  const deprioritizedGoals = goals.filter(goal => goal.status === 'deprioritized');
-  
-  const completedGoals = goals.filter(goal => goal.status === 'completed');
+  // Memoize goal organization to avoid recomputation on every render
+  const { activeGoals, deprioritizedGoals, completedGoals, completedGoalsByYear, previousYearUnfinishedGoals, goalsByStatus } = useMemo(() => {
+    const active = goals.filter(goal => 
+      goal.status === 'not_started' || goal.status === 'in_progress'
+    );
+    
+    const deprioritized = goals.filter(goal => goal.status === 'deprioritized');
+    
+    const completed = goals.filter(goal => goal.status === 'completed');
 
-  // Group completed goals by year
-  const completedGoalsByYear = completedGoals.reduce((acc, goal) => {
-    const year = goal.completed_at 
-      ? new Date(goal.completed_at).getFullYear() 
-      : new Date(goal.created_at).getFullYear();
-    if (!acc[year]) acc[year] = [];
-    acc[year].push(goal);
-    return acc;
-  }, {} as Record<number, Goal[]>);
+    // Group completed goals by year
+    const completedByYear = completed.reduce((acc, goal) => {
+      const year = goal.completed_at 
+        ? new Date(goal.completed_at).getFullYear() 
+        : new Date(goal.created_at).getFullYear();
+      if (!acc[year]) acc[year] = [];
+      acc[year].push(goal);
+      return acc;
+    }, {} as Record<number, Goal[]>);
 
-  // Get previous year goals that need carry-over consideration
-  const currentYear = new Date().getFullYear();
-  const previousYearUnfinishedGoals = goals.filter(goal => {
-    const goalYear = new Date(goal.created_at).getFullYear();
-    return goalYear < currentYear && 
-           goal.status !== 'completed' && 
-           goal.status !== 'deleted' &&
-           goal.status !== 'deprioritized';
-  });
+    // Get previous year goals that need carry-over consideration
+    const currentYear = new Date().getFullYear();
+    const previousUnfinished = goals.filter(goal => {
+      const goalYear = new Date(goal.created_at).getFullYear();
+      return goalYear < currentYear && 
+             goal.status !== 'completed' && 
+             goal.status !== 'deleted' &&
+             goal.status !== 'deprioritized';
+    });
 
-  const goalsByStatus = {
-    not_started: goals.filter(goal => goal.status === 'not_started'),
-    in_progress: goals.filter(goal => goal.status === 'in_progress'),
-    completed: goals.filter(goal => goal.status === 'completed'),
-    deprioritized: goals.filter(goal => goal.status === 'deprioritized'),
-  };
+    const byStatus = {
+      not_started: goals.filter(goal => goal.status === 'not_started'),
+      in_progress: goals.filter(goal => goal.status === 'in_progress'),
+      completed: completed,
+      deprioritized: deprioritized,
+    };
+
+    return {
+      activeGoals: active,
+      deprioritizedGoals: deprioritized,
+      completedGoals: completed,
+      completedGoalsByYear: completedByYear,
+      previousYearUnfinishedGoals: previousUnfinished,
+      goalsByStatus: byStatus
+    };
+  }, [goals]);
 
   return {
     goals,

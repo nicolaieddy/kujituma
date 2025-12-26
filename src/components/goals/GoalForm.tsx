@@ -352,7 +352,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 <PopoverContent className="w-auto p-0 z-[300]" align="start">
                   <Calendar
                     mode="single"
-                    captionLayout="dropdown-buttons"
+                    captionLayout="dropdown"
                     fromYear={2020}
                     toYear={2100}
                     selected={formData.start_date ? parseISO(formData.start_date) : undefined}
@@ -385,7 +385,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 <PopoverContent className="w-auto p-0 z-[300]" align="start">
                   <Calendar
                     mode="single"
-                    captionLayout="dropdown-buttons"
+                    captionLayout="dropdown"
                     fromYear={2020}
                     toYear={2100}
                     selected={formData.target_date ? parseISO(formData.target_date) : undefined}
