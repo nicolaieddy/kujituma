@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Goal } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { startOfWeek, addWeeks, format, isBefore, isAfter, parseISO } from "date-fns";
-import { CalendarDays, CheckCircle2, XCircle, Circle, Clock } from "lucide-react";
+import { CalendarDays, CheckCircle2, XCircle, Circle, Clock, Flame, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HabitCompletionTimelineProps {
@@ -17,6 +18,12 @@ interface WeekData {
   weekNumber: number;
   status: 'completed' | 'missed' | 'pending' | 'future' | 'not_due';
   objective?: WeeklyObjective;
+}
+
+interface StreakData {
+  currentStreak: number;
+  longestStreak: number;
+  isAtLongest: boolean;
 }
 
 export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTimelineProps) => {
@@ -84,6 +91,58 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
     return weeks;
   }, [goal, objectives]);
 
+  // Calculate streaks from timeline data
+  const streakData = useMemo((): StreakData => {
+    // Get only past and current weeks that are trackable (not future, not not_due)
+    const trackableWeeks = timelineData.filter(w => 
+      w.status === 'completed' || w.status === 'missed' || w.status === 'pending'
+    );
+    
+    if (trackableWeeks.length === 0) {
+      return { currentStreak: 0, longestStreak: 0, isAtLongest: false };
+    }
+
+    // Sort by week start date (oldest first)
+    const sortedWeeks = [...trackableWeeks].sort((a, b) => 
+      a.weekStart.localeCompare(b.weekStart)
+    );
+
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+
+    // Calculate longest streak and build streak history
+    for (const week of sortedWeeks) {
+      if (week.status === 'completed') {
+        tempStreak++;
+        longestStreak = Math.max(longestStreak, tempStreak);
+      } else if (week.status === 'missed') {
+        tempStreak = 0;
+      }
+      // 'pending' doesn't break or extend the streak calculation
+    }
+
+    // Calculate current streak (from most recent backwards)
+    const reversedWeeks = [...sortedWeeks].reverse();
+    for (const week of reversedWeeks) {
+      if (week.status === 'pending') {
+        // Skip current week in progress
+        continue;
+      }
+      if (week.status === 'completed') {
+        currentStreak++;
+      } else {
+        break; // Streak broken
+      }
+    }
+
+    return {
+      currentStreak,
+      longestStreak,
+      isAtLongest: currentStreak > 0 && currentStreak >= longestStreak
+    };
+  }, [timelineData]);
+
   const getWeekNumber = (weekStart: string) => {
     const startDate = new Date(weekStart);
     const startOfYear = new Date(startDate.getFullYear(), 0, 1);
@@ -110,16 +169,57 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
   return (
     <Card className="glass-card shadow-soft">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <CalendarDays className="h-5 w-5 text-primary" />
             <CardTitle className="text-lg">Completion Timeline</CardTitle>
           </div>
-          {totalTracked > 0 && (
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">{completionRate}%</span> completion rate
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Current Streak Badge */}
+            {streakData.currentStreak > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "gap-1 cursor-help",
+                      streakData.isAtLongest 
+                        ? "border-amber-500/50 text-amber-600 bg-amber-500/10" 
+                        : "border-primary/30 text-primary bg-primary/5"
+                    )}
+                  >
+                    <Flame className="h-3 w-3" />
+                    {streakData.currentStreak} week{streakData.currentStreak !== 1 ? 's' : ''}
+                    {streakData.isAtLongest && <Trophy className="h-3 w-3 ml-0.5" />}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Current streak: {streakData.currentStreak} consecutive week{streakData.currentStreak !== 1 ? 's' : ''}</p>
+                  {streakData.isAtLongest && <p className="text-amber-500 text-xs">Personal best!</p>}
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {/* Longest Streak Badge (only show if different from current) */}
+            {streakData.longestStreak > 0 && !streakData.isAtLongest && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge variant="outline" className="gap-1 cursor-help border-muted-foreground/30 text-muted-foreground bg-muted/30">
+                    <Trophy className="h-3 w-3" />
+                    Best: {streakData.longestStreak}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Longest streak: {streakData.longestStreak} week{streakData.longestStreak !== 1 ? 's' : ''}</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {/* Completion Rate */}
+            {totalTracked > 0 && (
+              <span className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{completionRate}%</span> rate
+              </span>
+            )}
+          </div>
         </div>
         <p className="text-muted-foreground text-sm">
           Track your habit completion over time
