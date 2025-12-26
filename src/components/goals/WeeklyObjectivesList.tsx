@@ -181,8 +181,8 @@ export const WeeklyObjectivesList = ({
 
   return (
     <div>
-      <div className="mb-3 flex items-center justify-between">
-        <Label className="text-foreground font-medium text-lg flex items-center gap-2">
+      <div className="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <Label className="text-foreground font-medium text-base sm:text-lg flex items-center gap-2">
           🎯 This Week's Objectives
           {isWeekCompleted && <span className="text-xs text-muted-foreground">🔒 Locked</span>}
         </Label>
@@ -191,10 +191,11 @@ export const WeeklyObjectivesList = ({
             variant="outline"
             size="sm"
             onClick={onOpenCarryOver}
-            className="text-xs"
+            className="text-xs w-full sm:w-auto"
           >
             <ArrowRight className="h-3 w-3 mr-1" />
-            Carry Over From Previous Weeks
+            <span className="sm:inline">Carry Over</span>
+            <span className="hidden sm:inline"> From Previous Weeks</span>
           </Button>
         )}
       </div>
@@ -239,8 +240,8 @@ export const WeeklyObjectivesList = ({
                       transition={{ duration: 0.2, delay: index * 0.05 }}
                       className="space-y-2"
                     >
-                      <div className="flex items-center gap-3 group">
-                <div className="relative">
+                      <div className="flex items-start sm:items-center gap-2 sm:gap-3 group">
+                <div className="relative mt-0.5 sm:mt-0 flex-shrink-0">
                   <Checkbox
                     checked={objective.is_completed}
                     onCheckedChange={(checked) => {
@@ -283,9 +284,9 @@ export const WeeklyObjectivesList = ({
                      autoFocus
                    />
                  ) : (
-                   <div className={`flex-1 px-2 py-1 transition-all duration-300 text-foreground`}>
-                     <div className="flex items-center gap-2">
-                       <span className={`${
+                   <div className={`flex-1 px-1 sm:px-2 py-1 transition-all duration-300 text-foreground min-w-0`}>
+                     <div className="flex flex-wrap items-start sm:items-center gap-1 sm:gap-2">
+                       <span className={`text-sm sm:text-base break-words ${
                          objective.is_completed 
                            ? 'line-through decoration-2 decoration-muted-foreground' 
                            : ''
@@ -412,7 +413,7 @@ export const WeeklyObjectivesList = ({
                  )}
                 
                 {!isWeekCompleted && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
                     {isEditing ? (
                       <>
                         <Button
@@ -420,7 +421,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleSaveEdit(objective.id)}
-                          className="text-primary hover:text-primary hover:bg-accent"
+                          className="text-primary hover:text-primary hover:bg-accent h-8 w-8 sm:h-9 sm:w-9 p-0"
                         >
                           <Check className="h-4 w-4" />
                         </Button>
@@ -429,7 +430,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={handleCancelEdit}
-                          className="text-muted-foreground hover:text-foreground hover:bg-accent"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent h-8 w-8 sm:h-9 sm:w-9 p-0"
                         >
                           <RotateCcw className="h-4 w-4" />
                         </Button>
@@ -441,7 +442,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => handleEditObjective(objective)}
-                          className="text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-9 sm:w-9 p-0"
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -450,7 +451,7 @@ export const WeeklyObjectivesList = ({
                           variant="ghost"
                           size="sm"
                           onClick={() => onDeleteObjective(objective.id)}
-                          className="text-muted-foreground hover:text-foreground hover:bg-accent opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="text-muted-foreground hover:text-foreground hover:bg-accent sm:opacity-0 sm:group-hover:opacity-100 transition-opacity h-8 w-8 sm:h-9 sm:w-9 p-0"
                         >
                           <X className="h-4 w-4" />
                         </Button>
