@@ -150,6 +150,7 @@ export const GoalCard = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showDeprioritizeDialog, setShowDeprioritizeDialog] = useState(false);
+  const [showPauseDialog, setShowPauseDialog] = useState(false);
   const config = STATUS_CONFIG[goal.status] || STATUS_CONFIG.not_started;
   const IconComponent = config.icon;
 
@@ -239,6 +240,11 @@ export const GoalCard = ({
   const handleDeprioritizeConfirm = () => {
     onDeprioritize?.(goal.id);
     setShowDeprioritizeDialog(false);
+  };
+
+  const handlePauseConfirm = () => {
+    onPauseToggle?.(goal.id, true);
+    setShowPauseDialog(false);
   };
 
   return (
@@ -346,19 +352,17 @@ export const GoalCard = ({
                 
                 {/* Pause/Resume for recurring goals */}
                 {goal.is_recurring && onPauseToggle && goal.status !== 'completed' && goal.status !== 'deprioritized' && (
-                  <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPauseToggle(goal.id, !goal.is_paused); }}>
-                    {goal.is_paused ? (
-                      <>
-                        <PlayCircle className="h-4 w-4 mr-2" />
-                        Resume Habit
-                      </>
-                    ) : (
-                      <>
-                        <Pause className="h-4 w-4 mr-2" />
-                        Pause Habit
-                      </>
-                    )}
-                  </DropdownMenuItem>
+                  goal.is_paused ? (
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPauseToggle(goal.id, false); }}>
+                      <PlayCircle className="h-4 w-4 mr-2" />
+                      Resume Habit
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setShowPauseDialog(true); }}>
+                      <Pause className="h-4 w-4 mr-2" />
+                      Pause Habit
+                    </DropdownMenuItem>
+                  )
                 )}
                 
                 {/* Deprioritize/Reprioritize actions */}
@@ -529,6 +533,34 @@ export const GoalCard = ({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDeprioritizeConfirm}>
               Deprioritize
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Pause Habit Confirmation Dialog */}
+      <AlertDialog open={showPauseDialog} onOpenChange={setShowPauseDialog}>
+        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Pause className="h-5 w-5 text-amber-500" />
+              Pause Habit
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Are you sure you want to pause "{goal.title}"?</p>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3 text-amber-700 dark:text-amber-400 text-sm">
+                <strong>Warning:</strong> Pausing this habit will end your current streak. 
+                No new weekly objectives will be created until you resume.
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handlePauseConfirm}
+              className="bg-amber-500 text-white hover:bg-amber-600"
+            >
+              Pause Habit
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
