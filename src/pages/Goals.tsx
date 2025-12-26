@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
+import { useHabitStats } from "@/hooks/useHabitStats";
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { OrganizedGoalsView } from "@/components/goals/OrganizedGoalsView";
@@ -39,6 +40,16 @@ const Goals = () => {
     reorderGoals
   } = useGoals();
   const { objectives, createObjective, updateObjective, deleteObjective, isLoading: objectivesLoading } = useAllWeeklyObjectives();
+  const { habitStats } = useHabitStats();
+  
+  // Create a map of goal IDs to current streaks for quick lookup
+  const habitStreaks = useMemo(() => {
+    const streakMap: Record<string, number> = {};
+    habitStats.forEach(stat => {
+      streakMap[stat.goal.id] = stat.currentStreak;
+    });
+    return streakMap;
+  }, [habitStats]);
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -259,6 +270,7 @@ const Goals = () => {
                       onDeprioritizeAll={handleDeprioritizeAll}
                       onReorder={handleGoalReorder}
                       isLoading={goalsLoading}
+                      habitStreaks={habitStreaks}
                     />
                   )}
                 </>
