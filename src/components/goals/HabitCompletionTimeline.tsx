@@ -26,6 +26,13 @@ interface StreakData {
   isAtLongest: boolean;
 }
 
+const getWeekNumber = (weekStart: string) => {
+  const startDate = new Date(weekStart);
+  const startOfYear = new Date(startDate.getFullYear(), 0, 1);
+  const pastDaysOfYear = (startDate.getTime() - startOfYear.getTime()) / 86400000;
+  return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+};
+
 export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTimelineProps) => {
   const timelineData = useMemo(() => {
     if (!goal.is_recurring) return [];
@@ -149,12 +156,6 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
     };
   }, [timelineData]);
 
-  const getWeekNumber = (weekStart: string) => {
-    const startDate = new Date(weekStart);
-    const startOfYear = new Date(startDate.getFullYear(), 0, 1);
-    const pastDaysOfYear = (startDate.getTime() - startOfYear.getTime()) / 86400000;
-    return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
-  };
 
   const formatWeekLabel = (weekStart: string) => {
     const start = new Date(weekStart);
