@@ -11,7 +11,7 @@ import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, differenceInDays, startOfDay } from "date-fns";
 import { Goal } from "@/types/goals";
 import {
   AlertDialog,
@@ -279,6 +279,16 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
                       <span>
                         Starts {goal.start_date ? format(parseISO(goal.start_date), 'MMM d, yyyy') : 'Soon'}
                       </span>
+                      {goal.start_date && (
+                        <Badge variant="outline" className="ml-1 text-xs border-blue-500/30 text-blue-500">
+                          {(() => {
+                            const daysUntil = differenceInDays(startOfDay(parseISO(goal.start_date)), startOfDay(new Date()));
+                            if (daysUntil === 0) return 'Starts today';
+                            if (daysUntil === 1) return 'Starts tomorrow';
+                            return `${daysUntil} days`;
+                          })()}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-1">
                       {onEditGoal && (
