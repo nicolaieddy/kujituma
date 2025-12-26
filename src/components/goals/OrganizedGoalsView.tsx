@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { Goal, GoalStatus } from "@/types/goals";
 import { GoalCard } from "./GoalCard";
+import { DraggableGoalCard } from "./DraggableGoalCard";
+import { DroppableColumn } from "./DroppableColumn";
 import { CollapsibleGoalSection } from "./CollapsibleGoalSection";
 import { GoalYearGroup } from "./GoalYearGroup";
 import { CarryOverBanner } from "./CarryOverBanner";
@@ -8,6 +10,8 @@ import { GoalSearchFilter, GoalFilters } from "./GoalSearchFilter";
 import { Clock, Play, Archive, Trophy, SearchX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { toast } from "sonner";
 
 interface OrganizedGoalsViewProps {
   activeGoals: Goal[];
@@ -50,6 +54,65 @@ export const OrganizedGoalsView = ({
   const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
   const [filters, setFilters] = useState<GoalFilters>(initialFilters);
+  const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
+
+  // Drag and drop sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 200,
+        tolerance: 5,
+      },
+    })
+  );
+
+  // Map column IDs to statuses
+  const columnStatusMap: Record<string, GoalStatus> = {
+    'not_started': 'not_started',
+    'in_progress': 'in_progress',
+    'completed': 'completed',
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const { active } = event;
+    const goal = active.data.current?.goal as Goal;
+    if (goal) {
+      setActiveGoal(goal);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveGoal(null);
+
+    if (!over) return;
+
+    const goalId = active.id as string;
+    const goal = active.data.current?.goal as Goal;
+    const targetColumnId = over.id as string;
+
+    // Check if dropped on a valid column
+    if (columnStatusMap[targetColumnId] && goal) {
+      const newStatus = columnStatusMap[targetColumnId];
+      
+      // Only update if status changed
+      if (goal.status !== newStatus) {
+        onStatusChange(goalId, newStatus);
+        
+        const statusLabels = {
+          'not_started': 'Not Started',
+          'in_progress': 'In Progress',
+          'completed': 'Completed',
+        };
+        toast.success(`Goal moved to ${statusLabels[newStatus]}`);
+      }
+    }
+  };
 
   // Get all goals for filtering
   const allGoals = useMemo(() => {
@@ -190,111 +253,136 @@ export const OrganizedGoalsView = ({
                 <Badge variant="secondary" className="text-xs">
                   {filteredActiveGoals.length + currentYearCompletedGoals.length}
                 </Badge>
+                {!isMobile && (
+                  <span className="text-xs text-muted-foreground ml-2">
+                    Drag to move between columns
+                  </span>
+                )}
               </div>
 
-              <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'}`}>
-                {/* Not Started Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-border">
-                    <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span className="font-medium text-foreground">Not Started</span>
-                    <Badge variant="secondary" className="text-xs ml-auto">
-                      {notStartedGoals.length}
-                    </Badge>
+              <DndContext
+                sensors={sensors}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+              >
+                <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-3 gap-6'}`}>
+                  {/* Not Started Column */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border">
+                      <Clock className="h-4 w-4 text-muted-foreground" />
+                      <span className="font-medium text-foreground">Not Started</span>
+                      <Badge variant="secondary" className="text-xs ml-auto">
+                        {notStartedGoals.length}
+                      </Badge>
+                    </div>
+                    <DroppableColumn id="not_started">
+                      {notStartedGoals.length === 0 ? (
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                          <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground text-sm">
+                            {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
+                          </p>
+                        </div>
+                      ) : (
+                        notStartedGoals.map((goal) => (
+                          <DraggableGoalCard
+                            key={goal.id}
+                            goal={goal}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onStatusChange={onStatusChange}
+                            onClick={onGoalClick}
+                            onDeprioritize={onDeprioritize}
+                            onReprioritize={onReprioritize}
+                          />
+                        ))
+                      )}
+                    </DroppableColumn>
                   </div>
-                  <div className="space-y-3 min-h-[100px]">
-                    {notStartedGoals.length === 0 ? (
-                      <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                        <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-muted-foreground text-sm">
-                          {hasActiveFilters ? 'No matching goals' : 'No goals waiting to start'}
-                        </p>
-                      </div>
-                    ) : (
-                      notStartedGoals.map((goal) => (
-                        <GoalCard
-                          key={goal.id}
-                          goal={goal}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onStatusChange={onStatusChange}
-                          onClick={onGoalClick}
-                          onDeprioritize={onDeprioritize}
-                          onReprioritize={onReprioritize}
-                        />
-                      ))
-                    )}
+
+                  {/* In Progress Column */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border">
+                      <Play className="h-4 w-4 text-primary" />
+                      <span className="font-medium text-foreground">In Progress</span>
+                      <Badge className="bg-primary/10 text-primary text-xs ml-auto">
+                        {inProgressGoals.length}
+                      </Badge>
+                    </div>
+                    <DroppableColumn id="in_progress">
+                      {inProgressGoals.length === 0 ? (
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                          <Play className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground text-sm">
+                            {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
+                          </p>
+                        </div>
+                      ) : (
+                        inProgressGoals.map((goal) => (
+                          <DraggableGoalCard
+                            key={goal.id}
+                            goal={goal}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onStatusChange={onStatusChange}
+                            onClick={onGoalClick}
+                            onDeprioritize={onDeprioritize}
+                            onReprioritize={onReprioritize}
+                          />
+                        ))
+                      )}
+                    </DroppableColumn>
+                  </div>
+
+                  {/* Completed Column (Current Year) */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 pb-2 border-b border-border">
+                      <Trophy className="h-4 w-4 text-green-600" />
+                      <span className="font-medium text-foreground">Completed</span>
+                      <Badge className="bg-green-100 text-green-800 text-xs ml-auto">
+                        {currentYearCompletedGoals.length}
+                      </Badge>
+                    </div>
+                    <DroppableColumn id="completed">
+                      {currentYearCompletedGoals.length === 0 ? (
+                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                          <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                          <p className="text-muted-foreground text-sm">
+                            {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
+                          </p>
+                        </div>
+                      ) : (
+                        currentYearCompletedGoals.map((goal) => (
+                          <DraggableGoalCard
+                            key={goal.id}
+                            goal={goal}
+                            onEdit={onEdit}
+                            onDelete={onDelete}
+                            onStatusChange={onStatusChange}
+                            onClick={onGoalClick}
+                            onDeprioritize={onDeprioritize}
+                            onReprioritize={onReprioritize}
+                          />
+                        ))
+                      )}
+                    </DroppableColumn>
                   </div>
                 </div>
 
-                {/* In Progress Column */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-border">
-                    <Play className="h-4 w-4 text-primary" />
-                    <span className="font-medium text-foreground">In Progress</span>
-                    <Badge className="bg-primary/10 text-primary text-xs ml-auto">
-                      {inProgressGoals.length}
-                    </Badge>
-                  </div>
-                  <div className="space-y-3 min-h-[100px]">
-                    {inProgressGoals.length === 0 ? (
-                      <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                        <Play className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-muted-foreground text-sm">
-                          {hasActiveFilters ? 'No matching goals' : 'No goals in progress'}
-                        </p>
-                      </div>
-                    ) : (
-                      inProgressGoals.map((goal) => (
-                        <GoalCard
-                          key={goal.id}
-                          goal={goal}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onStatusChange={onStatusChange}
-                          onClick={onGoalClick}
-                          onDeprioritize={onDeprioritize}
-                          onReprioritize={onReprioritize}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {/* Completed Column (Current Year) */}
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 pb-2 border-b border-border">
-                    <Trophy className="h-4 w-4 text-green-600" />
-                    <span className="font-medium text-foreground">Completed</span>
-                    <Badge className="bg-green-100 text-green-800 text-xs ml-auto">
-                      {currentYearCompletedGoals.length}
-                    </Badge>
-                  </div>
-                  <div className="space-y-3 min-h-[100px]">
-                    {currentYearCompletedGoals.length === 0 ? (
-                      <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                        <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                        <p className="text-muted-foreground text-sm">
-                          {hasActiveFilters ? 'No matching goals' : 'Complete a goal to see it here'}
-                        </p>
-                      </div>
-                    ) : (
-                      currentYearCompletedGoals.map((goal) => (
-                        <GoalCard
-                          key={goal.id}
-                          goal={goal}
-                          onEdit={onEdit}
-                          onDelete={onDelete}
-                          onStatusChange={onStatusChange}
-                          onClick={onGoalClick}
-                          onDeprioritize={onDeprioritize}
-                          onReprioritize={onReprioritize}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              </div>
+                {/* Drag Overlay */}
+                <DragOverlay>
+                  {activeGoal ? (
+                    <div className="opacity-90 rotate-2 scale-105">
+                      <GoalCard
+                        goal={activeGoal}
+                        onEdit={() => {}}
+                        onDelete={() => {}}
+                        onStatusChange={() => {}}
+                      />
+                    </div>
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
             </section>
           )}
 
