@@ -113,16 +113,16 @@ export const useGoals = () => {
   });
 
   const reorderGoalMutation = useMutation({
-    mutationFn: ({ goalId, newOrderIndex }: { goalId: string; newOrderIndex: number }) =>
-      GoalsService.updateGoalOrder(goalId, newOrderIndex),
+    mutationFn: (reorderedGoals: { id: string; order_index: number }[]) =>
+      GoalsService.reorderGoals(reorderedGoals),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
     },
     onError: (error) => {
-      console.error('Error reordering goal:', error);
+      console.error('Error reordering goals:', error);
       toast({
         title: "Error",
-        description: "Failed to reorder goal. Please try again.",
+        description: "Failed to reorder goals. Please try again.",
         variant: "destructive",
       });
     },
@@ -148,8 +148,8 @@ export const useGoals = () => {
     reprioritizeMutation.mutate(id);
   };
 
-  const reorderGoal = (goalId: string, newOrderIndex: number) => {
-    reorderGoalMutation.mutate({ goalId, newOrderIndex });
+  const reorderGoals = (reorderedGoals: { id: string; order_index: number }[]) => {
+    reorderGoalMutation.mutate(reorderedGoals);
   };
 
   // Organize goals by status
@@ -203,7 +203,7 @@ export const useGoals = () => {
     deleteGoal,
     deprioritizeGoal,
     reprioritizeGoal,
-    reorderGoal,
+    reorderGoals,
     isCreating: createGoalMutation.isPending,
     isUpdating: updateGoalMutation.isPending,
     isDeleting: deleteGoalMutation.isPending,
