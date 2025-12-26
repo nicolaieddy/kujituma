@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Flame, Target, TrendingUp, Plus } from "lucide-react";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitCard } from "./HabitCard";
+import { HabitDetailModal } from "./HabitDetailModal";
+import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 interface HabitsViewProps {
@@ -11,8 +14,24 @@ interface HabitsViewProps {
 }
 
 export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
-  const { habitStats, isLoading, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
+  const { habitStats, isLoading, refetch, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
   const isMobile = useIsMobile();
+  const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+
+  const handleHabitClick = (stats: HabitStats) => {
+    setSelectedHabit(stats);
+    setShowDetailModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowDetailModal(false);
+    setSelectedHabit(null);
+  };
+
+  const handleUpdate = () => {
+    refetch();
+  };
 
   if (isLoading) {
     return (
@@ -124,7 +143,11 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
             {activeHabitsList.map(stats => (
-              <HabitCard key={stats.goal.id} habitStats={stats} />
+              <HabitCard 
+                key={stats.goal.id} 
+                habitStats={stats} 
+                onClick={() => handleHabitClick(stats)}
+              />
             ))}
           </div>
         </div>
@@ -141,7 +164,11 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
             {inactiveHabitsList.map(stats => (
-              <HabitCard key={stats.goal.id} habitStats={stats} />
+              <HabitCard 
+                key={stats.goal.id} 
+                habitStats={stats}
+                onClick={() => handleHabitClick(stats)}
+              />
             ))}
           </div>
         </div>
@@ -160,6 +187,14 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
           </Button>
         </div>
       )}
+
+      {/* Habit Detail Modal */}
+      <HabitDetailModal
+        habitStats={selectedHabit}
+        isOpen={showDetailModal}
+        onClose={handleCloseModal}
+        onUpdate={handleUpdate}
+      />
     </div>
   );
 };
