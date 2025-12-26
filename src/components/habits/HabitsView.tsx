@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock } from "lucide-react";
+import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock, Pencil, Trash2 } from "lucide-react";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { useGoals } from "@/hooks/useGoals";
 import { HabitCard } from "./HabitCard";
@@ -13,17 +13,29 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { format, parseISO } from "date-fns";
 import { Goal } from "@/types/goals";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface HabitsViewProps {
   onCreateGoal?: () => void;
+  onEditGoal?: (goal: Goal) => void;
 }
 
-export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
+export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   const { habitStats, futureHabits, isLoading, refetch, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
-  const { togglePauseGoal } = useGoals();
+  const { togglePauseGoal, deleteGoal } = useGoals();
   const isMobile = useIsMobile();
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
 
   const handleHabitClick = (stats: HabitStats) => {
     setSelectedHabit(stats);
@@ -43,6 +55,15 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
     e.stopPropagation();
     togglePauseGoal(goalId, false);
     refetch();
+  };
+
+  const handleDeleteScheduledHabit = () => {
+    if (goalToDelete) {
+      deleteGoal(goalToDelete.id);
+      setGoalToDelete(null);
+      // Refetch after a short delay to let the mutation complete
+      setTimeout(() => refetch(), 500);
+    }
   };
 
   if (isLoading) {
@@ -240,23 +261,45 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
               <Card key={goal.id} className="glass-card border-dashed border-blue-500/30">
                 <CardContent className="pt-4 pb-4">
                   <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h4 className="font-medium text-foreground">{goal.title}</h4>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-foreground truncate">{goal.title}</h4>
                       {goal.description && (
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                           {goal.description}
                         </p>
                       )}
                     </div>
-                    <Badge variant="secondary" className="ml-2 bg-blue-500/10 text-blue-600">
+                    <Badge variant="secondary" className="ml-2 shrink-0 bg-blue-500/10 text-blue-600">
                       {getFrequencyLabel(goal.recurrence_frequency)}
                     </Badge>
                   </div>
-                  <div className="flex items-center gap-2 mt-3 text-sm text-muted-foreground">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      Starts {goal.start_date ? format(parseISO(goal.start_date), 'MMM d, yyyy') : 'Soon'}
-                    </span>
+                  <div className="flex items-center justify-between mt-3">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Clock className="h-4 w-4" />
+                      <span>
+                        Starts {goal.start_date ? format(parseISO(goal.start_date), 'MMM d, yyyy') : 'Soon'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {onEditGoal && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                          onClick={() => onEditGoal(goal)}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        onClick={() => setGoalToDelete(goal)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -307,6 +350,27 @@ export const HabitsView = ({ onCreateGoal }: HabitsViewProps) => {
         onClose={handleCloseModal}
         onUpdate={handleUpdate}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!goalToDelete} onOpenChange={(open) => !open && setGoalToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Scheduled Habit</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{goalToDelete?.title}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteScheduledHabit}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
