@@ -57,6 +57,14 @@ export interface HeatmapWeek {
   year: number;
 }
 
+export interface CategoryBreakdown {
+  category: string;
+  total: number;
+  completed: number;
+  completionRate: number;
+  goalCount: number;
+}
+
 export interface AnalyticsData {
   weeklyCompletionRate: number;
   currentStreak: number;
@@ -66,6 +74,7 @@ export interface AnalyticsData {
   goalsCompletionRate: number;
   recentActivity: WeeklyActivity[];
   goalBreakdown: GoalBreakdown[];
+  categoryBreakdown: CategoryBreakdown[];
   quarterComparison: QuarterComparison;
   trend: TrendData;
   bestWorstWeeks: BestWorstWeek;
@@ -90,6 +99,7 @@ const defaultAnalytics: AnalyticsData = {
   goalsCompletionRate: 0,
   recentActivity: [],
   goalBreakdown: [],
+  categoryBreakdown: [],
   quarterComparison: {
     currentQuarter: { total: 0, completed: 0, completionRate: 0, label: '' },
     previousQuarter: { total: 0, completed: 0, completionRate: 0, label: '' },
@@ -265,6 +275,49 @@ const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
     .sort((a, b) => b.total - a.total)
     .slice(0, 8);
 
+  // Category breakdown - objectives by goal category
+  const categoryMap = new Map<string, CategoryBreakdown>();
+  
+  objectives.forEach(obj => {
+    const category = obj.goals?.category || 'Uncategorized';
+    
+    if (!categoryMap.has(category)) {
+      categoryMap.set(category, { 
+        category, 
+        total: 0, 
+        completed: 0, 
+        completionRate: 0,
+        goalCount: 0
+      });
+    }
+    const data = categoryMap.get(category)!;
+    data.total += 1;
+    if (obj.is_completed) {
+      data.completed += 1;
+    }
+  });
+
+  // Count unique goals per category
+  const goalsByCategory = new Map<string, Set<string>>();
+  objectives.forEach(obj => {
+    if (obj.goal_id) {
+      const category = obj.goals?.category || 'Uncategorized';
+      if (!goalsByCategory.has(category)) {
+        goalsByCategory.set(category, new Set());
+      }
+      goalsByCategory.get(category)!.add(obj.goal_id);
+    }
+  });
+
+  categoryMap.forEach((data, category) => {
+    data.completionRate = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+    data.goalCount = goalsByCategory.get(category)?.size || 0;
+  });
+
+  const categoryBreakdown = Array.from(categoryMap.values())
+    .filter(c => c.total >= 3) // Only show categories with meaningful data
+    .sort((a, b) => b.completionRate - a.completionRate);
+
   // Quarter comparison
   const currentQuarterStart = startOfQuarter(now);
   const currentQuarterEnd = endOfQuarter(now);
@@ -379,6 +432,7 @@ const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
     goalsCompletionRate,
     recentActivity,
     goalBreakdown,
+    categoryBreakdown,
     quarterComparison,
     trend,
     bestWorstWeeks,
