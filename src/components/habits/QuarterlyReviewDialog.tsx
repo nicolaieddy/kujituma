@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { filterGoalsByQuarter, getQuarterName } from "@/utils/quarterUtils";
 import { Progress } from "@/components/ui/progress";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from "recharts";
 
 // Helper to get previous quarter
 const getPreviousQuarter = (year: number, quarter: number): { year: number; quarter: number } => {
@@ -163,6 +164,37 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
       .sort((a, b) => b.total - a.total)
       .slice(0, 5); // Top 5 goals
   }, [quarterObjectives, goals]);
+  
+  // Group objectives by week for chart
+  const weeklyBreakdown = useMemo(() => {
+    if (!quarterObjectives) return [];
+    
+    const weekMap = new Map<string, { week: string; weekLabel: string; total: number; completed: number }>();
+    
+    quarterObjectives.forEach(obj => {
+      const weekStart = obj.week_start;
+      const existing = weekMap.get(weekStart);
+      
+      if (existing) {
+        existing.total += 1;
+        if (obj.is_completed) existing.completed += 1;
+      } else {
+        // Format week label (e.g., "Jan 6")
+        const date = new Date(weekStart + 'T00:00:00');
+        const weekLabel = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        weekMap.set(weekStart, {
+          week: weekStart,
+          weekLabel,
+          total: 1,
+          completed: obj.is_completed ? 1 : 0
+        });
+      }
+    });
+    
+    // Convert to array and sort by date
+    return Array.from(weekMap.values())
+      .sort((a, b) => a.week.localeCompare(b.week));
+  }, [quarterObjectives]);
   
   // Filter goals by the current quarter
   const quarterGoals = useMemo(() => {
@@ -319,6 +351,70 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
             </Card>
           )}
           
+          {/* Weekly Activity Chart */}
+          {weeklyBreakdown.length > 1 && (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Weekly Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[160px] w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={weeklyBreakdown} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                      <XAxis 
+                        dataKey="weekLabel" 
+                        tick={{ fontSize: 10 }} 
+                        tickLine={false}
+                        axisLine={false}
+                      />
+                      <YAxis 
+                        tick={{ fontSize: 10 }} 
+                        tickLine={false}
+                        axisLine={false}
+                        allowDecimals={false}
+                      />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-popover border rounded-md shadow-md px-3 py-2 text-xs">
+                                <p className="font-medium">Week of {data.weekLabel}</p>
+                                <p className="text-success">{data.completed} completed</p>
+                                <p className="text-muted-foreground">{data.total - data.completed} incomplete</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Bar dataKey="total" stackId="a" radius={[0, 0, 0, 0]} fill="hsl(var(--muted))" />
+                      <Bar dataKey="completed" stackId="b" radius={[4, 4, 0, 0]}>
+                        {weeklyBreakdown.map((entry, index) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={entry.completed === entry.total && entry.total > 0 ? "hsl(var(--success))" : "hsl(var(--primary))"} 
+                          />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex items-center justify-center gap-4 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-primary" />
+                    <span>Completed</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded-sm bg-muted" />
+                    <span>Total</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Goals Summary Card */}
           {hasAnyGoals && (
             <Card>
               <CardHeader className="pb-3">
