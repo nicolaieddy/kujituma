@@ -13,6 +13,9 @@ export class GoalsService {
         target_date: data.target_date || null,
         category: data.category || '',
         is_public: data.is_public ?? true,
+        is_recurring: data.is_recurring ?? false,
+        recurrence_frequency: data.is_recurring ? (data.recurrence_frequency || 'weekly') : null,
+        recurring_objective_text: data.is_recurring ? (data.recurring_objective_text || null) : null,
         user_id: (await supabase.auth.getUser()).data.user?.id
       })
       .select()
