@@ -252,7 +252,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 }`}>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="z-50">
+                <SelectContent className="z-[300]">
                   {TIMEFRAME_OPTIONS.map((option) => (
                     <SelectItem 
                       key={option} 
@@ -300,7 +300,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 }`}>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
-                <SelectContent className="z-50">
+                <SelectContent className="z-[300]">
                   <SelectItem 
                     value="none" 
                     className="cursor-pointer"
@@ -433,7 +433,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                     <SelectTrigger className={`mt-1.5 ${isMobile ? 'h-12' : 'h-10'}`}>
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="z-50">
+                    <SelectContent className="z-[300]">
                       {RECURRENCE_OPTIONS.map((option) => (
                         <SelectItem 
                           key={option.value} 

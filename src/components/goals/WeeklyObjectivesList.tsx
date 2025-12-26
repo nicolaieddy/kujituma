@@ -327,7 +327,7 @@ export const WeeklyObjectivesList = ({
                               <SelectTrigger className="w-48">
                                 <SelectValue placeholder="Select a goal" />
                               </SelectTrigger>
-                              <SelectContent className="z-50">
+                              <SelectContent className="z-[300]">
                                 <SelectItem value="none">
                                   <div className="flex items-center gap-2">
                                     <Target className="h-4 w-4" />
