@@ -83,18 +83,23 @@ export const AnalyticsDashboard = () => {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Current Streak</CardTitle>
+            <CardTitle className="text-sm font-medium">Weekly Streak</CardTitle>
             <Flame className={`h-4 w-4 ${getStreakColor(analytics.currentStreak)}`} />
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${getStreakColor(analytics.currentStreak)}`}>
-              {analytics.currentStreak}
+              {analytics.currentStreak} {analytics.currentStreak === 1 ? 'week' : 'weeks'}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Consecutive weeks with 80%+ completion
+            </p>
             <div className="flex items-center gap-2 mt-2">
               <Badge variant={analytics.currentStreak > 0 ? "default" : "secondary"} className="text-xs">
-                {analytics.currentStreak > 0 ? 'Active' : 'Inactive'}
+                {analytics.currentStreak > 0 ? 'Active' : 'Build your streak!'}
               </Badge>
-              <span className="text-xs text-muted-foreground">/ Best: {analytics.longestStreak}</span>
+              {analytics.longestStreak > 0 && (
+                <span className="text-xs text-muted-foreground">Best: {analytics.longestStreak}</span>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -270,31 +275,34 @@ export const AnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Weekly Activity Chart */}
+      {/* Weekly Activity Chart - Stacked bars showing completed vs incomplete */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BarChart3 className="h-5 w-5" />
-            Weekly Activity
+            Weekly Objectives
           </CardTitle>
           <CardDescription>
-            Completion rates over the last 12 weeks
+            Completed vs incomplete objectives over the last 12 weeks
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-[220px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics.recentActivity}>
+              <BarChart 
+                data={analytics.recentActivity.map(w => ({
+                  ...w,
+                  incomplete: w.total - w.completed
+                }))}
+              >
                 <XAxis 
                   dataKey="date" 
                   tickFormatter={(value) => format(parseISO(value), 'MMM d')}
-                  className="text-xs"
                   tick={{ fontSize: 11 }}
                 />
                 <YAxis 
-                  className="text-xs" 
                   tick={{ fontSize: 11 }}
-                  tickFormatter={(value) => `${value}`}
+                  allowDecimals={false}
                 />
                 <Tooltip 
                   content={({ active, payload }) => {
@@ -302,40 +310,51 @@ export const AnalyticsDashboard = () => {
                       const data = payload[0].payload;
                       return (
                         <div className="bg-background border rounded-lg shadow-lg p-3 text-sm">
-                          <p className="font-medium">{format(parseISO(data.date), 'MMM d, yyyy')}</p>
-                          <p className="text-muted-foreground">
-                            {data.completed}/{data.total} completed ({data.completionRate.toFixed(0)}%)
-                          </p>
+                          <p className="font-medium mb-2">{format(parseISO(data.date), 'MMM d, yyyy')}</p>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(142 76% 36%)' }}></div>
+                              <span>Completed: {data.completed}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'hsl(var(--muted))' }}></div>
+                              <span>Incomplete: {data.incomplete}</span>
+                            </div>
+                            <p className="text-muted-foreground pt-1 border-t mt-1">
+                              {data.completionRate.toFixed(0)}% completion rate
+                            </p>
+                          </div>
                         </div>
                       );
                     }
                     return null;
                   }}
                 />
-                <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                  {analytics.recentActivity.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={getCompletionColor(entry.completionRate)} />
-                  ))}
-                </Bar>
+                <Bar 
+                  dataKey="completed" 
+                  stackId="a" 
+                  fill="hsl(142 76% 36%)" 
+                  radius={[0, 0, 0, 0]}
+                  name="Completed"
+                />
+                <Bar 
+                  dataKey="incomplete" 
+                  stackId="a" 
+                  fill="hsl(var(--muted))" 
+                  radius={[4, 4, 0, 0]}
+                  name="Incomplete"
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
-          <div className="flex items-center justify-center gap-6 mt-4 text-xs flex-wrap">
+          <div className="flex items-center justify-center gap-6 mt-4 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(142 76% 36%)' }}></div>
-              <span>80%+ completion</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(45 93% 47%)' }}></div>
-              <span>50-79%</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(0 84% 60%)' }}></div>
-              <span>1-49%</span>
+              <span>Completed</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded bg-muted"></div>
-              <span>No activity</span>
+              <span>Incomplete</span>
             </div>
           </div>
         </CardContent>
