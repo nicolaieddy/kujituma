@@ -139,3 +139,83 @@
     padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 }
+
+/* Google Flights Date Picker Overrides */
+.goal-date-picker .react-google-flight-datepicker {
+  font-family: inherit;
+}
+
+.goal-date-picker .date-picker {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--background));
+}
+
+.goal-date-picker .date-picker-input {
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background: hsl(var(--background));
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.goal-date-picker .date-picker-input:focus-within {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1);
+}
+
+.goal-date-picker .dialog-date-picker {
+  border-radius: var(--radius);
+  box-shadow: 0 10px 40px -10px hsl(var(--foreground) / 0.2);
+  border: 1px solid hsl(var(--border));
+  z-index: 300;
+}
+
+.goal-date-picker .calendar-wrapper {
+  background: hsl(var(--background));
+}
+
+.goal-date-picker .day.selected,
+.goal-date-picker .day.hovered {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.goal-date-picker .day.selected.start,
+.goal-date-picker .day.selected.end {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+  border-radius: var(--radius);
+}
+
+.goal-date-picker .day:hover:not(.selected) {
+  background: hsl(var(--accent));
+}
+
+.goal-date-picker .month-name {
+  font-weight: 600;
+  color: hsl(var(--foreground));
+}
+
+.goal-date-picker .weekday {
+  color: hsl(var(--muted-foreground));
+  font-size: 0.75rem;
+}
+
+.goal-date-picker .day {
+  color: hsl(var(--foreground));
+}
+
+.goal-date-picker .day.disabled {
+  color: hsl(var(--muted-foreground));
+  opacity: 0.5;
+}
+
+.goal-date-picker .btn-outline {
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.goal-date-picker .icon-calendar svg {
+  color: hsl(var(--muted-foreground));
+}

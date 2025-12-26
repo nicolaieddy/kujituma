@@ -7,9 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { X, CalendarIcon, Eye, EyeOff, Plus, Trash2, RefreshCw } from "lucide-react";
+import { X, Plus, Trash2, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal, RecurrenceFrequency, HabitItem } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
@@ -17,8 +15,10 @@ import { CustomCategoriesService } from "@/services/customCategoriesService";
 import { CustomGoalCategory } from "@/types/customCategories";
 import { toast } from "@/hooks/use-toast";
 import { HabitItemsEditor } from "./HabitItemsEditor";
-import { format, parseISO, addMonths, endOfQuarter, endOfYear, addWeeks } from "date-fns";
+import { format, parseISO, addMonths, endOfQuarter, endOfYear } from "date-fns";
 import { cn } from "@/lib/utils";
+import { RangeDatePicker } from "react-google-flight-datepicker";
+import "react-google-flight-datepicker/dist/main.css";
 
 interface GoalFormProps {
   onSubmit: (data: CreateGoalData) => void;
@@ -331,65 +331,30 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
             </div>
           </div>
 
-          <div className={`grid ${isMobile ? 'grid-cols-1 gap-5' : 'grid-cols-2 gap-4'}`}>
-            <div>
-              <Label className="font-medium text-sm">Start Date</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full mt-1.5 justify-start text-left font-normal",
-                      isMobile ? 'h-12' : 'h-10',
-                      !formData.start_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.start_date ? format(parseISO(formData.start_date), "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[300]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.start_date ? parseISO(formData.start_date) : undefined}
-                    defaultMonth={formData.start_date ? parseISO(formData.start_date) : undefined}
-                    onSelect={(date) => setFormData({ ...formData, start_date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground mt-1">When you'll start working on this goal</p>
-            </div>
-            <div>
-              <Label className="font-medium text-sm">Target Date *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full mt-1.5 justify-start text-left font-normal",
-                      isMobile ? 'h-12' : 'h-10',
-                      !formData.target_date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {formData.target_date ? format(parseISO(formData.target_date), "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 z-[300]" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={formData.target_date ? parseISO(formData.target_date) : undefined}
-                    defaultMonth={formData.target_date ? parseISO(formData.target_date) : undefined}
-                    onSelect={(date) => setFormData({ ...formData, target_date: date ? format(date, 'yyyy-MM-dd') : '' })}
-                    initialFocus
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-              <p className="text-xs text-muted-foreground mt-1">When you want to complete this goal</p>
-            </div>
+          {/* Google Flights Style Date Range Picker */}
+          <div className="goal-date-picker">
+            <Label className="font-medium text-sm mb-1.5 block">Date Range *</Label>
+            <RangeDatePicker
+              startDate={formData.start_date ? parseISO(formData.start_date) : null}
+              endDate={formData.target_date ? parseISO(formData.target_date) : null}
+              onChange={(startDate: Date | null, endDate: Date | null) => {
+                setFormData({
+                  ...formData,
+                  start_date: startDate ? format(startDate, 'yyyy-MM-dd') : '',
+                  target_date: endDate ? format(endDate, 'yyyy-MM-dd') : ''
+                });
+              }}
+              minDate={new Date(2020, 0, 1)}
+              maxDate={new Date(2100, 0, 1)}
+              dateFormat="DD MMM YYYY"
+              monthFormat="MMMM YYYY"
+              startDatePlaceholder="Start Date"
+              endDatePlaceholder="Target Date"
+              disabled={false}
+              startWeekDay="monday"
+              highlightToday
+            />
+            <p className="text-xs text-muted-foreground mt-1">Select when you'll start and complete this goal</p>
           </div>
 
           <div>
