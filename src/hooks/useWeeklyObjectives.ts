@@ -74,16 +74,36 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
   const updateObjectiveMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) =>
       WeeklyProgressService.updateWeeklyObjective(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+    onMutate: async ({ id, data }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+
+      // Snapshot previous value
+      const previousObjectives = queryClient.getQueryData(['weekly-objectives', user?.id, currentWeekStart]);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.map(obj => obj.id === id ? { ...obj, ...data } : obj);
+      });
+
+      return { previousObjectives };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousObjectives) {
+        queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], context.previousObjectives);
+      }
       console.error('Error updating objective:', error);
       toast({
         title: "Error",
         description: "Failed to update objective. Please try again.",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Always refetch after error or success to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
     },
   });
 
