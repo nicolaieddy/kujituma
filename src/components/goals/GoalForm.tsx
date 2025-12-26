@@ -17,7 +17,7 @@ import { CustomCategoriesService } from "@/services/customCategoriesService";
 import { CustomGoalCategory } from "@/types/customCategories";
 import { toast } from "@/hooks/use-toast";
 import { HabitItemsEditor } from "./HabitItemsEditor";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, addMonths, endOfQuarter, endOfYear, addWeeks } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface GoalFormProps {
@@ -293,6 +293,34 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
               }`}
               rows={isMobile ? 3 : 4}
             />
+          </div>
+
+          {/* Quick Date Presets */}
+          <div>
+            <Label className="font-medium text-sm">Quick Presets</Label>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {[
+                { label: '1 month', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(addMonths(new Date(), 1), 'yyyy-MM-dd') }) },
+                { label: '3 months', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(addMonths(new Date(), 3), 'yyyy-MM-dd') }) },
+                { label: '6 months', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(addMonths(new Date(), 6), 'yyyy-MM-dd') }) },
+                { label: 'End of quarter', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(endOfQuarter(new Date()), 'yyyy-MM-dd') }) },
+                { label: 'End of year', getDates: () => ({ start: format(new Date(), 'yyyy-MM-dd'), target: format(endOfYear(new Date()), 'yyyy-MM-dd') }) },
+              ].map((preset) => (
+                <Button
+                  key={preset.label}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="text-xs h-7 px-2.5"
+                  onClick={() => {
+                    const dates = preset.getDates();
+                    setFormData({ ...formData, start_date: dates.start, target_date: dates.target });
+                  }}
+                >
+                  {preset.label}
+                </Button>
+              ))}
+            </div>
           </div>
 
           <div className={`grid ${isMobile ? 'grid-cols-1 gap-5' : 'grid-cols-2 gap-4'}`}>
