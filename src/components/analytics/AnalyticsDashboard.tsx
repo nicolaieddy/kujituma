@@ -982,29 +982,36 @@ const ActivityHeatmap = ({ data }: { data: HeatmapWeek[] }) => {
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-between text-xs pt-2">
-          <span className="text-muted-foreground">Less</span>
-          <div className="flex gap-0.5">
-            <div className="w-2.5 h-2.5 rounded-sm bg-muted/50"></div>
-            {displayMode === 'rate' ? (
-              <>
-                <div className="w-2.5 h-2.5 rounded-sm bg-green-200"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-green-300"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-green-400"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-green-500"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-green-600"></div>
-              </>
-            ) : (
-              <>
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-200"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-300"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-400"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-500"></div>
-                <div className="w-2.5 h-2.5 rounded-sm bg-blue-600"></div>
-              </>
-            )}
+        <div className="flex items-center justify-center gap-4 text-xs pt-3 mt-2 border-t border-border">
+          <span className="text-muted-foreground font-medium">Legend:</span>
+          <div className="flex items-center gap-3 bg-muted/30 px-3 py-1.5 rounded-full border border-border">
+            <div className="flex items-center gap-1.5">
+              <div className="w-3 h-3 rounded-sm bg-muted/50 border border-border/50"></div>
+              <span className="text-muted-foreground">No activity</span>
+            </div>
+            <div className="w-px h-3 bg-border"></div>
+            <div className="flex items-center gap-1">
+              <span className="text-muted-foreground">Less</span>
+              {displayMode === 'rate' ? (
+                <>
+                  <div className="w-3 h-3 rounded-sm bg-green-200"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-300"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-400"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-500"></div>
+                  <div className="w-3 h-3 rounded-sm bg-green-600"></div>
+                </>
+              ) : (
+                <>
+                  <div className="w-3 h-3 rounded-sm bg-blue-200"></div>
+                  <div className="w-3 h-3 rounded-sm bg-blue-300"></div>
+                  <div className="w-3 h-3 rounded-sm bg-blue-400"></div>
+                  <div className="w-3 h-3 rounded-sm bg-blue-500"></div>
+                  <div className="w-3 h-3 rounded-sm bg-blue-600"></div>
+                </>
+              )}
+              <span className="text-muted-foreground">More</span>
+            </div>
           </div>
-          <span className="text-muted-foreground">More</span>
         </div>
       </div>
 

@@ -473,12 +473,13 @@ const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any
 
   const heatmapData: HeatmapWeek[] = [];
   const today = new Date();
+  const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
   
-  // Generate last 52 weeks
+  // Generate last 52 weeks including current week
   for (let i = 51; i >= 0; i--) {
-    const weekDate = new Date(today);
-    weekDate.setDate(weekDate.getDate() - (i * 7));
-    const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 }); // Monday start
+    // Start from 51 weeks ago and go up to current week (i=0)
+    const weekStart = new Date(currentWeekStart);
+    weekStart.setDate(weekStart.getDate() - (i * 7));
     const weekKey = format(weekStart, 'yyyy-MM-dd');
     
     const weekActivity = heatmapWeeklyData.get(weekKey);
