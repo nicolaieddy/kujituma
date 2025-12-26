@@ -18,6 +18,7 @@ export interface GoalFilters {
   statuses: GoalStatus[];
   categories: string[];
   timeframes: GoalTimeframe[];
+  showPausedOnly: boolean;
 }
 
 interface GoalSearchFilterProps {
@@ -52,7 +53,8 @@ export const GoalSearchFilter = ({
   const activeFilterCount = 
     filters.statuses.length + 
     filters.categories.length + 
-    filters.timeframes.length;
+    filters.timeframes.length +
+    (filters.showPausedOnly ? 1 : 0);
 
   const handleSearchChange = (value: string) => {
     onFiltersChange({ ...filters, search: value });
@@ -79,12 +81,17 @@ export const GoalSearchFilter = ({
     onFiltersChange({ ...filters, timeframes: newTimeframes });
   };
 
+  const togglePausedOnly = () => {
+    onFiltersChange({ ...filters, showPausedOnly: !filters.showPausedOnly });
+  };
+
   const clearAllFilters = () => {
     onFiltersChange({
       search: '',
       statuses: [],
       categories: [],
-      timeframes: []
+      timeframes: [],
+      showPausedOnly: false
     });
   };
 
@@ -135,13 +142,26 @@ export const GoalSearchFilter = ({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => onFiltersChange({ ...filters, statuses: [], categories: [], timeframes: [] })}
+                    onClick={() => onFiltersChange({ ...filters, statuses: [], categories: [], timeframes: [], showPausedOnly: false })}
                     className="text-xs h-7"
                   >
                     Clear all
                   </Button>
                 )}
               </div>
+
+              {/* Paused Filter */}
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <Checkbox
+                    checked={filters.showPausedOnly}
+                    onCheckedChange={togglePausedOnly}
+                  />
+                  <span className="text-sm text-foreground font-medium">Show paused habits only</span>
+                </label>
+              </div>
+
+              <Separator />
 
               {/* Status Filter */}
               <div>

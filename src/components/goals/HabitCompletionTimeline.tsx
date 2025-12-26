@@ -4,8 +4,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { Badge } from "@/components/ui/badge";
 import { Goal } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
-import { startOfWeek, addWeeks, format, isBefore, isAfter, parseISO } from "date-fns";
-import { CalendarDays, CheckCircle2, XCircle, Circle, Clock, Flame, Trophy } from "lucide-react";
+import { startOfWeek, addWeeks, format, isBefore, isAfter, parseISO, isSameWeek } from "date-fns";
+import { CalendarDays, CheckCircle2, XCircle, Circle, Clock, Flame, Trophy, Pause } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface HabitCompletionTimelineProps {
@@ -16,7 +16,7 @@ interface HabitCompletionTimelineProps {
 interface WeekData {
   weekStart: string;
   weekNumber: number;
-  status: 'completed' | 'missed' | 'pending' | 'future' | 'not_due';
+  status: 'completed' | 'missed' | 'pending' | 'future' | 'not_due' | 'paused';
   objective?: WeeklyObjective;
 }
 
@@ -69,10 +69,16 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
       const isFuture = isAfter(weekDate, currentWeekStart);
       const isCurrent = format(weekDate, 'yyyy-MM-dd') === format(currentWeekStart, 'yyyy-MM-dd');
       
+      // Check if goal was paused during this week
+      const isPausedWeek = goal.is_paused && goal.paused_at && 
+        !isBefore(weekDate, startOfWeek(parseISO(goal.paused_at), { weekStartsOn: 1 }));
+      
       let status: WeekData['status'];
       
-      if (isFuture) {
-        status = 'future';
+      if (isPausedWeek && !isFuture) {
+        status = 'paused';
+      } else if (isFuture) {
+        status = goal.is_paused ? 'paused' : 'future';
       } else if (objective) {
         status = objective.is_completed ? 'completed' : (isCurrent ? 'pending' : 'missed');
       } else {
@@ -241,7 +247,8 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
                       week.status === 'missed' && "bg-destructive/20 text-destructive border-2 border-destructive/40",
                       week.status === 'pending' && "bg-amber-500/20 text-amber-600 border-2 border-amber-500/40 ring-2 ring-amber-500/30 ring-offset-2 ring-offset-background",
                       week.status === 'future' && "bg-muted/50 text-muted-foreground border-2 border-dashed border-muted-foreground/30",
-                      week.status === 'not_due' && "bg-muted/30 text-muted-foreground/50 border border-muted-foreground/20"
+                      week.status === 'not_due' && "bg-muted/30 text-muted-foreground/50 border border-muted-foreground/20",
+                      week.status === 'paused' && "bg-slate-500/20 text-slate-500 border-2 border-slate-500/40"
                     )}
                   >
                     {week.status === 'completed' && <CheckCircle2 className="h-5 w-5" />}
@@ -249,6 +256,7 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
                     {week.status === 'pending' && <Clock className="h-5 w-5" />}
                     {week.status === 'future' && <Circle className="h-4 w-4" />}
                     {week.status === 'not_due' && <span className="text-xs">—</span>}
+                    {week.status === 'paused' && <Pause className="h-4 w-4" />}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -261,13 +269,15 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
                       week.status === 'missed' && "text-destructive",
                       week.status === 'pending' && "text-amber-600",
                       week.status === 'future' && "text-muted-foreground",
-                      week.status === 'not_due' && "text-muted-foreground"
+                      week.status === 'not_due' && "text-muted-foreground",
+                      week.status === 'paused' && "text-slate-500"
                     )}>
                       {week.status === 'completed' && "Completed ✓"}
                       {week.status === 'missed' && "Missed"}
                       {week.status === 'pending' && "In Progress"}
                       {week.status === 'future' && "Upcoming"}
                       {week.status === 'not_due' && "Not scheduled"}
+                      {week.status === 'paused' && "Paused"}
                     </p>
                   </div>
                 </TooltipContent>
@@ -301,6 +311,12 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
               <Circle className="h-2.5 w-2.5 text-muted-foreground" />
             </div>
             <span>Future</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-4 h-4 rounded bg-slate-500/20 border border-slate-500/40 flex items-center justify-center">
+              <Pause className="h-2.5 w-2.5 text-slate-500" />
+            </div>
+            <span>Paused</span>
           </div>
         </div>
       </CardContent>

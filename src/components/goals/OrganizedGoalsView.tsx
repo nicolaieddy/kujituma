@@ -36,7 +36,8 @@ const initialFilters: GoalFilters = {
   search: '',
   statuses: [],
   categories: [],
-  timeframes: []
+  timeframes: [],
+  showPausedOnly: false
 };
 
 export const OrganizedGoalsView = ({
@@ -178,6 +179,11 @@ export const OrganizedGoalsView = ({
 
   // Filter function
   const filterGoal = (goal: Goal): boolean => {
+    // Paused filter (only show paused habits)
+    if (filters.showPausedOnly) {
+      if (!goal.is_recurring || !goal.is_paused) return false;
+    }
+
     // Search filter
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
@@ -260,7 +266,7 @@ export const OrganizedGoalsView = ({
     (acc, goals) => acc + goals.length, 0
   );
   const hasActiveFilters = filters.search || filters.statuses.length > 0 || 
-    filters.categories.length > 0 || filters.timeframes.length > 0;
+    filters.categories.length > 0 || filters.timeframes.length > 0 || filters.showPausedOnly;
 
   return (
     <div className="space-y-6">
