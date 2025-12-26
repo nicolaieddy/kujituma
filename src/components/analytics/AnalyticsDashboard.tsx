@@ -3,8 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
-import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar as CalendarIcon, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange } from 'lucide-react';
-import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter, CustomDateRange } from '@/hooks/useAnalytics';
+import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar as CalendarIcon, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange, RefreshCw, Activity } from 'lucide-react';
+import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter, CustomDateRange, HabitAnalytics } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -686,6 +686,154 @@ export const AnalyticsDashboard = () => {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Daily Habits Analytics */}
+      {analytics.habitAnalytics.totalHabits > 0 && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Habit Stats Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5" />
+                Daily Habits Overview
+              </CardTitle>
+              <CardDescription>
+                Tracking {analytics.habitAnalytics.totalHabits} daily habits
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Key metrics */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-xs text-muted-foreground">Daily Completion</p>
+                  <p className="text-2xl font-bold">{analytics.habitAnalytics.dailyCompletionRate.toFixed(0)}%</p>
+                  <Progress value={analytics.habitAnalytics.dailyCompletionRate} className="mt-2 h-1.5" />
+                </div>
+                <div className="p-3 rounded-lg bg-muted/50 border">
+                  <p className="text-xs text-muted-foreground">Total Check-ins</p>
+                  <p className="text-2xl font-bold">{analytics.habitAnalytics.totalCompletions}</p>
+                  <p className="text-xs text-muted-foreground mt-1">in selected period</p>
+                </div>
+              </div>
+
+              {/* Streak info */}
+              <div className="flex items-center gap-4 p-3 rounded-lg bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 border border-orange-200 dark:border-orange-900">
+                <Flame className="h-8 w-8 text-orange-500" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Habit Streak</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <div>
+                      <span className="text-lg font-bold text-orange-600">{analytics.habitAnalytics.streaks.current}</span>
+                      <span className="text-xs text-muted-foreground ml-1">current</span>
+                    </div>
+                    <div className="text-muted-foreground">|</div>
+                    <div>
+                      <span className="text-lg font-bold">{analytics.habitAnalytics.streaks.longest}</span>
+                      <span className="text-xs text-muted-foreground ml-1">best</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Weekly trend chart */}
+              {analytics.habitAnalytics.weeklyData.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium mb-2">Weekly Trend</p>
+                  <div className="h-[100px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={analytics.habitAnalytics.weeklyData}>
+                        <XAxis 
+                          dataKey="date" 
+                          tickFormatter={(value) => format(parseISO(value), 'M/d')}
+                          tick={{ fontSize: 10 }}
+                        />
+                        <Tooltip 
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload;
+                              return (
+                                <div className="bg-background border rounded-lg shadow-lg p-2 text-xs">
+                                  <p className="font-medium">{format(parseISO(data.date), 'MMM d, yyyy')}</p>
+                                  <p>{data.completed}/{data.possible} ({data.rate.toFixed(0)}%)</p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar 
+                          dataKey="rate" 
+                          radius={[4, 4, 0, 0]}
+                        >
+                          {analytics.habitAnalytics.weeklyData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.rate >= 80 ? 'hsl(142 76% 36%)' : entry.rate >= 50 ? 'hsl(45 93% 47%)' : 'hsl(var(--muted))'}
+                            />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Top Performing Habits */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Top Performing Habits
+              </CardTitle>
+              <CardDescription>
+                Your most consistent daily habits
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {analytics.habitAnalytics.topHabits.length > 0 ? (
+                <div className="space-y-3">
+                  {analytics.habitAnalytics.topHabits.map((habit, index) => (
+                    <div key={index} className="space-y-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {index === 0 && <Trophy className="h-4 w-4 text-yellow-500 flex-shrink-0" />}
+                          <span className="text-sm font-medium truncate">{habit.habitText}</span>
+                        </div>
+                        <Badge variant="outline" className="text-xs ml-2 flex-shrink-0">
+                          {habit.frequency}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground truncate">{habit.goalTitle}</p>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full rounded-full transition-all"
+                            style={{ 
+                              width: `${habit.rate}%`,
+                              backgroundColor: habit.rate >= 80 ? 'hsl(142 76% 36%)' : habit.rate >= 50 ? 'hsl(45 93% 47%)' : 'hsl(var(--muted-foreground))'
+                            }}
+                          />
+                        </div>
+                        <span className="text-xs text-muted-foreground w-20 text-right">
+                          {habit.completions}/{habit.possible} ({habit.rate.toFixed(0)}%)
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <RefreshCw className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No habit completions yet</p>
+                  <p className="text-xs mt-1">Start checking off your daily habits!</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       )}
 
       {/* Activity Heatmap */}
