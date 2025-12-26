@@ -9,9 +9,10 @@ interface HabitsDueThisWeekProps {
   habits: HabitStats[];
   objectives: WeeklyObjective[];
   onHabitClick?: (habit: HabitStats) => void;
+  onToggleObjective?: (objectiveId: string, isCompleted: boolean) => void;
 }
 
-export const HabitsDueThisWeek = ({ habits, objectives, onHabitClick }: HabitsDueThisWeekProps) => {
+export const HabitsDueThisWeek = ({ habits, objectives, onHabitClick, onToggleObjective }: HabitsDueThisWeekProps) => {
   if (habits.length === 0) return null;
 
   // Check if each habit's objective for this week is completed
@@ -27,6 +28,13 @@ export const HabitsDueThisWeek = ({ habits, objectives, onHabitClick }: HabitsDu
 
   const completedCount = habitsWithStatus.filter(h => h.isCompletedThisWeek).length;
   const totalCount = habitsWithStatus.length;
+
+  const handleToggle = (e: React.MouseEvent, habit: typeof habitsWithStatus[0]) => {
+    e.stopPropagation();
+    if (habit.objective && onToggleObjective) {
+      onToggleObjective(habit.objective.id, habit.isCompletedThisWeek);
+    }
+  };
 
   return (
     <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent">
@@ -53,14 +61,25 @@ export const HabitsDueThisWeek = ({ habits, objectives, onHabitClick }: HabitsDu
                 : "bg-background/50 border-border hover:border-primary/30 hover:bg-primary/5"
             )}
           >
-            {/* Completion Status */}
-            <div className="flex-shrink-0">
+            {/* Completion Status - Clickable Toggle */}
+            <button
+              type="button"
+              onClick={(e) => handleToggle(e, habit)}
+              disabled={!habit.objective}
+              className={cn(
+                "flex-shrink-0 p-1 -m-1 rounded-full transition-all",
+                habit.objective 
+                  ? "hover:bg-primary/10 hover:scale-110 active:scale-95" 
+                  : "opacity-50 cursor-not-allowed"
+              )}
+              title={habit.objective ? "Click to toggle completion" : "No objective for this week"}
+            >
               {habit.isCompletedThisWeek ? (
                 <CheckCircle2 className="h-5 w-5 text-success" />
               ) : (
-                <Circle className="h-5 w-5 text-muted-foreground" />
+                <Circle className="h-5 w-5 text-muted-foreground hover:text-primary" />
               )}
-            </div>
+            </button>
 
             {/* Habit Info */}
             <div className="flex-1 min-w-0">

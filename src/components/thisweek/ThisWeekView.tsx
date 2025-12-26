@@ -363,6 +363,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           habits={habitStats}
           objectives={objectives || []}
           onHabitClick={handleHabitClick}
+          onToggleObjective={handleToggleObjective}
         />
       )}
 
