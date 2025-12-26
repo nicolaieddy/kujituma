@@ -139,3 +139,53 @@
     padding-top: max(0.5rem, env(safe-area-inset-top));
   }
 }
+
+/* Calendar dropdown styling */
+.rdp-dropdown_month,
+.rdp-dropdown_year {
+  position: relative;
+}
+
+.rdp-dropdown_month select,
+.rdp-dropdown_year select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 0.375rem 1.75rem 0.375rem 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.375rem center;
+  background-repeat: no-repeat;
+  background-size: 1rem;
+}
+
+.rdp-dropdown_month select:hover,
+.rdp-dropdown_year select:hover {
+  background-color: hsl(var(--accent));
+  border-color: hsl(var(--primary) / 0.3);
+}
+
+.rdp-dropdown_month select:focus,
+.rdp-dropdown_year select:focus {
+  outline: none;
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.15);
+}
+
+.rdp-caption_dropdowns {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+/* Hide default select arrow in some browsers */
+.rdp-dropdown_month select::-ms-expand,
+.rdp-dropdown_year select::-ms-expand {
+  display: none;
+}
