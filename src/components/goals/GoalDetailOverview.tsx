@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Goal } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
-import { Calendar, Tag, StickyNote, Target, RefreshCw, CheckCircle2 } from "lucide-react";
+import { Calendar, Tag, StickyNote, Target, RefreshCw } from "lucide-react";
+import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { format } from "date-fns";
 
 interface GoalDetailOverviewProps {
   goal: Goal;
@@ -19,6 +22,10 @@ const frequencyLabels: Record<string, string> = {
 };
 
 export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
+  const { completions, toggleCompletion, isToggling } = useHabitCompletions();
+  const today = new Date();
+  const todayKey = format(today, 'yyyy-MM-dd');
+
   const getTargetDateDisplay = () => {
     if (goal.target_date) {
       const targetDate = new Date(goal.target_date);
@@ -29,6 +36,16 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
 
   const habitItems = goal.habit_items || [];
   const hasHabits = habitItems.length > 0;
+
+  const isHabitCompletedToday = (habitItemId: string) => {
+    return completions.some(
+      c => c.habit_item_id === habitItemId && c.completion_date === todayKey
+    );
+  };
+
+  const handleToggleHabit = (habitItemId: string) => {
+    toggleCompletion(goal.id, habitItemId, today);
+  };
 
   return (
     <div className="space-y-6">
@@ -42,23 +59,40 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
             </CardTitle>
           </CardHeader>
           <CardContent>
+            <p className="text-white/60 text-xs mb-3">Check off today's habits</p>
             <div className="space-y-3">
-              {habitItems.map((habit) => (
-                <div 
-                  key={habit.id} 
-                  className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              {habitItems.map((habit) => {
+                const isCompleted = isHabitCompletedToday(habit.id);
+                return (
+                  <div 
+                    key={habit.id} 
+                    className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+                      isCompleted 
+                        ? 'bg-emerald-500/20 border-emerald-500/30' 
+                        : 'bg-white/5 border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <Checkbox
+                        checked={isCompleted}
+                        onCheckedChange={() => handleToggleHabit(habit.id)}
+                        disabled={isToggling}
+                        className={`border-white/40 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500 ${
+                          isToggling ? 'opacity-50' : ''
+                        }`}
+                      />
+                      <span className={`font-medium transition-all ${
+                        isCompleted ? 'text-white/60 line-through' : 'text-white/90'
+                      }`}>
+                        {habit.text}
+                      </span>
                     </div>
-                    <span className="text-white/90 font-medium">{habit.text}</span>
+                    <Badge variant="outline" className="bg-white/10 text-white/80 border-white/20">
+                      {frequencyLabels[habit.frequency] || habit.frequency}
+                    </Badge>
                   </div>
-                  <Badge variant="outline" className="bg-white/10 text-white/80 border-white/20">
-                    {frequencyLabels[habit.frequency] || habit.frequency}
-                  </Badge>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
