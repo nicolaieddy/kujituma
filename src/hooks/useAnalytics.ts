@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { startOfQuarter, endOfQuarter, subQuarters, format, startOfWeek, parseISO } from 'date-fns';
+import { startOfQuarter, endOfQuarter, subQuarters, format, startOfWeek, parseISO, subWeeks, subMonths, startOfMonth, endOfMonth } from 'date-fns';
+
+export type DateRangeFilter = 'this_week' | 'this_month' | 'this_quarter' | 'all_time';
 
 interface WeeklyActivity {
   date: string;
@@ -115,14 +117,35 @@ const defaultAnalytics: AnalyticsData = {
   heatmapData: []
 };
 
-export const useAnalytics = () => {
+const getDateRangeFilter = (range: DateRangeFilter): { start: Date; end: Date } | null => {
+  const now = new Date();
+  
+  switch (range) {
+    case 'this_week': {
+      const start = startOfWeek(now, { weekStartsOn: 1 });
+      return { start, end: now };
+    }
+    case 'this_month': {
+      const start = startOfMonth(now);
+      return { start, end: now };
+    }
+    case 'this_quarter': {
+      const start = startOfQuarter(now);
+      return { start, end: now };
+    }
+    case 'all_time':
+    default:
+      return null;
+  }
+};
+
+export const useAnalytics = (dateRange: DateRangeFilter = 'all_time') => {
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState<AnalyticsData>(defaultAnalytics);
   const [isLoading, setIsLoading] = useState(true);
-  const [dataLoaded, setDataLoaded] = useState(false);
 
   useEffect(() => {
-    if (!user || dataLoaded) return;
+    if (!user) return;
 
     const fetchAnalytics = async () => {
       try {
@@ -143,9 +166,17 @@ export const useAnalytics = () => {
           .neq('status', 'deleted');
 
         if (objectives && goals) {
-          const analyticsData = calculateAnalytics(objectives, goals);
+          // Filter objectives by date range
+          const dateFilter = getDateRangeFilter(dateRange);
+          const filteredObjectives = dateFilter 
+            ? objectives.filter(obj => {
+                const weekDate = parseISO(obj.week_start);
+                return weekDate >= dateFilter.start && weekDate <= dateFilter.end;
+              })
+            : objectives;
+          
+          const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives);
           setAnalytics(analyticsData);
-          setDataLoaded(true);
         }
       } catch (error) {
         console.error('Error fetching analytics:', error);
@@ -155,12 +186,11 @@ export const useAnalytics = () => {
     };
 
     fetchAnalytics();
-  }, [user]);
+  }, [user, dateRange]);
 
   const refetchAnalytics = async () => {
     if (!user) return;
     
-    setDataLoaded(false);
     setIsLoading(true);
     
     try {
@@ -177,9 +207,16 @@ export const useAnalytics = () => {
         .neq('status', 'deleted');
 
       if (objectives && goals) {
-        const analyticsData = calculateAnalytics(objectives, goals);
+        const dateFilter = getDateRangeFilter(dateRange);
+        const filteredObjectives = dateFilter 
+          ? objectives.filter(obj => {
+              const weekDate = parseISO(obj.week_start);
+              return weekDate >= dateFilter.start && weekDate <= dateFilter.end;
+            })
+          : objectives;
+        
+        const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives);
         setAnalytics(analyticsData);
-        setDataLoaded(true);
       }
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -191,7 +228,9 @@ export const useAnalytics = () => {
   return { analytics, isLoading, refetchAnalytics };
 };
 
-const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
+const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any[]): AnalyticsData => {
+  // Use allObjectives for heatmap if provided (to always show full year)
+  const heatmapObjectives = allObjectives || objectives;
   const now = new Date();
   
   // Basic stats
@@ -399,7 +438,25 @@ const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
   const consistentWeeks = Array.from(weeklyData.values()).filter(w => w.completionRate >= 50).length;
   const consistencyScore = totalActiveWeeks > 0 ? (consistentWeeks / totalActiveWeeks) * 100 : 0;
 
-  // Heatmap data - last 52 weeks (1 year)
+  // Heatmap data - last 52 weeks (1 year) - use all objectives for full year view
+  const heatmapWeeklyData = new Map<string, WeeklyActivity>();
+  
+  heatmapObjectives.forEach(obj => {
+    const week = obj.week_start;
+    if (!heatmapWeeklyData.has(week)) {
+      heatmapWeeklyData.set(week, { date: week, completed: 0, total: 0, completionRate: 0 });
+    }
+    const data = heatmapWeeklyData.get(week)!;
+    data.total += 1;
+    if (obj.is_completed) {
+      data.completed += 1;
+    }
+  });
+
+  heatmapWeeklyData.forEach(data => {
+    data.completionRate = data.total > 0 ? (data.completed / data.total) * 100 : 0;
+  });
+
   const heatmapData: HeatmapWeek[] = [];
   const today = new Date();
   
@@ -410,7 +467,7 @@ const calculateAnalytics = (objectives: any[], goals: any[]): AnalyticsData => {
     const weekStart = startOfWeek(weekDate, { weekStartsOn: 1 }); // Monday start
     const weekKey = format(weekStart, 'yyyy-MM-dd');
     
-    const weekActivity = weeklyData.get(weekKey);
+    const weekActivity = heatmapWeeklyData.get(weekKey);
     
     heatmapData.push({
       date: weekKey,
