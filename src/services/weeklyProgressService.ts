@@ -393,4 +393,34 @@ export class WeeklyProgressService {
     console.log('Successfully carried over objectives:', newObjectives?.length || 0);
     return (newObjectives || []) as WeeklyObjective[];
   }
+
+  static async getObjectivesForQuarter(year: number, quarter: number): Promise<WeeklyObjective[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    // Calculate quarter date range
+    const startMonth = (quarter - 1) * 3;
+    const quarterStart = new Date(year, startMonth, 1);
+    const quarterEnd = new Date(year, startMonth + 3, 0);
+    
+    const startDate = quarterStart.toISOString().split('T')[0];
+    const endDate = quarterEnd.toISOString().split('T')[0];
+
+    const { data: objectives, error } = await supabase
+      .from('weekly_objectives')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('week_start', startDate)
+      .lte('week_start', endDate)
+      .order('week_start', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching quarterly objectives:', error);
+      throw error;
+    }
+
+    return (objectives || []) as WeeklyObjective[];
+  }
 }
