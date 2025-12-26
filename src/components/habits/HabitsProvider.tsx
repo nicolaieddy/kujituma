@@ -5,8 +5,10 @@ import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { DailyCheckInButton } from "./DailyCheckInButton";
 import { WeeklyPlanningDialog } from "./WeeklyPlanningDialog";
 import { QuarterlyReviewDialog } from "./QuarterlyReviewDialog";
+import { QuarterlyReviewsHistory } from "./QuarterlyReviewsHistory";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
+import { QuarterlyReviewProvider } from "@/contexts/QuarterlyReviewContext";
 
 export const HabitsProvider = () => {
   const { user } = useAuth();
@@ -50,11 +52,15 @@ export const HabitsProvider = () => {
     }
     setShowQuarterlyDialog(open);
   };
+
+  const handleOpenQuarterlyReview = () => {
+    setShowQuarterlyDialog(true);
+  };
   
   if (!user) return null;
   
   return (
-    <>
+    <QuarterlyReviewProvider onOpenReview={handleOpenQuarterlyReview}>
       <DailyCheckInButton />
       <WeeklyPlanningDialog 
         open={showPlanningDialog} 
@@ -65,6 +71,7 @@ export const HabitsProvider = () => {
         open={showQuarterlyDialog} 
         onOpenChange={handleCloseQuarterly}
       />
-    </>
+      <QuarterlyReviewsHistory />
+    </QuarterlyReviewProvider>
   );
 };

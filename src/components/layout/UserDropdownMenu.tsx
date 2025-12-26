@@ -1,8 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User, ChevronDown, HelpCircle } from "lucide-react";
+import { LogOut, Settings, User, ChevronDown, HelpCircle, ClipboardList } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
+import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 
 interface UserDropdownMenuProps {
   isAdmin: boolean;
@@ -12,6 +13,15 @@ interface UserDropdownMenuProps {
 
 export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDropdownMenuProps) => {
   const navigate = useNavigate();
+  
+  // Safe access - may not be available if HabitsProvider hasn't mounted yet
+  let openQuarterlyHistory: (() => void) | undefined;
+  try {
+    const quarterlyContext = useQuarterlyReviewTrigger();
+    openQuarterlyHistory = quarterlyContext.openQuarterlyHistory;
+  } catch {
+    // Context not available yet
+  }
 
   return (
     <DropdownMenu>
@@ -32,6 +42,16 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
           <User className="h-4 w-4 mr-2" />
           Profile
         </DropdownMenuItem>
+        
+        {openQuarterlyHistory && (
+          <DropdownMenuItem 
+            onClick={openQuarterlyHistory}
+            className="cursor-pointer"
+          >
+            <ClipboardList className="h-4 w-4 mr-2" />
+            Quarterly Reviews
+          </DropdownMenuItem>
+        )}
         
         <DropdownMenuItem 
           onClick={onRestartTour}

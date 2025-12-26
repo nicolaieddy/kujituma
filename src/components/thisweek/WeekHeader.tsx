@@ -1,8 +1,10 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { StreakCounter } from "@/components/habits/StreakCounter";
+import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface WeekHeaderProps {
   weekNumber: number;
@@ -22,6 +24,15 @@ export const WeekHeader = ({
   onNavigateWeek
 }: WeekHeaderProps) => {
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
+  
+  // Safe access to quarterly review context
+  let openQuarterlyHistory: (() => void) | undefined;
+  try {
+    const quarterlyContext = useQuarterlyReviewTrigger();
+    openQuarterlyHistory = quarterlyContext.openQuarterlyHistory;
+  } catch {
+    // Context not available
+  }
   
   return (
     <Card className="border-border">
@@ -55,7 +66,28 @@ export const WeekHeader = ({
               <p className="text-muted-foreground mt-1">{weekRange}</p>
             </div>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-4">
+            {/* Quarterly Review Button */}
+            {isCurrentWeek && openQuarterlyHistory && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={openQuarterlyHistory}
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      <ClipboardList className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Quarterly Reviews</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+            
             {/* Streak Counter - only show on current week */}
             {isCurrentWeek && <StreakCounter variant="compact" />}
             
