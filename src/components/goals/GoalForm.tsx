@@ -242,18 +242,15 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
             {formData.timeframe === 'Custom Date' && (
               <div>
                 <Label htmlFor="target_date" className="font-medium text-sm">Target Date</Label>
-                <div className="relative">
-                  <Input
-                    id="target_date"
-                    type="date"
-                    value={formData.target_date}
-                    onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
-                    className={`mt-1.5 ${
-                      isMobile ? 'h-12' : 'h-10'
-                    }`}
-                  />
-                  <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
-                </div>
+                <Input
+                  id="target_date"
+                  type="date"
+                  value={formData.target_date}
+                  onChange={(e) => setFormData({ ...formData, target_date: e.target.value })}
+                  className={`mt-1.5 ${
+                    isMobile ? 'h-12' : 'h-10'
+                  }`}
+                />
               </div>
             )}
           </div>
