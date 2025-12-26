@@ -10,7 +10,8 @@ import { GoalSearchFilter, GoalFilters } from "./GoalSearchFilter";
 import { Clock, Play, Archive, Trophy, SearchX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter, DragOverEvent } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
 interface OrganizedGoalsViewProps {
@@ -26,6 +27,7 @@ interface OrganizedGoalsViewProps {
   onReprioritize: (id: string) => void;
   onCarryOverAll: () => void;
   onDeprioritizeAll: () => void;
+  onReorder?: (goalId: string, newOrderIndex: number) => void;
   isLoading?: boolean;
 }
 
@@ -49,6 +51,7 @@ export const OrganizedGoalsView = ({
   onReprioritize,
   onCarryOverAll,
   onDeprioritizeAll,
+  onReorder,
   isLoading = false
 }: OrganizedGoalsViewProps) => {
   const isMobile = useIsMobile();
@@ -94,11 +97,12 @@ export const OrganizedGoalsView = ({
 
     const goalId = active.id as string;
     const goal = active.data.current?.goal as Goal;
-    const targetColumnId = over.id as string;
+    const overId = over.id as string;
+    const overGoal = over.data.current?.goal as Goal | undefined;
 
-    // Check if dropped on a valid column
-    if (columnStatusMap[targetColumnId] && goal) {
-      const newStatus = columnStatusMap[targetColumnId];
+    // Check if dropped on a column (for status change)
+    if (columnStatusMap[overId] && goal) {
+      const newStatus = columnStatusMap[overId];
       
       // Only update if status changed
       if (goal.status !== newStatus) {
@@ -110,6 +114,39 @@ export const OrganizedGoalsView = ({
           'completed': 'Completed',
         };
         toast.success(`Goal moved to ${statusLabels[newStatus]}`);
+      }
+      return;
+    }
+
+    // Check if dropped on another goal (for reordering)
+    if (overGoal && goal && onReorder) {
+      const sourceStatus = goal.status;
+      const targetStatus = overGoal.status;
+
+      // If same status, reorder within the column
+      if (sourceStatus === targetStatus) {
+        const goalsInColumn = sourceStatus === 'not_started' 
+          ? notStartedGoals 
+          : sourceStatus === 'in_progress' 
+            ? inProgressGoals 
+            : currentYearCompletedGoals;
+            
+        const oldIndex = goalsInColumn.findIndex(g => g.id === goalId);
+        const newIndex = goalsInColumn.findIndex(g => g.id === overId);
+        
+        if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
+          onReorder(goalId, newIndex);
+        }
+      } else {
+        // Moving to different column - change status
+        onStatusChange(goalId, targetStatus);
+        
+        const statusLabels: Record<string, string> = {
+          'not_started': 'Not Started',
+          'in_progress': 'In Progress',
+          'completed': 'Completed',
+        };
+        toast.success(`Goal moved to ${statusLabels[targetStatus]}`);
       }
     }
   };
@@ -262,6 +299,7 @@ export const OrganizedGoalsView = ({
 
               <DndContext
                 sensors={sensors}
+                collisionDetection={closestCenter}
                 onDragStart={handleDragStart}
                 onDragEnd={handleDragEnd}
               >
@@ -275,29 +313,31 @@ export const OrganizedGoalsView = ({
                         {notStartedGoals.length}
                       </Badge>
                     </div>
-                    <DroppableColumn id="not_started">
-                      {notStartedGoals.length === 0 ? (
-                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                          <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-muted-foreground text-sm">
-                            {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
-                          </p>
-                        </div>
-                      ) : (
-                        notStartedGoals.map((goal) => (
-                          <DraggableGoalCard
-                            key={goal.id}
-                            goal={goal}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            onStatusChange={onStatusChange}
-                            onClick={onGoalClick}
-                            onDeprioritize={onDeprioritize}
-                            onReprioritize={onReprioritize}
-                          />
-                        ))
-                      )}
-                    </DroppableColumn>
+                    <SortableContext items={notStartedGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
+                      <DroppableColumn id="not_started">
+                        {notStartedGoals.length === 0 ? (
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                            <Clock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-muted-foreground text-sm">
+                              {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
+                            </p>
+                          </div>
+                        ) : (
+                          notStartedGoals.map((goal) => (
+                            <DraggableGoalCard
+                              key={goal.id}
+                              goal={goal}
+                              onEdit={onEdit}
+                              onDelete={onDelete}
+                              onStatusChange={onStatusChange}
+                              onClick={onGoalClick}
+                              onDeprioritize={onDeprioritize}
+                              onReprioritize={onReprioritize}
+                            />
+                          ))
+                        )}
+                      </DroppableColumn>
+                    </SortableContext>
                   </div>
 
                   {/* In Progress Column */}
@@ -309,29 +349,31 @@ export const OrganizedGoalsView = ({
                         {inProgressGoals.length}
                       </Badge>
                     </div>
-                    <DroppableColumn id="in_progress">
-                      {inProgressGoals.length === 0 ? (
-                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                          <Play className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-muted-foreground text-sm">
-                            {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
-                          </p>
-                        </div>
-                      ) : (
-                        inProgressGoals.map((goal) => (
-                          <DraggableGoalCard
-                            key={goal.id}
-                            goal={goal}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            onStatusChange={onStatusChange}
-                            onClick={onGoalClick}
-                            onDeprioritize={onDeprioritize}
-                            onReprioritize={onReprioritize}
-                          />
-                        ))
-                      )}
-                    </DroppableColumn>
+                    <SortableContext items={inProgressGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
+                      <DroppableColumn id="in_progress">
+                        {inProgressGoals.length === 0 ? (
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                            <Play className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-muted-foreground text-sm">
+                              {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
+                            </p>
+                          </div>
+                        ) : (
+                          inProgressGoals.map((goal) => (
+                            <DraggableGoalCard
+                              key={goal.id}
+                              goal={goal}
+                              onEdit={onEdit}
+                              onDelete={onDelete}
+                              onStatusChange={onStatusChange}
+                              onClick={onGoalClick}
+                              onDeprioritize={onDeprioritize}
+                              onReprioritize={onReprioritize}
+                            />
+                          ))
+                        )}
+                      </DroppableColumn>
+                    </SortableContext>
                   </div>
 
                   {/* Completed Column (Current Year) */}
@@ -343,29 +385,31 @@ export const OrganizedGoalsView = ({
                         {currentYearCompletedGoals.length}
                       </Badge>
                     </div>
-                    <DroppableColumn id="completed">
-                      {currentYearCompletedGoals.length === 0 ? (
-                        <div className="border-2 border-dashed rounded-lg p-6 text-center">
-                          <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                          <p className="text-muted-foreground text-sm">
-                            {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
-                          </p>
-                        </div>
-                      ) : (
-                        currentYearCompletedGoals.map((goal) => (
-                          <DraggableGoalCard
-                            key={goal.id}
-                            goal={goal}
-                            onEdit={onEdit}
-                            onDelete={onDelete}
-                            onStatusChange={onStatusChange}
-                            onClick={onGoalClick}
-                            onDeprioritize={onDeprioritize}
+                    <SortableContext items={currentYearCompletedGoals.map(g => g.id)} strategy={verticalListSortingStrategy}>
+                      <DroppableColumn id="completed">
+                        {currentYearCompletedGoals.length === 0 ? (
+                          <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                            <Trophy className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-muted-foreground text-sm">
+                              {hasActiveFilters ? 'No matching goals' : 'Drop a goal here'}
+                            </p>
+                          </div>
+                        ) : (
+                          currentYearCompletedGoals.map((goal) => (
+                            <DraggableGoalCard
+                              key={goal.id}
+                              goal={goal}
+                              onEdit={onEdit}
+                              onDelete={onDelete}
+                              onStatusChange={onStatusChange}
+                              onClick={onGoalClick}
+                              onDeprioritize={onDeprioritize}
                             onReprioritize={onReprioritize}
                           />
                         ))
                       )}
                     </DroppableColumn>
+                  </SortableContext>
                   </div>
                 </div>
 

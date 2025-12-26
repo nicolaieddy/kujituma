@@ -1,4 +1,4 @@
-import { useDraggable } from "@dnd-kit/core";
+import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GoalCard } from "./GoalCard";
 import { Goal, GoalStatus } from "@/types/goals";
@@ -30,11 +30,16 @@ export const DraggableGoalCard = ({
     listeners,
     setNodeRef,
     transform,
+    transition,
     isDragging,
-  } = useDraggable({ id: goal.id, data: { goal } });
+  } = useSortable({ 
+    id: goal.id, 
+    data: { goal, status: goal.status } 
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
+    transition,
     opacity: isDragging ? 0.5 : 1,
     zIndex: isDragging ? 50 : 'auto',
   };
