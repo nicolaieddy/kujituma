@@ -14,6 +14,7 @@ interface DraggableGoalCardProps {
   onReprioritize?: (id: string) => void;
   onPauseToggle?: (id: string, isPaused: boolean) => void;
   isDeprioritized?: boolean;
+  currentStreak?: number;
 }
 
 export const DraggableGoalCard = ({ 
@@ -25,7 +26,8 @@ export const DraggableGoalCard = ({
   onDeprioritize,
   onReprioritize,
   onPauseToggle,
-  isDeprioritized
+  isDeprioritized,
+  currentStreak
 }: DraggableGoalCardProps) => {
   const {
     attributes,
@@ -82,6 +84,7 @@ export const DraggableGoalCard = ({
           onReprioritize={onReprioritize}
           onPauseToggle={onPauseToggle}
           isDeprioritized={isDeprioritized}
+          currentStreak={currentStreak}
         />
       </div>
     </div>

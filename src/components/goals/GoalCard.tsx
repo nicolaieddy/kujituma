@@ -111,6 +111,7 @@ interface GoalCardProps {
   onReprioritize?: (id: string) => void;
   onPauseToggle?: (id: string, isPaused: boolean) => void;
   isDeprioritized?: boolean;
+  currentStreak?: number;
 }
 
 const STATUS_CONFIG = {
@@ -145,7 +146,8 @@ export const GoalCard = ({
   onDeprioritize,
   onReprioritize,
   onPauseToggle,
-  isDeprioritized = false
+  isDeprioritized = false,
+  currentStreak = 0
 }: GoalCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -546,11 +548,16 @@ export const GoalCard = ({
               <Pause className="h-5 w-5 text-amber-500" />
               Pause Habit
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
+            <AlertDialogDescription className="space-y-3">
               <p>Are you sure you want to pause "{goal.title}"?</p>
+              {currentStreak > 0 && (
+                <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/20 rounded-md p-3 text-destructive text-sm">
+                  <span className="text-2xl font-bold">{currentStreak}</span>
+                  <span>week streak will be lost!</span>
+                </div>
+              )}
               <div className="bg-amber-500/10 border border-amber-500/20 rounded-md p-3 text-amber-700 dark:text-amber-400 text-sm">
-                <strong>Warning:</strong> Pausing this habit will end your current streak. 
-                No new weekly objectives will be created until you resume.
+                <strong>Note:</strong> Pausing will end your current streak and no new weekly objectives will be created until you resume.
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

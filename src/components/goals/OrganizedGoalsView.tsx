@@ -30,6 +30,7 @@ interface OrganizedGoalsViewProps {
   onDeprioritizeAll: () => void;
   onReorder?: (reorderedGoals: { id: string; order_index: number }[]) => void;
   isLoading?: boolean;
+  habitStreaks?: Record<string, number>; // Map of goal ID to current streak
 }
 
 const initialFilters: GoalFilters = {
@@ -55,7 +56,8 @@ export const OrganizedGoalsView = ({
   onCarryOverAll,
   onDeprioritizeAll,
   onReorder,
-  isLoading = false
+  isLoading = false,
+  habitStreaks = {}
 }: OrganizedGoalsViewProps) => {
   const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
@@ -351,6 +353,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
+                              currentStreak={goal.is_recurring ? habitStreaks[goal.id] : undefined}
                             />
                           ))
                         )}
@@ -388,6 +391,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
+                              currentStreak={goal.is_recurring ? habitStreaks[goal.id] : undefined}
                             />
                           ))
                         )}
@@ -425,6 +429,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
+                              currentStreak={goal.is_recurring ? habitStreaks[goal.id] : undefined}
                             />
                           ))
                         )}
