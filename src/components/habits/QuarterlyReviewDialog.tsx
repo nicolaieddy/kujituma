@@ -242,6 +242,18 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
                         )}
                       </div>
                     )}
+                    {/* Total objectives comparison */}
+                    {objectivesStats.hasPreviousData && (
+                      <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground">
+                        {objectivesStats.total > objectivesStats.prevTotal ? (
+                          <span>You set {objectivesStats.total - objectivesStats.prevTotal} more objectives than last quarter</span>
+                        ) : objectivesStats.total < objectivesStats.prevTotal ? (
+                          <span>You set {objectivesStats.prevTotal - objectivesStats.total} fewer objectives than last quarter</span>
+                        ) : (
+                          <span>Same number of objectives as last quarter</span>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
