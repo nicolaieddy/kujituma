@@ -1,12 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
 import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { useEffect, useRef } from "react";
 
 export const useWeeklyObjectives = (currentWeekStart: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const hasGeneratedRef = useRef<string | null>(null);
+
+  // Generate recurring objectives when week changes
+  useEffect(() => {
+    const generateRecurringObjectives = async () => {
+      if (!user || !currentWeekStart) return;
+      
+      // Only generate once per week to avoid duplicates
+      if (hasGeneratedRef.current === currentWeekStart) return;
+      hasGeneratedRef.current = currentWeekStart;
+
+      try {
+        const created = await RecurringObjectivesService.generateRecurringObjectivesForWeek(currentWeekStart);
+        if (created > 0) {
+          console.log(`Generated ${created} recurring objective(s) for week ${currentWeekStart}`);
+          // Invalidate to refresh the list with new objectives
+          queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+        }
+      } catch (error) {
+        console.error('Error generating recurring objectives:', error);
+      }
+    };
+
+    generateRecurringObjectives();
+  }, [user, currentWeekStart, queryClient]);
 
   const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],

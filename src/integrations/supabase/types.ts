@@ -457,8 +457,11 @@ export type Database = {
           description: string | null
           id: string
           is_public: boolean
+          is_recurring: boolean
           notes: string | null
           order_index: number | null
+          recurrence_frequency: string | null
+          recurring_objective_text: string | null
           status: string
           target_date: string | null
           timeframe: string
@@ -474,8 +477,11 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          is_recurring?: boolean
           notes?: string | null
           order_index?: number | null
+          recurrence_frequency?: string | null
+          recurring_objective_text?: string | null
           status?: string
           target_date?: string | null
           timeframe: string
@@ -491,8 +497,11 @@ export type Database = {
           description?: string | null
           id?: string
           is_public?: boolean
+          is_recurring?: boolean
           notes?: string | null
           order_index?: number | null
+          recurrence_frequency?: string | null
+          recurring_objective_text?: string | null
           status?: string
           target_date?: string | null
           timeframe?: string

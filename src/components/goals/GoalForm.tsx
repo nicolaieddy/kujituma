@@ -7,8 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { X, Calendar, Eye, EyeOff, Plus, Trash2 } from "lucide-react";
-import { CreateGoalData, GoalTimeframe, Goal } from "@/types/goals";
+import { X, Calendar, Eye, EyeOff, Plus, Trash2, RefreshCw } from "lucide-react";
+import { CreateGoalData, GoalTimeframe, Goal, RecurrenceFrequency } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
 import { CustomCategoriesService } from "@/services/customCategoriesService";
@@ -31,6 +31,12 @@ const TIMEFRAME_OPTIONS: GoalTimeframe[] = [
   'Custom Date'
 ];
 
+const RECURRENCE_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Bi-weekly' },
+  { value: 'monthly', label: 'Monthly' }
+];
+
 export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
   const isMobile = useIsMobile();
   const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
@@ -42,14 +48,20 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     timeframe: initialData.timeframe || '1 Month',
     target_date: initialData.target_date || '',
     category: initialData.category || '',
-    is_public: initialData.is_public ?? true
+    is_public: initialData.is_public ?? true,
+    is_recurring: initialData.is_recurring ?? false,
+    recurrence_frequency: initialData.recurrence_frequency || 'weekly',
+    recurring_objective_text: initialData.recurring_objective_text || ''
   } : {
     title: '',
     description: '',
     timeframe: '1 Month',
     target_date: '',
     category: '',
-    is_public: true
+    is_public: true,
+    is_recurring: false,
+    recurrence_frequency: 'weekly',
+    recurring_objective_text: ''
   });
 
   // Load custom categories
@@ -75,7 +87,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         timeframe: initialData.timeframe || '1 Month',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
-        is_public: initialData.is_public ?? true
+        is_public: initialData.is_public ?? true,
+        is_recurring: initialData.is_recurring ?? false,
+        recurrence_frequency: initialData.recurrence_frequency || 'weekly',
+        recurring_objective_text: initialData.recurring_objective_text || ''
       });
     } else {
       // Reset form for new goal
@@ -85,7 +100,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         timeframe: '1 Month',
         target_date: '',
         category: '',
-        is_public: true
+        is_public: true,
+        is_recurring: false,
+        recurrence_frequency: 'weekly',
+        recurring_objective_text: ''
       });
     }
   }, [initialData]);
@@ -99,7 +117,12 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       description: formData.description?.trim() || '',
       timeframe: formData.timeframe,
       category: formData.category === 'none' ? '' : (formData.category?.trim() || ''),
-      is_public: formData.is_public
+      is_public: formData.is_public,
+      is_recurring: formData.is_recurring,
+      recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : undefined,
+      recurring_objective_text: formData.is_recurring && formData.recurring_objective_text?.trim() 
+        ? formData.recurring_objective_text.trim() 
+        : undefined
     };
 
     // Only include target_date if timeframe is Custom Date and date is provided
@@ -383,6 +406,73 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Recurring Objectives Section */}
+          <div className={`${isMobile ? 'p-4' : 'p-5'} bg-muted/50 rounded-lg border`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <RefreshCw className={`h-5 w-5 ${formData.is_recurring ? 'text-primary' : 'text-foreground'}`} />
+                <div>
+                  <Label htmlFor="is_recurring" className="font-medium">
+                    Recurring Objectives
+                  </Label>
+                  <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
+                    Auto-create weekly objectives for this goal
+                  </p>
+                </div>
+              </div>
+              <Switch
+                id="is_recurring"
+                checked={formData.is_recurring}
+                onCheckedChange={(checked) => setFormData({ ...formData, is_recurring: checked })}
+              />
+            </div>
+
+            {formData.is_recurring && (
+              <div className="mt-4 space-y-4 pl-8">
+                <div>
+                  <Label htmlFor="recurrence_frequency" className="font-medium text-sm">Frequency</Label>
+                  <Select
+                    value={formData.recurrence_frequency}
+                    onValueChange={(value: RecurrenceFrequency) => 
+                      setFormData({ ...formData, recurrence_frequency: value })
+                    }
+                  >
+                    <SelectTrigger className={`mt-1.5 ${isMobile ? 'h-12' : 'h-10'}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-50">
+                      {RECURRENCE_OPTIONS.map((option) => (
+                        <SelectItem 
+                          key={option.value} 
+                          value={option.value}
+                          className="cursor-pointer"
+                        >
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label htmlFor="recurring_objective_text" className="font-medium text-sm">
+                    Objective Text <span className="text-muted-foreground font-normal">(optional)</span>
+                  </Label>
+                  <Input
+                    id="recurring_objective_text"
+                    value={formData.recurring_objective_text}
+                    onChange={(e) => setFormData({ ...formData, recurring_objective_text: e.target.value })}
+                    placeholder={formData.title || "Uses goal title if empty"}
+                    className={`mt-1.5 ${isMobile ? 'h-12 text-base' : 'h-10'}`}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    The text that will appear as your weekly objective
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className={`${isMobile ? 'p-4' : 'p-5'} bg-muted/50 rounded-lg border`}>

@@ -15,11 +15,16 @@ export interface Goal {
   deprioritized_at: string | null;
   order_index: number;
   is_public: boolean;
+  is_recurring: boolean;
+  recurrence_frequency: RecurrenceFrequency | null;
+  recurring_objective_text: string | null;
 }
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
 
 export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'deprioritized' | 'deleted';
+
+export type RecurrenceFrequency = 'weekly' | 'biweekly' | 'monthly';
 
 export interface GoalStatusHistory {
   id: string;
@@ -37,6 +42,9 @@ export interface CreateGoalData {
   target_date?: string;
   category?: string;
   is_public?: boolean;
+  is_recurring?: boolean;
+  recurrence_frequency?: RecurrenceFrequency;
+  recurring_objective_text?: string;
 }
 
 export interface UpdateGoalData {
@@ -49,4 +57,7 @@ export interface UpdateGoalData {
   notes?: string;
   order_index?: number;
   is_public?: boolean;
+  is_recurring?: boolean;
+  recurrence_frequency?: RecurrenceFrequency;
+  recurring_objective_text?: string;
 }
