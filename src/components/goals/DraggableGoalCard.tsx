@@ -46,7 +46,11 @@ export const DraggableGoalCard = ({
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group touch-none">
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="relative group"
+    >
       {/* Drop indicator line - shows above the card when hovering */}
       {isOver && !isDragging && (
         <div className="absolute -top-1.5 left-0 right-0 z-20">
@@ -56,23 +60,27 @@ export const DraggableGoalCard = ({
         </div>
       )}
       
+      {/* Always visible drag handle on the left side */}
       <div
         {...attributes}
         {...listeners}
-        className="absolute left-2 top-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10 p-1 rounded hover:bg-muted"
+        className="absolute left-0 top-0 bottom-0 w-8 cursor-grab active:cursor-grabbing z-10 flex items-center justify-center bg-gradient-to-r from-muted/50 to-transparent opacity-60 hover:opacity-100 transition-opacity rounded-l-lg touch-none"
       >
-        <GripVertical className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+        <GripVertical className="h-5 w-5 text-muted-foreground" />
       </div>
-      <GoalCard
-        goal={goal}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        onStatusChange={onStatusChange}
-        onClick={onClick}
-        onDeprioritize={onDeprioritize}
-        onReprioritize={onReprioritize}
-        isDeprioritized={isDeprioritized}
-      />
+      
+      <div className="pl-6">
+        <GoalCard
+          goal={goal}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onStatusChange={onStatusChange}
+          onClick={onClick}
+          onDeprioritize={onDeprioritize}
+          onReprioritize={onReprioritize}
+          isDeprioritized={isDeprioritized}
+        />
+      </div>
     </div>
   );
 };
