@@ -18,7 +18,7 @@ import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { CommitmentSelector } from "@/components/commitments/CommitmentSelector";
 import { PublicCommitmentsBadge } from "@/components/commitments/PublicCommitmentsBadge";
-import { AccountabilitySection } from "@/components/accountability/AccountabilitySection";
+
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
 
@@ -340,11 +340,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         </Card>
       )}
 
-      {/* Accountability */}
-      <AccountabilitySection
-        weekStart={currentWeekStart}
-        onUpdate={() => {}}
-      />
 
       {/* Weekly Objectives */}
       <Card className="border-border">

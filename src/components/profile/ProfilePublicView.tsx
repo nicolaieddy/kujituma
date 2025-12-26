@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck, Users } from "lucide-react";
+import { User, Calendar, Clock, ExternalLink, UserPlus, UserMinus, UserCheck } from "lucide-react";
 import linkedinIcon from "@/assets/linkedin-icon.png";
 import instagramIcon from "@/assets/instagram-icon.png";
 import xIcon from "@/assets/x-icon.png";
@@ -15,7 +15,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { supabase } from "@/integrations/supabase/client";
 import { commitmentsService, PublicCommitment } from "@/services/commitmentsService";
-import { accountabilityService } from "@/services/accountabilityService";
+
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { toast } from "sonner";
 
@@ -50,13 +50,8 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [commitments, setCommitments] = useState<PublicCommitment[]>([]);
-  const [isAlreadyPartner, setIsAlreadyPartner] = useState(false);
-  const [isSendingRequest, setIsSendingRequest] = useState(false);
-  const [pendingRequest, setPendingRequest] = useState(false);
   const [loadingStates, setLoadingStates] = useState({
-    commitments: false,
-    partner: false,
-    pendingRequest: false
+    commitments: false
   });
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status } = friendshipStatus || { is_friend: false };
@@ -68,66 +63,19 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
     // Only fetch data if user is authenticated and not on own profile
     if (!user || isOwnProfile) return;
 
-    // Fetch all data in parallel
+    // Fetch commitments if friends
     const fetchData = async () => {
-      setLoadingStates({ commitments: true, partner: true, pendingRequest: true });
-      
-      await Promise.all([
-        // Load commitments
-        (async () => {
-          if (is_friend) {
-            const data = await commitmentsService.getPublicCommitments(profile.id, currentWeekStart);
-            setCommitments(data);
-          }
-          setLoadingStates(prev => ({ ...prev, commitments: false }));
-        })(),
-        
-        // Check if already partners with this person
-        (async () => {
-          const partners = await accountabilityService.getAccountabilityPartners();
-          const isPartner = partners.some(p => p.partner_id === profile.id);
-          setIsAlreadyPartner(isPartner);
-          setLoadingStates(prev => ({ ...prev, partner: false }));
-        })(),
-        
-        // Check pending request
-        (async () => {
-          const { data } = await supabase
-            .from('accountability_partner_requests')
-            .select('*')
-            .eq('status', 'pending')
-            .or(`sender_id.eq.${user.id},sender_id.eq.${profile.id}`)
-            .or(`receiver_id.eq.${user.id},receiver_id.eq.${profile.id}`);
-          
-          const hasPending = data?.some(req => 
-            (req.sender_id === user.id && req.receiver_id === profile.id) ||
-            (req.sender_id === profile.id && req.receiver_id === user.id)
-          );
-          
-          setPendingRequest(!!hasPending);
-          setLoadingStates(prev => ({ ...prev, pendingRequest: false }));
-        })()
-      ]);
+      if (is_friend) {
+        setLoadingStates({ commitments: true });
+        const data = await commitmentsService.getPublicCommitments(profile.id, currentWeekStart);
+        setCommitments(data);
+        setLoadingStates({ commitments: false });
+      }
     };
 
     fetchData();
   }, [profile.id, user, is_friend, currentWeekStart, isOwnProfile]);
 
-  const handleSendPartnerRequest = async () => {
-    setIsSendingRequest(true);
-    const result = await accountabilityService.sendPartnerRequest(
-      profile.id,
-      `Hi ${profile.full_name}! Would you like to be accountability partners?`
-    );
-
-    if (result.success) {
-      toast.success('🤝 Accountability partner request sent!');
-      setPendingRequest(true);
-    } else {
-      toast.error(result.error || 'Failed to send request');
-    }
-    setIsSendingRequest(false);
-  };
 
   const handleSendFriendRequest = async () => {
     await sendFriendRequestBase(profile.id);
@@ -226,32 +174,6 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
                     </Button>
                   )}
                 </div>
-                
-                {/* Accountability Partner Request */}
-                {is_friend && !loadingStates.partner && (
-                  isAlreadyPartner ? (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="bg-primary/10 border-primary/30 text-primary"
-                      disabled
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      Already Accountability Partners
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className={pendingRequest ? "bg-accent/50 border-accent text-accent-foreground" : "bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"}
-                      onClick={handleSendPartnerRequest}
-                      disabled={isSendingRequest || pendingRequest}
-                    >
-                      <Users className="h-4 w-4 mr-2" />
-                      {isSendingRequest ? 'Sending...' : pendingRequest ? 'Request Pending' : 'Become Accountability Partners'}
-                    </Button>
-                  )
-                )}
               </div>
             )}
           </div>
