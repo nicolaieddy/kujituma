@@ -28,17 +28,55 @@ export const useHabitCompletions = (weekStart?: Date) => {
       habitItemId: string;
       date: Date;
     }) => HabitCompletionsService.toggleCompletion(goalId, habitItemId, date),
-    onSuccess: (isCompleted) => {
-      queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
-      // No toast for daily check - too noisy
+    onMutate: async ({ goalId, habitItemId, date }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["habit-completions", user?.id, weekKey] });
+      
+      // Snapshot the previous value
+      const previousCompletions = queryClient.getQueryData(["habit-completions", user?.id, weekKey]);
+      
+      // Optimistically update
+      const dateStr = format(date, "yyyy-MM-dd");
+      queryClient.setQueryData(["habit-completions", user?.id, weekKey], (old: any[] | undefined) => {
+        if (!old) return old;
+        
+        const existingIndex = old.findIndex(
+          c => c.habit_item_id === habitItemId && c.completion_date === dateStr
+        );
+        
+        if (existingIndex >= 0) {
+          // Remove the completion (toggle off)
+          return old.filter((_, i) => i !== existingIndex);
+        } else {
+          // Add the completion (toggle on)
+          return [...old, {
+            id: `temp-${Date.now()}`,
+            goal_id: goalId,
+            habit_item_id: habitItemId,
+            completion_date: dateStr,
+            user_id: user?.id,
+            created_at: new Date().toISOString()
+          }];
+        }
+      });
+      
+      return { previousCompletions };
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      // Rollback on error
+      if (context?.previousCompletions) {
+        queryClient.setQueryData(["habit-completions", user?.id, weekKey], context.previousCompletions);
+      }
       console.error("Error toggling habit completion:", error);
       toast({
         title: "Error",
         description: "Failed to update habit completion",
         variant: "destructive",
       });
+    },
+    onSettled: () => {
+      // Refetch to ensure sync with server
+      queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
     },
   });
 
