@@ -23,7 +23,7 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   
   const weekStart = WeeklyProgressService.getWeekStart();
   const { hasCompletedPlanning } = useWeeklyPlanning(weekStart);
-  const { hasCompletedReview, isEndOfQuarter } = useQuarterlyReview();
+  const { hasCompletedReview, isEndOfQuarter, isLoading: isReviewLoading } = useQuarterlyReview();
   const { goals } = useGoals();
   const { objectives } = useAllWeeklyObjectives();
   
@@ -41,14 +41,18 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
       }
     }
     
-    // Show quarterly review prompt only if user has activity
-    if (isEndOfQuarter && !hasCompletedReview && hasUserActivity) {
+    // Show quarterly review prompt only if:
+    // - Data has loaded (not still loading)
+    // - User has activity
+    // - It's end of quarter
+    // - Review not completed
+    if (!isReviewLoading && isEndOfQuarter && !hasCompletedReview && hasUserActivity) {
       const dismissed = sessionStorage.getItem(`quarterly-dismissed-${weekStart}`);
       if (!dismissed) {
         setTimeout(() => setShowQuarterlyDialog(true), 3000);
       }
     }
-  }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter, hasUserActivity]);
+  }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter, hasUserActivity, isReviewLoading]);
   
   const handleClosePlanning = (open: boolean) => {
     if (!open) {
