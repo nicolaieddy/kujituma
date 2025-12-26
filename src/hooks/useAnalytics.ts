@@ -3,7 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { startOfQuarter, endOfQuarter, subQuarters, format, startOfWeek, parseISO, subWeeks, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 
-export type DateRangeFilter = 'this_week' | 'this_month' | 'this_quarter' | 'all_time';
+export type DateRangeFilter = 'this_week' | 'this_month' | 'this_quarter' | 'all_time' | 'custom';
+
+export interface CustomDateRange {
+  from: Date;
+  to?: Date;
+}
 
 interface WeeklyActivity {
   date: string;
@@ -117,7 +122,7 @@ const defaultAnalytics: AnalyticsData = {
   heatmapData: []
 };
 
-const getDateRangeFilter = (range: DateRangeFilter): { start: Date; end: Date } | null => {
+const getDateRangeFilter = (range: DateRangeFilter, customRange?: CustomDateRange): { start: Date; end: Date } | null => {
   const now = new Date();
   
   switch (range) {
@@ -133,13 +138,22 @@ const getDateRangeFilter = (range: DateRangeFilter): { start: Date; end: Date } 
       const start = startOfQuarter(now);
       return { start, end: now };
     }
+    case 'custom': {
+      if (customRange?.from) {
+        return { 
+          start: customRange.from, 
+          end: customRange.to || customRange.from 
+        };
+      }
+      return null;
+    }
     case 'all_time':
     default:
       return null;
   }
 };
 
-export const useAnalytics = (dateRange: DateRangeFilter = 'all_time') => {
+export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRange?: CustomDateRange) => {
   const { user } = useAuth();
   const [analytics, setAnalytics] = useState<AnalyticsData>(defaultAnalytics);
   const [isLoading, setIsLoading] = useState(true);
@@ -167,7 +181,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time') => {
 
         if (objectives && goals) {
           // Filter objectives by date range
-          const dateFilter = getDateRangeFilter(dateRange);
+          const dateFilter = getDateRangeFilter(dateRange, customRange);
           const filteredObjectives = dateFilter 
             ? objectives.filter(obj => {
                 const weekDate = parseISO(obj.week_start);
@@ -186,7 +200,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time') => {
     };
 
     fetchAnalytics();
-  }, [user, dateRange]);
+  }, [user, dateRange, customRange?.from?.getTime(), customRange?.to?.getTime()]);
 
   const refetchAnalytics = async () => {
     if (!user) return;
