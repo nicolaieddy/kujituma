@@ -38,6 +38,36 @@ export class GoalsService {
     return (goals || []) as Goal[];
   }
 
+  static async deprioritizeGoal(id: string): Promise<Goal> {
+    const { data: goal, error } = await supabase
+      .from('goals')
+      .update({ 
+        status: 'deprioritized',
+        deprioritized_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return goal as Goal;
+  }
+
+  static async reprioritizeGoal(id: string): Promise<Goal> {
+    const { data: goal, error } = await supabase
+      .from('goals')
+      .update({ 
+        status: 'not_started',
+        deprioritized_at: null
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return goal as Goal;
+  }
+
   static async getPublicGoals(userId: string): Promise<Goal[]> {
     const { data: goals, error } = await supabase
       .from('goals')

@@ -3,11 +3,12 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Goal, GoalStatus } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 interface GoalCardProps {
   goal: Goal;
@@ -15,6 +16,9 @@ interface GoalCardProps {
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: GoalStatus) => void;
   onClick?: (goal: Goal) => void;
+  onDeprioritize?: (id: string) => void;
+  onReprioritize?: (id: string) => void;
+  isDeprioritized?: boolean;
 }
 
 const STATUS_CONFIG = {
@@ -32,12 +36,26 @@ const STATUS_CONFIG = {
     color: "bg-green-100 text-green-800", 
     icon: CheckCircle, 
     label: "Completed" 
+  },
+  deprioritized: {
+    color: "bg-gray-100 text-gray-600",
+    icon: Archive,
+    label: "Deprioritized"
   }
 };
 
-export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: GoalCardProps) => {
+export const GoalCard = ({ 
+  goal, 
+  onEdit, 
+  onDelete, 
+  onStatusChange, 
+  onClick,
+  onDeprioritize,
+  onReprioritize,
+  isDeprioritized = false
+}: GoalCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const config = STATUS_CONFIG[goal.status];
+  const config = STATUS_CONFIG[goal.status] || STATUS_CONFIG.not_started;
   const IconComponent = config.icon;
 
   const handleStatusChange = (newStatus: GoalStatus) => {
@@ -64,19 +82,25 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
       whileTap={{ scale: 0.98 }}
     >
       <Card 
-        className="border-border hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer group"
+        className={cn(
+          "border-border hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer group",
+          isDeprioritized && "opacity-60 bg-muted/30"
+        )}
         onClick={() => onClick?.(goal)}
       >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <IconComponent className="h-4 w-4 text-primary" />
+              <IconComponent className={cn("h-4 w-4", isDeprioritized ? "text-muted-foreground" : "text-primary")} />
               <Badge className={`${config.color} text-xs`}>
                 {config.label}
               </Badge>
             </div>
-            <h3 className="font-semibold text-foreground text-lg leading-tight group-hover:text-primary transition-colors">
+            <h3 className={cn(
+              "font-semibold text-lg leading-tight group-hover:text-primary transition-colors",
+              isDeprioritized ? "text-muted-foreground" : "text-foreground"
+            )}>
               {goal.title}
             </h3>
             <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-primary flex items-center gap-1 mt-1">
@@ -99,6 +123,8 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
                 <Edit className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
+              
+              {/* Status change actions */}
               {goal.status === 'not_started' && (
                 <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleStatusChange('in_progress'); }}>
                   <Play className="h-4 w-4 mr-2" />
@@ -117,6 +143,25 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
                   Reopen
                 </DropdownMenuItem>
               )}
+              
+              <DropdownMenuSeparator />
+              
+              {/* Deprioritize/Reprioritize actions */}
+              {goal.status === 'deprioritized' && onReprioritize && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onReprioritize(goal.id); }}>
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Re-prioritize
+                </DropdownMenuItem>
+              )}
+              {goal.status !== 'deprioritized' && goal.status !== 'completed' && onDeprioritize && (
+                <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onDeprioritize(goal.id); }}>
+                  <Archive className="h-4 w-4 mr-2" />
+                  Deprioritize
+                </DropdownMenuItem>
+              )}
+              
+              <DropdownMenuSeparator />
+              
               <DropdownMenuItem 
                 onClick={(e) => { e.stopPropagation(); onDelete(goal.id); }}
                 className="text-red-600"
@@ -132,7 +177,10 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
       <CardContent className="pt-0">
         <div className="space-y-3">
           {goal.description && (
-            <p className="text-muted-foreground text-sm leading-relaxed">
+            <p className={cn(
+              "text-sm leading-relaxed",
+              isDeprioritized ? "text-muted-foreground/70" : "text-muted-foreground"
+            )}>
               {isExpanded ? goal.description : 
                 goal.description.length > 100 ? 
                   `${goal.description.substring(0, 100)}...` : 
@@ -140,7 +188,7 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
               }
               {goal.description.length > 100 && (
                 <button
-                  onClick={() => setIsExpanded(!isExpanded)}
+                  onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
                   className="text-primary hover:text-primary/80 ml-1 text-sm"
                 >
                   {isExpanded ? 'Show less' : 'Show more'}
@@ -174,6 +222,9 @@ export const GoalCard = ({ goal, onEdit, onDelete, onStatusChange, onClick }: Go
             <span>Created {formatRelativeTime(new Date(goal.created_at).getTime())}</span>
             {goal.completed_at && (
               <span>Completed {formatRelativeTime(new Date(goal.completed_at).getTime())}</span>
+            )}
+            {goal.deprioritized_at && (
+              <span>Deprioritized {formatRelativeTime(new Date(goal.deprioritized_at).getTime())}</span>
             )}
           </div>
         </div>

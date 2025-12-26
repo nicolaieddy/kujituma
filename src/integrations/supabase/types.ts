@@ -453,6 +453,7 @@ export type Database = {
           category: string | null
           completed_at: string | null
           created_at: string
+          deprioritized_at: string | null
           description: string | null
           id: string
           is_public: boolean
@@ -469,6 +470,7 @@ export type Database = {
           category?: string | null
           completed_at?: string | null
           created_at?: string
+          deprioritized_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean
@@ -485,6 +487,7 @@ export type Database = {
           category?: string | null
           completed_at?: string | null
           created_at?: string
+          deprioritized_at?: string | null
           description?: string | null
           id?: string
           is_public?: boolean

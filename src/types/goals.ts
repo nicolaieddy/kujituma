@@ -12,13 +12,14 @@ export interface Goal {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+  deprioritized_at: string | null;
   order_index: number;
   is_public: boolean;
 }
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
 
-export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'deleted';
+export type GoalStatus = 'not_started' | 'in_progress' | 'completed' | 'deprioritized' | 'deleted';
 
 export interface GoalStatusHistory {
   id: string;
