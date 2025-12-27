@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -45,7 +45,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const { goals } = useGoals();
   
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const { toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
+  const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
   
   const [moodRating, setMoodRating] = useState<number>(todayCheckIn?.mood_rating || 3);
   const [energyLevel, setEnergyLevel] = useState<number>(todayCheckIn?.energy_level || 3);
@@ -64,6 +64,18 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     (g.status === 'not_started' || g.status === 'in_progress')
   );
 
+  // Calculate weekly streak (days completed this week) for each habit item
+  const habitWeekStreaks = useMemo(() => {
+    const streaks: Record<string, number> = {};
+    completions.forEach(c => {
+      if (!streaks[c.habit_item_id]) {
+        streaks[c.habit_item_id] = 0;
+      }
+      streaks[c.habit_item_id]++;
+    });
+    return streaks;
+  }, [completions]);
+
   // Flatten all habit items with their goal info, filtering by frequency
   const habitItemsDueToday = goalsWithHabits.flatMap(goal => {
     const items = goal.habit_items as HabitItem[];
@@ -80,6 +92,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         ...item,
         goalId: goal.id,
         goalTitle: goal.title,
+        weekStreak: habitWeekStreaks[item.id] || 0,
       }));
   });
 
@@ -104,6 +117,13 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       blocker: blocker || undefined,
     });
     onOpenChange(false);
+  };
+
+  const getStreakColor = (streak: number) => {
+    if (streak >= 6) return "text-orange-500";
+    if (streak >= 4) return "text-yellow-500";
+    if (streak >= 2) return "text-green-500";
+    return "text-emerald-400";
   };
   
   return (
@@ -158,6 +178,13 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
                           {habit.goalTitle}
                         </p>
                       </div>
+                      {/* Week streak indicator */}
+                      {habit.weekStreak > 0 && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Flame className={cn("h-4 w-4", getStreakColor(habit.weekStreak))} />
+                          <span className="text-xs font-medium">{habit.weekStreak}</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
