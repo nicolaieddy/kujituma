@@ -35,6 +35,12 @@ export interface UserProfile {
 }
 
 class FriendsService {
+  // Sanitize query for ILIKE pattern - escape special characters
+  private sanitizeForIlike(input: string): string {
+    // Escape LIKE special characters: %, _, and backslash
+    return input.replace(/[%_\\]/g, '\\$&');
+  }
+
   // Send a friend request
   async sendFriendRequest(receiverId: string): Promise<{ success: boolean; error?: string }> {
     try {
@@ -190,6 +196,12 @@ class FriendsService {
   // Search for users (excluding friends and pending requests)
   async searchUsers(query: string): Promise<UserProfile[]> {
     try {
+      const trimmedQuery = query.trim();
+      // Validate input length
+      if (!trimmedQuery || trimmedQuery.length > 100) {
+        return [];
+      }
+
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser.user) return [];
 
@@ -209,12 +221,23 @@ class FriendsService {
         ...receivedRequestIds
       ];
 
-      const { data, error } = await supabase
+      // Sanitize query for ILIKE pattern
+      const sanitizedQuery = this.sanitizeForIlike(trimmedQuery);
+
+      // Build query - use filter for array exclusion
+      let queryBuilder = supabase
         .from('profiles')
         .select('id, full_name, avatar_url, about_me, linkedin_url')
-        .ilike('full_name', `%${query}%`)
-        .not('id', 'in', `(${excludeIds.join(',')})`)
+        .ilike('full_name', `%${sanitizedQuery}%`)
         .limit(20);
+
+      // Only add exclusion filter if there are IDs to exclude
+      if (excludeIds.length > 0) {
+        // Use array filter syntax instead of string interpolation
+        queryBuilder = queryBuilder.not('id', 'in', `(${excludeIds.map(id => `"${id}"`).join(',')})`);
+      }
+
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
 
