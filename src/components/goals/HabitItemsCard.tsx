@@ -85,7 +85,20 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const { toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
 
-  const habitItems = goal.habit_items || [];
+  // Combine habit_items with recurring objective if exists
+  const baseHabitItems = goal.habit_items || [];
+  
+  // If goal has recurring objective, treat it as a habit item too
+  const recurringHabit = goal.is_recurring && goal.recurring_objective_text ? {
+    id: `recurring-${goal.id}`,
+    text: goal.recurring_objective_text,
+    frequency: goal.recurrence_frequency || 'weekly'
+  } : null;
+
+  const habitItems = recurringHabit 
+    ? [recurringHabit, ...baseHabitItems]
+    : baseHabitItems;
+    
   const hasHabits = habitItems.length > 0;
 
   // Fetch all completions for each habit to calculate stats and weekly history

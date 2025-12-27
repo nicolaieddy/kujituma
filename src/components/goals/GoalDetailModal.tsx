@@ -165,8 +165,8 @@ export const GoalDetailModal = ({
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {/* Habit Items with weekly tracking */}
-            {goal.habit_items && goal.habit_items.length > 0 && (
+            {/* Habit Items with weekly tracking - show if has habit_items OR is recurring */}
+            {((goal.habit_items && goal.habit_items.length > 0) || goal.is_recurring) && (
               <HabitItemsCard goal={goal} />
             )}
             
