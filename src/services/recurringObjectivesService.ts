@@ -63,7 +63,34 @@ export class RecurringObjectivesService {
   }
 
   /**
-   * Create a recurring objective for a specific week if it doesn't exist
+   * Check if an objective already exists for a specific habit item in a week
+   */
+  static async objectiveExistsForHabitItem(goalId: string, habitItemId: string, weekStart: string): Promise<boolean> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return false;
+
+    // Check by looking for objectives with text matching the habit item
+    // We use goal_id + week_start as the primary check
+    const { data, error } = await supabase
+      .from('weekly_objectives')
+      .select('id, text')
+      .eq('user_id', user.id)
+      .eq('goal_id', goalId)
+      .eq('week_start', weekStart);
+
+    if (error) {
+      console.error('Error checking existing objective for habit item:', error);
+      return false;
+    }
+
+    // For now, just check if any objective exists for this goal/week
+    // A more sophisticated approach would store habit_item_id in the objective
+    return (data?.length || 0) > 0;
+  }
+
+  /**
+   * Create recurring objectives for a specific week if they don't exist
+   * Now handles both legacy recurring_objective_text and new habit_items with creates_objective
    */
   static async createRecurringObjectiveIfNeeded(
     goal: Goal,
@@ -72,46 +99,167 @@ export class RecurringObjectivesService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return false;
 
-    // Skip objective creation for daily/weekday habits that use habit tracking
-    if (this.shouldUseHabitTrackingOnly(goal)) {
-      return false;
-    }
-
     // Check if goal is still valid for this week
     if (!this.isGoalActiveForWeek(goal, weekStart)) {
       return false;
     }
 
-    // Check if objective already exists
-    const exists = await this.objectiveExistsForWeek(goal.id, weekStart);
-    if (exists) {
-      return false;
-    }
+    let createdAny = false;
 
-    // Check if this week matches the recurrence pattern
-    if (!this.shouldCreateForWeek(goal, weekStart)) {
-      return false;
-    }
-
-    // Create the objective
-    const objectiveText = goal.recurring_objective_text || goal.title;
+    // Handle habit items with creates_objective = true
+    const habitItemsWithObjectives = (goal.habit_items || []).filter(item => item.creates_objective);
     
-    const { error } = await supabase
+    for (const habitItem of habitItemsWithObjectives) {
+      // Check if this week matches the recurrence pattern for this habit item
+      if (!this.shouldCreateForWeekWithFrequency(goal, weekStart, habitItem.frequency)) {
+        continue;
+      }
+
+      // Check if objective already exists for this goal/week
+      // For simplicity, we create one objective per habit item that has creates_objective
+      const existingObjectives = await this.getExistingObjectivesForGoal(goal.id, weekStart);
+      const alreadyExists = existingObjectives.some(obj => obj.text === habitItem.text);
+      
+      if (!alreadyExists) {
+        const { error } = await supabase
+          .from('weekly_objectives')
+          .insert({
+            user_id: user.id,
+            goal_id: goal.id,
+            text: habitItem.text,
+            week_start: weekStart,
+            is_completed: false
+          });
+
+        if (error) {
+          console.error('Error creating recurring objective for habit item:', error);
+        } else {
+          createdAny = true;
+        }
+      }
+    }
+
+    // Legacy: Handle recurring_objective_text if no habit items have creates_objective
+    // and goal has recurring_objective_text set
+    if (habitItemsWithObjectives.length === 0 && goal.recurring_objective_text) {
+      // Skip objective creation for daily/weekday habits that use habit tracking only
+      if (this.shouldUseHabitTrackingOnly(goal)) {
+        return createdAny;
+      }
+
+      // Check if objective already exists
+      const exists = await this.objectiveExistsForWeek(goal.id, weekStart);
+      if (exists) {
+        return createdAny;
+      }
+
+      // Check if this week matches the recurrence pattern
+      if (!this.shouldCreateForWeek(goal, weekStart)) {
+        return createdAny;
+      }
+
+      // Create the objective
+      const objectiveText = goal.recurring_objective_text || goal.title;
+      
+      const { error } = await supabase
+        .from('weekly_objectives')
+        .insert({
+          user_id: user.id,
+          goal_id: goal.id,
+          text: objectiveText,
+          week_start: weekStart,
+          is_completed: false
+        });
+
+      if (error) {
+        console.error('Error creating recurring objective:', error);
+      } else {
+        createdAny = true;
+      }
+    }
+
+    return createdAny;
+  }
+
+  /**
+   * Get existing objectives for a goal in a specific week
+   */
+  static async getExistingObjectivesForGoal(goalId: string, weekStart: string): Promise<{ id: string; text: string }[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data, error } = await supabase
       .from('weekly_objectives')
-      .insert({
-        user_id: user.id,
-        goal_id: goal.id,
-        text: objectiveText,
-        week_start: weekStart,
-        is_completed: false
-      });
+      .select('id, text')
+      .eq('user_id', user.id)
+      .eq('goal_id', goalId)
+      .eq('week_start', weekStart);
 
     if (error) {
-      console.error('Error creating recurring objective:', error);
-      return false;
+      console.error('Error fetching existing objectives:', error);
+      return [];
     }
 
-    return true;
+    return data || [];
+  }
+
+  /**
+   * Check if an objective should be created for this week based on a specific frequency
+   */
+  static shouldCreateForWeekWithFrequency(goal: Goal, weekStart: string, frequency: string): boolean {
+    const goalCreatedDate = parseISO(goal.created_at);
+    const weekDate = parseISO(weekStart);
+    const goalCreatedWeekStart = startOfWeek(goalCreatedDate, { weekStartsOn: 1 });
+
+    switch (frequency) {
+      case 'daily':
+      case 'weekdays':
+        // For daily/weekday frequencies, always create a weekly objective
+        return true;
+
+      case 'weekly':
+        return true;
+
+      case 'biweekly': {
+        let checkDate = goalCreatedWeekStart;
+        while (isBefore(checkDate, weekDate)) {
+          checkDate = addWeeks(checkDate, 2);
+        }
+        return format(checkDate, 'yyyy-MM-dd') === weekStart;
+      }
+
+      case 'monthly': {
+        const monthStart = startOfMonth(weekDate);
+        const firstWeekOfMonth = startOfWeek(monthStart, { weekStartsOn: 1 });
+        const effectiveFirstWeek = isBefore(firstWeekOfMonth, monthStart) 
+          ? addWeeks(firstWeekOfMonth, 1) 
+          : firstWeekOfMonth;
+        return format(weekDate, 'yyyy-MM-dd') === format(effectiveFirstWeek, 'yyyy-MM-dd');
+      }
+
+      case 'monthly_last_week': {
+        const monthEnd = endOfMonth(weekDate);
+        const lastWeekStart = startOfWeek(monthEnd, { weekStartsOn: 1 });
+        return format(weekDate, 'yyyy-MM-dd') === format(lastWeekStart, 'yyyy-MM-dd');
+      }
+
+      case 'quarterly': {
+        const month = getMonth(weekDate);
+        const quarterStartMonths = [0, 3, 6, 9];
+        if (!quarterStartMonths.includes(month)) {
+          return false;
+        }
+        const monthStart = startOfMonth(weekDate);
+        const firstWeekOfMonth = startOfWeek(monthStart, { weekStartsOn: 1 });
+        const effectiveFirstWeek = isBefore(firstWeekOfMonth, monthStart) 
+          ? addWeeks(firstWeekOfMonth, 1) 
+          : firstWeekOfMonth;
+        return format(weekDate, 'yyyy-MM-dd') === format(effectiveFirstWeek, 'yyyy-MM-dd');
+      }
+
+      default:
+        return true;
+    }
   }
 
   /**

@@ -3,9 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, GripVertical } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Plus, Trash2, GripVertical, Calendar } from "lucide-react";
 import { HabitItem, RecurrenceFrequency } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface HabitItemsEditorProps {
   habitItems: HabitItem[];
@@ -38,6 +40,7 @@ export const HabitItemsEditor = ({
       id: generateId(),
       text: newItemText.trim(),
       frequency: defaultFrequency,
+      creates_objective: false, // Default to checkbox tracking only
     };
     
     onChange([...habitItems, newItem]);
@@ -56,9 +59,9 @@ export const HabitItemsEditor = ({
 
   return (
     <div className="space-y-3">
-      <Label className="font-medium text-sm">Habit Items</Label>
+      <Label className="font-medium text-sm">Recurring Activities</Label>
       <p className="text-xs text-muted-foreground -mt-1">
-        Add multiple habits to track for this goal. Each habit can have its own frequency.
+        Add habits to track with checkboxes. Toggle "Create objective" to also auto-generate weekly objectives.
       </p>
       
       {/* Existing Items */}
@@ -67,44 +70,70 @@ export const HabitItemsEditor = ({
           {habitItems.map((item) => (
             <div 
               key={item.id}
-              className="flex items-center gap-2 p-2 rounded-lg border bg-background/50"
+              className="flex flex-col gap-2 p-3 rounded-lg border bg-background/50"
             >
-              <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+              <div className="flex items-center gap-2">
+                <GripVertical className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                
+                <Input
+                  value={item.text}
+                  onChange={(e) => updateHabitItem(item.id, { text: e.target.value })}
+                  className={`flex-1 ${isMobile ? 'h-10' : 'h-9'} text-sm`}
+                  placeholder="Activity text..."
+                />
+                
+                <Select
+                  value={item.frequency}
+                  onValueChange={(value: RecurrenceFrequency) => 
+                    updateHabitItem(item.id, { frequency: value })
+                  }
+                >
+                  <SelectTrigger className={`w-28 ${isMobile ? 'h-10' : 'h-9'} text-sm`}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="z-[300]">
+                    {FREQUENCY_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                  onClick={() => removeHabitItem(item.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
               
-              <Input
-                value={item.text}
-                onChange={(e) => updateHabitItem(item.id, { text: e.target.value })}
-                className={`flex-1 ${isMobile ? 'h-10' : 'h-9'} text-sm`}
-                placeholder="Habit text..."
-              />
-              
-              <Select
-                value={item.frequency}
-                onValueChange={(value: RecurrenceFrequency) => 
-                  updateHabitItem(item.id, { frequency: value })
-                }
-              >
-                <SelectTrigger className={`w-28 ${isMobile ? 'h-10' : 'h-9'} text-sm`}>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="z-[300]">
-                  {FREQUENCY_OPTIONS.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                onClick={() => removeHabitItem(item.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
+              {/* Create Objective Toggle */}
+              <div className="flex items-center justify-between pl-6">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>Auto-create objective</span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-[200px]">
+                      <p className="text-xs">When enabled, this activity will automatically create a weekly objective based on its frequency.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <Switch
+                  checked={item.creates_objective ?? false}
+                  onCheckedChange={(checked) => 
+                    updateHabitItem(item.id, { creates_objective: checked })
+                  }
+                  className="scale-75"
+                />
+              </div>
             </div>
           ))}
         </div>
@@ -138,7 +167,7 @@ export const HabitItemsEditor = ({
       
       {habitItems.length === 0 && (
         <p className="text-xs text-muted-foreground italic">
-          No habits added yet. Add habits above to track them with daily checkboxes.
+          No activities added yet. Add activities to track them with checkboxes or auto-create objectives.
         </p>
       )}
     </div>
