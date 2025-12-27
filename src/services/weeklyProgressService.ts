@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
+import { parseISO, startOfWeek, isBefore } from "date-fns";
 
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
@@ -10,14 +11,35 @@ export class WeeklyProgressService {
     
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
-      .select('*')
+      .select('*, goals(start_date)')
       .eq('week_start', weekStart)
       .eq('user_id', user.id)
       .order('order_index', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return (objectives || []) as WeeklyObjective[];
+    
+    // Filter out objectives for goals that haven't started yet
+    const weekDate = parseISO(weekStart);
+    const filteredObjectives = (objectives || []).filter((obj: any) => {
+      // If no goal linked or no start_date, include it
+      if (!obj.goals || !obj.goals.start_date) {
+        return true;
+      }
+      
+      // Check if the goal's start date is after this week
+      const goalStartDate = parseISO(obj.goals.start_date);
+      const goalStartWeek = startOfWeek(goalStartDate, { weekStartsOn: 1 });
+      
+      // Include only if the week is on or after the goal's start week
+      return !isBefore(weekDate, goalStartWeek);
+    }).map((obj: any) => {
+      // Remove the joined goals data before returning
+      const { goals, ...objective } = obj;
+      return objective;
+    });
+    
+    return filteredObjectives as WeeklyObjective[];
   }
 
   static async createWeeklyObjective(data: CreateWeeklyObjectiveData): Promise<WeeklyObjective> {
