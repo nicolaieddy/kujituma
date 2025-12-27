@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
@@ -14,7 +15,7 @@ import {
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useGoals } from "@/hooks/useGoals";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
-import { Zap, Target, AlertTriangle, Trophy, Loader2, RefreshCw, Flame } from "lucide-react";
+import { Zap, Target, AlertTriangle, Trophy, Loader2, RefreshCw, Flame, TrendingUp } from "lucide-react";
 import { startOfWeek, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
@@ -106,7 +107,37 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     return todayIndex >= 0 ? status[todayIndex] || false : false;
   };
 
-  const completedCount = habitItemsDueToday.filter(h => getHabitChecked(h.id)).length;
+  const completedTodayCount = habitItemsDueToday.filter(h => getHabitChecked(h.id)).length;
+
+  // Calculate weekly progress (total completions / expected completions)
+  const weeklyProgress = useMemo(() => {
+    if (habitItemsDueToday.length === 0) return { completed: 0, total: 0, percentage: 0 };
+    
+    // Days elapsed this week (including today)
+    const daysElapsed = todayIndex + 1;
+    
+    let totalExpected = 0;
+    let totalCompleted = 0;
+
+    habitItemsDueToday.forEach(habit => {
+      let expectedDays = 0;
+      if (habit.frequency === 'daily') {
+        expectedDays = daysElapsed;
+      } else if (habit.frequency === 'weekdays') {
+        expectedDays = Math.min(daysElapsed, 5); // Mon-Fri only
+      } else if (habit.frequency === 'weekly') {
+        expectedDays = 1;
+      } else {
+        expectedDays = daysElapsed; // Default to daily
+      }
+      
+      totalExpected += expectedDays;
+      totalCompleted += habit.weekStreak;
+    });
+
+    const percentage = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
+    return { completed: totalCompleted, total: totalExpected, percentage: Math.min(percentage, 100) };
+  }, [habitItemsDueToday, todayIndex]);
   
   const handleSubmit = async () => {
     await submitCheckIn({
@@ -142,10 +173,36 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         <div className="space-y-6 py-4">
           {/* Habits Due Today */}
           {habitItemsDueToday.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {/* Weekly Progress Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-2">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Weekly Progress
+                  </Label>
+                  <span className={cn(
+                    "text-sm font-semibold",
+                    weeklyProgress.percentage >= 80 ? "text-success" :
+                    weeklyProgress.percentage >= 50 ? "text-yellow-500" :
+                    "text-muted-foreground"
+                  )}>
+                    {weeklyProgress.percentage}%
+                  </span>
+                </div>
+                <Progress 
+                  value={weeklyProgress.percentage} 
+                  className="h-2"
+                />
+                <p className="text-xs text-muted-foreground text-center">
+                  {weeklyProgress.completed} of {weeklyProgress.total} habit check-ins completed this week
+                </p>
+              </div>
+
+              {/* Today's Habits */}
               <Label className="flex items-center gap-2">
                 <RefreshCw className="h-4 w-4 text-primary" />
-                Today's Habits ({completedCount}/{habitItemsDueToday.length})
+                Today's Habits ({completedTodayCount}/{habitItemsDueToday.length})
               </Label>
               <div className="space-y-2 max-h-48 overflow-y-auto rounded-lg border bg-muted/30 p-3">
                 {habitItemsDueToday.map((habit) => {
