@@ -183,6 +183,24 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
     toggleCompletion(goal.id, habitItemId, date);
   };
 
+  // Determine tracking mode based on frequency
+  const getTrackingMode = (frequency: string): 'daily' | 'weekly' | 'monthly' => {
+    switch (frequency) {
+      case 'daily':
+      case 'weekdays':
+        return 'daily';
+      case 'weekly':
+      case 'biweekly':
+        return 'weekly';
+      case 'monthly':
+      case 'monthly_last_week':
+      case 'quarterly':
+        return 'monthly';
+      default:
+        return 'daily';
+    }
+  };
+
   const getDaysToShow = (frequency: string): number[] => {
     switch (frequency) {
       case 'daily':
@@ -227,9 +245,13 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
         <div className="space-y-4">
           {habitItems.map((habit) => {
             const completionStatus = getCompletionStatus(habit.id);
+            const trackingMode = getTrackingMode(habit.frequency);
             const daysToShow = getDaysToShow(habit.frequency);
             const completedDays = getHabitItemCompletionCount(habit.id);
             const stats = habitStats[habit.id];
+            
+            // For weekly/monthly, check if any day this week is completed
+            const hasCompletionThisWeek = Object.values(completionStatus).some(Boolean);
             
             return (
               <div 
@@ -268,17 +290,21 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
                     <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50">
                       {frequencyLabels[habit.frequency] || habit.frequency}
                     </Badge>
-                    <Badge 
-                      variant="secondary" 
-                      className={cn(
-                        "text-xs",
-                        completedDays === daysToShow.length 
-                          ? "bg-emerald-500/20 text-emerald-400" 
-                          : "bg-muted/50 text-muted-foreground"
-                      )}
-                    >
-                      {completedDays}/{daysToShow.length}
-                    </Badge>
+                    
+                    {/* Only show X/7 counter for daily tracking */}
+                    {trackingMode === 'daily' && (
+                      <Badge 
+                        variant="secondary" 
+                        className={cn(
+                          "text-xs",
+                          completedDays === daysToShow.length 
+                            ? "bg-emerald-500/20 text-emerald-400" 
+                            : "bg-muted/50 text-muted-foreground"
+                        )}
+                      >
+                        {completedDays}/{daysToShow.length}
+                      </Badge>
+                    )}
                   </div>
                 </div>
 
@@ -290,49 +316,81 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
                   </div>
                 )}
                 
-                {/* Day checkboxes */}
-                <div className="flex items-center justify-between gap-1">
-                  {DAY_LABELS.map((label, index) => {
-                    const isActiveDay = daysToShow.includes(index);
-                    const isChecked = completionStatus[index] || false;
-                    const date = weekDates[index];
-                    const isTodayDate = date && isToday(date);
-                    const isPast = date && isBefore(date, new Date()) && !isTodayDate;
-                    
-                    return (
-                      <div
-                        key={index}
-                        className={cn(
-                          "flex flex-col items-center gap-1 flex-1",
-                          !isActiveDay && "opacity-30"
-                        )}
-                      >
-                        <span className={cn(
-                          "text-xs font-medium",
-                          isTodayDate ? "text-emerald-400" : "text-muted-foreground"
-                        )}>
-                          {label}
-                        </span>
-                        <Checkbox
-                          checked={isChecked}
-                          disabled={!isActiveDay || isToggling}
-                          onCheckedChange={() => {
-                            if (isActiveDay) {
-                              handleDayToggle(habit.id, index);
-                            }
-                          }}
+                {/* Tracking UI based on frequency */}
+                {trackingMode === 'daily' ? (
+                  /* Day checkboxes for daily/weekdays */
+                  <div className="flex items-center justify-between gap-1">
+                    {DAY_LABELS.map((label, index) => {
+                      const isActiveDay = daysToShow.includes(index);
+                      const isChecked = completionStatus[index] || false;
+                      const date = weekDates[index];
+                      const isTodayDate = date && isToday(date);
+                      const isPast = date && isBefore(date, new Date()) && !isTodayDate;
+                      
+                      return (
+                        <div
+                          key={index}
                           className={cn(
-                            "h-7 w-7 rounded border-border",
-                            isTodayDate && "ring-2 ring-emerald-400/50 ring-offset-1 ring-offset-transparent",
-                            isChecked && "bg-emerald-500 border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
-                            !isActiveDay && "cursor-not-allowed",
-                            isPast && !isChecked && "border-border/50"
+                            "flex flex-col items-center gap-1 flex-1",
+                            !isActiveDay && "opacity-30"
                           )}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
+                        >
+                          <span className={cn(
+                            "text-xs font-medium",
+                            isTodayDate ? "text-emerald-400" : "text-muted-foreground"
+                          )}>
+                            {label}
+                          </span>
+                          <Checkbox
+                            checked={isChecked}
+                            disabled={!isActiveDay || isToggling}
+                            onCheckedChange={() => {
+                              if (isActiveDay) {
+                                handleDayToggle(habit.id, index);
+                              }
+                            }}
+                            className={cn(
+                              "h-7 w-7 rounded border-border",
+                              isTodayDate && "ring-2 ring-emerald-400/50 ring-offset-1 ring-offset-transparent",
+                              isChecked && "bg-emerald-500 border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
+                              !isActiveDay && "cursor-not-allowed",
+                              isPast && !isChecked && "border-border/50"
+                            )}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* Single checkbox for weekly/monthly/quarterly */
+                  <div className="flex items-center gap-3 py-2">
+                    <Checkbox
+                      checked={hasCompletionThisWeek}
+                      disabled={isToggling}
+                      onCheckedChange={() => {
+                        // Toggle using today's date
+                        const todayIndex = weekDates.findIndex(d => d && isToday(d));
+                        handleDayToggle(habit.id, todayIndex >= 0 ? todayIndex : 0);
+                      }}
+                      className={cn(
+                        "h-8 w-8 rounded border-border",
+                        hasCompletionThisWeek && "bg-emerald-500 border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500"
+                      )}
+                    />
+                    <div className="flex flex-col">
+                      <span className={cn(
+                        "text-sm font-medium",
+                        hasCompletionThisWeek ? "text-emerald-400" : "text-foreground"
+                      )}>
+                        {hasCompletionThisWeek ? "Completed this week" : "Mark as done this week"}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {trackingMode === 'weekly' ? "Track once per week" : 
+                         habit.frequency === 'quarterly' ? "Track once per quarter" : "Track once per month"}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           })}
