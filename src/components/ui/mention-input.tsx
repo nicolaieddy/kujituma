@@ -38,18 +38,26 @@ export const MentionInput = ({
   
   const debouncedMentionQuery = useDebounce(mentionQuery, 300);
 
+  // Sanitize query for ILIKE pattern - escape special characters
+  const sanitizeForIlike = (input: string): string => {
+    // Escape LIKE special characters: %, _, and backslash
+    return input.replace(/[%_\\]/g, '\\$&');
+  };
+
   // Fetch user suggestions
   const fetchUserSuggestions = useCallback(async (query: string) => {
-    if (!query.trim()) {
+    const trimmedQuery = query.trim();
+    if (!trimmedQuery || trimmedQuery.length > 100) {
       setSuggestions([]);
       return;
     }
 
     try {
+      const sanitizedQuery = sanitizeForIlike(trimmedQuery);
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, avatar_url')
-        .ilike('full_name', `%${query}%`)
+        .ilike('full_name', `%${sanitizedQuery}%`)
         .limit(10);
 
       if (error) throw error;
