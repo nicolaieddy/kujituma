@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -19,6 +19,7 @@ import { Zap, Target, AlertTriangle, Trophy, Loader2, RefreshCw, Flame, Trending
 import { startOfWeek, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
+import { celebrateGoalComplete } from "@/utils/confetti";
 
 interface DailyCheckInDialogProps {
   open: boolean;
@@ -97,6 +98,9 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       }));
   });
 
+  // Track previous completion count to detect when all habits are completed
+  const prevCompletedRef = useRef<number>(0);
+
   const handleHabitToggle = (goalId: string, habitItemId: string) => {
     const today = new Date();
     toggleCompletion(goalId, habitItemId, today);
@@ -108,6 +112,15 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   };
 
   const completedTodayCount = habitItemsDueToday.filter(h => getHabitChecked(h.id)).length;
+  const allHabitsCompleted = habitItemsDueToday.length > 0 && completedTodayCount === habitItemsDueToday.length;
+
+  // Trigger confetti when all habits are completed
+  useEffect(() => {
+    if (allHabitsCompleted && prevCompletedRef.current < habitItemsDueToday.length) {
+      celebrateGoalComplete();
+    }
+    prevCompletedRef.current = completedTodayCount;
+  }, [completedTodayCount, allHabitsCompleted, habitItemsDueToday.length]);
 
   // Calculate weekly progress (total completions / expected completions)
   const weeklyProgress = useMemo(() => {
