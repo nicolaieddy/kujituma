@@ -10,6 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { MonthlyHabitCalendar } from "./MonthlyHabitCalendar";
 
 interface HabitItemsCardProps {
   goal: Goal;
@@ -361,8 +362,15 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
                       );
                     })}
                   </div>
+                ) : trackingMode === 'monthly' ? (
+                  /* Monthly calendar for monthly/quarterly habits */
+                  <MonthlyHabitCalendar 
+                    habitId={habit.id} 
+                    goalId={goal.id} 
+                    frequency={habit.frequency} 
+                  />
                 ) : (
-                  /* Single checkbox for weekly/monthly/quarterly */
+                  /* Single checkbox for weekly habits */
                   <div className="flex items-center gap-3 py-2">
                     <Checkbox
                       checked={hasCompletionThisWeek}
@@ -385,8 +393,7 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
                         {hasCompletionThisWeek ? "Completed this week" : "Mark as done this week"}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {trackingMode === 'weekly' ? "Track once per week" : 
-                         habit.frequency === 'quarterly' ? "Track once per quarter" : "Track once per month"}
+                        Track once per week
                       </span>
                     </div>
                   </div>
