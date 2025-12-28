@@ -1,42 +1,24 @@
-import { Button } from "@/components/ui/button";
-
-interface LandingHeroProps {
-  onGetStarted: () => void;
-}
-
-export const LandingHero = ({
-  onGetStarted
-}: LandingHeroProps) => {
+export const LandingHero = () => {
   return (
     <section className="relative pt-32 pb-24 px-4">
-      <div className="max-w-5xl mx-auto text-center">
+      <div className="max-w-4xl mx-auto text-center">
         <div className="space-y-8">
-          {/* Main Headline */}
           <div className="space-y-6">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground font-serif text-balance">
-              One Step at a Time.
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-foreground font-serif text-balance">
+              Kujituma is a weekly planning and accountability system.
             </h1>
-            <p className="text-xl md:text-2xl text-muted-foreground font-light max-w-2xl mx-auto leading-relaxed">
-              Inspired by Kilimanjaro. Track your weekly progress, stay accountable, and achieve your goals.
+            <p className="text-xl text-muted-foreground font-light max-w-2xl mx-auto leading-relaxed">
+              Set objectives. Track habits. Reflect. Repeat.
             </p>
-          </div>
-
-          {/* CTA Button */}
-          <div className="pt-4">
-            <Button 
-              onClick={onGetStarted} 
-              size="lg" 
-              className="text-base px-8 py-6 gradient-primary shadow-elegant hover:shadow-lift transition-all duration-300"
-            >
-              Get Started
-            </Button>
+            <p className="text-lg text-muted-foreground/80 italic">
+              One Step at a Time.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Background Image */}
-      <div className="mt-24 max-w-6xl mx-auto">
-        <div className="relative aspect-[16/9] rounded-lg overflow-hidden border border-border shadow-elegant">
+      <div className="mt-20 max-w-5xl mx-auto">
+        <div className="relative aspect-[16/9] rounded-lg overflow-hidden border border-border">
           <img 
             src="/kilimanjaro-background.jpg" 
             srcSet="/kilimanjaro-background-sm.jpg 640w, /kilimanjaro-background-md.jpg 1024w, /kilimanjaro-background.jpg 1920w"
