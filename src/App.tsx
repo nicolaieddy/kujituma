@@ -12,8 +12,8 @@ import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense, useEffect } from "react";
-import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 import { GoalsService } from "@/services/goalsService";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
@@ -29,7 +29,10 @@ const Rituals = lazy(() => import("./pages/Rituals"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
-    <KilimanjaroLoader />
+    <div className="flex flex-col items-center gap-4">
+      <Skeleton className="h-12 w-12 rounded-full" />
+      <Skeleton className="h-4 w-32" />
+    </div>
   </div>
 );
 
