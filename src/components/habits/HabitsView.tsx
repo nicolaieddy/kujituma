@@ -14,6 +14,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { HabitCard } from "./HabitCard";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
+import { SystemHabitsSection } from "./SystemHabitsSection";
 import { HabitSearchFilter, HabitFilters } from "./HabitSearchFilter";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -316,6 +317,9 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
           <p className="text-muted-foreground">Try adjusting your search or filters</p>
         </div>
       )}
+
+      {/* System Habits - always show at top when no active filters */}
+      {!hasActiveFilters && <SystemHabitsSection />}
 
       {/* Streak Leaderboard - only show when no filters or has results */}
       {(!hasActiveFilters || totalFiltered > 0) && (
