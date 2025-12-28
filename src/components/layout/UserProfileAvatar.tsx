@@ -4,6 +4,7 @@ import { User } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { lightweightCache } from "@/services/lightweightCache";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface UserProfile {
   avatar_url?: string;
@@ -15,13 +16,15 @@ interface UserProfileAvatarProps {
 }
 
 export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarProps) => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       if (!user?.id) {
         setUserProfile(null);
+        setIsLoading(false);
         return;
       }
 
@@ -31,6 +34,7 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
       
       if (cached) {
         setUserProfile(cached);
+        setIsLoading(false);
         return;
       }
 
@@ -48,6 +52,8 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -57,6 +63,11 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
   const getInitials = useMemo(() => (name: string) => {
     return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
   }, []);
+
+  // Show skeleton while auth is loading or profile is loading
+  if (authLoading || isLoading) {
+    return <Skeleton className={`${className} rounded-full`} />;
+  }
 
   return (
     <Avatar className={className}>
