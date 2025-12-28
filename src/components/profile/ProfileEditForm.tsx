@@ -13,6 +13,14 @@ import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3 } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
+import { ProfileStats } from "./ProfileStats";
+import { ProfileGoals } from "./ProfileGoals";
+import linkedinIcon from "@/assets/linkedin-icon.png";
+import instagramIcon from "@/assets/instagram-icon.png";
+import xIcon from "@/assets/x-icon.png";
+import tiktokIcon from "@/assets/tiktok-icon.png";
+import { Calendar, Clock } from "lucide-react";
+import { formatTimeAgo } from "@/utils/timeUtils";
 
 interface Profile {
   id: string;
@@ -320,8 +328,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           </div>
         </div>
         
-        {/* Inline preview using the same styles as ProfilePublicView */}
-        <div className="max-w-4xl mx-auto">
+        {/* Full profile preview using ProfilePublicView-like structure */}
+        <div className="max-w-4xl mx-auto space-y-8">
           <Card className="glass-card shadow-elegant overflow-hidden">
             {/* Cover Photo */}
             <div 
@@ -350,11 +358,43 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                   {previewProfile.show_email && previewProfile.email && (
                     <p className="text-muted-foreground">{previewProfile.email}</p>
                   )}
+                  
+                  {/* Social links */}
+                  {(previewProfile.linkedin_url || previewProfile.instagram_url || previewProfile.tiktok_url || previewProfile.twitter_url) && (
+                    <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+                      {previewProfile.linkedin_url && (
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {previewProfile.instagram_url && (
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <img src={instagramIcon} alt="Instagram" className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {previewProfile.tiktok_url && (
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <img src={tiktokIcon} alt="TikTok" className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {previewProfile.twitter_url && (
+                        <Button variant="ghost" size="sm" className="h-8 px-2">
+                          <img src={xIcon} alt="X" className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
+              </div>
+              
+              {/* Profile Stats */}
+              <div className="mt-6">
+                <ProfileStats userId={profile.id} />
               </div>
             </div>
 
             <CardContent className="p-6 sm:p-8 pt-0">
+              {/* About Me Section */}
               {previewProfile.about_me && (
                 <div className="mb-6">
                   <h2 className="text-lg font-semibold text-foreground mb-2">About</h2>
@@ -363,8 +403,26 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                   </p>
                 </div>
               )}
+
+              {/* Member Info */}
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center">
+                  <Calendar className="h-4 w-4 mr-2 text-primary" />
+                  <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                </div>
+                
+                {profile.last_active_at && (
+                  <div className="flex items-center">
+                    <Clock className="h-4 w-4 mr-2 text-primary" />
+                    <span>Active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
+
+          {/* Goals Section */}
+          <ProfileGoals userId={profile.id} isOwnProfile={true} />
         </div>
       </div>
     );
