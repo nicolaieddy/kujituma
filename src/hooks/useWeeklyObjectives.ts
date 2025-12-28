@@ -68,12 +68,56 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
   });
 
   const createObjectiveMutation = useMutation({
-    mutationFn: WeeklyProgressService.createWeeklyObjective,
-    onSuccess: () => {
+    mutationFn: async (data: CreateWeeklyObjectiveData & { week_start: string }) => {
+      try {
+        const result = await WeeklyProgressService.createWeeklyObjective(data);
+        return { result, wasOffline: false };
+      } catch (error) {
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing objective creation for offline sync');
+          const optimisticObjective = {
+            id: crypto.randomUUID(),
+            user_id: user?.id,
+            text: data.text,
+            goal_id: data.goal_id || null,
+            week_start: data.week_start,
+            is_completed: false,
+            order_index: 0,
+            scheduled_day: data.scheduled_day || null,
+            scheduled_time: data.scheduled_time || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          
+          await offlineSyncService.queueMutation({
+            type: 'create',
+            table: 'weekly_objectives',
+            data: optimisticObjective,
+          });
+          
+          // Update cache optimistically
+          const cached = await offlineDataService.getCachedWeeklyObjectives(currentWeekStart);
+          const updated = [...(cached || []), optimisticObjective];
+          offlineDataService.cacheWeeklyObjectives(updated, currentWeekStart);
+          
+          return { result: optimisticObjective, wasOffline: true };
+        }
+        throw error;
+      }
+    },
+    onSuccess: ({ result, wasOffline }) => {
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
       toast({
-        title: "Success",
-        description: "Objective created successfully!",
+        title: wasOffline ? "Saved offline" : "Success",
+        description: wasOffline ? "Will sync when you're back online." : "Objective created successfully!",
       });
     },
     onError: (error) => {
@@ -87,25 +131,49 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
   });
 
   const updateObjectiveMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) =>
-      WeeklyProgressService.updateWeeklyObjective(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) => {
+      try {
+        const result = await WeeklyProgressService.updateWeeklyObjective(id, data);
+        return { result, wasOffline: false, id, data };
+      } catch (error) {
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing objective update for offline sync');
+          await offlineSyncService.queueMutation({
+            type: 'update',
+            table: 'weekly_objectives',
+            data: { id, updates: data },
+          });
+          
+          // Update cache optimistically
+          const cached = await offlineDataService.getCachedWeeklyObjectives(currentWeekStart);
+          if (cached) {
+            const updated = cached.map((obj: any) => obj.id === id ? { ...obj, ...data } : obj);
+            offlineDataService.cacheWeeklyObjectives(updated, currentWeekStart);
+          }
+          
+          return { result: { id, ...data }, wasOffline: true, id, data };
+        }
+        throw error;
+      }
+    },
     onMutate: async ({ id, data }) => {
-      // Cancel outgoing refetches
       await queryClient.cancelQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
-
-      // Snapshot previous value
       const previousObjectives = queryClient.getQueryData(['weekly-objectives', user?.id, currentWeekStart]);
-
-      // Optimistically update the cache
       queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], (old: any[] | undefined) => {
         if (!old) return old;
         return old.map(obj => obj.id === id ? { ...obj, ...data } : obj);
       });
-
       return { previousObjectives };
     },
     onError: (error, variables, context) => {
-      // Rollback on error
       if (context?.previousObjectives) {
         queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], context.previousObjectives);
       }
@@ -116,22 +184,69 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      // Always refetch after error or success to ensure consistency
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+    onSettled: (result) => {
+      if (!result?.wasOffline) {
+        queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+      }
     },
   });
 
   const deleteObjectiveMutation = useMutation({
-    mutationFn: WeeklyProgressService.deleteWeeklyObjective,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+    mutationFn: async (id: string) => {
+      try {
+        await WeeklyProgressService.deleteWeeklyObjective(id);
+        return { wasOffline: false };
+      } catch (error) {
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing objective deletion for offline sync');
+          await offlineSyncService.queueMutation({
+            type: 'delete',
+            table: 'weekly_objectives',
+            data: { id },
+          });
+          
+          // Update cache optimistically
+          const cached = await offlineDataService.getCachedWeeklyObjectives(currentWeekStart);
+          if (cached) {
+            const updated = cached.filter((obj: any) => obj.id !== id);
+            offlineDataService.cacheWeeklyObjectives(updated, currentWeekStart);
+          }
+          
+          return { wasOffline: true };
+        }
+        throw error;
+      }
+    },
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+      const previousObjectives = queryClient.getQueryData(['weekly-objectives', user?.id, currentWeekStart]);
+      queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], (old: any[] | undefined) => {
+        if (!old) return old;
+        return old.filter(obj => obj.id !== id);
+      });
+      return { previousObjectives };
+    },
+    onSuccess: ({ wasOffline }) => {
+      if (!wasOffline) {
+        queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+      }
       toast({
-        title: "Success",
-        description: "Objective deleted successfully!",
+        title: wasOffline ? "Saved offline" : "Success",
+        description: wasOffline ? "Will sync when you're back online." : "Objective deleted successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      if (context?.previousObjectives) {
+        queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], context.previousObjectives);
+      }
       console.error('Error deleting objective:', error);
       toast({
         title: "Error",
@@ -142,15 +257,64 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
   });
 
   const deleteAllObjectivesMutation = useMutation({
-    mutationFn: WeeklyProgressService.deleteAllWeeklyObjectives,
-    onSuccess: (deletedCount) => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+    mutationFn: async (weekStart: string) => {
+      try {
+        const result = await WeeklyProgressService.deleteAllWeeklyObjectives(weekStart);
+        return { deletedCount: result, wasOffline: false };
+      } catch (error) {
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing delete all for offline sync');
+          const cached = await offlineDataService.getCachedWeeklyObjectives(weekStart);
+          const count = cached?.length || 0;
+          
+          // Queue individual deletes for each objective
+          if (cached) {
+            for (const obj of cached) {
+              await offlineSyncService.queueMutation({
+                type: 'delete',
+                table: 'weekly_objectives',
+                data: { id: obj.id },
+              });
+            }
+          }
+          
+          // Clear cache
+          offlineDataService.cacheWeeklyObjectives([], weekStart);
+          
+          return { deletedCount: count, wasOffline: true };
+        }
+        throw error;
+      }
+    },
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+      const previousObjectives = queryClient.getQueryData(['weekly-objectives', user?.id, currentWeekStart]);
+      queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], []);
+      return { previousObjectives };
+    },
+    onSuccess: ({ deletedCount, wasOffline }) => {
+      if (!wasOffline) {
+        queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+      }
       toast({
-        title: "Success",
-        description: `${deletedCount} objective${deletedCount !== 1 ? 's' : ''} cleared successfully!`,
+        title: wasOffline ? "Saved offline" : "Success",
+        description: wasOffline 
+          ? `${deletedCount} objective${deletedCount !== 1 ? 's' : ''} will be deleted when online.`
+          : `${deletedCount} objective${deletedCount !== 1 ? 's' : ''} cleared successfully!`,
       });
     },
-    onError: (error) => {
+    onError: (error, variables, context) => {
+      if (context?.previousObjectives) {
+        queryClient.setQueryData(['weekly-objectives', user?.id, currentWeekStart], context.previousObjectives);
+      }
       console.error('Error deleting all objectives:', error);
       toast({
         title: "Error",
