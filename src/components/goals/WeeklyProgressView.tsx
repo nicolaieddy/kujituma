@@ -101,6 +101,23 @@ export const WeeklyProgressView = () => {
     deleteObjective(id);
   };
 
+  const handleMoveObjectiveToWeek = async (objectiveId: string, newWeekStart: string) => {
+    try {
+      await updateObjective(objectiveId, { week_start: newWeekStart });
+      toast({
+        title: "Objective moved",
+        description: "The objective has been moved to a different week.",
+      });
+    } catch (error) {
+      console.error('Error moving objective to week:', error);
+      toast({
+        title: "Error",
+        description: "Failed to move objective. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSaveNotes = () => {
     updateProgressNotes(progressNotes);
   };
@@ -335,6 +352,8 @@ export const WeeklyProgressView = () => {
             onOpenCarryOver={handleOpenCarryOver}
             hasIncompleteObjectives={incompleteObjectives.length > 0}
             isDeletingAll={isDeletingAll}
+            currentWeekStart={currentWeekStart}
+            onMoveObjectiveToWeek={handleMoveObjectiveToWeek}
           />
 
           <IncompleteObjectiveReflections
