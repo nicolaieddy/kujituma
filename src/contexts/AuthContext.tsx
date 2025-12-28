@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -51,7 +51,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google'
@@ -65,9 +65,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error in signInWithGoogle:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     try {
       const { error } = await supabase.auth.signOut({ scope: 'global' });
       if (error) {
@@ -80,15 +80,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Error in signOut:', error);
       throw error;
     }
-  };
+  }, []);
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     session,
     loading,
     signInWithGoogle,
     signOut,
-  };
+  }), [user, session, loading, signInWithGoogle, signOut]);
 
   return (
     <AuthContext.Provider value={value}>
