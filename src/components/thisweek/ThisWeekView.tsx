@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { useBlocker } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -46,7 +47,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   
   // Unsaved changes state
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<'previous' | 'next' | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<'previous' | 'next' | 'route' | null>(null);
   const [isSavingBeforeNav, setIsSavingBeforeNav] = useState(false);
   const saveUnsavedRef = useRef<(() => Promise<boolean>) | null>(null);
   const clearUnsavedRef = useRef<(() => void) | null>(null);
@@ -127,6 +128,20 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     clearUnsavedRef.current = clearFunc;
   }, []);
 
+  // Block route navigation when there are unsaved changes
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      hasUnsavedRef.current && currentLocation.pathname !== nextLocation.pathname
+  );
+
+  // Show dialog when blocker is triggered
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      setShowUnsavedDialog(true);
+      setPendingNavigation('route');
+    }
+  }, [blocker.state]);
+
   // Intercept week navigation to check for unsaved changes
   const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
     if (hasUnsavedRef.current) {
@@ -140,6 +155,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const handleUnsavedDialogClose = () => {
     setShowUnsavedDialog(false);
     setPendingNavigation(null);
+    if (blocker.state === 'blocked') {
+      blocker.reset();
+    }
   };
 
   const handleUnsavedDiscard = () => {
@@ -147,7 +165,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       clearUnsavedRef.current();
     }
     setShowUnsavedDialog(false);
-    if (pendingNavigation && onNavigateWeek) {
+    
+    if (blocker.state === 'blocked') {
+      blocker.proceed();
+    } else if (pendingNavigation && pendingNavigation !== 'route' && onNavigateWeek) {
       onNavigateWeek(pendingNavigation);
     }
     setPendingNavigation(null);
@@ -160,7 +181,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       setIsSavingBeforeNav(false);
       if (success) {
         setShowUnsavedDialog(false);
-        if (pendingNavigation && onNavigateWeek) {
+        
+        if (blocker.state === 'blocked') {
+          blocker.proceed();
+        } else if (pendingNavigation && pendingNavigation !== 'route' && onNavigateWeek) {
           onNavigateWeek(pendingNavigation);
         }
         setPendingNavigation(null);
