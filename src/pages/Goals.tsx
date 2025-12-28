@@ -254,21 +254,21 @@ const Goals = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="weekly" className="mt-6" forceMount>
+            <TabsContent value="weekly" className="mt-6">
               <ThisWeekView 
                 weekStart={currentWeekStart}
                 onNavigateWeek={navigateToWeek}
               />
             </TabsContent>
 
-            <TabsContent value="habits" className="mt-6" forceMount>
+            <TabsContent value="habits" className="mt-6">
               <HabitsView 
                 onCreateGoal={handleCreateHabit} 
                 onEditGoal={handleEditGoal}
               />
             </TabsContent>
             
-            <TabsContent value="longterm" className="mt-6" forceMount>
+            <TabsContent value="longterm" className="mt-6">
               {showForm ? (
                 <div className="mb-8">
                   <GoalForm
