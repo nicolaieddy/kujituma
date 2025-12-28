@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock, Pencil, Trash2, ArrowUpDown } from "lucide-react";
+import { RefreshCw, Flame, Target, TrendingUp, Plus, Pause, PlayCircle, Calendar, Clock, Pencil, Trash2, ArrowUpDown, SearchX } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,11 +14,12 @@ import { useGoals } from "@/hooks/useGoals";
 import { HabitCard } from "./HabitCard";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
+import { HabitSearchFilter, HabitFilters } from "./HabitSearchFilter";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { format, parseISO, differenceInDays, startOfDay } from "date-fns";
-import { Goal } from "@/types/goals";
+import { Goal, RecurrenceFrequency } from "@/types/goals";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -35,6 +36,14 @@ interface HabitsViewProps {
   onEditGoal?: (goal: Goal) => void;
 }
 
+const initialFilters: HabitFilters = {
+  search: '',
+  frequencies: [],
+  categories: [],
+  showPausedOnly: false,
+  showActiveOnly: false
+};
+
 export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   const { habitStats, futureHabits, isLoading, refetch, totalHabits, activeHabits, averageCompletionRate, totalCurrentStreak } = useHabitStats();
   const { togglePauseGoal, deleteGoal } = useGoals();
@@ -43,6 +52,7 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
   const [scheduledSort, setScheduledSort] = useState<'date' | 'alpha' | 'frequency'>('date');
+  const [filters, setFilters] = useState<HabitFilters>(initialFilters);
 
   const handleHabitClick = (stats: HabitStats) => {
     setSelectedHabit(stats);
@@ -116,16 +126,106 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
     return labels[frequency || ''] || 'Recurring';
   };
 
-  // Separate active, paused, and completed/deprioritized habits
-  const activeHabitsList = habitStats.filter(h => 
+  // Extract unique categories from all habits
+  const availableCategories = useMemo(() => {
+    const allHabits = [...habitStats.map(h => h.goal), ...futureHabits];
+    const categories = allHabits
+      .map(g => g.category)
+      .filter((c): c is string => !!c && c.trim() !== '');
+    return [...new Set(categories)].sort();
+  }, [habitStats, futureHabits]);
+
+  // Filter function for habit stats
+  const filterHabitStats = (stats: HabitStats): boolean => {
+    const goal = stats.goal;
+
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      const matchesSearch = 
+        goal.title.toLowerCase().includes(searchLower) ||
+        goal.description?.toLowerCase().includes(searchLower) ||
+        goal.category?.toLowerCase().includes(searchLower) ||
+        goal.recurring_objective_text?.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+
+    // Frequency filter
+    if (filters.frequencies.length > 0) {
+      if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
+        return false;
+      }
+    }
+
+    // Category filter
+    if (filters.categories.length > 0) {
+      if (!goal.category || !filters.categories.includes(goal.category)) {
+        return false;
+      }
+    }
+
+    // Status filters
+    if (filters.showPausedOnly && !goal.is_paused) return false;
+    if (filters.showActiveOnly && goal.is_paused) return false;
+
+    return true;
+  };
+
+  // Filter function for future habits (Goal objects)
+  const filterFutureHabit = (goal: Goal): boolean => {
+    // Search filter
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      const matchesSearch = 
+        goal.title.toLowerCase().includes(searchLower) ||
+        goal.description?.toLowerCase().includes(searchLower) ||
+        goal.category?.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+
+    // Frequency filter
+    if (filters.frequencies.length > 0) {
+      if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
+        return false;
+      }
+    }
+
+    // Category filter
+    if (filters.categories.length > 0) {
+      if (!goal.category || !filters.categories.includes(goal.category)) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  // Apply filters to habit lists
+  const filteredHabitStats = useMemo(() => 
+    habitStats.filter(filterHabitStats), 
+    [habitStats, filters]
+  );
+
+  const filteredFutureHabits = useMemo(() => 
+    futureHabits.filter(filterFutureHabit), 
+    [futureHabits, filters]
+  );
+
+  // Separate active, paused, and completed/deprioritized habits from filtered list
+  const activeHabitsList = filteredHabitStats.filter(h => 
     (h.goal.status === 'not_started' || h.goal.status === 'in_progress') && !h.goal.is_paused
   );
-  const pausedHabitsList = habitStats.filter(h => 
+  const pausedHabitsList = filteredHabitStats.filter(h => 
     h.goal.is_paused && h.goal.status !== 'completed' && h.goal.status !== 'deprioritized'
   );
-  const inactiveHabitsList = habitStats.filter(h => 
+  const inactiveHabitsList = filteredHabitStats.filter(h => 
     h.goal.status === 'completed' || h.goal.status === 'deprioritized'
   );
+
+  const hasActiveFilters = filters.search || filters.frequencies.length > 0 || 
+    filters.categories.length > 0 || filters.showPausedOnly || filters.showActiveOnly;
+
+  const totalFiltered = filteredHabitStats.length + filteredFutureHabits.length;
 
   return (
     <div className="space-y-6">
@@ -201,11 +301,29 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
         </div>
       )}
 
-      {/* Streak Leaderboard */}
-      <HabitStreakLeaderboard 
-        habitStats={habitStats} 
-        onHabitClick={handleHabitClick}
+      {/* Search and Filter */}
+      <HabitSearchFilter
+        filters={filters}
+        onFiltersChange={setFilters}
+        availableCategories={availableCategories}
       />
+
+      {/* No Results State */}
+      {hasActiveFilters && totalFiltered === 0 && (
+        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+          <SearchX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">No habits found</h3>
+          <p className="text-muted-foreground">Try adjusting your search or filters</p>
+        </div>
+      )}
+
+      {/* Streak Leaderboard - only show when no filters or has results */}
+      {(!hasActiveFilters || totalFiltered > 0) && (
+        <HabitStreakLeaderboard 
+          habitStats={filteredHabitStats} 
+          onHabitClick={handleHabitClick}
+        />
+      )}
 
       {/* Active Habits */}
       {activeHabitsList.length > 0 && (
@@ -265,7 +383,7 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
       )}
 
       {/* Scheduled Habits (Future) */}
-      {futureHabits.length > 0 && (
+      {filteredFutureHabits.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold flex items-center gap-2 text-muted-foreground">
@@ -295,12 +413,12 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
                 </DropdownMenuContent>
               </DropdownMenu>
               <Badge variant="outline" className="border-blue-500/30 text-blue-500">
-                {futureHabits.length}
+                {filteredFutureHabits.length}
               </Badge>
             </div>
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-            {[...futureHabits]
+            {[...filteredFutureHabits]
               .sort((a: Goal, b: Goal) => {
                 if (scheduledSort === 'date') {
                   const dateA = a.start_date ? new Date(a.start_date).getTime() : Infinity;
