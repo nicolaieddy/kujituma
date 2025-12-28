@@ -12,8 +12,8 @@ const LandingPage = () => {
   
   return (
     <div className="min-h-screen bg-background">
-      {/* Navigation */}
-      <nav className="border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      {/* Navigation - Fixed over hero */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center">
@@ -35,7 +35,7 @@ const LandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12">
+      <footer className="border-t border-border py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-muted-foreground text-sm">
             © 2025 Kujituma
