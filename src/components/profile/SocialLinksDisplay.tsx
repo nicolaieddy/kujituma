@@ -45,10 +45,11 @@ export const SocialLinksDisplay = ({ socialLinks, linkOrder = [], size = 'md' }:
       .filter(([_, value]) => value && value.trim())
       .map(([id]) => id);
     
+    const safeOrder = linkOrder || [];
     // Sort by linkOrder, putting unknown items at the end
     return activePlatforms.sort((a, b) => {
-      const indexA = linkOrder.indexOf(a);
-      const indexB = linkOrder.indexOf(b);
+      const indexA = safeOrder.indexOf(a);
+      const indexB = safeOrder.indexOf(b);
       if (indexA === -1 && indexB === -1) return 0;
       if (indexA === -1) return 1;
       if (indexB === -1) return -1;
