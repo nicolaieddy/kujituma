@@ -31,6 +31,15 @@ const Friends = () => {
     }
   }, [searchParams]);
 
+  // Redirect to auth if not logged in (avoid navigate during render)
+  useEffect(() => {
+    console.log('[Friends] Auth check - loading:', authLoading, 'user:', user?.email);
+    if (!authLoading && !user) {
+      console.log('[Friends] No user, redirecting to /auth');
+      navigate('/auth');
+    }
+  }, [authLoading, user, navigate]);
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setSearchParams(tab === 'friends' ? {} : { tab });
@@ -64,7 +73,6 @@ const Friends = () => {
   }
 
   if (!user) {
-    navigate('/auth');
     return null;
   }
 

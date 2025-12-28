@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
@@ -23,6 +24,15 @@ const Analytics = () => {
     }
   };
 
+  // Redirect to auth if not logged in (avoid navigate during render)
+  useEffect(() => {
+    console.log('[Analytics] Auth check - loading:', authLoading, 'user:', user?.email);
+    if (!authLoading && !user) {
+      console.log('[Analytics] No user, redirecting to /auth');
+      navigate('/auth');
+    }
+  }, [authLoading, user, navigate]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -45,7 +55,6 @@ const Analytics = () => {
   }
 
   if (!user) {
-    navigate('/auth');
     return null;
   }
 
