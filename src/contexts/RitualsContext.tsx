@@ -18,18 +18,8 @@ const RitualsContext = createContext<RitualsContextType | null>(null);
 
 export const useRitualsTrigger = () => {
   const context = useContext(RitualsContext);
-  // Return no-op functions if used outside provider (safe fallback)
   if (!context) {
-    return {
-      openWeeklyPlanning: () => {},
-      openWeeklyPlanningHistory: () => {},
-      isWeeklyHistoryOpen: false,
-      setWeeklyHistoryOpen: () => {},
-      openDailyCheckIn: () => {},
-      openDailyCheckInHistory: () => {},
-      isDailyHistoryOpen: false,
-      setDailyHistoryOpen: () => {},
-    };
+    throw new Error("useRitualsTrigger must be used within RitualsProvider");
   }
   return context;
 };

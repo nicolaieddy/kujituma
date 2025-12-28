@@ -9,7 +9,6 @@ import { UnsavedChangesProvider } from "@/contexts/UnsavedChangesContext";
 import { HabitsProvider } from "@/components/habits/HabitsProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
-import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
@@ -104,25 +103,23 @@ const queryClient = new QueryClient({
 
 const App = () => {
   return (
-    <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <OfflineIndicator />
-          <BrowserRouter>
-            <AuthProvider>
-              <UnsavedChangesProvider>
-                <HabitsProvider>
-                  <AppContent queryClient={queryClient} />
-                  <InstallPrompt />
-                </HabitsProvider>
-              </UnsavedChangesProvider>
-            </AuthProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <OfflineIndicator />
+        <BrowserRouter>
+          <AuthProvider>
+            <UnsavedChangesProvider>
+              <HabitsProvider>
+                <AppContent queryClient={queryClient} />
+                <InstallPrompt />
+              </HabitsProvider>
+            </UnsavedChangesProvider>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 

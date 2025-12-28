@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Navigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -13,6 +13,7 @@ import { Users, UserPlus, Inbox } from "lucide-react";
 import { FriendsSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Friends = () => {
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isOffline } = useOfflineStatus();
@@ -63,7 +64,8 @@ const Friends = () => {
   }
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    navigate('/auth');
+    return null;
   }
 
   if (isOffline) {

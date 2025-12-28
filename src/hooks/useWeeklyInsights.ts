@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -29,23 +29,7 @@ export const useWeeklyInsights = () => {
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleAIError = useCallback((errorMessage: string) => {
-    if (errorMessage.includes("Rate limit")) {
-      toast({
-        title: "Please wait",
-        description: "AI is busy. Try again in a moment.",
-        variant: "default",
-      });
-    } else if (errorMessage.includes("credits")) {
-      toast({
-        title: "AI Credits",
-        description: "AI credits exhausted. Contact workspace admin.",
-        variant: "destructive",
-      });
-    }
-  }, []);
-
-  const generateInsights = useCallback(async (weeklyData: WeeklyData) => {
+  const generateInsights = async (weeklyData: WeeklyData) => {
     // Don't generate if no meaningful data
     if (weeklyData.objectives.length === 0 && !weeklyData.lastWeekReflection && !weeklyData.lastWeekIntention) {
       return null;
@@ -78,9 +62,9 @@ export const useWeeklyInsights = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [handleAIError]);
+  };
 
-  const generateSuggestions = useCallback(async (suggestionsData: SuggestionsData) => {
+  const generateSuggestions = async (suggestionsData: SuggestionsData) => {
     // Need at least some data to generate suggestions
     if (suggestionsData.incompleteObjectives.length === 0 && 
         suggestionsData.completedObjectives.length === 0 && 
@@ -116,11 +100,27 @@ export const useWeeklyInsights = () => {
     } finally {
       setIsSuggestionsLoading(false);
     }
-  }, [handleAIError]);
+  };
 
-  const clearSuggestions = useCallback(() => {
+  const handleAIError = (errorMessage: string) => {
+    if (errorMessage.includes("Rate limit")) {
+      toast({
+        title: "Please wait",
+        description: "AI is busy. Try again in a moment.",
+        variant: "default",
+      });
+    } else if (errorMessage.includes("credits")) {
+      toast({
+        title: "AI Credits",
+        description: "AI credits exhausted. Contact workspace admin.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearSuggestions = () => {
     setSuggestions([]);
-  }, []);
+  };
 
   return {
     insight,

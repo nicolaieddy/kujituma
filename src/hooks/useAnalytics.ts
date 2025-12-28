@@ -230,20 +230,6 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
           .eq('user_id', user.id)
           .order('completion_date', { ascending: false });
 
-        // Fetch daily check-ins for system habits
-        const { data: dailyCheckIns } = await supabase
-          .from('daily_check_ins')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('check_in_date', { ascending: false });
-
-        // Fetch weekly planning sessions for system habits
-        const { data: weeklyPlanningSessions } = await supabase
-          .from('weekly_planning_sessions')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('week_start', { ascending: false });
-
         if (objectives && goals) {
           // Filter objectives by date range
           const dateFilter = getDateRangeFilter(dateRange, customRange);
@@ -262,14 +248,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
               })
             : habitCompletions || [];
           
-          const analyticsData = calculateAnalytics(
-            filteredObjectives, 
-            goals, 
-            objectives, 
-            filteredCompletions,
-            dailyCheckIns || [],
-            weeklyPlanningSessions || []
-          );
+          const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives, filteredCompletions);
           setAnalytics(analyticsData);
         }
       } catch (error) {
@@ -306,20 +285,6 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
         .eq('user_id', user.id)
         .order('completion_date', { ascending: false });
 
-      // Fetch daily check-ins for system habits
-      const { data: dailyCheckIns } = await supabase
-        .from('daily_check_ins')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('check_in_date', { ascending: false });
-
-      // Fetch weekly planning sessions for system habits
-      const { data: weeklyPlanningSessions } = await supabase
-        .from('weekly_planning_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('week_start', { ascending: false });
-
       if (objectives && goals) {
         const dateFilter = getDateRangeFilter(dateRange);
         const filteredObjectives = dateFilter 
@@ -336,14 +301,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
             })
           : habitCompletions || [];
         
-        const analyticsData = calculateAnalytics(
-          filteredObjectives, 
-          goals, 
-          objectives, 
-          filteredCompletions,
-          dailyCheckIns || [],
-          weeklyPlanningSessions || []
-        );
+        const analyticsData = calculateAnalytics(filteredObjectives, goals, objectives, filteredCompletions);
         setAnalytics(analyticsData);
       }
     } catch (error) {
@@ -356,7 +314,7 @@ export const useAnalytics = (dateRange: DateRangeFilter = 'all_time', customRang
   return { analytics, isLoading, refetchAnalytics };
 };
 
-const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any[], habitCompletions?: any[], dailyCheckIns?: any[], weeklyPlanningSessions?: any[]): AnalyticsData => {
+const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any[], habitCompletions?: any[]): AnalyticsData => {
   // Use allObjectives for heatmap if provided (to always show full year)
   const heatmapObjectives = allObjectives || objectives;
   const now = new Date();
@@ -609,13 +567,8 @@ const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any
     });
   }
 
-  // Calculate habit analytics from habit_completions and system habits
-  const habitAnalytics = calculateHabitAnalytics(
-    habitCompletions || [], 
-    goals, 
-    dailyCheckIns || [], 
-    weeklyPlanningSessions || []
-  );
+  // Calculate habit analytics from habit_completions
+  const habitAnalytics = calculateHabitAnalytics(habitCompletions || [], goals);
 
   return {
     weeklyCompletionRate,
@@ -639,21 +592,28 @@ const calculateAnalytics = (objectives: any[], goals: any[], allObjectives?: any
   };
 };
 
-const calculateHabitAnalytics = (
-  completions: any[], 
-  goals: any[], 
-  dailyCheckIns: any[] = [], 
-  weeklyPlanningSessions: any[] = []
-): HabitAnalytics => {
+const calculateHabitAnalytics = (completions: any[], goals: any[]): HabitAnalytics => {
   // Get all goals with habit_items
   const goalsWithHabits = goals.filter(g => {
     const habitItems = g.habit_items;
     return habitItems && Array.isArray(habitItems) && habitItems.length > 0;
   });
 
+  if (goalsWithHabits.length === 0) {
+    return {
+      totalHabits: 0,
+      totalCompletions: 0,
+      dailyCompletionRate: 0,
+      weeklyData: [],
+      topHabits: [],
+      streaks: { current: 0, longest: 0 },
+      dailyHeatmap: []
+    };
+  }
+
   // Count total habits across all goals
   let totalHabits = 0;
-  const habitItemsMap = new Map<string, { goalTitle: string; habitText: string; frequency: string; goalId: string; isSystem?: boolean }>();
+  const habitItemsMap = new Map<string, { goalTitle: string; habitText: string; frequency: string; goalId: string }>();
 
   goalsWithHabits.forEach(goal => {
     const habitItems = goal.habit_items as any[];
@@ -668,26 +628,7 @@ const calculateHabitAnalytics = (
     });
   });
 
-  // Add system habits
-  habitItemsMap.set('system-daily-checkin', {
-    goalTitle: 'System Habits',
-    habitText: 'Daily Check-in',
-    frequency: 'daily',
-    goalId: 'system',
-    isSystem: true
-  });
-  totalHabits++;
-
-  habitItemsMap.set('system-weekly-planning', {
-    goalTitle: 'System Habits',
-    habitText: 'Weekly Planning',
-    frequency: 'weekly',
-    goalId: 'system',
-    isSystem: true
-  });
-  totalHabits++;
-
-  const totalCompletions = completions.length + dailyCheckIns.length + weeklyPlanningSessions.filter(s => s.is_completed).length;
+  const totalCompletions = completions.length;
 
   // Group completions by week
   const weeklyCompletions = new Map<string, { completed: number; possible: number }>();
@@ -735,10 +676,6 @@ const calculateHabitAnalytics = (
     const count = habitCompletionCounts.get(c.habit_item_id) || 0;
     habitCompletionCounts.set(c.habit_item_id, count + 1);
   });
-
-  // Count system habit completions
-  habitCompletionCounts.set('system-daily-checkin', dailyCheckIns.length);
-  habitCompletionCounts.set('system-weekly-planning', weeklyPlanningSessions.filter(s => s.is_completed).length);
 
   const topHabits = Array.from(habitItemsMap.entries())
     .map(([habitId, info]) => {

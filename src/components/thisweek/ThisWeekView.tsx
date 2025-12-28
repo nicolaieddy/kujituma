@@ -5,7 +5,6 @@ import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
 import { useUnsavedChanges } from "@/contexts/UnsavedChangesContext";
-import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,7 +19,6 @@ import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmation
 import { UnsavedChangesDialog } from "@/components/thisweek/UnsavedChangesDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
-import { SystemHabitReminder } from "@/components/habits/SystemHabitReminder";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitStats } from "@/services/habitStreaksService";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
@@ -40,7 +38,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { habitStats, refetch: refetchHabits } = useHabitStats();
   const { lastSync, isOffline } = useOfflineStatus();
   const { setHasUnsavedChanges } = useUnsavedChanges();
-  const { openDailyCheckIn, openWeeklyPlanning } = useRitualsTrigger();
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -482,14 +479,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         isCached={goalsCached || isOffline}
         lastSync={lastSync}
       />
-
-      {/* System Habit Reminders - show on current week only */}
-      {isCurrentWeek && (
-        <SystemHabitReminder
-          onOpenDailyCheckIn={openDailyCheckIn}
-          onOpenWeeklyPlanning={openWeeklyPlanning}
-        />
-      )}
 
       {/* Habits Due This Week */}
       {isCurrentWeek && habitStats.length > 0 && (
