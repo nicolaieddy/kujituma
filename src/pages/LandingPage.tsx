@@ -21,7 +21,7 @@ const LandingPage = () => {
                 Kujituma
               </h1>
             </div>
-            <Button variant="ghost" onClick={handleSignIn}>
+            <Button onClick={handleSignIn} className="font-medium">
               Sign In
             </Button>
           </div>
