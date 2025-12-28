@@ -2,7 +2,7 @@ import { Target, Flame, BookOpen, Users } from "lucide-react";
 
 export const LandingFeatures = () => {
   return (
-    <div className="py-24 px-4 space-y-32">
+    <div className="py-24 px-4">
       {/* Feature Grid */}
       <section className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16">
@@ -27,22 +27,6 @@ export const LandingFeatures = () => {
             description="Progress visible to trusted people"
           />
         </div>
-      </section>
-
-      {/* Weekly Loop */}
-      <section className="max-w-4xl mx-auto text-center">
-        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 text-lg md:text-xl font-medium text-foreground">
-          <span className="px-4 py-2 rounded-lg bg-muted">Plan</span>
-          <span className="text-muted-foreground">→</span>
-          <span className="px-4 py-2 rounded-lg bg-muted">Execute</span>
-          <span className="text-muted-foreground">→</span>
-          <span className="px-4 py-2 rounded-lg bg-muted">Review</span>
-          <span className="text-muted-foreground">→</span>
-          <span className="px-4 py-2 rounded-lg bg-muted">Share</span>
-        </div>
-        <p className="mt-8 text-muted-foreground">
-          Each week builds on the last.
-        </p>
       </section>
     </div>
   );
