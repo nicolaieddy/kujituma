@@ -5,7 +5,7 @@ export const LandingFeatures = () => {
     <div className="py-8 px-4 mt-4">
       {/* Feature Grid */}
       <section className="max-w-3xl mx-auto">
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-5 items-center">
           <FeatureItem 
             icon={Target}
             title="Plan"
@@ -39,12 +39,12 @@ interface FeatureItemProps {
 }
 
 const FeatureItem = ({ icon: Icon, title, description }: FeatureItemProps) => (
-  <div className="flex items-start gap-3 group">
-    <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-muted flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
+  <div className="flex flex-col items-center text-center gap-2 group max-w-xs">
+    <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
       <Icon className="w-5 h-5 text-foreground" />
     </div>
     <div>
-      <h3 className="text-base font-semibold text-foreground mb-0.5">{title}</h3>
+      <h3 className="text-base font-semibold text-foreground">{title}</h3>
       <p className="text-sm text-foreground/70">{description}</p>
     </div>
   </div>
