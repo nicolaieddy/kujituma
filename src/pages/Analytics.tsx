@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
@@ -9,7 +9,6 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { AnalyticsSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Analytics = () => {
-  const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const { isOffline } = useOfflineStatus();
@@ -45,8 +44,7 @@ const Analytics = () => {
   }
 
   if (!user) {
-    navigate('/auth');
-    return null;
+    return <Navigate to="/auth" replace />;
   }
 
   if (isOffline) {

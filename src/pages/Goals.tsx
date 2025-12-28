@@ -1,6 +1,6 @@
 
 import { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
@@ -23,7 +23,6 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { GoalsSkeleton, GoalCardSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Goals = () => {
-  const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
@@ -189,8 +188,7 @@ const Goals = () => {
   }
 
   if (!user) {
-    navigate('/auth');
-    return null;
+    return <Navigate to="/auth" replace />;
   }
 
   return (
