@@ -329,7 +329,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 </AvatarFallback>
               </Avatar>
             </div>
-            <div className="flex justify-center">
+            <div className="flex justify-center gap-2">
               <Label htmlFor="photo-upload" className="cursor-pointer">
                 <Button
                   type="button"
@@ -339,10 +339,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 >
                   <span>
                     <Upload className="h-4 w-4 mr-2" />
-                    {uploading ? 'Uploading...' : 'Change Photo'}
+                    {uploading ? 'Uploading...' : formData.avatar_url ? 'Change Photo' : 'Upload Photo'}
                   </span>
                 </Button>
               </Label>
+              {formData.avatar_url && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, avatar_url: '' }));
+                    toast({
+                      title: "Photo removed",
+                      description: "Profile photo removed. Don't forget to save your profile!",
+                    });
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
               <input
                 id="photo-upload"
                 type="file"
@@ -351,6 +368,11 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 className="hidden"
               />
             </div>
+            {!formData.avatar_url && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Your initials will be shown if no photo is uploaded
+              </p>
+            )}
           </div>
 
           {/* Form Fields */}
