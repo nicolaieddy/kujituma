@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle } from "lucide-react";
+import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -287,6 +287,25 @@ export const GoalCard = ({
                 <Badge className={`${config.color} text-xs`}>
                   {config.label}
                 </Badge>
+                {/* Visibility indicator */}
+                {goal.visibility && (
+                  <Badge 
+                    variant="outline" 
+                    className={cn(
+                      "text-xs gap-1",
+                      goal.visibility === 'public' 
+                        ? "border-green-500/30 text-green-600 bg-green-500/5"
+                        : goal.visibility === 'friends'
+                          ? "border-blue-500/30 text-blue-600 bg-blue-500/5"
+                          : "border-muted-foreground/30 text-muted-foreground bg-muted/50"
+                    )}
+                  >
+                    {goal.visibility === 'public' && <Eye className="h-3 w-3" />}
+                    {goal.visibility === 'friends' && <Users className="h-3 w-3" />}
+                    {goal.visibility === 'private' && <EyeOff className="h-3 w-3" />}
+                    {goal.visibility === 'public' ? 'Public' : goal.visibility === 'friends' ? 'Friends' : 'Private'}
+                  </Badge>
+                )}
                 {goal.is_recurring && (
                   <Tooltip>
                     <TooltipTrigger asChild>
