@@ -119,10 +119,9 @@ export const WeeklyObjectivesList = ({
     completed: goals.filter(goal => goal.status === 'completed'),
   };
 
-  // Auto-save hook for new objectives
-  const autoSave = useObjectiveAutoSave({
+  // Save hook for new objectives (explicit save on Enter or button)
+  const objectiveSave = useObjectiveAutoSave({
     onSave: (text: string) => onAddObjective(text),
-    delay: 2000,
   });
 
   // Helper function to get goal name by ID
@@ -477,7 +476,7 @@ export const WeeklyObjectivesList = ({
           </SortableContext>
         </DndContext>
         
-        {/* Add new objective with auto-save - only show if week is not completed */}
+        {/* Add new objective - only show if week is not completed */}
         {!isWeekCompleted && (
           <motion.div 
             initial={{ opacity: 0 }}
@@ -485,26 +484,42 @@ export const WeeklyObjectivesList = ({
             transition={{ delay: 0.3 }}
             className="space-y-3 border-t border-border pt-3"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <Checkbox 
                 disabled 
                 className="border-border opacity-50"
               />
               <Input
-                value={autoSave.value}
-                onChange={(e) => autoSave.setValue(e.target.value)}
+                value={objectiveSave.value}
+                onChange={(e) => objectiveSave.setValue(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && objectiveSave.value.trim()) {
+                    e.preventDefault();
+                    objectiveSave.saveObjective();
+                  }
+                }}
                 className="flex-1"
                 placeholder="Add a new objective..."
               />
-              {(autoSave.isSaving || autoSave.lastSaved) && (
-                <AutoSaveIndicator
-                  isSaving={autoSave.isSaving}
-                  lastSaved={autoSave.lastSaved}
-                  hasUnsavedChanges={autoSave.hasUnsavedChanges}
-                />
+              {objectiveSave.value.trim() && (
+                <Button
+                  size="sm"
+                  onClick={objectiveSave.saveObjective}
+                  disabled={objectiveSave.isSaving}
+                  className="shrink-0"
+                >
+                  {objectiveSave.isSaving ? (
+                    <div className="w-4 h-4 border border-background border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline ml-1">Add</span>
+                </Button>
+              )}
+              {objectiveSave.hasUnsavedChanges && objectiveSave.value.trim() && (
+                <span className="text-xs text-muted-foreground hidden sm:inline">Press Enter to save</span>
               )}
             </div>
-            
           </motion.div>
         )}
       </div>
