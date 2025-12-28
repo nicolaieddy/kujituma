@@ -3,12 +3,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { HabitsService } from "@/services/habitsService";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { DailyCheckInButton } from "./DailyCheckInButton";
+import { DailyCheckInDialog } from "./DailyCheckInDialog";
 import { WeeklyPlanningDialog } from "./WeeklyPlanningDialog";
+import { WeeklyPlanningHistory } from "./WeeklyPlanningHistory";
+import { DailyCheckInHistory } from "./DailyCheckInHistory";
 import { QuarterlyReviewDialog } from "./QuarterlyReviewDialog";
 import { QuarterlyReviewsHistory } from "./QuarterlyReviewsHistory";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
 import { QuarterlyReviewProvider } from "@/contexts/QuarterlyReviewContext";
+import { RitualsProvider } from "@/contexts/RitualsContext";
 import { useGoals } from "@/hooks/useGoals";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 
@@ -20,6 +24,7 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   const { user } = useAuth();
   const [showPlanningDialog, setShowPlanningDialog] = useState(false);
   const [showQuarterlyDialog, setShowQuarterlyDialog] = useState(false);
+  const [showDailyCheckInDialog, setShowDailyCheckInDialog] = useState(false);
   
   const weekStart = WeeklyProgressService.getWeekStart();
   const { hasCompletedPlanning } = useWeeklyPlanning(weekStart);
@@ -71,26 +76,45 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   const handleOpenQuarterlyReview = () => {
     setShowQuarterlyDialog(true);
   };
+
+  const handleOpenWeeklyPlanning = () => {
+    setShowPlanningDialog(true);
+  };
+
+  const handleOpenDailyCheckIn = () => {
+    setShowDailyCheckInDialog(true);
+  };
   
   // Always render children, but only render habits UI when user is logged in
   return (
     <QuarterlyReviewProvider onOpenReview={handleOpenQuarterlyReview}>
-      {children}
-      {user && (
-        <>
-          <DailyCheckInButton />
-          <WeeklyPlanningDialog 
-            open={showPlanningDialog} 
-            onOpenChange={handleClosePlanning}
-            weekStart={weekStart}
-          />
-          <QuarterlyReviewDialog 
-            open={showQuarterlyDialog} 
-            onOpenChange={handleCloseQuarterly}
-          />
-          <QuarterlyReviewsHistory />
-        </>
-      )}
+      <RitualsProvider 
+        onOpenWeeklyPlanning={handleOpenWeeklyPlanning}
+        onOpenDailyCheckIn={handleOpenDailyCheckIn}
+      >
+        {children}
+        {user && (
+          <>
+            <DailyCheckInButton />
+            <DailyCheckInDialog
+              open={showDailyCheckInDialog}
+              onOpenChange={setShowDailyCheckInDialog}
+            />
+            <WeeklyPlanningDialog 
+              open={showPlanningDialog} 
+              onOpenChange={handleClosePlanning}
+              weekStart={weekStart}
+            />
+            <WeeklyPlanningHistory />
+            <DailyCheckInHistory />
+            <QuarterlyReviewDialog 
+              open={showQuarterlyDialog} 
+              onOpenChange={handleCloseQuarterly}
+            />
+            <QuarterlyReviewsHistory />
+          </>
+        )}
+      </RitualsProvider>
     </QuarterlyReviewProvider>
   );
 };
