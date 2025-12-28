@@ -12,6 +12,7 @@ import { useAllWeeklyPlanningSessions } from "@/hooks/useAllWeeklyPlanningSessio
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { PlanningTrendsChart } from "@/components/rituals/PlanningTrendsChart";
 import { Target, Lightbulb, Plus, CheckCircle, Clock } from "lucide-react";
 import { format, parseISO, getISOWeek } from "date-fns";
 
@@ -93,6 +94,11 @@ export const WeeklyPlanningHistory = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Analytics Charts */}
+          {sessions.length > 1 && (
+            <PlanningTrendsChart sessions={sessions} />
+          )}
 
           {/* Past Sessions */}
           {sessions && sessions.length > 0 && (

@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User, ChevronDown, HelpCircle, ClipboardList } from "lucide-react";
+import { LogOut, Settings, User, ChevronDown, HelpCircle, Sparkles } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
-import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 
 interface UserDropdownMenuProps {
   isAdmin: boolean;
@@ -13,7 +12,6 @@ interface UserDropdownMenuProps {
 
 export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDropdownMenuProps) => {
   const navigate = useNavigate();
-  const { openQuarterlyHistory } = useQuarterlyReviewTrigger();
 
   return (
     <DropdownMenu>
@@ -36,11 +34,11 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
         </DropdownMenuItem>
         
         <DropdownMenuItem 
-          onClick={openQuarterlyHistory}
+          onClick={() => navigate('/rituals')}
           className="cursor-pointer"
         >
-          <ClipboardList className="h-4 w-4 mr-2" />
-          Quarterly Reviews
+          <Sparkles className="h-4 w-4 mr-2" />
+          Rituals Dashboard
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={onRestartTour}

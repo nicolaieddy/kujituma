@@ -12,14 +12,14 @@ import { Progress } from "@/components/ui/progress";
 import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
+import { CheckInHeatmap } from "@/components/rituals/CheckInHeatmap";
 import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 const moodEmojis = ['😔', '😕', '😐', '🙂', '😊'];
-const energyIcons = [1, 2, 3, 4, 5];
 
 export const DailyCheckInHistory = () => {
-  const { checkIns, analytics, isLoading } = useAllDailyCheckIns(30);
+  const { checkIns, analytics, isLoading } = useAllDailyCheckIns(90);
   const { hasCheckedInToday } = useDailyCheckIn();
   const { isDailyHistoryOpen, setDailyHistoryOpen, openDailyCheckIn } = useRitualsTrigger();
 
@@ -80,6 +80,18 @@ export const DailyCheckInHistory = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Activity Heatmap */}
+          {checkIns.length > 0 && (
+            <Card className="bg-muted/30">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Activity Heatmap</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <CheckInHeatmap checkIns={checkIns} weeks={10} />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Analytics Summary */}
           {analytics && checkIns.length > 0 && (
