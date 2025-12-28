@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3 } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
@@ -54,6 +54,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [uploadingCover, setUploadingCover] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [previewViewerType, setPreviewViewerType] = useState<'friend' | 'public'>('friend');
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
@@ -302,11 +303,34 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   if (isPreviewMode) {
     return (
       <div className="space-y-4">
-        <div className="max-w-4xl mx-auto flex justify-between items-center">
+        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Eye className="h-4 w-4" />
             <span>Preview: How others see your profile</span>
           </div>
+          
+          {/* Viewer Type Toggle */}
+          <div className="flex items-center gap-2 bg-accent rounded-lg p-1">
+            <Button
+              variant={previewViewerType === 'friend' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setPreviewViewerType('friend')}
+              className="gap-2"
+            >
+              <Users className="h-4 w-4" />
+              Friend View
+            </Button>
+            <Button
+              variant={previewViewerType === 'public' ? 'secondary' : 'ghost'}
+              size="sm"
+              onClick={() => setPreviewViewerType('public')}
+              className="gap-2"
+            >
+              <Globe className="h-4 w-4" />
+              Public View
+            </Button>
+          </div>
+
           <div className="flex gap-2">
             <Button
               variant="outline"
@@ -325,6 +349,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               <Save className="h-4 w-4 mr-2" />
               {loading ? 'Saving...' : 'Save Changes'}
             </Button>
+          </div>
+        </div>
+
+        {/* Viewer type info banner */}
+        <div className="max-w-4xl mx-auto">
+          <div className={`rounded-lg px-4 py-2 text-sm flex items-center gap-2 ${
+            previewViewerType === 'friend' 
+              ? 'bg-primary/10 text-primary border border-primary/20' 
+              : 'bg-muted text-muted-foreground border border-border'
+          }`}>
+            {previewViewerType === 'friend' ? (
+              <>
+                <Users className="h-4 w-4" />
+                <span>Viewing as a <strong>friend</strong> - They can see your public goals and friend-only content</span>
+              </>
+            ) : (
+              <>
+                <Globe className="h-4 w-4" />
+                <span>Viewing as <strong>public visitor</strong> - They can only see your public goals</span>
+              </>
+            )}
           </div>
         </div>
         
@@ -422,7 +467,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           </Card>
 
           {/* Goals Section */}
-          <ProfileGoals userId={profile.id} isOwnProfile={true} />
+          <ProfileGoals userId={profile.id} isOwnProfile={false} viewerType={previewViewerType} />
         </div>
       </div>
     );

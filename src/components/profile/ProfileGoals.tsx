@@ -9,6 +9,7 @@ import { formatRelativeTime } from "@/utils/dateUtils";
 interface ProfileGoalsProps {
   userId: string;
   isOwnProfile?: boolean;
+  viewerType?: 'owner' | 'friend' | 'public';
 }
 
 const COLUMNS = [
@@ -32,14 +33,19 @@ const COLUMNS = [
   }
 ];
 
-export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps) => {
+export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner' }: ProfileGoalsProps) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Determine effective view mode
+  const effectiveIsOwner = viewerType === 'owner' || isOwnProfile;
+  const showPrivateGoals = viewerType === 'owner' || isOwnProfile;
 
   useEffect(() => {
     const fetchGoals = async () => {
       try {
-        const fetchedGoals = isOwnProfile 
+        // Always fetch all goals if owner, otherwise public only
+        const fetchedGoals = effectiveIsOwner 
           ? await GoalsService.getGoals() 
           : await GoalsService.getPublicGoals(userId);
         setGoals(fetchedGoals);
@@ -51,12 +57,17 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
     };
 
     fetchGoals();
-  }, [userId, isOwnProfile]);
+  }, [userId, effectiveIsOwner]);
+
+  // Filter goals based on viewer type
+  const visibleGoals = showPrivateGoals 
+    ? goals 
+    : goals.filter(goal => goal.is_public);
 
   const goalsByStatus = {
-    not_started: goals.filter(goal => goal.status === 'not_started'),
-    in_progress: goals.filter(goal => goal.status === 'in_progress'),
-    completed: goals.filter(goal => goal.status === 'completed'),
+    not_started: visibleGoals.filter(goal => goal.status === 'not_started'),
+    in_progress: visibleGoals.filter(goal => goal.status === 'in_progress'),
+    completed: visibleGoals.filter(goal => goal.status === 'completed'),
   };
 
   const getTargetDateDisplay = (goal: Goal) => {
@@ -77,7 +88,7 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
     );
   }
 
-  if (goals.length === 0) {
+  if (visibleGoals.length === 0) {
     return (
       <Card className="border-border">
         <CardHeader>
@@ -88,7 +99,7 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
         </CardHeader>
         <CardContent>
           <div className="text-center text-muted-foreground py-8">
-            {isOwnProfile ? 'No goals yet' : 'No public goals to show'}
+            {showPrivateGoals ? 'No goals yet' : 'No public goals to show'}
           </div>
         </CardContent>
       </Card>
@@ -137,7 +148,7 @@ export const ProfileGoals = ({ userId, isOwnProfile = false }: ProfileGoalsProps
                             <h5 className="text-foreground font-medium text-sm line-clamp-2">
                               {goal.title}
                             </h5>
-                            {isOwnProfile && !goal.is_public && (
+                            {showPrivateGoals && !goal.is_public && (
                               <Badge variant="secondary" className="text-xs ml-2">
                                 Private
                               </Badge>
