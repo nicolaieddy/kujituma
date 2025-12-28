@@ -45,38 +45,55 @@ export const useWeeklyPlanning = (weekStart: string) => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: CreateWeeklyPlanningSession) => {
-      // If offline, queue the mutation
-      if (!navigator.onLine) {
-        await offlineSyncService.queueMutation({
-          type: 'create',
-          table: 'weekly_planning_sessions',
-          data: {
+      try {
+        const result = await HabitsService.createOrUpdatePlanningSession(data);
+        return { result, wasOffline: false };
+      } catch (error) {
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing for offline sync');
+          await offlineSyncService.queueMutation({
+            type: 'create',
+            table: 'weekly_planning_sessions',
+            data: {
+              ...data,
+              user_id: user?.id,
+              week_start: weekStart,
+            },
+          });
+          const optimisticSession = {
             ...data,
+            id: crypto.randomUUID(),
             user_id: user?.id,
             week_start: weekStart,
-          },
-        });
-        // Optimistically cache the session
-        const optimisticSession = {
-          ...data,
-          id: crypto.randomUUID(),
-          user_id: user?.id,
-          week_start: weekStart,
-          is_completed: false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        await offlineDataService.cacheWeeklyPlanning(optimisticSession, weekStart);
-        return optimisticSession;
+            is_completed: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          await offlineDataService.cacheWeeklyPlanning(optimisticSession, weekStart);
+          return { result: optimisticSession, wasOffline: true };
+        }
+        throw error;
       }
-      return HabitsService.createOrUpdatePlanningSession(data);
     },
-    onSuccess: (data) => {
-      // Cache the result
-      if (data) {
-        offlineDataService.cacheWeeklyPlanning(data, weekStart);
+    onSuccess: ({ result, wasOffline }) => {
+      if (result) {
+        offlineDataService.cacheWeeklyPlanning(result, weekStart);
       }
       queryClient.invalidateQueries({ queryKey: ['weekly-planning'] });
+      if (wasOffline) {
+        toast({
+          title: "Saved offline",
+          description: "Will sync when you're back online.",
+        });
+      }
     },
     onError: (error) => {
       console.error('Planning save error:', error);
@@ -90,39 +107,56 @@ export const useWeeklyPlanning = (weekStart: string) => {
 
   const completeMutation = useMutation({
     mutationFn: async () => {
-      if (!navigator.onLine) {
-        // Queue the completion
-        await offlineSyncService.queueMutation({
-          type: 'update',
-          table: 'weekly_planning_sessions',
-          data: {
-            id: planningSession?.id,
-            updates: { is_completed: true, completed_at: new Date().toISOString() },
-          },
-        });
-        // Optimistically update cache
-        const updatedSession = {
-          ...planningSession,
-          is_completed: true,
-          completed_at: new Date().toISOString(),
-        };
-        await offlineDataService.cacheWeeklyPlanning(updatedSession, weekStart);
-        return updatedSession;
+      try {
+        const result = await HabitsService.completePlanningSession(weekStart);
+        return { result, wasOffline: false };
+      } catch (error) {
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing completion for offline sync');
+          await offlineSyncService.queueMutation({
+            type: 'update',
+            table: 'weekly_planning_sessions',
+            data: {
+              id: planningSession?.id,
+              updates: { is_completed: true, completed_at: new Date().toISOString() },
+            },
+          });
+          const updatedSession = {
+            ...planningSession,
+            is_completed: true,
+            completed_at: new Date().toISOString(),
+          };
+          await offlineDataService.cacheWeeklyPlanning(updatedSession, weekStart);
+          return { result: updatedSession, wasOffline: true };
+        }
+        throw error;
       }
-      return HabitsService.completePlanningSession(weekStart);
     },
-    onSuccess: (data) => {
-      if (data) {
-        offlineDataService.cacheWeeklyPlanning(data, weekStart);
+    onSuccess: ({ result, wasOffline }) => {
+      if (result) {
+        offlineDataService.cacheWeeklyPlanning(result, weekStart);
       }
       queryClient.invalidateQueries({ queryKey: ['weekly-planning'] });
       toast({
         title: "Planning complete! 📅",
-        description: navigator.onLine ? "You're ready to crush this week!" : "Saved offline - will sync when online.",
+        description: wasOffline ? "Saved offline - will sync when online." : "You're ready to crush this week!",
       });
     },
     onError: (error) => {
       console.error('Planning complete error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to complete planning session",
+        variant: "destructive",
+      });
     },
   });
 
