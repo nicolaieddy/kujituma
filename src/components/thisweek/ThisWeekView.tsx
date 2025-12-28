@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useBlocker } from "react-router-dom";
+import { useRouteBlocker } from "@/hooks/useRouteBlocker";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -135,7 +135,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   }, [setHasUnsavedChanges]);
 
   // Block route navigation when there are unsaved changes
-  const blocker = useBlocker(
+  const blocker = useRouteBlocker(
     ({ currentLocation, nextLocation }) =>
       hasUnsavedRef.current && currentLocation.pathname !== nextLocation.pathname
   );
