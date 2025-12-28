@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Upload, Save, X, Move, Trash2 } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
@@ -329,7 +329,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 </AvatarFallback>
               </Avatar>
             </div>
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center gap-2 flex-wrap">
               <Label htmlFor="photo-upload" className="cursor-pointer">
                 <Button
                   type="button"
@@ -343,6 +343,23 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                   </span>
                 </Button>
               </Label>
+              {/* Reset to Google photo button - only show if user has Google avatar */}
+              {user?.user_metadata?.avatar_url && formData.avatar_url !== user.user_metadata.avatar_url && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, avatar_url: user.user_metadata.avatar_url }));
+                    toast({
+                      title: "Photo restored",
+                      description: "Reset to Google photo. Don't forget to save your profile!",
+                    });
+                  }}
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  Use Google Photo
+                </Button>
+              )}
               {formData.avatar_url && (
                 <Button
                   type="button"
@@ -368,7 +385,12 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 className="hidden"
               />
             </div>
-            {!formData.avatar_url && (
+            {!formData.avatar_url && user?.user_metadata?.avatar_url && (
+              <p className="text-xs text-muted-foreground mt-2">
+                Click "Use Google Photo" to restore your Google profile picture
+              </p>
+            )}
+            {!formData.avatar_url && !user?.user_metadata?.avatar_url && (
               <p className="text-xs text-muted-foreground mt-2">
                 Your initials will be shown if no photo is uploaded
               </p>
