@@ -42,9 +42,49 @@ export class WeeklyProgressService {
     return filteredObjectives as WeeklyObjective[];
   }
 
+  /**
+   * Fetch objectives for multiple weeks in a single query (faster than per-week calls).
+   */
+  static async getWeeklyObjectivesForWeeks(weekStarts: string[]): Promise<WeeklyObjective[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    if (!weekStarts.length) return [];
+
+    const { data: objectives, error } = await supabase
+      .from('weekly_objectives')
+      .select('*, goals(start_date)')
+      .in('week_start', weekStarts)
+      .eq('user_id', user.id)
+      .order('week_start', { ascending: false })
+      .order('order_index', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+
+    const filtered = (objectives || [])
+      .filter((obj: any) => {
+        if (!obj.goals || !obj.goals.start_date) return true;
+
+        const weekDate = parseISO(obj.week_start);
+        const goalStartDate = parseISO(obj.goals.start_date);
+        const goalStartWeek = startOfWeek(goalStartDate, { weekStartsOn: 1 });
+        return !isBefore(weekDate, goalStartWeek);
+      })
+      .map((obj: any) => {
+        const { goals, ...objective } = obj;
+        return objective;
+      });
+
+    return filtered as WeeklyObjective[];
+  }
+
   static async createWeeklyObjective(data: CreateWeeklyObjectiveData): Promise<WeeklyObjective> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
+
 
     const { data: objective, error } = await supabase
       .from('weekly_objectives')

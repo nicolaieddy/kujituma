@@ -4,37 +4,28 @@ import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData, WeeklyObjective }
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-export const useAllWeeklyObjectives = () => {
+export const useAllWeeklyObjectives = (options: { enabled?: boolean } = {}) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const enabled = (options.enabled ?? true) && !!user;
 
   const { data: objectives = [], isLoading, error } = useQuery({
     queryKey: ['all-weekly-objectives', user?.id],
     queryFn: async () => {
       // Only get current week and previous 3 weeks for faster initial load
-      const weeks = [];
+      const weeks: string[] = [];
       const currentDate = new Date();
-      
+
       for (let i = 0; i < 4; i++) {
         const date = new Date(currentDate);
-        date.setDate(date.getDate() - (i * 7));
+        date.setDate(date.getDate() - i * 7);
         weeks.push(WeeklyProgressService.getWeekStart(date));
       }
 
-      // Fetch objectives in parallel for better performance
-      const allWeekObjectives = await Promise.all(
-        weeks.map(async (week) => {
-          try {
-            return await WeeklyProgressService.getWeeklyObjectives(week);
-          } catch {
-            return [];
-          }
-        })
-      );
-
-      return allWeekObjectives.flat();
+      // Single query for all weeks (much faster than one request per week)
+      return await WeeklyProgressService.getWeeklyObjectivesForWeeks(weeks);
     },
-    enabled: !!user,
+    enabled,
     staleTime: 5 * 60 * 1000, // Consider data fresh for 5 minutes
     gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes (gcTime replaces cacheTime in v5)
     retry: (failureCount, error) => {
@@ -42,6 +33,7 @@ export const useAllWeeklyObjectives = () => {
       return failureCount < 2;
     }
   });
+
 
   const createObjectiveMutation = useMutation({
     mutationFn: (data: CreateWeeklyObjectiveData) =>

@@ -10,7 +10,6 @@ export const useWeekState = (weekStart?: string) => {
   // Update current week when prop changes
   useEffect(() => {
     if (weekStart && weekStart !== currentWeekStart) {
-      console.log('useWeekState: prop changed, updating week from', currentWeekStart, 'to', weekStart);
       setCurrentWeekStart(weekStart);
     }
   }, [weekStart, currentWeekStart]);
