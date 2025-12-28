@@ -26,6 +26,7 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Install = lazy(() => import("./pages/Install"));
+const Rituals = lazy(() => import("./pages/Rituals"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -78,6 +79,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/profile/:userId" element={<Profile />} />
+        <Route path="/rituals" element={<Rituals />} />
         <Route path="/install" element={<Install />} />
         <Route path="*" element={<Feed />} />
       </Routes>
