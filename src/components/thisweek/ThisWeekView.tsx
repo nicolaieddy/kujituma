@@ -81,34 +81,38 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const isWeekCompleted = progressPost?.is_completed || false;
   
   useEffect(() => {
-    if (
-      isCurrentWeek && 
-      !isWeekCompleted && 
-      !hasFetchedSuggestions && 
-      !weeklyDataLoading &&
-      goals && 
-      goals.length > 0 &&
-      (objectives?.length || 0) < 3
-    ) {
-      setHasFetchedSuggestions(true);
-      
-      // Get incomplete objectives from previous weeks
-      const incompleteFromPast = allObjectives
-        .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
-        .map(o => ({ text: o.text, weekStart: o.week_start }));
-      
-      // Get completed objectives for context
-      const completedRecently = allObjectives
-        .filter(o => o.is_completed)
-        .slice(0, 10)
-        .map(o => ({ text: o.text }));
-      
-      generateSuggestions({
-        incompleteObjectives: incompleteFromPast,
-        completedObjectives: completedRecently,
-        goals: goals.filter(g => g.status === 'in_progress' || g.status === 'not_started')
-          .map(g => ({ title: g.title, description: g.description || undefined })),
-      });
+    try {
+      if (
+        isCurrentWeek && 
+        !isWeekCompleted && 
+        !hasFetchedSuggestions && 
+        !weeklyDataLoading &&
+        goals && 
+        goals.length > 0 &&
+        (objectives?.length || 0) < 3
+      ) {
+        setHasFetchedSuggestions(true);
+        
+        // Get incomplete objectives from previous weeks
+        const incompleteFromPast = (allObjectives || [])
+          .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+          .map(o => ({ text: o.text, weekStart: o.week_start }));
+        
+        // Get completed objectives for context
+        const completedRecently = (allObjectives || [])
+          .filter(o => o.is_completed)
+          .slice(0, 10)
+          .map(o => ({ text: o.text }));
+        
+        generateSuggestions({
+          incompleteObjectives: incompleteFromPast,
+          completedObjectives: completedRecently,
+          goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
+            .map(g => ({ title: g.title, description: g.description || undefined })),
+        }).catch(err => console.error('[ThisWeekView] Failed to generate suggestions:', err));
+      }
+    } catch (err) {
+      console.error('[ThisWeekView] Error in suggestions effect:', err);
     }
   }, [isCurrentWeek, isWeekCompleted, hasFetchedSuggestions, weeklyDataLoading, goals, objectives, allObjectives, currentWeekStart, generateSuggestions]);
 
@@ -195,29 +199,37 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   };
 
   const handleAddSuggestion = async (text: string) => {
-    await createObjective({
-      text,
-      week_start: currentWeekStart,
-      goal_id: null,
-    });
+    try {
+      await createObjective({
+        text,
+        week_start: currentWeekStart,
+        goal_id: null,
+      });
+    } catch (err) {
+      console.error('[ThisWeekView] Failed to add suggestion:', err);
+    }
   };
 
   const handleRefreshSuggestions = () => {
-    const incompleteFromPast = allObjectives
-      .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
-      .map(o => ({ text: o.text, weekStart: o.week_start }));
-    
-    const completedRecently = allObjectives
-      .filter(o => o.is_completed)
-      .slice(0, 10)
-      .map(o => ({ text: o.text }));
-    
-    generateSuggestions({
-      incompleteObjectives: incompleteFromPast,
-      completedObjectives: completedRecently,
-      goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
-        .map(g => ({ title: g.title, description: g.description || undefined })),
-    });
+    try {
+      const incompleteFromPast = (allObjectives || [])
+        .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+        .map(o => ({ text: o.text, weekStart: o.week_start }));
+      
+      const completedRecently = (allObjectives || [])
+        .filter(o => o.is_completed)
+        .slice(0, 10)
+        .map(o => ({ text: o.text }));
+      
+      generateSuggestions({
+        incompleteObjectives: incompleteFromPast,
+        completedObjectives: completedRecently,
+        goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
+          .map(g => ({ title: g.title, description: g.description || undefined })),
+      }).catch(err => console.error('[ThisWeekView] Failed to refresh suggestions:', err));
+    } catch (err) {
+      console.error('[ThisWeekView] Error refreshing suggestions:', err);
+    }
   };
 
   const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
@@ -306,10 +318,28 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
-  // State for incomplete reflections
+  // State for incomplete reflections - safely parse from progressPost
+  const safeIncompleteReflections = (): Record<string, string> => {
+    try {
+      const raw = progressPost?.incomplete_reflections;
+      if (!raw) return {};
+      if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
+        return raw as Record<string, string>;
+      }
+      return {};
+    } catch {
+      return {};
+    }
+  };
+  
   const [incompleteReflections, setIncompleteReflections] = useState<Record<string, string>>(
-    progressPost?.incomplete_reflections || {}
+    safeIncompleteReflections
   );
+
+  // Sync state when progressPost changes
+  useEffect(() => {
+    setIncompleteReflections(safeIncompleteReflections());
+  }, [progressPost?.incomplete_reflections]);
 
   const handleUpdateIncompleteReflection = useCallback((objectiveId: string, reflection: string) => {
     setIncompleteReflections(prev => ({
@@ -321,7 +351,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       currentWeekStart,
       progressPost?.notes || '',
       { ...incompleteReflections, [objectiveId]: reflection }
-    );
+    ).catch(err => console.error('[ThisWeekView] Failed to save reflections:', err));
   }, [currentWeekStart, progressPost?.notes, incompleteReflections]);
 
   const isEndOfWeek = HabitsService.isEndOfWeek();
@@ -371,8 +401,18 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
           accomplishments += '\n\n';
           
-          const incompleteReflections = latestProgressPost?.incomplete_reflections || {};
-          const reflectionEntries = Object.entries(incompleteReflections)
+          // Safely get incomplete reflections
+          let reflectionsObj: Record<string, string> = {};
+          try {
+            const raw = latestProgressPost?.incomplete_reflections;
+            if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+              reflectionsObj = raw as Record<string, string>;
+            }
+          } catch {
+            reflectionsObj = {};
+          }
+          
+          const reflectionEntries = Object.entries(reflectionsObj)
             .filter(([_, reflection]) => reflection && typeof reflection === 'string' && reflection.trim())
             .map(([_, reflection]) => reflection);
           
