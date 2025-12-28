@@ -71,42 +71,61 @@ export const useDailyCheckIn = () => {
 
   const checkInMutation = useMutation({
     mutationFn: async (data: CreateDailyCheckIn) => {
-      // If offline, queue the mutation
-      if (!navigator.onLine) {
-        await offlineSyncService.queueMutation({
-          type: 'create',
-          table: 'daily_check_ins',
-          data: {
+      // Try online first, fall back to offline queue on network errors
+      try {
+        const result = await HabitsService.createOrUpdateCheckIn(data);
+        return { result, wasOffline: false };
+      } catch (error) {
+        // Check if it's a network error (offline)
+        const isNetworkError = !navigator.onLine || 
+          (error instanceof Error && (
+            error.message.includes('fetch') ||
+            error.message.includes('network') ||
+            error.message.includes('Failed to fetch') ||
+            error.name === 'TypeError'
+          ));
+        
+        if (isNetworkError) {
+          console.log('Network error detected, queuing for offline sync');
+          // Queue the mutation for later sync
+          await offlineSyncService.queueMutation({
+            type: 'create',
+            table: 'daily_check_ins',
+            data: {
+              ...data,
+              user_id: user?.id,
+              check_in_date: today,
+            },
+          });
+          
+          // Optimistically cache the check-in
+          const optimisticCheckIn = {
             ...data,
+            id: crypto.randomUUID(),
             user_id: user?.id,
             check_in_date: today,
-          },
-        });
-        // Optimistically cache the check-in
-        const optimisticCheckIn = {
-          ...data,
-          id: crypto.randomUUID(),
-          user_id: user?.id,
-          check_in_date: today,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-        await offlineDataService.cacheDailyCheckIn(optimisticCheckIn, today);
-        return optimisticCheckIn;
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          await offlineDataService.cacheDailyCheckIn(optimisticCheckIn, today);
+          return { result: optimisticCheckIn, wasOffline: true };
+        }
+        
+        // Re-throw non-network errors
+        throw error;
       }
-      return HabitsService.createOrUpdateCheckIn(data);
     },
-    onSuccess: (data) => {
+    onSuccess: ({ result, wasOffline }) => {
       // Cache the result
-      if (data) {
-        offlineDataService.cacheDailyCheckIn(data, today);
+      if (result) {
+        offlineDataService.cacheDailyCheckIn(result, today);
       }
       queryClient.invalidateQueries({ queryKey: ['daily-check-in'] });
       queryClient.invalidateQueries({ queryKey: ['recent-check-ins'] });
       queryClient.invalidateQueries({ queryKey: ['user-streaks'] });
       toast({
         title: "Check-in complete! 🎯",
-        description: navigator.onLine ? "Great job showing up today!" : "Saved offline - will sync when online.",
+        description: wasOffline ? "Saved offline - will sync when online." : "Great job showing up today!",
       });
     },
     onError: (error) => {
