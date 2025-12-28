@@ -143,12 +143,12 @@ export const useAdminData = () => {
     }
   };
 
-  const calculateMonthlyData = async (): Promise<MonthlyData[]> => {
+  const calculateMonthlyData = async (monthRange: number = 6): Promise<MonthlyData[]> => {
     const months: MonthlyData[] = [];
     const now = new Date();
 
-    // Get last 6 months of data
-    for (let i = 5; i >= 0; i--) {
+    // Get data for specified month range
+    for (let i = monthRange - 1; i >= 0; i--) {
       const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
       const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'short' });
@@ -299,6 +299,11 @@ export const useAdminData = () => {
     }
   };
 
+  const refreshMonthlyData = async (monthRange: number) => {
+    const monthlyData = await calculateMonthlyData(monthRange);
+    setAnalytics(prev => ({ ...prev, monthlyData }));
+  };
+
   return {
     posts,
     users,
@@ -306,6 +311,7 @@ export const useAdminData = () => {
     loading: authLoading || loading,
     isAdmin,
     togglePostVisibility,
-    deletePost
+    deletePost,
+    refreshMonthlyData
   };
 };

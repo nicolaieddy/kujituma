@@ -1,5 +1,5 @@
 import { NavLink, useLocation } from "react-router-dom";
-import { Users, Home, UserPlus, Activity, TrendingUp, Trophy, Target } from "lucide-react";
+import { Users, UserPlus, TrendingUp, Target } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -39,12 +39,6 @@ const navigationItems = [
     icon: TrendingUp,
     description: "Track your stats"
   },
-];
-
-const quickActions = [
-  { title: "Today's Leaders", icon: Trophy },
-  { title: "Active Challenges", icon: Activity },
-  { title: "New Members", icon: UserPlus },
 ];
 
 export function CommunitySidebar() {
@@ -115,24 +109,6 @@ export function CommunitySidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* Quick Actions */}
-        {!isCollapsed && (
-          <SidebarGroup>
-            <SidebarGroupLabel>Quick Access</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {quickActions.map((item) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton className="h-9 text-sm">
-                      <item.icon className="h-4 w-4 shrink-0" />
-                      <span>{item.title}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        )}
       </SidebarContent>
     </Sidebar>
   );
