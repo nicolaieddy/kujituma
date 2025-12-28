@@ -56,12 +56,12 @@ export class ErrorBoundary extends Component<Props, State> {
               </p>
             </div>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {this.state.error && (
               <div className="text-left p-4 bg-muted rounded-lg overflow-auto max-h-48">
                 <p className="text-sm font-mono text-destructive">
                   {this.state.error.toString()}
                 </p>
-                {this.state.errorInfo && (
+                {import.meta.env.DEV && this.state.errorInfo && (
                   <pre className="text-xs mt-2 text-muted-foreground whitespace-pre-wrap">
                     {this.state.errorInfo.componentStack}
                   </pre>
