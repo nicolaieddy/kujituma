@@ -1,22 +1,30 @@
 import { useNavigate, useLocation } from "react-router-dom";
+import { Target, Users, UserPlus, BarChart3 } from "lucide-react";
 
 interface NavigationMenuProps {
   onItemClick?: () => void;
   isMobile?: boolean;
 }
 
+const navItems = [
+  { path: '/goals', label: 'Goals', icon: Target, section: 'goals' },
+  { path: '/community', label: 'Community', icon: Users, section: 'community' },
+  { path: '/friends', label: 'Friends', icon: UserPlus, section: 'friends' },
+  { path: '/analytics', label: 'Analytics', icon: BarChart3, section: 'analytics' },
+];
+
 export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenuProps) => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Determine current section based on pathname
   const getCurrentSection = () => {
     const path = location.pathname;
-    if (path.startsWith('/community')) return 'community';
     if (path.startsWith('/goals')) return 'goals';
+    if (path.startsWith('/community')) return 'community';
+    if (path.startsWith('/friends')) return 'friends';
     if (path.startsWith('/analytics')) return 'analytics';
     if (path.startsWith('/profile')) return 'profile';
-    return 'community';
+    return 'goals';
   };
 
   const currentSection = getCurrentSection();
@@ -29,60 +37,38 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
   if (isMobile) {
     return (
       <>
-        <button
-          onClick={() => handleNavigation('/community')}
-          className={`w-full text-left py-3 px-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 ${
-            currentSection === 'community' ? 'text-foreground font-medium bg-accent' : ''
-          }`}
-        >
-          Community
-        </button>
-        <button
-          onClick={() => handleNavigation('/goals')}
-          className={`w-full text-left py-3 px-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 ${
-            currentSection === 'goals' ? 'text-foreground font-medium bg-accent' : ''
-          }`}
-        >
-          Goals
-        </button>
-        <button
-          onClick={() => handleNavigation('/analytics')}
-          className={`w-full text-left py-3 px-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 ${
-            currentSection === 'analytics' ? 'text-foreground font-medium bg-accent' : ''
-          }`}
-        >
-          Analytics
-        </button>
+        {navItems.map(({ path, label, icon: Icon, section }) => (
+          <button
+            key={section}
+            onClick={() => handleNavigation(path)}
+            className={`flex items-center w-full text-left py-3 px-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 ${
+              currentSection === section ? 'text-foreground font-medium bg-accent' : ''
+            }`}
+          >
+            <Icon className="h-4 w-4 mr-3" />
+            {label}
+          </button>
+        ))}
       </>
     );
   }
 
   return (
-    <nav className="flex items-center space-x-6">
-      <button
-        onClick={() => handleNavigation('/community')}
-        className={`text-base leading-none text-muted-foreground hover:text-foreground transition-all duration-200 ${
-          currentSection === 'community' ? 'text-foreground font-medium' : ''
-        }`}
-      >
-        Community
-      </button>
-      <button
-        onClick={() => handleNavigation('/goals')}
-        className={`text-base leading-none text-muted-foreground hover:text-foreground transition-all duration-200 ${
-          currentSection === 'goals' ? 'text-foreground font-medium' : ''
-        }`}
-      >
-        Goals
-      </button>
-      <button
-        onClick={() => handleNavigation('/analytics')}
-        className={`text-base leading-none text-muted-foreground hover:text-foreground transition-all duration-200 ${
-          currentSection === 'analytics' ? 'text-foreground font-medium' : ''
-        }`}
-      >
-        Analytics
-      </button>
+    <nav className="flex items-center space-x-1">
+      {navItems.map(({ path, label, icon: Icon, section }) => (
+        <button
+          key={section}
+          onClick={() => handleNavigation(path)}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm leading-none transition-all duration-200 ${
+            currentSection === section 
+              ? 'text-foreground font-medium bg-accent' 
+              : 'text-muted-foreground hover:text-foreground hover:bg-accent/50'
+          }`}
+        >
+          <Icon className="h-3.5 w-3.5" />
+          {label}
+        </button>
+      ))}
     </nav>
   );
 };
