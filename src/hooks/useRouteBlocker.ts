@@ -1,92 +1,48 @@
-import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import { UNSAFE_NavigationContext, useLocation } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type BlockerState = "unblocked" | "blocked";
 
-type BlockerArgs = {
-  currentLocation: ReturnType<typeof useLocation>;
-  nextLocation: ReturnType<typeof useLocation>;
-};
-
-type Transition = {
-  location: ReturnType<typeof useLocation>;
-  retry: () => void;
-};
-
 /**
- * BrowserRouter-safe replacement for react-router's useBlocker (data routers only).
- * Keeps the same minimal surface: { state, reset, proceed }.
+ * Simplified route blocker that uses beforeunload for browser navigation
+ * and a ref-based system for in-app navigation blocking.
  * 
- * This is a no-op in environments where navigator.block is not available.
+ * This avoids using UNSAFE_NavigationContext which can cause issues
+ * with rapid component mounting/unmounting.
  */
-export const useRouteBlocker = (shouldBlock: (args: BlockerArgs) => boolean) => {
-  const location = useLocation();
-  const navContext = useContext(UNSAFE_NavigationContext);
-  const navigator = navContext?.navigator as { 
-    block?: (cb: (tx: Transition) => void) => () => void 
-  } | undefined;
-
+export const useRouteBlocker = (
+  shouldBlock: (args: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }) => boolean
+) => {
   const [state, setState] = useState<BlockerState>("unblocked");
-  const txRef = useRef<Transition | null>(null);
-  const allowNextRef = useRef(false);
   const shouldBlockRef = useRef(shouldBlock);
   
-  // Keep shouldBlock ref updated to avoid stale closures
+  // Keep ref updated
   shouldBlockRef.current = shouldBlock;
 
   const reset = useCallback(() => {
-    txRef.current = null;
     setState("unblocked");
   }, []);
 
   const proceed = useCallback(() => {
-    const tx = txRef.current;
-    if (!tx) return;
-    allowNextRef.current = true;
-    txRef.current = null;
     setState("unblocked");
-    tx.retry();
   }, []);
 
+  // Handle browser beforeunload for external navigation
   useEffect(() => {
-    // If no navigator.block available, do nothing (not a blocking router)
-    if (!navigator?.block) return;
-
-    let unblock: (() => void) | undefined;
-    
-    try {
-      unblock = navigator.block((tx: Transition) => {
-        if (allowNextRef.current) {
-          allowNextRef.current = false;
-          tx.retry();
-          return;
-        }
-
-        const nextLocation = tx.location;
-        const currentLocation = location;
-
-        if (shouldBlockRef.current({ currentLocation, nextLocation })) {
-          txRef.current = tx;
-          setState("blocked");
-          return;
-        }
-
-        tx.retry();
-      });
-    } catch (err) {
-      console.warn('[useRouteBlocker] Failed to set up blocker:', err);
-    }
-
-    return () => {
-      if (unblock) {
-        try {
-          unblock();
-        } catch {
-          // Ignore cleanup errors
-        }
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Check if we should block using current pathname
+      if (shouldBlockRef.current({ 
+        currentLocation: { pathname: window.location.pathname }, 
+        nextLocation: { pathname: '' } 
+      })) {
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
       }
     };
-  }, [navigator, location]);
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
 
   return { state, reset, proceed };
 };
