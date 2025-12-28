@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 
 interface WeekHeaderProps {
   weekNumber: number;
@@ -22,6 +23,8 @@ interface WeekHeaderProps {
   completedCount: number;
   totalCount: number;
   onNavigateWeek?: (direction: 'previous' | 'next') => void;
+  isCached?: boolean;
+  lastSync?: Date | null;
 }
 
 export const WeekHeader = ({
@@ -30,7 +33,9 @@ export const WeekHeader = ({
   currentWeekStart,
   completedCount,
   totalCount,
-  onNavigateWeek
+  onNavigateWeek,
+  isCached,
+  lastSync
 }: WeekHeaderProps) => {
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   
@@ -71,9 +76,12 @@ export const WeekHeader = ({
               </div>
             )}
             <div>
-              <CardTitle className="text-foreground text-2xl">
-                Week {weekNumber}
-              </CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-foreground text-2xl">
+                  Week {weekNumber}
+                </CardTitle>
+                <CachedDataIndicator isCached={!!isCached} lastSync={lastSync} />
+              </div>
               <p className="text-muted-foreground mt-1">{weekRange}</p>
             </div>
           </div>
