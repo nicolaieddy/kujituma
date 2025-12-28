@@ -21,7 +21,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
         <div className="flex items-center space-x-8">
           <h1 
             className="text-xl font-bold leading-none text-primary cursor-pointer hover:text-primary/80 transition-colors duration-200 font-heading" 
-            onClick={() => navigate('/community')}
+            onClick={() => navigate('/goals')}
           >
             Kujituma
           </h1>

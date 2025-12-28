@@ -45,16 +45,6 @@ export const UserMobileMenu = ({ isAdmin, onSignOut }: UserMobileMenuProps) => {
             Profile
           </button>
           
-          <button
-            onClick={() => {
-              navigate('/friends');
-              handleMenuClose();
-            }}
-            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
-          >
-            <Users className="h-4 w-4 mr-3" />
-            Friends
-          </button>
           
           {isAdmin && (
             <button
