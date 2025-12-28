@@ -23,7 +23,7 @@ const Goals = lazy(() => import("./pages/Goals"));
 const Profile = lazy(() => import("./pages/Profile"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
-const LandingPage = lazy(() => import("./pages/LandingPage"));
+import LandingPage from "./pages/LandingPage";
 const Install = lazy(() => import("./pages/Install"));
 const Rituals = lazy(() => import("./pages/Rituals"));
 
