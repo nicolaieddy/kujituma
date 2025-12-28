@@ -458,7 +458,6 @@ export type Database = {
           habit_items: Json | null
           id: string
           is_paused: boolean
-          is_public: boolean
           is_recurring: boolean
           notes: string | null
           order_index: number | null
@@ -472,6 +471,7 @@ export type Database = {
           title: string
           updated_at: string
           user_id: string
+          visibility: string
         }
         Insert: {
           category?: string | null
@@ -482,7 +482,6 @@ export type Database = {
           habit_items?: Json | null
           id?: string
           is_paused?: boolean
-          is_public?: boolean
           is_recurring?: boolean
           notes?: string | null
           order_index?: number | null
@@ -496,6 +495,7 @@ export type Database = {
           title: string
           updated_at?: string
           user_id: string
+          visibility?: string
         }
         Update: {
           category?: string | null
@@ -506,7 +506,6 @@ export type Database = {
           habit_items?: Json | null
           id?: string
           is_paused?: boolean
-          is_public?: boolean
           is_recurring?: boolean
           notes?: string | null
           order_index?: number | null
@@ -520,6 +519,7 @@ export type Database = {
           title?: string
           updated_at?: string
           user_id?: string
+          visibility?: string
         }
         Relationships: [
           {

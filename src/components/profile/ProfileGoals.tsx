@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Goal, GoalStatus } from "@/types/goals";
+import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
-import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2 } from "lucide-react";
+import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2, Users } from "lucide-react";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { toast } from "@/hooks/use-toast";
 
@@ -49,10 +49,15 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
   useEffect(() => {
     const fetchGoals = async () => {
       try {
-        // Always fetch all goals if owner, otherwise public only
-        const fetchedGoals = effectiveIsOwner 
-          ? await GoalsService.getGoals() 
-          : await GoalsService.getPublicGoals(userId);
+        // Fetch goals based on viewer type
+        let fetchedGoals: Goal[];
+        if (effectiveIsOwner) {
+          fetchedGoals = await GoalsService.getGoals();
+        } else if (viewerType === 'friend') {
+          fetchedGoals = await GoalsService.getVisibleGoals(userId, true);
+        } else {
+          fetchedGoals = await GoalsService.getVisibleGoals(userId, false);
+        }
         setGoals(fetchedGoals);
       } catch (error) {
         console.error('Error fetching goals:', error);
@@ -62,23 +67,26 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
     };
 
     fetchGoals();
-  }, [userId, effectiveIsOwner]);
+  }, [userId, effectiveIsOwner, viewerType]);
 
-  // Toggle goal visibility
-  const handleToggleVisibility = async (goal: Goal) => {
+  // Update goal visibility
+  const handleVisibilityChange = async (goal: Goal, newVisibility: GoalVisibility) => {
     setTogglingGoalId(goal.id);
     try {
-      const updatedGoal = await GoalsService.updateGoal(goal.id, { is_public: !goal.is_public });
+      const updatedGoal = await GoalsService.updateGoal(goal.id, { visibility: newVisibility });
       setGoals(goals.map(g => g.id === goal.id ? updatedGoal : g));
+      const visibilityLabels = {
+        public: 'public (visible to everyone)',
+        friends: 'friends only',
+        private: 'private (only you)'
+      };
       toast({
-        title: updatedGoal.is_public ? "Goal is now public" : "Goal is now private",
-        description: updatedGoal.is_public 
-          ? "Anyone who views your profile can see this goal." 
-          : "Only you can see this goal.",
+        title: "Visibility updated",
+        description: `Goal is now ${visibilityLabels[newVisibility]}.`,
       });
       onGoalUpdate?.();
     } catch (error) {
-      console.error('Error toggling goal visibility:', error);
+      console.error('Error updating goal visibility:', error);
       toast({
         title: "Error",
         description: "Failed to update goal visibility.",
@@ -92,10 +100,10 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
   // Filter goals based on viewer type
   const visibleGoals = showPrivateGoals 
     ? goals 
-    : goals.filter(goal => goal.is_public);
+    : goals.filter(goal => goal.visibility === 'public' || (viewerType === 'friend' && goal.visibility === 'friends'));
 
   // Count hidden private goals
-  const hiddenGoalsCount = goals.filter(goal => !goal.is_public).length;
+  const hiddenGoalsCount = goals.filter(goal => goal.visibility !== 'public').length;
 
   const goalsByStatus = {
     not_started: visibleGoals.filter(goal => goal.status === 'not_started'),
@@ -154,13 +162,16 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
                 <TooltipContent side="right" className="max-w-xs">
                   <p className="font-medium mb-1">Goal Visibility</p>
                   <p className="text-xs text-muted-foreground mb-2">
-                    <strong>Public goals</strong> are visible to anyone who views your profile.
+                    <strong>Public</strong> - Visible to anyone who views your profile.
                   </p>
                   <p className="text-xs text-muted-foreground mb-2">
-                    <strong>Private goals</strong> are only visible to you.
+                    <strong>Friends</strong> - Visible only to your friends.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <strong>Private</strong> - Only visible to you.
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    To change visibility, edit the goal from your Goals page and toggle the "Make this goal public" option.
+                    Use the dropdown on each goal to change visibility, or edit from the Goals page.
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -209,36 +220,40 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
                               {goal.title}
                             </h5>
                             {showPrivateGoals && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex items-center gap-1.5 shrink-0">
-                                      {togglingGoalId === goal.id ? (
-                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                                      ) : (
-                                        <>
-                                          {goal.is_public ? (
-                                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
-                                          ) : (
-                                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
-                                          )}
-                                        </>
-                                      )}
-                                      <Switch
-                                        checked={goal.is_public}
-                                        onCheckedChange={() => handleToggleVisibility(goal)}
-                                        disabled={togglingGoalId === goal.id}
-                                        className="scale-75"
-                                      />
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top">
-                                    <p className="text-xs">
-                                      {goal.is_public ? "Public - Click to make private" : "Private - Click to make public"}
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {togglingGoalId === goal.id ? (
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                                ) : null}
+                                <Select
+                                  value={goal.visibility}
+                                  onValueChange={(value: GoalVisibility) => handleVisibilityChange(goal, value)}
+                                  disabled={togglingGoalId === goal.id}
+                                >
+                                  <SelectTrigger className="h-7 w-[90px] text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="public">
+                                      <div className="flex items-center gap-1.5">
+                                        <Eye className="h-3 w-3" />
+                                        Public
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="friends">
+                                      <div className="flex items-center gap-1.5">
+                                        <Users className="h-3 w-3" />
+                                        Friends
+                                      </div>
+                                    </SelectItem>
+                                    <SelectItem value="private">
+                                      <div className="flex items-center gap-1.5">
+                                        <EyeOff className="h-3 w-3" />
+                                        Private
+                                      </div>
+                                    </SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
                             )}
                           </div>
                           

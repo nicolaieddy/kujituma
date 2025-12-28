@@ -14,7 +14,7 @@ export class GoalsService {
         start_date: data.start_date || null,
         target_date: data.target_date || null,
         category: data.category || '',
-        is_public: data.is_public ?? true,
+        visibility: data.visibility ?? 'public',
         is_recurring: data.is_recurring ?? false,
         recurrence_frequency: data.is_recurring ? (data.recurrence_frequency || 'weekly') : null,
         recurring_objective_text: data.is_recurring ? (data.recurring_objective_text || null) : null,
@@ -79,7 +79,22 @@ export class GoalsService {
       .from('goals')
       .select('*')
       .eq('user_id', userId)
-      .eq('is_public', true)
+      .eq('visibility', 'public')
+      .neq('status', 'deleted')
+      .order('order_index', { ascending: true })
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return parseGoals(goals);
+  }
+
+  static async getVisibleGoals(userId: string, isFriend: boolean): Promise<Goal[]> {
+    const visibilities = isFriend ? ['public', 'friends'] : ['public'];
+    const { data: goals, error } = await supabase
+      .from('goals')
+      .select('*')
+      .eq('user_id', userId)
+      .in('visibility', visibilities)
       .neq('status', 'deleted')
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: false });
