@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Target, Calendar, Users, Settings } from "lucide-react";
+import { Target, Users, Settings } from "lucide-react";
 import { useUnsavedChanges } from "@/contexts/UnsavedChangesContext";
 
 interface MainNavigationProps {
