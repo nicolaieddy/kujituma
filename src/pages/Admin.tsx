@@ -7,7 +7,6 @@ import PostsManagement from "@/components/admin/PostsManagement";
 import UsersOverview from "@/components/admin/UsersOverview";
 import UserAnalytics from "@/components/admin/UserAnalytics";
 import PostAnalytics from "@/components/admin/PostAnalytics";
-import { TourManagement } from "@/components/admin/TourManagement";
 import { useAdminData } from "@/hooks/useAdminData";
 
 const Admin = () => {
@@ -63,15 +62,12 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-muted">
+          <TabsList className="grid w-full grid-cols-2 bg-muted">
             <TabsTrigger value="posts">
               Posts Management
             </TabsTrigger>
             <TabsTrigger value="users">
               Users Overview
-            </TabsTrigger>
-            <TabsTrigger value="tours">
-              Tour Management
             </TabsTrigger>
           </TabsList>
 
@@ -99,10 +95,6 @@ const Admin = () => {
               onMonthRangeChange={refreshMonthlyData}
             />
             <UsersOverview users={users} />
-          </TabsContent>
-
-          <TabsContent value="tours" className="mt-6">
-            <TourManagement />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { LogOut, Settings, User, Menu, HelpCircle, Users } from "lucide-react";
+import { LogOut, Settings, User, Menu, Users } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 import { NavigationMenu } from "./NavigationMenu";
 
 interface UserMobileMenuProps {
   isAdmin: boolean;
   onSignOut: () => void;
-  onRestartTour: () => void;
 }
 
-export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobileMenuProps) => {
+export const UserMobileMenu = ({ isAdmin, onSignOut }: UserMobileMenuProps) => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -55,17 +54,6 @@ export const UserMobileMenu = ({ isAdmin, onSignOut, onRestartTour }: UserMobile
           >
             <Users className="h-4 w-4 mr-3" />
             Friends
-          </button>
-          
-          <button
-            onClick={() => {
-              onRestartTour();
-              handleMenuClose();
-            }}
-            className="flex items-center w-full text-left py-3 px-4 rounded-lg text-foreground/80 hover:text-foreground hover:bg-accent transition-colors"
-          >
-            <HelpCircle className="h-4 w-4 mr-3" />
-            Restart Tour
           </button>
           
           {isAdmin && (

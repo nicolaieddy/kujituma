@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
-import { TourProvider } from "@/components/tour/TourProvider";
 import { HabitsProvider } from "@/components/habits/HabitsProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
@@ -107,12 +106,10 @@ const App = () => {
         <OfflineIndicator />
         <BrowserRouter>
           <AuthProvider>
-            <TourProvider>
-              <HabitsProvider>
-                <AppContent queryClient={queryClient} />
-                <InstallPrompt />
-              </HabitsProvider>
-            </TourProvider>
+            <HabitsProvider>
+              <AppContent queryClient={queryClient} />
+              <InstallPrompt />
+            </HabitsProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
