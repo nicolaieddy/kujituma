@@ -9,6 +9,7 @@ import { UnsavedChangesProvider } from "@/contexts/UnsavedChangesContext";
 import { HabitsProvider } from "@/components/habits/HabitsProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { AppErrorBoundary } from "@/components/errors/AppErrorBoundary";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useAuth } from "@/contexts/AuthContext";
@@ -116,7 +117,9 @@ const App = () => {
           <AuthProvider>
             <UnsavedChangesProvider>
               <HabitsProvider>
-                <AppContent queryClient={queryClient} />
+                <AppErrorBoundary>
+                  <AppContent queryClient={queryClient} />
+                </AppErrorBoundary>
                 <InstallPrompt />
               </HabitsProvider>
             </UnsavedChangesProvider>

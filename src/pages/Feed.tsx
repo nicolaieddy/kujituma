@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
@@ -23,6 +24,15 @@ const Feed = () => {
     }
   };
 
+  // Redirect to auth if not logged in (avoid navigate during render)
+  useEffect(() => {
+    console.log('[Feed] Auth check - loading:', authLoading, 'user:', user?.email);
+    if (!authLoading && !user) {
+      console.log('[Feed] No user, redirecting to /auth');
+      navigate('/auth');
+    }
+  }, [authLoading, user, navigate]);
+
   if (authLoading) {
     return (
       <div className="min-h-screen min-h-[100dvh] bg-background">
@@ -35,7 +45,6 @@ const Feed = () => {
   }
 
   if (!user) {
-    navigate('/auth');
     return null;
   }
 

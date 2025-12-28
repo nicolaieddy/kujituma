@@ -44,7 +44,20 @@ export const useWeeklyInsights = () => {
       });
 
       if (funcError) {
-        throw funcError;
+        const msg = `[weekly-insights] ${funcError.message}`;
+        console.error(msg, funcError);
+        if (msg.includes('402') || msg.toLowerCase().includes('payment') || msg.toLowerCase().includes('credit')) {
+          handleAIError('AI credits exhausted');
+          setError('AI credits exhausted. Please add credits to continue.');
+          return null;
+        }
+        if (msg.includes('429') || msg.toLowerCase().includes('rate')) {
+          handleAIError('Rate limit');
+          setError('Rate limit exceeded. Please try again later.');
+          return null;
+        }
+        setError('Failed to generate insights');
+        return null;
       }
 
       if (data?.error) {
@@ -81,7 +94,23 @@ export const useWeeklyInsights = () => {
       });
 
       if (funcError) {
-        throw funcError;
+        const msg = `[weekly-insights] ${funcError.message}`;
+        console.error(msg, funcError);
+        if (msg.includes('402') || msg.toLowerCase().includes('payment') || msg.toLowerCase().includes('credit')) {
+          handleAIError('AI credits exhausted');
+          setError('AI credits exhausted. Please add credits to continue.');
+          setSuggestions([]);
+          return [];
+        }
+        if (msg.includes('429') || msg.toLowerCase().includes('rate')) {
+          handleAIError('Rate limit');
+          setError('Rate limit exceeded. Please try again later.');
+          setSuggestions([]);
+          return [];
+        }
+        setError('Failed to generate suggestions');
+        setSuggestions([]);
+        return [];
       }
 
       if (data?.error) {
@@ -96,6 +125,7 @@ export const useWeeklyInsights = () => {
     } catch (err) {
       console.error("Failed to generate suggestions:", err);
       setError("Failed to generate suggestions");
+      setSuggestions([]);
       return [];
     } finally {
       setIsSuggestionsLoading(false);
