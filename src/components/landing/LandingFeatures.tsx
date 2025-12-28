@@ -1,53 +1,46 @@
-import { Card } from "@/components/ui/card";
-import { CheckCircle, Target, Users, TrendingUp, Calendar, Heart } from "lucide-react";
 export const LandingFeatures = () => {
-  const features = [{
-    icon: Calendar,
-    title: "Weekly Planning",
-    description: "Structure your week with clear objectives and daily focus areas that align with your bigger goals."
-  }, {
-    icon: TrendingUp,
-    title: "Progress Tracking",
-    description: "Visualize your journey with detailed analytics and celebrate every milestone along the way."
-  }, {
-    icon: Users,
-    title: "Community Support",
-    description: "Share your wins, get encouragement, and stay motivated with a community of goal-getters."
-  }, {
-    icon: Target,
-    title: "Goal Management",
-    description: "Break down ambitious goals into manageable weekly objectives that compound into success."
-  }, {
-    icon: CheckCircle,
-    title: "Accountability",
-    description: "Weekly check-ins and reflection tools keep you honest and help you course-correct quickly."
-  }, {
-    icon: Heart,
-    title: "Habit Building",
-    description: "Transform goals into sustainable habits with consistent daily actions and positive reinforcement."
-  }];
-  return <section className="py-24 px-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground font-serif mb-4">
-            Everything You Need to Succeed
-          </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            A complete toolkit designed to help you plan, track, and achieve your most important goals.
-          </p>
+  return (
+    <div className="space-y-24 py-24 px-4">
+      {/* What the System Does */}
+      <section className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-semibold text-foreground mb-8">What the system does</h2>
+        <ul className="space-y-4 text-muted-foreground">
+          <li>Plan weekly objectives tied to longer-term goals</li>
+          <li>Track daily habits with streaks and completion records</li>
+          <li>Reflect through weekly planning, daily check-ins, and quarterly reviews</li>
+          <li>Share progress with a small group of trusted people</li>
+        </ul>
+      </section>
+
+      {/* How It Works */}
+      <section className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-semibold text-foreground mb-8">How it works</h2>
+        <p className="text-muted-foreground mb-6">A weekly loop:</p>
+        <p className="text-lg text-foreground font-medium tracking-wide">
+          Plan → Execute → Review → Share
+        </p>
+        <p className="text-muted-foreground mt-6">Each week builds on the last.</p>
+      </section>
+
+      {/* Accountability */}
+      <section className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-semibold text-foreground mb-8">Accountability</h2>
+        <div className="space-y-4 text-muted-foreground">
+          <p>A friends system connects you to others working on their own objectives.</p>
+          <p>You see their weekly progress. They see yours.</p>
+          <p>This is not performance. It is consistency made visible.</p>
         </div>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-12">
-          {features.map((feature, index) => {
-            const Icon = feature.icon;
-            return (
-              <div key={index} className="space-y-4 p-6 rounded-lg glass-card hover:shadow-soft transition-all duration-300 group">
-                <Icon className="h-10 w-10 text-primary group-hover:scale-110 transition-transform duration-300" />
-                <h3 className="font-semibold text-lg text-foreground">{feature.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{feature.description}</p>
-              </div>
-            );
-          })}
+      </section>
+
+      {/* Name & Theme */}
+      <section className="max-w-3xl mx-auto">
+        <h2 className="text-2xl font-semibold text-foreground mb-8">Name</h2>
+        <div className="space-y-4 text-muted-foreground">
+          <p>"Kujituma" is Swahili — roughly, "to have a burning fire in your stomach."</p>
+          <p>It refers to quiet internal drive, not outward motivation.</p>
+          <p>The Kilimanjaro imagery reflects the same idea: long climbs, patience, elevation through consistency.</p>
         </div>
-      </div>
-    </section>;
+      </section>
+    </div>
+  );
 };

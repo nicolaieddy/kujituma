@@ -1,15 +1,10 @@
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingFeatures } from "@/components/landing/LandingFeatures";
-import { LandingCTA } from "@/components/landing/LandingCTA";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 const LandingPage = () => {
   const navigate = useNavigate();
-  
-  const handleGetStarted = () => {
-    navigate("/auth");
-  };
   
   const handleSignIn = () => {
     navigate("/auth");
@@ -26,39 +21,25 @@ const LandingPage = () => {
                 Kujituma
               </h1>
             </div>
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={handleSignIn}>
-                Sign In
-              </Button>
-              <Button onClick={handleGetStarted}>
-                Get Started
-              </Button>
-            </div>
+            <Button variant="ghost" onClick={handleSignIn}>
+              Sign In
+            </Button>
           </div>
         </div>
       </nav>
 
       {/* Main Content */}
       <main>
-        <LandingHero onGetStarted={handleGetStarted} />
+        <LandingHero />
         <LandingFeatures />
-        <LandingCTA onGetStarted={handleGetStarted} />
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-12 bg-muted/30">
+      <footer className="border-t border-border py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-foreground">
-              Kujituma
-            </h3>
-            <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              "To have a burning fire in your stomach."
-            </p>
-            <div className="text-muted-foreground text-xs pt-4">
-              © 2025 Kujituma. Built with passion and love for my friends.
-            </div>
-          </div>
+          <p className="text-muted-foreground text-sm">
+            © 2025 Kujituma
+          </p>
         </div>
       </footer>
     </div>
