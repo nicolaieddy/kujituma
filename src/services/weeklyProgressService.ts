@@ -100,22 +100,17 @@ export class WeeklyProgressService {
     if (authError || !user) {
       throw new Error('User not authenticated');
     }
-    
+
+    // Use maybeSingle() to avoid 406 "Not Acceptable" when no row exists yet.
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .select('*')
       .eq('week_start', weekStart)
       .eq('user_id', user.id)
-      .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null;
-      }
-      throw error;
-    }
-    return post as WeeklyProgressPost | null;
+    if (error) throw error;
+    return (post as WeeklyProgressPost) ?? null;
   }
 
   static async upsertWeeklyProgressPost(weekStart: string, notes: string): Promise<WeeklyProgressPost> {

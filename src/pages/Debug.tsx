@@ -32,25 +32,37 @@ const Debug = () => {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Load last error from localStorage
-    try {
-      const stored = localStorage.getItem("app:lastError");
-      if (stored) {
-        setLastError(JSON.parse(stored));
+    const refreshFromStorage = () => {
+      // Load last error from localStorage
+      try {
+        const stored = localStorage.getItem("app:lastError");
+        if (stored) {
+          setLastError(JSON.parse(stored));
+        } else {
+          setLastError(null);
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
 
-    // Load network failures from localStorage
-    try {
-      const stored = localStorage.getItem("app:networkFailures");
-      if (stored) {
-        setNetworkFailures(JSON.parse(stored));
+      // Load network failures from localStorage
+      try {
+        const stored = localStorage.getItem("app:networkFailures");
+        if (stored) {
+          setNetworkFailures(JSON.parse(stored));
+        } else {
+          setNetworkFailures([]);
+        }
+      } catch {
+        // ignore
       }
-    } catch {
-      // ignore
-    }
+    };
+
+    refreshFromStorage();
+
+    // Live updates when network logger records failures
+    const onNet = () => refreshFromStorage();
+    window.addEventListener("app:networkFailure" as any, onNet);
 
     // Get fresh Supabase session
     supabase.auth.getSession().then(({ data, error }) => {
@@ -59,6 +71,10 @@ const Debug = () => {
       }
       setSupabaseSession(data.session);
     });
+
+    return () => {
+      window.removeEventListener("app:networkFailure" as any, onNet);
+    };
   }, []);
 
   const clearLastError = () => {
