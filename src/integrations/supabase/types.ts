@@ -739,6 +739,7 @@ export type Database = {
           about_me: string | null
           avatar_url: string | null
           commitment_visibility: string | null
+          cover_photo_url: string | null
           created_at: string
           email: string
           full_name: string
@@ -756,6 +757,7 @@ export type Database = {
           about_me?: string | null
           avatar_url?: string | null
           commitment_visibility?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           email: string
           full_name: string
@@ -773,6 +775,7 @@ export type Database = {
           about_me?: string | null
           avatar_url?: string | null
           commitment_visibility?: string | null
+          cover_photo_url?: string | null
           created_at?: string
           email?: string
           full_name?: string

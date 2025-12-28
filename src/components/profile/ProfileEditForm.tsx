@@ -14,9 +14,10 @@ import { Switch } from "@/components/ui/switch";
 
 interface Profile {
   id: string;
-  email?: string; // Optional - not all contexts have email
+  email?: string;
   full_name: string;
   avatar_url?: string;
+  cover_photo_url?: string;
   about_me?: string;
   linkedin_url?: string;
   instagram_url?: string;
@@ -39,6 +40,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
@@ -47,6 +49,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     tiktok_url: profile.tiktok_url || '',
     twitter_url: profile.twitter_url || '',
     avatar_url: profile.avatar_url || '',
+    cover_photo_url: profile.cover_photo_url || '',
     show_email: profile.show_email ?? false,
     commitment_visibility: profile.commitment_visibility || 'friends' as 'private' | 'friends' | 'public'
   });
@@ -63,7 +66,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       const fileExt = file.name.split('.').pop();
       const fileName = `${user.id}/avatar.${fileExt}`;
 
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('profile-photos')
         .upload(fileName, file, { upsert: true });
 
@@ -90,6 +93,41 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     }
   };
 
+  const uploadCoverPhoto = async (file: File) => {
+    if (!user) return null;
+
+    setUploadingCover(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}/cover.${fileExt}`;
+
+      const { error } = await supabase.storage
+        .from('profile-photos')
+        .upload(fileName, file, { upsert: true });
+
+      if (error) {
+        console.error('Cover upload error:', error);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload cover photo. Please try again.",
+          variant: "destructive",
+        });
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('profile-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (error) {
+      console.error('Cover upload error:', error);
+      return null;
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -113,6 +151,29 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     }
   };
 
+  const handleCoverUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select a file smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const publicUrl = await uploadCoverPhoto(file);
+    if (publicUrl) {
+      setFormData(prev => ({ ...prev, cover_photo_url: publicUrl }));
+      toast({
+        title: "Cover uploaded",
+        description: "Cover photo uploaded successfully!",
+      });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -129,6 +190,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           tiktok_url: formData.tiktok_url,
           twitter_url: formData.twitter_url,
           avatar_url: formData.avatar_url,
+          cover_photo_url: formData.cover_photo_url,
           show_email: formData.show_email,
           commitment_visibility: formData.commitment_visibility,
           updated_at: new Date().toISOString()
@@ -172,6 +234,43 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Cover Photo Section */}
+          <div className="space-y-2">
+            <Label className="text-foreground">Cover Photo</Label>
+            <div 
+              className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20"
+              style={formData.cover_photo_url ? {
+                backgroundImage: `url(${formData.cover_photo_url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: 'center'
+              } : undefined}
+            >
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <Label htmlFor="cover-upload" className="cursor-pointer">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={uploadingCover}
+                    asChild
+                  >
+                    <span>
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingCover ? 'Uploading...' : formData.cover_photo_url ? 'Change Cover' : 'Add Cover Photo'}
+                    </span>
+                  </Button>
+                </Label>
+                <input
+                  id="cover-upload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCoverUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Profile Photo Section */}
           <div className="text-center">
             <div className="flex justify-center mb-4">

@@ -9,6 +9,7 @@ import xIcon from "@/assets/x-icon.png";
 import tiktokIcon from "@/assets/tiktok-icon.png";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
+import { ProfileStats } from "./ProfileStats";
 import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
@@ -19,6 +20,7 @@ interface Profile {
   email?: string;
   full_name: string;
   avatar_url?: string;
+  cover_photo_url?: string;
   about_me?: string;
   linkedin_url?: string;
   instagram_url?: string;
@@ -79,8 +81,20 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <Card className="glass-card shadow-elegant hover:shadow-lift transition-all overflow-hidden">
-        {/* Unified Profile Header */}
-        <div className="bg-gradient-to-b from-primary/5 to-transparent pt-8 pb-6 px-8">
+        {/* Cover Photo */}
+        <div 
+          className="h-32 sm:h-40 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 relative"
+          style={profile.cover_photo_url ? {
+            backgroundImage: `url(${profile.cover_photo_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center'
+          } : undefined}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+        </div>
+        
+        {/* Profile Header - Overlapping avatar */}
+        <div className="px-6 sm:px-8 pb-6 -mt-16 relative z-10">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
               <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
@@ -197,9 +211,14 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
               </div>
             )}
           </div>
+          
+          {/* Profile Stats */}
+          <div className="mt-6">
+            <ProfileStats userId={profile.id} />
+          </div>
         </div>
 
-        <CardContent className="p-8 pt-4">
+        <CardContent className="p-6 sm:p-8 pt-0">
 
           {/* About Me Section */}
           {profile.about_me && (
