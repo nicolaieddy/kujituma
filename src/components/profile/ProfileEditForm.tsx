@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
@@ -45,6 +46,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [uploadingCover, setUploadingCover] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
   const [isPreviewMode, setIsPreviewMode] = useState(false);
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
@@ -58,6 +60,44 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     show_email: profile.show_email ?? false,
     commitment_visibility: profile.commitment_visibility || 'friends' as 'private' | 'friends' | 'public'
   });
+
+  // Check if there are unsaved changes
+  const hasUnsavedChanges = useMemo(() => {
+    return (
+      formData.full_name !== (profile.full_name || '') ||
+      formData.about_me !== (profile.about_me || '') ||
+      formData.linkedin_url !== (profile.linkedin_url || '') ||
+      formData.instagram_url !== (profile.instagram_url || '') ||
+      formData.tiktok_url !== (profile.tiktok_url || '') ||
+      formData.twitter_url !== (profile.twitter_url || '') ||
+      formData.avatar_url !== (profile.avatar_url || '') ||
+      formData.cover_photo_url !== (profile.cover_photo_url || '') ||
+      formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
+      formData.show_email !== (profile.show_email ?? false) ||
+      formData.commitment_visibility !== (profile.commitment_visibility || 'friends')
+    );
+  }, [formData, profile]);
+
+  // Warn before browser navigation with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
+  const handleCancel = () => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedWarning(true);
+    } else {
+      onCancel();
+    }
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -623,7 +663,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
             <Button
               type="button"
               variant="outline"
-              onClick={onCancel}
+              onClick={handleCancel}
             >
               <X className="h-4 w-4 mr-2" />
               Cancel
@@ -639,6 +679,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           </div>
         </form>
       </CardContent>
+
+      {/* Unsaved Changes Warning Dialog */}
+      <AlertDialog open={showUnsavedWarning} onOpenChange={setShowUnsavedWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Unsaved Changes</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have unsaved changes. Are you sure you want to leave? Your changes will be lost.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Editing</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={onCancel}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Discard Changes
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
