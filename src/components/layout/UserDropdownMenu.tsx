@@ -1,16 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User, ChevronDown, HelpCircle, Sparkles } from "lucide-react";
+import { LogOut, Settings, User, ChevronDown, Sparkles } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 
 interface UserDropdownMenuProps {
   isAdmin: boolean;
   onSignOut: () => void;
-  onRestartTour: () => void;
 }
 
-export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDropdownMenuProps) => {
+export const UserDropdownMenu = ({ isAdmin, onSignOut }: UserDropdownMenuProps) => {
   const navigate = useNavigate();
 
   return (
@@ -39,13 +37,6 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut, onRestartTour }: UserDrop
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Rituals Dashboard
-        </DropdownMenuItem>
-        <DropdownMenuItem 
-          onClick={onRestartTour}
-          className="cursor-pointer"
-        >
-          <HelpCircle className="h-4 w-4 mr-2" />
-          Restart Tour
         </DropdownMenuItem>
         
         {isAdmin && (
