@@ -8,9 +8,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Upload, Save, X } from "lucide-react";
+import { User, Upload, Save, X, Move } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
 
 interface Profile {
   id: string;
@@ -18,6 +19,7 @@ interface Profile {
   full_name: string;
   avatar_url?: string;
   cover_photo_url?: string;
+  cover_photo_position?: number;
   about_me?: string;
   linkedin_url?: string;
   instagram_url?: string;
@@ -41,6 +43,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [isRepositioning, setIsRepositioning] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
@@ -50,6 +53,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     twitter_url: profile.twitter_url || '',
     avatar_url: profile.avatar_url || '',
     cover_photo_url: profile.cover_photo_url || '',
+    cover_photo_position: profile.cover_photo_position ?? 50,
     show_email: profile.show_email ?? false,
     commitment_visibility: profile.commitment_visibility || 'friends' as 'private' | 'friends' | 'public'
   });
@@ -191,6 +195,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           twitter_url: formData.twitter_url,
           avatar_url: formData.avatar_url,
           cover_photo_url: formData.cover_photo_url,
+          cover_photo_position: formData.cover_photo_position,
           show_email: formData.show_email,
           commitment_visibility: formData.commitment_visibility,
           updated_at: new Date().toISOString()
@@ -237,38 +242,65 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           {/* Cover Photo Section */}
           <div className="space-y-2">
             <Label className="text-foreground">Cover Photo</Label>
-            <div 
-              className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20"
-              style={formData.cover_photo_url ? {
-                backgroundImage: `url(${formData.cover_photo_url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center'
-              } : undefined}
-            >
-              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                <Label htmlFor="cover-upload" className="cursor-pointer">
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    disabled={uploadingCover}
-                    asChild
-                  >
-                    <span>
-                      <Upload className="h-4 w-4 mr-2" />
-                      {uploadingCover ? 'Uploading...' : formData.cover_photo_url ? 'Change Cover' : 'Add Cover Photo'}
-                    </span>
-                  </Button>
-                </Label>
-                <input
-                  id="cover-upload"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleCoverUpload}
-                  className="hidden"
-                />
+            {isRepositioning && formData.cover_photo_url ? (
+              <CoverPhotoPositioner
+                imageUrl={formData.cover_photo_url}
+                initialPosition={formData.cover_photo_position}
+                onSave={(position) => {
+                  setFormData(prev => ({ ...prev, cover_photo_position: position }));
+                  setIsRepositioning(false);
+                  toast({
+                    title: "Position updated",
+                    description: "Cover photo position saved. Don't forget to save your profile!",
+                  });
+                }}
+                onCancel={() => setIsRepositioning(false)}
+              />
+            ) : (
+              <div 
+                className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20"
+                style={formData.cover_photo_url ? {
+                  backgroundImage: `url(${formData.cover_photo_url})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: `center ${formData.cover_photo_position}%`
+                } : undefined}
+              >
+                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/20">
+                  <Label htmlFor="cover-upload" className="cursor-pointer">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      disabled={uploadingCover}
+                      asChild
+                    >
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingCover ? 'Uploading...' : formData.cover_photo_url ? 'Change' : 'Add Cover Photo'}
+                      </span>
+                    </Button>
+                  </Label>
+                  {formData.cover_photo_url && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setIsRepositioning(true)}
+                    >
+                      <Move className="h-4 w-4 mr-2" />
+                      Reposition
+                    </Button>
+                  )}
+                  <input
+                    id="cover-upload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverUpload}
+                    className="hidden"
+                  />
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Profile Photo Section */}

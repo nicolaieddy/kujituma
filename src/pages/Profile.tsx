@@ -18,6 +18,7 @@ interface Profile {
   full_name: string;
   avatar_url?: string;
   cover_photo_url?: string;
+  cover_photo_position?: number;
   about_me?: string;
   linkedin_url?: string;
   instagram_url?: string;
@@ -73,10 +74,10 @@ const Profile = () => {
           selectColumns = '*';
         } else if (isAuthenticated) {
           // Authenticated users get limited data (respect show_email)
-          selectColumns = 'id, full_name, avatar_url, cover_photo_url, about_me, linkedin_url, instagram_url, tiktok_url, twitter_url, created_at, last_active_at, show_email, email';
+          selectColumns = 'id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, linkedin_url, instagram_url, tiktok_url, twitter_url, created_at, last_active_at, show_email, email';
         } else {
           // Anonymous users get minimal data
-          selectColumns = 'id, full_name, avatar_url, cover_photo_url, about_me, created_at';
+          selectColumns = 'id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, created_at';
         }
 
         // Fetch profile and friendship status in parallel
