@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
@@ -79,6 +79,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [previewViewerType, setPreviewViewerType] = useState<'friend' | 'public'>('friend');
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [showSocialPicker, setShowSocialPicker] = useState(false);
+  const [isDraggingCover, setIsDraggingCover] = useState(false);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => extractSocialLinks(profile));
   const [socialLinksOrder, setSocialLinksOrder] = useState<string[]>(() => profile.social_links_order || []);
   const [formData, setFormData] = useState({
@@ -250,6 +251,55 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       });
     }
   };
+
+  // Drag and drop handlers for cover photo
+  const handleCoverDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCover(true);
+  }, []);
+
+  const handleCoverDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCover(false);
+  }, []);
+
+  const handleCoverDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingCover(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid file type",
+        description: "Please drop an image file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please select a file smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const publicUrl = await uploadCoverPhoto(file);
+    if (publicUrl) {
+      setFormData(prev => ({ ...prev, cover_photo_url: publicUrl }));
+      toast({
+        title: "Cover uploaded",
+        description: "Cover photo uploaded successfully!",
+      });
+    }
+  }, [toast, uploadCoverPhoto]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -521,63 +571,80 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               />
             ) : (
               <div 
-                className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 group"
-                style={formData.cover_photo_url ? {
+                className={`relative h-32 rounded-lg overflow-hidden transition-all ${
+                  isDraggingCover 
+                    ? 'ring-2 ring-primary ring-offset-2 bg-primary/10' 
+                    : 'bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20'
+                }`}
+                style={formData.cover_photo_url && !isDraggingCover ? {
                   backgroundImage: `url(${formData.cover_photo_url})`,
                   backgroundSize: 'cover',
                   backgroundPosition: `center ${formData.cover_photo_position}%`
                 } : undefined}
+                onDragOver={handleCoverDragOver}
+                onDragLeave={handleCoverDragLeave}
+                onDrop={handleCoverDrop}
               >
-                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 transition-opacity">
-                  <Label htmlFor="cover-upload" className="cursor-pointer">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      disabled={uploadingCover}
-                      asChild
-                    >
-                      <span>
-                        <Upload className="h-4 w-4 mr-2" />
-                        {uploadingCover ? 'Uploading...' : formData.cover_photo_url ? 'Change' : 'Add Cover Photo'}
-                      </span>
-                    </Button>
-                  </Label>
-                  {formData.cover_photo_url && (
-                    <>
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setIsRepositioning(true)}
-                      >
-                        <Move className="h-4 w-4 mr-2" />
-                        Reposition
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => {
-                          setFormData(prev => ({ ...prev, cover_photo_url: '', cover_photo_position: 50 }));
-                          toast({
-                            title: "Cover removed",
-                            description: "Cover photo removed. Don't forget to save your profile!",
-                          });
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-                  <input
-                    id="cover-upload"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCoverUpload}
-                    className="hidden"
-                  />
-                </div>
+                {isDraggingCover ? (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-primary">
+                    <ImagePlus className="h-8 w-8" />
+                    <span className="text-sm font-medium">Drop image here</span>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 transition-opacity">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="cover-upload" className="cursor-pointer">
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="sm"
+                          disabled={uploadingCover}
+                          asChild
+                        >
+                          <span>
+                            <Upload className="h-4 w-4 mr-2" />
+                            {uploadingCover ? 'Uploading...' : formData.cover_photo_url ? 'Change' : 'Add Cover Photo'}
+                          </span>
+                        </Button>
+                      </Label>
+                      {formData.cover_photo_url && (
+                        <>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setIsRepositioning(true)}
+                          >
+                            <Move className="h-4 w-4 mr-2" />
+                            Reposition
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, cover_photo_url: '', cover_photo_position: 50 }));
+                              toast({
+                                title: "Cover removed",
+                                description: "Cover photo removed. Don't forget to save your profile!",
+                              });
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </>
+                      )}
+                      <input
+                        id="cover-upload"
+                        type="file"
+                        accept="image/*"
+                        onChange={handleCoverUpload}
+                        className="hidden"
+                      />
+                    </div>
+                    <p className="text-xs text-white/70">or drag and drop an image</p>
+                  </div>
+                )}
               </div>
             )}
           </div>
