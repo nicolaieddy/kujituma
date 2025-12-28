@@ -48,7 +48,7 @@ interface WeeklyObjectivesListProps {
   onReorderObjective?: (objectiveId: string, newOrderIndex: number) => void;
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
   currentWeekStart?: string;
-  onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string) => void;
+  onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string, scheduledDay: string) => void;
 }
 
 export const WeeklyObjectivesList = ({
@@ -405,7 +405,7 @@ export const WeeklyObjectivesList = ({
                               onUpdate={(day, time) => onUpdateObjectiveSchedule(objective.id, day, time)}
                               disabled={isWeekCompleted}
                               currentWeekStart={currentWeekStart}
-                              onMoveToWeek={onMoveObjectiveToWeek ? (newWeekStart) => onMoveObjectiveToWeek(objective.id, newWeekStart) : undefined}
+                              onMoveToWeek={onMoveObjectiveToWeek ? (newWeekStart, scheduledDay) => onMoveObjectiveToWeek(objective.id, newWeekStart, scheduledDay) : undefined}
                               allObjectives={localObjectives}
                             />
                           </div>

@@ -96,12 +96,40 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     updateObjective(id, { scheduled_day: day, scheduled_time: time });
   };
 
-  const handleMoveObjectiveToWeek = async (objectiveId: string, newWeekStart: string) => {
+  const handleMoveObjectiveToWeek = async (objectiveId: string, newWeekStart: string, scheduledDay: string) => {
     try {
-      await updateObjective(objectiveId, { week_start: newWeekStart });
+      // Find the objective to get its text for the reflection
+      const objective = objectives?.find(obj => obj.id === objectiveId);
+      
+      // First, create a copy of the objective in the new week
+      if (objective) {
+        await WeeklyProgressService.createWeeklyObjective({
+          text: objective.text,
+          goal_id: objective.goal_id || undefined,
+          week_start: newWeekStart,
+          scheduled_day: scheduledDay,
+          scheduled_time: objective.scheduled_time,
+        });
+      }
+      
+      // Then mark the original as "moved" by storing in incomplete reflections
+      const movedReflection = `[MOVED] Rescheduled to week of ${newWeekStart}`;
+      await WeeklyProgressService.upsertWeeklyProgressPostWithReflections(
+        currentWeekStart,
+        progressPost?.notes || '',
+        { ...incompleteReflections, [objectiveId]: movedReflection }
+      );
+      
+      // Delete the original objective from the current week
+      await deleteObjective(objectiveId);
+      
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+      
       toast({
-        title: "Objective moved",
-        description: "The objective has been moved to a different week.",
+        title: "Objective rescheduled",
+        description: "The objective has been moved to a different week and marked as rescheduled.",
       });
     } catch (error) {
       console.error('Error moving objective to week:', error);
