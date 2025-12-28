@@ -1,8 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
-import {
-  UNSAFE_NavigationContext,
-  useLocation,
-} from "react-router-dom";
+import { UNSAFE_NavigationContext, useLocation } from "react-router-dom";
 
 type BlockerState = "unblocked" | "blocked";
 
@@ -19,16 +16,23 @@ type Transition = {
 /**
  * BrowserRouter-safe replacement for react-router's useBlocker (data routers only).
  * Keeps the same minimal surface: { state, reset, proceed }.
+ * 
+ * This is a no-op in environments where navigator.block is not available.
  */
 export const useRouteBlocker = (shouldBlock: (args: BlockerArgs) => boolean) => {
   const location = useLocation();
-  const { navigator } = useContext(UNSAFE_NavigationContext) as unknown as {
-    navigator: { block?: (cb: (tx: Transition) => void) => () => void };
-  };
+  const navContext = useContext(UNSAFE_NavigationContext);
+  const navigator = navContext?.navigator as { 
+    block?: (cb: (tx: Transition) => void) => () => void 
+  } | undefined;
 
   const [state, setState] = useState<BlockerState>("unblocked");
   const txRef = useRef<Transition | null>(null);
   const allowNextRef = useRef(false);
+  const shouldBlockRef = useRef(shouldBlock);
+  
+  // Keep shouldBlock ref updated to avoid stale closures
+  shouldBlockRef.current = shouldBlock;
 
   const reset = useCallback(() => {
     txRef.current = null;
@@ -45,29 +49,44 @@ export const useRouteBlocker = (shouldBlock: (args: BlockerArgs) => boolean) => 
   }, []);
 
   useEffect(() => {
+    // If no navigator.block available, do nothing (not a blocking router)
     if (!navigator?.block) return;
 
-    const unblock = navigator.block((tx: Transition) => {
-      if (allowNextRef.current) {
-        allowNextRef.current = false;
+    let unblock: (() => void) | undefined;
+    
+    try {
+      unblock = navigator.block((tx: Transition) => {
+        if (allowNextRef.current) {
+          allowNextRef.current = false;
+          tx.retry();
+          return;
+        }
+
+        const nextLocation = tx.location;
+        const currentLocation = location;
+
+        if (shouldBlockRef.current({ currentLocation, nextLocation })) {
+          txRef.current = tx;
+          setState("blocked");
+          return;
+        }
+
         tx.retry();
-        return;
+      });
+    } catch (err) {
+      console.warn('[useRouteBlocker] Failed to set up blocker:', err);
+    }
+
+    return () => {
+      if (unblock) {
+        try {
+          unblock();
+        } catch {
+          // Ignore cleanup errors
+        }
       }
-
-      const nextLocation = tx.location;
-      const currentLocation = location;
-
-      if (shouldBlock({ currentLocation, nextLocation })) {
-        txRef.current = tx;
-        setState("blocked");
-        return;
-      }
-
-      tx.retry();
-    });
-
-    return unblock;
-  }, [navigator, location, shouldBlock]);
+    };
+  }, [navigator, location]);
 
   return { state, reset, proceed };
 };
