@@ -169,7 +169,17 @@ const Goals = () => {
     setCurrentWeekStart(newWeekStart);
   };
 
+  // Redirect to auth if not logged in
+  useEffect(() => {
+    console.log('[Goals] Auth check - loading:', authLoading, 'user:', user?.email);
+    if (!authLoading && !user) {
+      console.log('[Goals] No user, redirecting to /auth');
+      navigate('/auth');
+    }
+  }, [authLoading, user, navigate]);
+
   if (authLoading) {
+    console.log('[Goals] Auth still loading, showing skeleton');
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader isAdmin={false} onSignOut={() => {}} />
@@ -188,16 +198,12 @@ const Goals = () => {
     );
   }
 
-  // Redirect to auth if not logged in
-  useEffect(() => {
-    if (!authLoading && !user) {
-      navigate('/auth');
-    }
-  }, [authLoading, user, navigate]);
-
   if (!user) {
+    console.log('[Goals] No user after auth loaded, returning null');
     return null;
   }
+  
+  console.log('[Goals] Rendering for user:', user.email);
 
   return (
     <div className="min-h-screen bg-background">

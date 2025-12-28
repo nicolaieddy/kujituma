@@ -29,8 +29,17 @@ export class GoalsService {
   }
 
   static async getGoals(): Promise<Goal[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const { data: user, error: authError } = await supabase.auth.getUser();
+    
+    if (authError) {
+      console.error('GoalsService.getGoals auth error:', authError);
+      throw authError;
+    }
+    
+    if (!user.user) {
+      console.warn('GoalsService.getGoals: No user found, returning empty array');
+      return [];
+    }
 
     const { data: goals, error } = await supabase
       .from('goals')
@@ -40,7 +49,10 @@ export class GoalsService {
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('GoalsService.getGoals fetch error:', error);
+      throw error;
+    }
     return parseGoals(goals);
   }
 

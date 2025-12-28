@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GoalsService } from "@/services/goalsService";
 import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
@@ -18,18 +18,23 @@ export const useGoals = () => {
   const { data: goals = [], isLoading, error } = useQuery({
     queryKey: ['goals', user?.id],
     queryFn: async () => {
+      console.log('[useGoals] Fetching goals for user:', user?.id);
       try {
         const data = await GoalsService.getGoals();
+        console.log('[useGoals] Fetched', data.length, 'goals');
         // Cache for offline use
         offlineDataService.cacheGoals(data);
         offlineDataService.updateLastSync();
         setIsCached(false);
         return data;
       } catch (err) {
+        console.error('[useGoals] Error fetching goals:', err);
         // If offline, try to get cached data
         if (!navigator.onLine) {
+          console.log('[useGoals] Offline, trying cached data');
           const cached = await offlineDataService.getCachedGoals();
           if (cached) {
+            console.log('[useGoals] Using cached data:', cached.length, 'goals');
             setIsCached(true);
             return cached;
           }
@@ -41,6 +46,13 @@ export const useGoals = () => {
     staleTime: 1000 * 60 * 5, // 5 minutes - goals don't change often
     gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
   });
+  
+  // Log any query errors
+  useEffect(() => {
+    if (error) {
+      console.error('[useGoals] Query error:', error);
+    }
+  }, [error]);
 
   const createGoalMutation = useMutation({
     mutationFn: GoalsService.createGoal,
