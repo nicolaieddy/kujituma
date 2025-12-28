@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import {
@@ -17,6 +17,8 @@ import { Calendar } from "@/components/ui/calendar";
 import { Clock, CalendarIcon } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay, isToday, isTomorrow, isSameWeek, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
+import { DayContentProps } from "react-day-picker";
+import { WeeklyObjective } from "@/types/weeklyProgress";
 
 interface ObjectiveTimeBlockerProps {
   scheduledDay?: string | null;
@@ -25,6 +27,7 @@ interface ObjectiveTimeBlockerProps {
   disabled?: boolean;
   currentWeekStart: string;
   onMoveToWeek?: (newWeekStart: string) => void;
+  allObjectives?: WeeklyObjective[];
 }
 
 const TIME_SLOTS = [
@@ -59,9 +62,33 @@ export const ObjectiveTimeBlocker = ({
   disabled = false,
   currentWeekStart,
   onMoveToWeek,
+  allObjectives = [],
 }: ObjectiveTimeBlockerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localTime, setLocalTime] = useState(scheduledTime || '');
+  
+  // Build a map of dates to objective counts for the current week
+  const objectiveCountsByDate = useMemo(() => {
+    const counts: Record<string, number> = {};
+    
+    if (!currentWeekStart) return counts;
+    
+    const weekStart = parseISO(currentWeekStart);
+    
+    allObjectives.forEach(obj => {
+      if (obj.scheduled_day) {
+        const dayIndex = DAY_MAP[obj.scheduled_day.toLowerCase()];
+        if (dayIndex !== undefined) {
+          const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1;
+          const date = addDays(weekStart, adjustedIndex);
+          const dateKey = format(date, 'yyyy-MM-dd');
+          counts[dateKey] = (counts[dateKey] || 0) + 1;
+        }
+      }
+    });
+    
+    return counts;
+  }, [allObjectives, currentWeekStart]);
   
   // Convert scheduledDay to actual date based on currentWeekStart
   const getDateFromDay = (day: string | null | undefined): Date | undefined => {
@@ -76,6 +103,36 @@ export const ObjectiveTimeBlocker = ({
   };
   
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(getDateFromDay(scheduledDay));
+  
+  // Custom day content to show objective counts
+  const CustomDayContent = ({ date, displayMonth }: DayContentProps) => {
+    const dateKey = format(date, 'yyyy-MM-dd');
+    const count = objectiveCountsByDate[dateKey] || 0;
+    
+    return (
+      <div className="relative w-full h-full flex items-center justify-center">
+        <span>{date.getDate()}</span>
+        {count > 0 && (
+          <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 flex gap-0.5">
+            {count <= 3 ? (
+              // Show dots for 1-3 objectives
+              Array.from({ length: count }).map((_, i) => (
+                <span 
+                  key={i} 
+                  className="w-1 h-1 rounded-full bg-primary/70"
+                />
+              ))
+            ) : (
+              // Show number for 4+ objectives
+              <span className="text-[8px] font-medium text-primary leading-none">
+                {count}
+              </span>
+            )}
+          </span>
+        )}
+      </div>
+    );
+  };
   
   // Format the display label intelligently
   const formatDateLabel = (date: Date | undefined): string | null => {
@@ -185,6 +242,9 @@ export const ObjectiveTimeBlocker = ({
               selected={selectedDate}
               onSelect={handleDateSelect}
               className={cn("rounded-md border pointer-events-auto")}
+              components={{
+                DayContent: CustomDayContent,
+              }}
               initialFocus
             />
             {selectedDate && !isSameWeek(selectedDate, parseISO(currentWeekStart), { weekStartsOn: 1 }) && (

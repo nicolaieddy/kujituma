@@ -406,6 +406,7 @@ export const WeeklyObjectivesList = ({
                               disabled={isWeekCompleted}
                               currentWeekStart={currentWeekStart}
                               onMoveToWeek={onMoveObjectiveToWeek ? (newWeekStart) => onMoveObjectiveToWeek(objective.id, newWeekStart) : undefined}
+                              allObjectives={localObjectives}
                             />
                           </div>
                         )}
