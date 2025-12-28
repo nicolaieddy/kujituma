@@ -44,7 +44,7 @@ interface WeeklyObjectivesListProps {
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
   currentWeekStart?: string;
   onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string, scheduledDay: string) => void;
-  onUnsavedStateChange?: (hasUnsaved: boolean, saveFunc: () => Promise<boolean>, clearFunc: () => void) => void;
+  
 }
 
 export const WeeklyObjectivesList = ({
@@ -65,7 +65,7 @@ export const WeeklyObjectivesList = ({
   onUpdateObjectiveSchedule,
   currentWeekStart = '',
   onMoveObjectiveToWeek,
-  onUnsavedStateChange,
+  
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -121,16 +121,6 @@ export const WeeklyObjectivesList = ({
     onSave: (text: string) => onAddObjective(text),
   });
 
-  // Notify parent of unsaved state changes
-  useEffect(() => {
-    if (onUnsavedStateChange) {
-      onUnsavedStateChange(
-        objectiveSave.hasUnsavedChanges,
-        objectiveSave.saveObjective,
-        objectiveSave.clearForm
-      );
-    }
-  }, [objectiveSave.hasUnsavedChanges, objectiveSave.saveObjective, objectiveSave.clearForm, onUnsavedStateChange]);
 
   // Helper function to get goal name by ID
   const getGoalName = (goalId: string | null) => {
