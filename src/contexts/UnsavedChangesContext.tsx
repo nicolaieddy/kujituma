@@ -19,8 +19,12 @@ export const UnsavedChangesProvider = ({ children }: { children: ReactNode }) =>
 
 export const useUnsavedChanges = () => {
   const context = useContext(UnsavedChangesContext);
+  // Return safe defaults if context is not available
   if (!context) {
-    throw new Error('useUnsavedChanges must be used within an UnsavedChangesProvider');
+    return {
+      hasUnsavedChanges: false,
+      setHasUnsavedChanges: () => {},
+    };
   }
   return context;
 };
