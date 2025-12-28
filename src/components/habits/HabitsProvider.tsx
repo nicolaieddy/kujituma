@@ -1,20 +1,22 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, lazy, Suspense, useCallback, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { HabitsService } from "@/services/habitsService";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { DailyCheckInButton } from "./DailyCheckInButton";
-import { DailyCheckInDialog } from "./DailyCheckInDialog";
-import { WeeklyPlanningDialog } from "./WeeklyPlanningDialog";
-import { WeeklyPlanningHistory } from "./WeeklyPlanningHistory";
-import { DailyCheckInHistory } from "./DailyCheckInHistory";
-import { QuarterlyReviewDialog } from "./QuarterlyReviewDialog";
-import { QuarterlyReviewsHistory } from "./QuarterlyReviewsHistory";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
 import { QuarterlyReviewProvider } from "@/contexts/QuarterlyReviewContext";
 import { RitualsProvider } from "@/contexts/RitualsContext";
 import { useGoals } from "@/hooks/useGoals";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
+
+// Lazy load dialog components to reduce initial bundle
+const DailyCheckInDialog = lazy(() => import("./DailyCheckInDialog").then(m => ({ default: m.DailyCheckInDialog })));
+const WeeklyPlanningDialog = lazy(() => import("./WeeklyPlanningDialog").then(m => ({ default: m.WeeklyPlanningDialog })));
+const WeeklyPlanningHistory = lazy(() => import("./WeeklyPlanningHistory").then(m => ({ default: m.WeeklyPlanningHistory })));
+const DailyCheckInHistory = lazy(() => import("./DailyCheckInHistory").then(m => ({ default: m.DailyCheckInHistory })));
+const QuarterlyReviewDialog = lazy(() => import("./QuarterlyReviewDialog").then(m => ({ default: m.QuarterlyReviewDialog })));
+const QuarterlyReviewsHistory = lazy(() => import("./QuarterlyReviewsHistory").then(m => ({ default: m.QuarterlyReviewsHistory })));
 
 interface HabitsProviderProps {
   children: ReactNode;
@@ -26,14 +28,17 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   const [showQuarterlyDialog, setShowQuarterlyDialog] = useState(false);
   const [showDailyCheckInDialog, setShowDailyCheckInDialog] = useState(false);
   
-  const weekStart = WeeklyProgressService.getWeekStart();
+  const weekStart = useMemo(() => WeeklyProgressService.getWeekStart(), []);
   const { hasCompletedPlanning } = useWeeklyPlanning(weekStart);
   const { hasCompletedReview, isEndOfQuarter, isLoading: isReviewLoading } = useQuarterlyReview();
   const { goals } = useGoals();
   const { objectives } = useAllWeeklyObjectives();
   
   // Check if user has any activity (goals or objectives)
-  const hasUserActivity = (goals && goals.length > 0) || (objectives && objectives.length > 0);
+  const hasUserActivity = useMemo(() => 
+    (goals && goals.length > 0) || (objectives && objectives.length > 0),
+    [goals, objectives]
+  );
   
   useEffect(() => {
     if (!user) return;
@@ -59,31 +64,35 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
     }
   }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter, hasUserActivity, isReviewLoading]);
   
-  const handleClosePlanning = (open: boolean) => {
+  const handleClosePlanning = useCallback((open: boolean) => {
     if (!open) {
       sessionStorage.setItem(`planning-dismissed-${weekStart}`, 'true');
     }
     setShowPlanningDialog(open);
-  };
+  }, [weekStart]);
   
-  const handleCloseQuarterly = (open: boolean) => {
+  const handleCloseQuarterly = useCallback((open: boolean) => {
     if (!open) {
       sessionStorage.setItem(`quarterly-dismissed-${weekStart}`, 'true');
     }
     setShowQuarterlyDialog(open);
-  };
+  }, [weekStart]);
 
-  const handleOpenQuarterlyReview = () => {
+  const handleOpenQuarterlyReview = useCallback(() => {
     setShowQuarterlyDialog(true);
-  };
+  }, []);
 
-  const handleOpenWeeklyPlanning = () => {
+  const handleOpenWeeklyPlanning = useCallback(() => {
     setShowPlanningDialog(true);
-  };
+  }, []);
 
-  const handleOpenDailyCheckIn = () => {
+  const handleOpenDailyCheckIn = useCallback(() => {
     setShowDailyCheckInDialog(true);
-  };
+  }, []);
+
+  const handleCloseDailyCheckIn = useCallback((open: boolean) => {
+    setShowDailyCheckInDialog(open);
+  }, []);
   
   // Always render children, but only render habits UI when user is logged in
   return (
@@ -94,11 +103,11 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
       >
         {children}
         {user && (
-          <>
+          <Suspense fallback={null}>
             <DailyCheckInButton />
             <DailyCheckInDialog
               open={showDailyCheckInDialog}
-              onOpenChange={setShowDailyCheckInDialog}
+              onOpenChange={handleCloseDailyCheckIn}
             />
             <WeeklyPlanningDialog 
               open={showPlanningDialog} 
@@ -112,7 +121,7 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
               onOpenChange={handleCloseQuarterly}
             />
             <QuarterlyReviewsHistory />
-          </>
+          </Suspense>
         )}
       </RitualsProvider>
     </QuarterlyReviewProvider>

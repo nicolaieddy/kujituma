@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react';
+import { memo, useMemo, useState, useCallback } from 'react';
 import { UnifiedPost } from '@/services/unifiedPostsService';
 import { CompactFeedPostCard } from './CompactFeedPostCard';
 import { EnhancedFeedPostCard } from './EnhancedFeedPostCard';
@@ -33,30 +33,27 @@ const PostItem = memo(({
 }) => {
   const { isMobile } = useDeviceType();
   
-  const handleContextMenu = (e: React.MouseEvent) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     onContextMenu(post, e.clientX, e.clientY);
-  };
-
-  const handleLongPress = () => {
-    if (isMobile) {
-      const rect = (event?.target as HTMLElement)?.getBoundingClientRect();
-      onContextMenu(post, rect?.left || 0, rect?.bottom || 0);
-    }
-  };
+  }, [post, onContextMenu]);
 
   // Long press detection for mobile
-  let pressTimer: NodeJS.Timeout;
-  const handleTouchStart = (e: React.TouchEvent) => {
-    pressTimer = setTimeout(() => {
-      const touch = e.touches[0];
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const timeoutId = setTimeout(() => {
       onContextMenu(post, touch.clientX, touch.clientY);
     }, 500);
-  };
-
-  const handleTouchEnd = () => {
-    clearTimeout(pressTimer);
-  };
+    
+    const handleEnd = () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('touchend', handleEnd);
+      document.removeEventListener('touchmove', handleEnd);
+    };
+    
+    document.addEventListener('touchend', handleEnd, { once: true });
+    document.addEventListener('touchmove', handleEnd, { once: true });
+  }, [post, onContextMenu]);
 
   const content = useEnhancedView ? (
     <EnhancedFeedPostCard post={post} onLike={onLike} onComment={onComment} onCommentLike={onCommentLike} />
@@ -68,8 +65,8 @@ const PostItem = memo(({
     <div 
       className={isHighlighted ? "ring-2 ring-blue-400 ring-opacity-50 rounded-lg" : ""}
       onContextMenu={handleContextMenu}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={isMobile ? handleTouchStart : undefined}
+      style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
     >
       {content}
     </div>
@@ -88,9 +85,13 @@ export const VirtualizedFeedList = memo(({
 }: VirtualizedFeedListProps) => {
   const [contextMenu, setContextMenu] = useState<{ post: UnifiedPost; x: number; y: number } | null>(null);
 
-  const handleContextMenu = (post: UnifiedPost, x: number, y: number) => {
+  const handleContextMenu = useCallback((post: UnifiedPost, x: number, y: number) => {
     setContextMenu({ post, x, y });
-  };
+  }, []);
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
 
   const renderedPosts = useMemo(() => 
     posts.map((post) => (
@@ -104,7 +105,7 @@ export const VirtualizedFeedList = memo(({
         onCommentLike={onCommentLike}
         onContextMenu={handleContextMenu}
       />
-    )), [posts, useEnhancedView, highlightedPostId, onLike, onComment, onCommentLike]);
+    )), [posts, useEnhancedView, highlightedPostId, onLike, onComment, onCommentLike, handleContextMenu]);
 
   return (
     <>
@@ -114,7 +115,7 @@ export const VirtualizedFeedList = memo(({
           post={contextMenu.post}
           x={contextMenu.x}
           y={contextMenu.y}
-          onClose={() => setContextMenu(null)}
+          onClose={handleCloseContextMenu}
         />
       )}
     </>
