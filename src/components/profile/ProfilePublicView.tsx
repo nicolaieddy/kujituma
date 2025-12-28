@@ -21,6 +21,7 @@ interface Profile {
   full_name: string;
   avatar_url?: string;
   cover_photo_url?: string;
+  cover_photo_position?: number;
   about_me?: string;
   linkedin_url?: string;
   instagram_url?: string;
@@ -87,7 +88,7 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
           style={profile.cover_photo_url ? {
             backgroundImage: `url(${profile.cover_photo_url})`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center'
+            backgroundPosition: `center ${profile.cover_photo_position ?? 50}%`
           } : undefined}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
