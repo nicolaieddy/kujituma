@@ -1,20 +1,32 @@
 import { useState, useEffect } from 'react';
-import { WifiOff, Wifi, Database } from 'lucide-react';
+import { WifiOff, Wifi, Database, RefreshCw, CloudOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { offlineDataService } from '@/services/offlineDataService';
+import { offlineSyncService } from '@/services/offlineSyncService';
 
 export const OfflineIndicator = () => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
   const [showIndicator, setShowIndicator] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    const handleOnline = () => {
+    const handleOnline = async () => {
       setIsOffline(false);
-      // Keep showing briefly to indicate connection restored
-      setTimeout(() => setShowIndicator(false), 3000);
+      setIsSyncing(true);
+      
+      // Trigger sync
+      await offlineSyncService.processQueue();
+      const count = await offlineSyncService.getPendingCount();
+      setPendingCount(count);
+      setIsSyncing(false);
+      
       // Update last sync
       offlineDataService.updateLastSync();
+      
+      // Keep showing briefly to indicate connection restored
+      setTimeout(() => setShowIndicator(false), 3000);
     };
 
     const handleOffline = () => {
@@ -25,25 +37,32 @@ export const OfflineIndicator = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
+    // Subscribe to queue changes
+    const unsubscribe = offlineSyncService.subscribe(async () => {
+      const count = await offlineSyncService.getPendingCount();
+      setPendingCount(count);
+      setIsSyncing(offlineSyncService.syncing);
+    });
+
     // Set initial state
     if (!navigator.onLine) {
       setShowIndicator(true);
     }
 
-    // Get last sync time
+    // Get initial values
     offlineDataService.getLastSync().then((timestamp) => {
-      if (timestamp) {
-        setLastSync(new Date(timestamp));
-      }
+      if (timestamp) setLastSync(new Date(timestamp));
     });
+    offlineSyncService.getPendingCount().then(setPendingCount);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      unsubscribe();
     };
   }, []);
 
-  if (!showIndicator) return null;
+  if (!showIndicator && pendingCount === 0) return null;
 
   const formatLastSync = () => {
     if (!lastSync) return '';
@@ -59,6 +78,22 @@ export const OfflineIndicator = () => {
     return `${diffDays}d ago`;
   };
 
+  // Show pending sync indicator even when online
+  if (!isOffline && pendingCount > 0) {
+    return (
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 py-2 px-4 text-sm font-medium bg-amber-500 text-amber-950 transition-all duration-300">
+        <RefreshCw className={cn("h-4 w-4", isSyncing && "animate-spin")} />
+        <span>
+          {isSyncing 
+            ? `Syncing ${pendingCount} change${pendingCount !== 1 ? 's' : ''}...` 
+            : `${pendingCount} change${pendingCount !== 1 ? 's' : ''} pending sync`}
+        </span>
+      </div>
+    );
+  }
+
+  if (!showIndicator) return null;
+
   return (
     <div
       className={cn(
@@ -70,9 +105,15 @@ export const OfflineIndicator = () => {
     >
       {isOffline ? (
         <>
-          <WifiOff className="h-4 w-4" />
+          <CloudOff className="h-4 w-4" />
           <span>Offline mode</span>
-          <Database className="h-3 w-3 ml-1" />
+          {pendingCount > 0 && (
+            <>
+              <span className="mx-1">•</span>
+              <span>{pendingCount} pending</span>
+            </>
+          )}
+          <Database className="h-3 w-3 ml-2" />
           <span className="text-xs opacity-80">
             {lastSync ? `Cached ${formatLastSync()}` : 'Using cached data'}
           </span>
@@ -80,7 +121,13 @@ export const OfflineIndicator = () => {
       ) : (
         <>
           <Wifi className="h-4 w-4" />
-          <span>Back online - syncing...</span>
+          <span>Back online</span>
+          {isSyncing && (
+            <>
+              <RefreshCw className="h-3 w-3 ml-1 animate-spin" />
+              <span className="text-xs">syncing...</span>
+            </>
+          )}
         </>
       )}
     </div>

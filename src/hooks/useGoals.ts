@@ -1,5 +1,5 @@
 
-import { useMemo, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GoalsService } from "@/services/goalsService";
 import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
@@ -8,10 +8,12 @@ import { Goal, CreateGoalData, UpdateGoalData } from "@/types/goals";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
+import { offlineSyncService } from "@/services/offlineSyncService";
 
 export const useGoals = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [isCached, setIsCached] = useState(false);
 
   const { data: goals = [], isLoading, error } = useQuery({
     queryKey: ['goals', user?.id],
@@ -21,12 +23,16 @@ export const useGoals = () => {
         // Cache for offline use
         offlineDataService.cacheGoals(data);
         offlineDataService.updateLastSync();
+        setIsCached(false);
         return data;
       } catch (err) {
         // If offline, try to get cached data
         if (!navigator.onLine) {
           const cached = await offlineDataService.getCachedGoals();
-          if (cached) return cached;
+          if (cached) {
+            setIsCached(true);
+            return cached;
+          }
         }
         throw err;
       }
@@ -301,6 +307,7 @@ export const useGoals = () => {
     previousYearUnfinishedGoals,
     isLoading,
     error,
+    isCached,
     createGoal,
     updateGoal,
     deleteGoal,
