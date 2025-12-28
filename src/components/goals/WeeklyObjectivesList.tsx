@@ -1,12 +1,11 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
-import { Plus, X, Target, Edit2, Check, RotateCcw, Trash2, Pencil, ArrowRight } from "lucide-react";
+import { Plus, X, Target, Edit2, Check, RotateCcw, Pencil, ArrowRight } from "lucide-react";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -16,19 +15,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
 import { useObjectiveAutoSave } from "@/hooks/useObjectiveAutoSave";
-import { AutoSaveIndicator } from "@/components/thisweek/AutoSaveIndicator";
 import { motion, AnimatePresence } from "framer-motion";
 import { celebrateSuccess } from "@/utils/confetti";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { SortableObjectiveItem } from "./SortableObjectiveItem";
-import { useEffect } from "react";
-
 import { ObjectiveTimeBlocker } from "@/components/habits/ObjectiveTimeBlocker";
 
 interface WeeklyObjectivesListProps {

@@ -22,7 +22,6 @@ import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitStats } from "@/services/habitStreaksService";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
-import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
