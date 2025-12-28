@@ -37,7 +37,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-// Social platform definitions
+// Social platform definitions with validation
 export const SOCIAL_PLATFORMS = [
   { 
     id: 'linkedin_url', 
@@ -45,15 +45,19 @@ export const SOCIAL_PLATFORMS = [
     icon: Linkedin,
     placeholder: 'https://linkedin.com/in/username',
     example: 'linkedin.com/in/yourprofile',
-    type: 'url'
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(linkedin\.com\/)/i,
+    errorMessage: 'Must be a LinkedIn URL (linkedin.com/...)'
   },
   { 
     id: 'tiktok_url', 
     name: 'TikTok', 
     icon: 'tiktok',
     placeholder: 'https://tiktok.com/@username',
-    example: '@yourusername',
-    type: 'url'
+    example: '@yourusername or tiktok.com/@username',
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(tiktok\.com\/|@[\w.]+$)/i,
+    errorMessage: 'Must be a TikTok URL or @username'
   },
   { 
     id: 'youtube_url', 
@@ -61,23 +65,29 @@ export const SOCIAL_PLATFORMS = [
     icon: Youtube,
     placeholder: 'https://youtube.com/@channel',
     example: 'youtube.com/@yourchannel',
-    type: 'url'
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(youtube\.com\/|youtu\.be\/)/i,
+    errorMessage: 'Must be a YouTube URL (youtube.com/...)'
   },
   { 
     id: 'instagram_url', 
     name: 'Instagram', 
     icon: 'instagram',
     placeholder: 'https://instagram.com/username',
-    example: '@yourusername',
-    type: 'url'
+    example: '@yourusername or instagram.com/username',
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(instagram\.com\/|@[\w.]+$)/i,
+    errorMessage: 'Must be an Instagram URL or @username'
   },
   { 
     id: 'twitter_url', 
     name: 'X (Twitter)', 
     icon: 'x',
     placeholder: 'https://x.com/username',
-    example: '@yourusername',
-    type: 'url'
+    example: '@yourusername or x.com/username',
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(x\.com\/|twitter\.com\/|@[\w]+$)/i,
+    errorMessage: 'Must be an X/Twitter URL or @username'
   },
   { 
     id: 'email_contact', 
@@ -85,7 +95,9 @@ export const SOCIAL_PLATFORMS = [
     icon: Mail,
     placeholder: 'your@email.com',
     example: 'your@email.com',
-    type: 'email'
+    type: 'email',
+    pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+    errorMessage: 'Must be a valid email address'
   },
   { 
     id: 'website_url', 
@@ -93,7 +105,9 @@ export const SOCIAL_PLATFORMS = [
     icon: Globe,
     placeholder: 'https://yourwebsite.com',
     example: 'yourwebsite.com',
-    type: 'url'
+    type: 'url',
+    pattern: /^(https?:\/\/)?[\w.-]+\.[a-z]{2,}/i,
+    errorMessage: 'Must be a valid website URL'
   },
   { 
     id: 'github_url', 
@@ -101,15 +115,19 @@ export const SOCIAL_PLATFORMS = [
     icon: Github,
     placeholder: 'https://github.com/username',
     example: 'github.com/yourusername',
-    type: 'url'
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(github\.com\/)/i,
+    errorMessage: 'Must be a GitHub URL (github.com/...)'
   },
   { 
     id: 'snapchat_url', 
     name: 'Snapchat', 
     icon: 'snapchat',
     placeholder: 'https://snapchat.com/add/username',
-    example: '@yourusername',
-    type: 'url'
+    example: '@yourusername or snapchat.com/add/username',
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(snapchat\.com\/|@[\w.]+$)/i,
+    errorMessage: 'Must be a Snapchat URL or @username'
   },
   { 
     id: 'medium_url', 
@@ -117,7 +135,9 @@ export const SOCIAL_PLATFORMS = [
     icon: 'medium',
     placeholder: 'https://medium.com/@username',
     example: 'medium.com/@yourusername',
-    type: 'url'
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(medium\.com\/)/i,
+    errorMessage: 'Must be a Medium URL (medium.com/...)'
   },
   { 
     id: 'substack_url', 
@@ -125,7 +145,9 @@ export const SOCIAL_PLATFORMS = [
     icon: 'substack',
     placeholder: 'https://username.substack.com',
     example: 'yourname.substack.com',
-    type: 'url'
+    type: 'url',
+    pattern: /^(https?:\/\/)?([\w-]+\.)?substack\.com/i,
+    errorMessage: 'Must be a Substack URL (*.substack.com)'
   },
   { 
     id: 'whatsapp_url', 
@@ -133,15 +155,19 @@ export const SOCIAL_PLATFORMS = [
     icon: 'whatsapp',
     placeholder: '+1234567890',
     example: '+1 234 567 890',
-    type: 'phone'
+    type: 'phone',
+    pattern: /^\+?[\d\s\-().]{7,20}$/,
+    errorMessage: 'Must be a valid phone number'
   },
   { 
     id: 'telegram_url', 
     name: 'Telegram', 
     icon: MessageCircle,
     placeholder: 'https://t.me/username',
-    example: 't.me/yourusername',
-    type: 'url'
+    example: 't.me/yourusername or @username',
+    type: 'url',
+    pattern: /^(https?:\/\/)?(www\.)?(t\.me\/|telegram\.me\/|@[\w]+$)/i,
+    errorMessage: 'Must be a Telegram URL or @username'
   },
   { 
     id: 'signal_url', 
@@ -149,7 +175,9 @@ export const SOCIAL_PLATFORMS = [
     icon: 'signal',
     placeholder: '+1234567890',
     example: '+1 234 567 890',
-    type: 'phone'
+    type: 'phone',
+    pattern: /^\+?[\d\s\-().]{7,20}$/,
+    errorMessage: 'Must be a valid phone number'
   },
   { 
     id: 'phone_number', 
@@ -157,11 +185,31 @@ export const SOCIAL_PLATFORMS = [
     icon: Phone,
     placeholder: '+1234567890',
     example: '+1 234 567 890',
-    type: 'phone'
+    type: 'phone',
+    pattern: /^\+?[\d\s\-().]{7,20}$/,
+    errorMessage: 'Must be a valid phone number'
   },
 ] as const;
 
 export type SocialPlatformId = typeof SOCIAL_PLATFORMS[number]['id'];
+
+// Validation function
+export const validateSocialLink = (platformId: string, value: string): { isValid: boolean; error?: string } => {
+  if (!value.trim()) {
+    return { isValid: false, error: 'This field is required' };
+  }
+  
+  const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
+  if (!platform) {
+    return { isValid: true };
+  }
+  
+  if (!platform.pattern.test(value.trim())) {
+    return { isValid: false, error: platform.errorMessage };
+  }
+  
+  return { isValid: true };
+};
 
 // Custom icon component for platforms that need custom SVGs
 const CustomSocialIcon = ({ platform, className = "h-5 w-5" }: { platform: string; className?: string }) => {
@@ -314,6 +362,7 @@ export const SocialLinkPicker = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<typeof SOCIAL_PLATFORMS[number] | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
   const [view, setView] = useState<'list' | 'add' | 'edit'>('list');
 
   const sensors = useSensors(
@@ -350,12 +399,28 @@ export const SocialLinkPicker = ({
   const handleBack = () => {
     setSelectedPlatform(null);
     setInputValue("");
+    setValidationError(null);
     setView('list');
     setSearchQuery("");
   };
 
+  const handleInputChange = (value: string) => {
+    setInputValue(value);
+    // Clear error on input change
+    if (validationError) {
+      setValidationError(null);
+    }
+  };
+
   const handleAdd = () => {
     if (selectedPlatform && inputValue.trim()) {
+      // Validate before adding
+      const validation = validateSocialLink(selectedPlatform.id, inputValue);
+      if (!validation.isValid) {
+        setValidationError(validation.error || 'Invalid input');
+        return;
+      }
+      
       const isNew = !socialLinks[selectedPlatform.id];
       onSocialLinksChange({
         ...socialLinks,
@@ -428,14 +493,18 @@ export const SocialLinkPicker = ({
                   id="social-input"
                   type={selectedPlatform.type === 'email' ? 'email' : 'text'}
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   placeholder={selectedPlatform.placeholder}
-                  className="text-base"
+                  className={`text-base ${validationError ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                   autoFocus
                 />
-                <p className="text-xs text-muted-foreground">
-                  Example: {selectedPlatform.example}
-                </p>
+                {validationError ? (
+                  <p className="text-xs text-destructive">{validationError}</p>
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    Example: {selectedPlatform.example}
+                  </p>
+                )}
               </div>
               <div className="flex gap-2">
                 {socialLinks[selectedPlatform.id] && (
