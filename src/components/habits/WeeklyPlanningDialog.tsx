@@ -21,10 +21,10 @@ import {
 } from "@/components/ui/drawer";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
+import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { HabitsService } from "@/services/habitsService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CalendarDays, Loader2, Sparkles, Target, Lightbulb, CheckCircle, Circle, Brain } from "lucide-react";
+import { CalendarDays, Loader2, Sparkles, Target, CheckCircle, Circle, Brain, RefreshCw } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 import { subDays } from "date-fns";
@@ -47,13 +47,17 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   } = useWeeklyPlanning(weekStart);
   
   // Get current week's objectives
-  const { objectives: currentWeekObjectives, isLoading: objectivesLoading } = useWeeklyProgress(weekStart);
+  const { objectives: currentWeekObjectives } = useWeeklyProgress(weekStart);
   
   // Get last week's data for AI summary
   const lastWeekStartDate = subDays(new Date(weekStart + 'T00:00:00'), 7);
   const lastWeekStart = WeeklyProgressService.getWeekStart(lastWeekStartDate);
   const { planningSession: lastWeekPlanning } = useWeeklyPlanning(lastWeekStart);
   const { objectives: lastWeekObjectives, progressPost: lastWeekProgress } = useWeeklyProgress(lastWeekStart);
+  
+  // AI insights
+  const { insight, isLoading: isLoadingInsight, generateInsights } = useWeeklyInsights();
+  const [hasRequestedInsight, setHasRequestedInsight] = useState(false);
   
   const [lastWeekReflection, setLastWeekReflection] = useState("");
   const [weekIntention, setWeekIntention] = useState("");
@@ -64,6 +68,35 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
       setWeekIntention(planningSession.week_intention || "");
     }
   }, [planningSession]);
+
+  // Generate AI insights when dialog opens and we have last week data
+  useEffect(() => {
+    if (open && !hasRequestedInsight && lastWeekObjectives.length > 0) {
+      setHasRequestedInsight(true);
+      generateInsights({
+        objectives: lastWeekObjectives.map(o => ({ text: o.text, is_completed: o.is_completed })),
+        lastWeekReflection: lastWeekPlanning?.last_week_reflection || undefined,
+        lastWeekIntention: lastWeekPlanning?.week_intention || undefined,
+        progressNotes: lastWeekProgress?.notes || undefined,
+      });
+    }
+  }, [open, hasRequestedInsight, lastWeekObjectives, lastWeekPlanning, lastWeekProgress, generateInsights]);
+
+  // Reset when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setHasRequestedInsight(false);
+    }
+  }, [open]);
+
+  const handleRefreshInsight = () => {
+    generateInsights({
+      objectives: lastWeekObjectives.map(o => ({ text: o.text, is_completed: o.is_completed })),
+      lastWeekReflection: lastWeekPlanning?.last_week_reflection || undefined,
+      lastWeekIntention: lastWeekPlanning?.week_intention || undefined,
+      progressNotes: lastWeekProgress?.notes || undefined,
+    });
+  };
   
   const handleComplete = async () => {
     hapticSuccess();
@@ -78,53 +111,43 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   
   const weekRange = WeeklyProgressService.formatWeekRange(weekStart);
   
-  // Generate AI-like summary based on last week's data
-  const generateLastWeekSummary = () => {
-    const completedCount = lastWeekObjectives.filter(o => o.is_completed).length;
-    const totalCount = lastWeekObjectives.length;
-    const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-    
-    const parts: string[] = [];
-    
-    if (totalCount > 0) {
-      parts.push(`Last week you completed ${completedCount} of ${totalCount} objectives (${completionRate}%).`);
-    }
-    
-    if (lastWeekPlanning?.last_week_reflection) {
-      parts.push(`Your reflection: "${lastWeekPlanning.last_week_reflection}"`);
-    }
-    
-    if (lastWeekPlanning?.week_intention) {
-      parts.push(`Your intention was: "${lastWeekPlanning.week_intention}"`);
-    }
-    
-    if (lastWeekProgress?.notes) {
-      parts.push(`Notes: "${lastWeekProgress.notes}"`);
-    }
-    
-    if (parts.length === 0) {
-      return null;
-    }
-    
-    return parts.join(" ");
-  };
-  
-  const lastWeekSummary = generateLastWeekSummary();
-  
   const content = (
     <div className="space-y-5">
-      {/* AI Summary of Last Week */}
-      {lastWeekSummary && (
+      {/* AI-Powered Insight */}
+      {(insight || isLoadingInsight || lastWeekObjectives.length > 0) && (
         <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
           <div className="flex items-start gap-3">
             <div className="bg-primary/20 rounded-full p-1.5 shrink-0">
               <Brain className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <p className="text-sm font-medium mb-1">Last Week Summary</p>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {lastWeekSummary}
-              </p>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-sm font-medium">AI Coach Insights</p>
+                {insight && !isLoadingInsight && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0" 
+                    onClick={handleRefreshInsight}
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+              {isLoadingInsight ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Analyzing your week...
+                </div>
+              ) : insight ? (
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                  {insight}
+                </p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Complete some objectives to get personalized insights!
+                </p>
+              )}
             </div>
           </div>
         </div>
