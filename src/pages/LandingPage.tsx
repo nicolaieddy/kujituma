@@ -21,7 +21,7 @@ const LandingPage = () => {
                 Kujituma
               </h1>
             </div>
-            <Button onClick={handleSignIn} className="font-medium">
+            <Button variant="ghost" onClick={handleSignIn} className="border border-border">
               Sign In
             </Button>
           </div>
@@ -35,7 +35,7 @@ const LandingPage = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-16">
+      <footer className="border-t border-border py-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <p className="text-muted-foreground text-sm">
             © 2025 Kujituma
