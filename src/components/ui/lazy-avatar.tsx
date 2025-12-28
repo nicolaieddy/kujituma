@@ -73,7 +73,7 @@ const LazyAvatarImage = React.forwardRef<
   }, [isInView, src]);
 
   return (
-    <div ref={containerRef} className="relative w-full h-full">
+    <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-full">
       {/* Blur placeholder */}
       <div
         className={cn(
