@@ -39,6 +39,8 @@ export const LandingHero = ({
         <div className="relative aspect-[16/9] rounded-lg overflow-hidden border border-border shadow-elegant">
           <img 
             src="/kilimanjaro-background.jpg" 
+            srcSet="/kilimanjaro-background-sm.jpg 640w, /kilimanjaro-background-md.jpg 1024w, /kilimanjaro-background.jpg 1920w"
+            sizes="(max-width: 640px) 640px, (max-width: 1024px) 1024px, 1920px"
             alt="Mount Kilimanjaro"
             className="w-full h-full object-cover"
             fetchPriority="high"
