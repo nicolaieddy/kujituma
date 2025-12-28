@@ -5,7 +5,6 @@ import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
-import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { ProfilePublicView } from "@/components/profile/ProfilePublicView";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
@@ -206,13 +205,12 @@ const Profile = () => {
       <div className="container mx-auto px-4 py-8">
         {profile && (
           <>
-            <ProfileHeader profile={profile} />
-            
             {isOwnProfile && (
-              <div className="mt-8 flex justify-center gap-4">
+              <div className="max-w-4xl mx-auto mb-4 flex justify-end">
                 <Button
                   onClick={() => setIsEditing(!isEditing)}
-                  variant={isEditing ? "secondary" : "default"}
+                  variant={isEditing ? "secondary" : "outline"}
+                  size="sm"
                   className="flex items-center gap-2"
                 >
                   {isEditing ? (
@@ -230,21 +228,19 @@ const Profile = () => {
               </div>
             )}
 
-            <div className="mt-8">
-              {isOwnProfile && isEditing ? (
-                <ProfileEditForm
-                  profile={profile}
-                  onUpdate={handleProfileUpdate}
-                  onCancel={() => setIsEditing(false)}
-                />
-              ) : (
-                <ProfilePublicView 
-                  profile={profile} 
-                  friendshipStatus={friendshipStatus}
-                  onFriendshipChange={setFriendshipStatus}
-                />
-              )}
-            </div>
+            {isOwnProfile && isEditing ? (
+              <ProfileEditForm
+                profile={profile}
+                onUpdate={handleProfileUpdate}
+                onCancel={() => setIsEditing(false)}
+              />
+            ) : (
+              <ProfilePublicView 
+                profile={profile} 
+                friendshipStatus={friendshipStatus}
+                onFriendshipChange={setFriendshipStatus}
+              />
+            )}
           </>
         )}
       </div>
