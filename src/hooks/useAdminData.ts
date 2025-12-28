@@ -160,23 +160,14 @@ export const useAdminData = () => {
         .gte('created_at', monthStart.toISOString())
         .lte('created_at', monthEnd.toISOString());
 
-      // Get active users this month (posted or commented)
-      const { data: monthlyPosts } = await supabase
-        .from('posts')
-        .select('user_id')
-        .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
+      // Get active users this month (based on last_active_at)
+      const { data: activeProfiles } = await supabase
+        .from('profiles')
+        .select('id')
+        .gte('last_active_at', monthStart.toISOString())
+        .lte('last_active_at', monthEnd.toISOString());
 
-      const { data: monthlyComments } = await supabase
-        .from('comments')
-        .select('user_id')
-        .gte('created_at', monthStart.toISOString())
-        .lte('created_at', monthEnd.toISOString());
-
-      const activeUserSet = new Set([
-        ...(monthlyPosts?.map(p => p.user_id) || []),
-        ...(monthlyComments?.map(c => c.user_id) || [])
-      ]);
+      const activeUserSet = new Set(activeProfiles?.map(p => p.id) || []);
 
       months.push({
         month: monthLabel,
