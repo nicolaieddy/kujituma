@@ -40,6 +40,7 @@ export interface UpdateWeeklyObjectiveData {
   order_index?: number;
   scheduled_day?: string | null;
   scheduled_time?: string | null;
+  week_start?: string;
 }
 
 export interface WeeklyProgressData {

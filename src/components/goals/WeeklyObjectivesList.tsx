@@ -47,6 +47,8 @@ interface WeeklyObjectivesListProps {
   isDeletingAll?: boolean;
   onReorderObjective?: (objectiveId: string, newOrderIndex: number) => void;
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
+  currentWeekStart?: string;
+  onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string) => void;
 }
 
 export const WeeklyObjectivesList = ({
@@ -65,6 +67,8 @@ export const WeeklyObjectivesList = ({
   isDeletingAll = false,
   onReorderObjective,
   onUpdateObjectiveSchedule,
+  currentWeekStart = '',
+  onMoveObjectiveToWeek,
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -393,13 +397,15 @@ export const WeeklyObjectivesList = ({
                           </Button>
                         )}
                         {/* Time blocker - hidden on mobile */}
-                        {!isWeekCompleted && onUpdateObjectiveSchedule && (
+                        {!isWeekCompleted && onUpdateObjectiveSchedule && currentWeekStart && (
                           <div className="hidden sm:block">
                             <ObjectiveTimeBlocker
                               scheduledDay={objective.scheduled_day}
                               scheduledTime={objective.scheduled_time}
                               onUpdate={(day, time) => onUpdateObjectiveSchedule(objective.id, day, time)}
                               disabled={isWeekCompleted}
+                              currentWeekStart={currentWeekStart}
+                              onMoveToWeek={onMoveObjectiveToWeek ? (newWeekStart) => onMoveObjectiveToWeek(objective.id, newWeekStart) : undefined}
                             />
                           </div>
                         )}

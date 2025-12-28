@@ -96,6 +96,23 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     updateObjective(id, { scheduled_day: day, scheduled_time: time });
   };
 
+  const handleMoveObjectiveToWeek = async (objectiveId: string, newWeekStart: string) => {
+    try {
+      await updateObjective(objectiveId, { week_start: newWeekStart });
+      toast({
+        title: "Objective moved",
+        description: "The objective has been moved to a different week.",
+      });
+    } catch (error) {
+      console.error('Error moving objective to week:', error);
+      toast({
+        title: "Error",
+        description: "Failed to move objective. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   // State for incomplete reflections
   const [incompleteReflections, setIncompleteReflections] = useState<Record<string, string>>(
     progressPost?.incomplete_reflections || {}
@@ -302,6 +319,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             isDeletingAll={isDeletingAll}
             onReorderObjective={handleReorderObjective}
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
+            currentWeekStart={currentWeekStart}
+            onMoveObjectiveToWeek={handleMoveObjectiveToWeek}
           />
         </CardContent>
       </Card>
