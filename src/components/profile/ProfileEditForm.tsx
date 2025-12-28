@@ -521,14 +521,14 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               />
             ) : (
               <div 
-                className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20"
+                className="relative h-32 rounded-lg overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 group"
                 style={formData.cover_photo_url ? {
                   backgroundImage: `url(${formData.cover_photo_url})`,
                   backgroundSize: 'cover',
                   backgroundPosition: `center ${formData.cover_photo_position}%`
                 } : undefined}
               >
-                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/20">
+                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 transition-opacity">
                   <Label htmlFor="cover-upload" className="cursor-pointer">
                     <Button
                       type="button"
