@@ -57,10 +57,14 @@ const usePrefetchGoals = (queryClient: QueryClient) => {
 const HomePage = () => {
   const { user, loading } = useAuth();
   
+  console.log('[HomePage] Rendering - loading:', loading, 'user:', user?.email);
+  
   if (loading) {
+    console.log('[HomePage] Still loading auth...');
     return <LoadingSpinner />;
   }
   
+  console.log('[HomePage] Auth loaded, rendering:', user ? 'Goals' : 'LandingPage');
   return user ? <Goals /> : <LandingPage />;
 };
 
