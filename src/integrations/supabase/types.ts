@@ -756,6 +756,7 @@ export type Database = {
           show_email: boolean
           signal_url: string | null
           snapchat_url: string | null
+          social_links_order: string[] | null
           substack_url: string | null
           telegram_url: string | null
           tiktok_url: string | null
@@ -786,6 +787,7 @@ export type Database = {
           show_email?: boolean
           signal_url?: string | null
           snapchat_url?: string | null
+          social_links_order?: string[] | null
           substack_url?: string | null
           telegram_url?: string | null
           tiktok_url?: string | null
@@ -816,6 +818,7 @@ export type Database = {
           show_email?: boolean
           signal_url?: string | null
           snapchat_url?: string | null
+          social_links_order?: string[] | null
           substack_url?: string | null
           telegram_url?: string | null
           tiktok_url?: string | null

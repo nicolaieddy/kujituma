@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,8 +15,27 @@ import {
   Globe,
   Github,
   Phone,
-  MessageCircle
+  MessageCircle,
+  GripVertical,
+  Trash2
 } from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 // Social platform definitions
 export const SOCIAL_PLATFORMS = [
@@ -213,22 +232,110 @@ export const SocialIcon = ({ platformId, className = "h-5 w-5" }: { platformId: 
   return <IconComponent className={className} />;
 };
 
+// Sortable item for drag-and-drop
+interface SortableSocialItemProps {
+  id: string;
+  onEdit: () => void;
+  onRemove: () => void;
+}
+
+const SortableSocialItem = ({ id, onEdit, onRemove }: SortableSocialItemProps) => {
+  const platform = SOCIAL_PLATFORMS.find(p => p.id === id);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  };
+
+  if (!platform) return null;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`flex items-center gap-3 px-3 py-2 bg-background border rounded-lg ${
+        isDragging ? 'opacity-50 shadow-lg' : ''
+      }`}
+    >
+      <button
+        {...attributes}
+        {...listeners}
+        className="cursor-grab touch-none text-muted-foreground hover:text-foreground"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+      <SocialIcon platformId={id} className="h-5 w-5" />
+      <span className="flex-1 text-sm font-medium">{platform.name}</span>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={onEdit}
+        className="h-7 px-2 text-xs"
+      >
+        Edit
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onRemove}
+        className="h-7 w-7 text-muted-foreground hover:text-destructive"
+      >
+        <Trash2 className="h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
+};
+
 interface SocialLinkPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   socialLinks: Record<string, string>;
   onSocialLinksChange: (links: Record<string, string>) => void;
+  linkOrder: string[];
+  onLinkOrderChange: (order: string[]) => void;
 }
 
 export const SocialLinkPicker = ({ 
   open, 
   onOpenChange, 
   socialLinks, 
-  onSocialLinksChange 
+  onSocialLinksChange,
+  linkOrder,
+  onLinkOrderChange,
 }: SocialLinkPickerProps) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<typeof SOCIAL_PLATFORMS[number] | null>(null);
   const [inputValue, setInputValue] = useState("");
+  const [view, setView] = useState<'list' | 'add' | 'edit'>('list');
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Get ordered list of added platforms
+  const orderedAddedPlatforms = useMemo(() => {
+    const addedIds = Object.keys(socialLinks).filter(id => socialLinks[id]?.trim());
+    // Sort by linkOrder, putting unknown items at the end
+    return addedIds.sort((a, b) => {
+      const indexA = linkOrder.indexOf(a);
+      const indexB = linkOrder.indexOf(b);
+      if (indexA === -1 && indexB === -1) return 0;
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }, [socialLinks, linkOrder]);
 
   const filteredPlatforms = SOCIAL_PLATFORMS.filter(platform =>
     platform.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -237,32 +344,42 @@ export const SocialLinkPicker = ({
   const handleSelectPlatform = (platform: typeof SOCIAL_PLATFORMS[number]) => {
     setSelectedPlatform(platform);
     setInputValue(socialLinks[platform.id] || "");
+    setView('edit');
   };
 
   const handleBack = () => {
     setSelectedPlatform(null);
     setInputValue("");
+    setView('list');
+    setSearchQuery("");
   };
 
   const handleAdd = () => {
     if (selectedPlatform && inputValue.trim()) {
+      const isNew = !socialLinks[selectedPlatform.id];
       onSocialLinksChange({
         ...socialLinks,
         [selectedPlatform.id]: inputValue.trim()
       });
-      setSelectedPlatform(null);
-      setInputValue("");
-      onOpenChange(false);
+      // Add to order if new
+      if (isNew && !linkOrder.includes(selectedPlatform.id)) {
+        onLinkOrderChange([...linkOrder, selectedPlatform.id]);
+      }
+      handleBack();
     }
   };
 
-  const handleRemove = () => {
-    if (selectedPlatform) {
+  const handleRemove = (platformId?: string) => {
+    const idToRemove = platformId || selectedPlatform?.id;
+    if (idToRemove) {
       const newLinks = { ...socialLinks };
-      delete newLinks[selectedPlatform.id];
+      delete newLinks[idToRemove];
       onSocialLinksChange(newLinks);
-      setSelectedPlatform(null);
-      setInputValue("");
+      // Remove from order
+      onLinkOrderChange(linkOrder.filter(id => id !== idToRemove));
+      if (view === 'edit') {
+        handleBack();
+      }
     }
   };
 
@@ -270,13 +387,24 @@ export const SocialLinkPicker = ({
     setSelectedPlatform(null);
     setInputValue("");
     setSearchQuery("");
+    setView('list');
     onOpenChange(false);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = orderedAddedPlatforms.indexOf(active.id as string);
+      const newIndex = orderedAddedPlatforms.indexOf(over.id as string);
+      const newOrder = arrayMove(orderedAddedPlatforms, oldIndex, newIndex);
+      onLinkOrderChange(newOrder);
+    }
   };
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md p-0 gap-0">
-        {selectedPlatform ? (
+        {view === 'edit' && selectedPlatform ? (
           // Input view for selected platform
           <>
             <DialogHeader className="px-4 py-3 border-b flex flex-row items-center gap-3">
@@ -284,7 +412,7 @@ export const SocialLinkPicker = ({
                 <ChevronLeft className="h-5 w-5" />
               </Button>
               <DialogTitle className="flex-1 text-center pr-8">
-                Add {selectedPlatform.name}
+                {socialLinks[selectedPlatform.id] ? 'Edit' : 'Add'} {selectedPlatform.name}
               </DialogTitle>
               <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
                 <X className="h-5 w-5" />
@@ -313,7 +441,7 @@ export const SocialLinkPicker = ({
                 {socialLinks[selectedPlatform.id] && (
                   <Button
                     variant="outline"
-                    onClick={handleRemove}
+                    onClick={() => handleRemove()}
                     className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
                   >
                     Remove
@@ -329,12 +457,14 @@ export const SocialLinkPicker = ({
               </div>
             </div>
           </>
-        ) : (
+        ) : view === 'add' ? (
           // Platform selection view
           <>
-            <DialogHeader className="px-4 py-3 border-b flex flex-row items-center justify-between">
-              <div className="w-8" /> {/* Spacer for alignment */}
-              <DialogTitle className="text-center">Add Social Icon</DialogTitle>
+            <DialogHeader className="px-4 py-3 border-b flex flex-row items-center gap-3">
+              <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
+              <DialogTitle className="flex-1 text-center pr-8">Add Social Link</DialogTitle>
               <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
                 <X className="h-5 w-5" />
               </Button>
@@ -345,7 +475,7 @@ export const SocialLinkPicker = ({
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search"
+                  placeholder="Search platforms..."
                   className="pl-10"
                 />
               </div>
@@ -375,6 +505,62 @@ export const SocialLinkPicker = ({
                 })}
               </div>
             </ScrollArea>
+          </>
+        ) : (
+          // Main list view with reordering
+          <>
+            <DialogHeader className="px-4 py-3 border-b flex flex-row items-center justify-between">
+              <div className="w-8" />
+              <DialogTitle className="text-center">Social Links</DialogTitle>
+              <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
+                <X className="h-5 w-5" />
+              </Button>
+            </DialogHeader>
+            <div className="p-4 space-y-4">
+              {orderedAddedPlatforms.length > 0 ? (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground uppercase tracking-wide">
+                    Drag to reorder
+                  </Label>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext
+                      items={orderedAddedPlatforms}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="space-y-2">
+                        {orderedAddedPlatforms.map((platformId) => (
+                          <SortableSocialItem
+                            key={platformId}
+                            id={platformId}
+                            onEdit={() => {
+                              const platform = SOCIAL_PLATFORMS.find(p => p.id === platformId);
+                              if (platform) handleSelectPlatform(platform);
+                            }}
+                            onRemove={() => handleRemove(platformId)}
+                          />
+                        ))}
+                      </div>
+                    </SortableContext>
+                  </DndContext>
+                </div>
+              ) : (
+                <div className="text-center py-6 text-muted-foreground">
+                  <p className="text-sm">No social links added yet.</p>
+                  <p className="text-xs mt-1">Add links to display on your profile.</p>
+                </div>
+              )}
+              <Button
+                onClick={() => setView('add')}
+                variant="outline"
+                className="w-full"
+              >
+                Add Social Link
+              </Button>
+            </div>
           </>
         )}
       </DialogContent>

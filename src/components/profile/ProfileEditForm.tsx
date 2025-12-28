@@ -45,6 +45,7 @@ interface Profile {
   phone_number?: string;
   show_email?: boolean;
   commitment_visibility?: 'private' | 'friends' | 'public';
+  social_links_order?: string[];
   created_at: string;
   last_active_at?: string;
 }
@@ -79,6 +80,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
   const [showSocialPicker, setShowSocialPicker] = useState(false);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => extractSocialLinks(profile));
+  const [socialLinksOrder, setSocialLinksOrder] = useState<string[]>(() => profile.social_links_order || []);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
@@ -93,6 +95,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const hasUnsavedChanges = useMemo(() => {
     const originalLinks = extractSocialLinks(profile);
     const linksChanged = JSON.stringify(socialLinks) !== JSON.stringify(originalLinks);
+    const orderChanged = JSON.stringify(socialLinksOrder) !== JSON.stringify(profile.social_links_order || []);
     
     return (
       formData.full_name !== (profile.full_name || '') ||
@@ -102,9 +105,10 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
       formData.show_email !== (profile.show_email ?? false) ||
       formData.commitment_visibility !== (profile.commitment_visibility || 'friends') ||
-      linksChanged
+      linksChanged ||
+      orderChanged
     );
-  }, [formData, profile, socialLinks]);
+  }, [formData, profile, socialLinks, socialLinksOrder]);
 
   // Warn before browser navigation with unsaved changes
   useEffect(() => {
@@ -279,6 +283,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           telegram_url: socialLinks.telegram_url || '',
           signal_url: socialLinks.signal_url || '',
           phone_number: socialLinks.phone_number || '',
+          social_links_order: socialLinksOrder,
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -434,7 +439,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                   {/* Social links */}
                   {Object.keys(socialLinks).length > 0 && (
                     <div className="mt-3">
-                      <SocialLinksDisplay socialLinks={socialLinks} size="sm" />
+                      <SocialLinksDisplay socialLinks={socialLinks} linkOrder={socialLinksOrder} size="sm" />
                     </div>
                   )}
                 </div>
@@ -697,7 +702,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
             
             {Object.keys(socialLinks).length > 0 ? (
               <div className="p-4 bg-accent/50 border border-border rounded-lg">
-                <SocialLinksDisplay socialLinks={socialLinks} />
+                <SocialLinksDisplay socialLinks={socialLinks} linkOrder={socialLinksOrder} />
                 <p className="text-xs text-muted-foreground mt-3">
                   Click "Add Social" to add or remove links
                 </p>
@@ -805,6 +810,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
         onOpenChange={setShowSocialPicker}
         socialLinks={socialLinks}
         onSocialLinksChange={setSocialLinks}
+        linkOrder={socialLinksOrder}
+        onLinkOrderChange={setSocialLinksOrder}
       />
     </Card>
   );
