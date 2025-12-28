@@ -375,10 +375,11 @@ export const SocialLinkPicker = ({
   // Get ordered list of added platforms
   const orderedAddedPlatforms = useMemo(() => {
     const addedIds = Object.keys(socialLinks).filter(id => socialLinks[id]?.trim());
+    const safeOrder = linkOrder || [];
     // Sort by linkOrder, putting unknown items at the end
     return addedIds.sort((a, b) => {
-      const indexA = linkOrder.indexOf(a);
-      const indexB = linkOrder.indexOf(b);
+      const indexA = safeOrder.indexOf(a);
+      const indexB = safeOrder.indexOf(b);
       if (indexA === -1 && indexB === -1) return 0;
       if (indexA === -1) return 1;
       if (indexB === -1) return -1;
