@@ -10,7 +10,7 @@ import { ProfilePublicView } from "@/components/profile/ProfilePublicView";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Button } from "@/components/ui/button";
-import { Edit3, Eye } from "lucide-react";
+import { Edit3 } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -207,25 +207,16 @@ const Profile = () => {
       <div className="container mx-auto px-4 py-8">
         {profile && (
           <>
-            {isOwnProfile && (
+            {isOwnProfile && !isEditing && (
               <div className="max-w-4xl mx-auto mb-4 flex justify-end">
                 <Button
-                  onClick={() => setIsEditing(!isEditing)}
-                  variant={isEditing ? "secondary" : "outline"}
+                  onClick={() => setIsEditing(true)}
+                  variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
                 >
-                  {isEditing ? (
-                    <>
-                      <Eye className="h-4 w-4" />
-                      Preview
-                    </>
-                  ) : (
-                    <>
-                      <Edit3 className="h-4 w-4" />
-                      Edit Profile
-                    </>
-                  )}
+                  <Edit3 className="h-4 w-4" />
+                  Edit Profile
                 </Button>
               </div>
             )}
