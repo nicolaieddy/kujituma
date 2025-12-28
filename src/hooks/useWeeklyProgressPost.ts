@@ -11,8 +11,12 @@ export const useWeeklyProgressPost = (currentWeekStart: string) => {
     queryKey: ['weekly-progress-post', user?.id, currentWeekStart],
     queryFn: async () => {
       try {
-        return await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
-      } catch {
+        console.log('[useWeeklyProgressPost] Fetching for week:', currentWeekStart);
+        const result = await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
+        console.log('[useWeeklyProgressPost] Result:', result ? 'found' : 'null');
+        return result;
+      } catch (err) {
+        console.error('[useWeeklyProgressPost] Error fetching:', err);
         return null;
       }
     },
