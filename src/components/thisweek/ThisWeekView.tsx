@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -14,6 +14,7 @@ import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
+import { UnsavedChangesDialog } from "@/components/thisweek/UnsavedChangesDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
 import { useHabitStats } from "@/hooks/useHabitStats";
@@ -42,6 +43,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [hasFetchedSuggestions, setHasFetchedSuggestions] = useState(false);
+  
+  // Unsaved changes state
+  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState<'previous' | 'next' | null>(null);
+  const [isSavingBeforeNav, setIsSavingBeforeNav] = useState(false);
+  const saveUnsavedRef = useRef<(() => Promise<boolean>) | null>(null);
+  const clearUnsavedRef = useRef<(() => void) | null>(null);
+  const hasUnsavedRef = useRef(false);
   
   const {
     objectives,
@@ -106,6 +115,58 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     setHasFetchedSuggestions(false);
     clearSuggestions();
   }, [currentWeekStart, clearSuggestions]);
+
+  // Handle unsaved changes state from WeeklyObjectivesList
+  const handleUnsavedStateChange = useCallback((
+    hasUnsaved: boolean, 
+    saveFunc: () => Promise<boolean>, 
+    clearFunc: () => void
+  ) => {
+    hasUnsavedRef.current = hasUnsaved;
+    saveUnsavedRef.current = saveFunc;
+    clearUnsavedRef.current = clearFunc;
+  }, []);
+
+  // Intercept week navigation to check for unsaved changes
+  const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
+    if (hasUnsavedRef.current) {
+      setPendingNavigation(direction);
+      setShowUnsavedDialog(true);
+    } else if (onNavigateWeek) {
+      onNavigateWeek(direction);
+    }
+  }, [onNavigateWeek]);
+
+  const handleUnsavedDialogClose = () => {
+    setShowUnsavedDialog(false);
+    setPendingNavigation(null);
+  };
+
+  const handleUnsavedDiscard = () => {
+    if (clearUnsavedRef.current) {
+      clearUnsavedRef.current();
+    }
+    setShowUnsavedDialog(false);
+    if (pendingNavigation && onNavigateWeek) {
+      onNavigateWeek(pendingNavigation);
+    }
+    setPendingNavigation(null);
+  };
+
+  const handleUnsavedSave = async () => {
+    if (saveUnsavedRef.current) {
+      setIsSavingBeforeNav(true);
+      const success = await saveUnsavedRef.current();
+      setIsSavingBeforeNav(false);
+      if (success) {
+        setShowUnsavedDialog(false);
+        if (pendingNavigation && onNavigateWeek) {
+          onNavigateWeek(pendingNavigation);
+        }
+        setPendingNavigation(null);
+      }
+    }
+  };
 
   const handleAddSuggestion = async (text: string) => {
     await createObjective({
@@ -388,7 +449,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         currentWeekStart={currentWeekStart}
         completedCount={completedCount}
         totalCount={totalCount}
-        onNavigateWeek={onNavigateWeek}
+        onNavigateWeek={handleNavigateWeek}
         isCached={goalsCached || isOffline}
         lastSync={lastSync}
       />
@@ -435,6 +496,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
             currentWeekStart={currentWeekStart}
             onMoveObjectiveToWeek={handleMoveObjectiveToWeek}
+            onUnsavedStateChange={handleUnsavedStateChange}
           />
         </CardContent>
       </Card>
@@ -484,6 +546,15 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         isOpen={showHabitModal}
         onClose={handleCloseHabitModal}
         onUpdate={refetchHabits}
+      />
+
+      {/* Unsaved Changes Dialog */}
+      <UnsavedChangesDialog
+        isOpen={showUnsavedDialog}
+        onClose={handleUnsavedDialogClose}
+        onDiscard={handleUnsavedDiscard}
+        onSave={handleUnsavedSave}
+        isSaving={isSavingBeforeNav}
       />
     </div>
   );

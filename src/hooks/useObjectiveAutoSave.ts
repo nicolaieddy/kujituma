@@ -33,8 +33,8 @@ export const useObjectiveAutoSave = ({ onSave }: UseObjectiveSaveProps) => {
     }
   }, []);
 
-  const saveObjective = useCallback(async () => {
-    if (!value.trim() || isSaving) return;
+  const saveObjective = useCallback(async (): Promise<boolean> => {
+    if (!value.trim() || isSaving) return false;
     
     setIsSaving(true);
     try {
@@ -42,8 +42,10 @@ export const useObjectiveAutoSave = ({ onSave }: UseObjectiveSaveProps) => {
       setLastSaved(new Date());
       setHasUnsavedChanges(false);
       setValue('');
+      return true;
     } catch (error) {
       console.error('Error saving objective:', error);
+      return false;
     } finally {
       setIsSaving(false);
     }
