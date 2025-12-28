@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUnsavedChanges } from "@/contexts/UnsavedChangesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -37,6 +38,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { goals, isCached: goalsCached } = useGoals();
   const { habitStats, refetch: refetchHabits } = useHabitStats();
   const { lastSync, isOffline } = useOfflineStatus();
+  const { setHasUnsavedChanges } = useUnsavedChanges();
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -126,7 +128,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     hasUnsavedRef.current = hasUnsaved;
     saveUnsavedRef.current = saveFunc;
     clearUnsavedRef.current = clearFunc;
-  }, []);
+    setHasUnsavedChanges(hasUnsaved);
+  }, [setHasUnsavedChanges]);
 
   // Block route navigation when there are unsaved changes
   const blocker = useBlocker(
