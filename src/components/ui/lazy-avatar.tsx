@@ -3,6 +3,10 @@ import { useState, useEffect, useRef } from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { cn } from "@/lib/utils";
 
+interface LazyAvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
+  blurDataUrl?: string;
+}
+
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Root>
@@ -16,29 +20,23 @@ const Avatar = React.forwardRef<
     {...props}
   />
 ));
-Avatar.displayName = AvatarPrimitive.Root.displayName;
+Avatar.displayName = "LazyAvatar";
 
-interface AvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
-  enableLazyLoading?: boolean;
-}
-
-const AvatarImage = React.forwardRef<
+const LazyAvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
-  AvatarImageProps
->(({ className, src, enableLazyLoading = true, ...props }, ref) => {
+  LazyAvatarImageProps
+>(({ className, src, blurDataUrl, ...props }, ref) => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(!enableLazyLoading);
-  const [imageSrc, setImageSrc] = useState<string | undefined>(
-    enableLazyLoading ? undefined : src
-  );
+  const [isInView, setIsInView] = useState(false);
+  const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Blur placeholder as base64 SVG
-  const blurPlaceholder =
+  // Generate a blur placeholder as base64 SVG
+  const blurPlaceholder = blurDataUrl || 
     "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGZpbHRlciBpZD0iYiI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTAiLz48L2ZpbHRlcj48L2RlZnM+PHJlY3QgZmlsbD0iI2UyZThlYyIgZmlsdGVyPSJ1cmwoI2IpIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIi8+PC9zdmc+";
 
   useEffect(() => {
-    if (!enableLazyLoading || !containerRef.current) return;
+    if (!containerRef.current) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -49,51 +47,46 @@ const AvatarImage = React.forwardRef<
           }
         });
       },
-      { rootMargin: "100px", threshold: 0.01 }
+      {
+        rootMargin: "100px", // Start loading 100px before visible
+        threshold: 0.01,
+      }
     );
 
     observer.observe(containerRef.current);
     return () => observer.disconnect();
-  }, [enableLazyLoading]);
+  }, []);
 
   useEffect(() => {
     if (isInView && src) {
+      // Preload image
       const img = new Image();
       img.onload = () => {
         setImageSrc(src);
         setIsLoaded(true);
       };
-      img.onerror = () => setImageSrc(undefined);
+      img.onerror = () => {
+        setImageSrc(undefined);
+      };
       img.src = src;
     }
   }, [isInView, src]);
-
-  if (!enableLazyLoading) {
-    return (
-      <AvatarPrimitive.Image
-        ref={ref}
-        src={src}
-        className={cn("aspect-square h-full w-full", className)}
-        {...props}
-      />
-    );
-  }
 
   return (
     <div ref={containerRef} className="relative w-full h-full">
       {/* Blur placeholder */}
       <div
         className={cn(
-          "absolute inset-0 bg-cover bg-center transition-opacity duration-300 rounded-full",
+          "absolute inset-0 bg-cover bg-center transition-opacity duration-300",
           isLoaded ? "opacity-0" : "opacity-100"
         )}
-        style={{
+        style={{ 
           backgroundImage: `url(${blurPlaceholder})`,
           filter: "blur(4px)",
           transform: "scale(1.1)",
         }}
       />
-
+      
       {/* Actual image */}
       {imageSrc && (
         <AvatarPrimitive.Image
@@ -110,7 +103,7 @@ const AvatarImage = React.forwardRef<
     </div>
   );
 });
-AvatarImage.displayName = AvatarPrimitive.Image.displayName;
+LazyAvatarImage.displayName = "LazyAvatarImage";
 
 const AvatarFallback = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Fallback>,
@@ -125,6 +118,6 @@ const AvatarFallback = React.forwardRef<
     {...props}
   />
 ));
-AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName;
+AvatarFallback.displayName = "LazyAvatarFallback";
 
-export { Avatar, AvatarImage, AvatarFallback };
+export { Avatar as LazyAvatar, LazyAvatarImage, AvatarFallback as LazyAvatarFallback };
