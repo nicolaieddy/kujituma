@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Upload, Save, X, Move } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
@@ -281,15 +281,31 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                     </Button>
                   </Label>
                   {formData.cover_photo_url && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setIsRepositioning(true)}
-                    >
-                      <Move className="h-4 w-4 mr-2" />
-                      Reposition
-                    </Button>
+                    <>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setIsRepositioning(true)}
+                      >
+                        <Move className="h-4 w-4 mr-2" />
+                        Reposition
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => {
+                          setFormData(prev => ({ ...prev, cover_photo_url: '', cover_photo_position: 50 }));
+                          toast({
+                            title: "Cover removed",
+                            description: "Cover photo removed. Don't forget to save your profile!",
+                          });
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
                   )}
                   <input
                     id="cover-upload"
