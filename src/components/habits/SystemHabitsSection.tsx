@@ -22,9 +22,16 @@ interface SystemHabit {
 export const SystemHabitsSection = () => {
   const { checkIns, isLoading: checkInsLoading } = useAllDailyCheckIns(84); // 12 weeks
   const { sessions, isLoading: sessionsLoading } = useAllWeeklyPlanningSessions();
-  const { dailyCheckIn, weeklyPlanning, isLoading: streaksLoading } = useSystemHabitStreaks();
+  const streaks = useSystemHabitStreaks();
+  
+  const isLoading = checkInsLoading || sessionsLoading || streaks.isLoading;
 
-  const isLoading = checkInsLoading || sessionsLoading || streaksLoading;
+  // Return null early if still loading or data not available
+  if (isLoading || !streaks.dailyCheckIn || !streaks.weeklyPlanning) {
+    return null;
+  }
+
+  const { dailyCheckIn, weeklyPlanning } = streaks;
 
   // Calculate completions for last 12 weeks
   const systemHabits: SystemHabit[] = [
@@ -33,11 +40,11 @@ export const SystemHabitsSection = () => {
       name: 'Daily Check-in',
       description: 'Track your mood, energy, and focus daily',
       frequency: 'daily',
-      completions: checkIns.length,
+      completions: checkIns?.length || 0,
       possible: 12 * 7, // 12 weeks * 7 days
-      currentStreak: dailyCheckIn.currentStreak,
-      longestStreak: dailyCheckIn.longestStreak,
-      isDue: dailyCheckIn.isDueToday,
+      currentStreak: dailyCheckIn?.currentStreak || 0,
+      longestStreak: dailyCheckIn?.longestStreak || 0,
+      isDue: dailyCheckIn?.isDueToday || false,
       unit: 'day'
     },
     {
@@ -45,18 +52,14 @@ export const SystemHabitsSection = () => {
       name: 'Weekly Planning',
       description: 'Plan your week and reflect on the previous one',
       frequency: 'weekly',
-      completions: sessions.filter(s => s.is_completed).length,
+      completions: sessions?.filter(s => s.is_completed).length || 0,
       possible: 12, // 12 weeks
-      currentStreak: weeklyPlanning.currentStreak,
-      longestStreak: weeklyPlanning.longestStreak,
-      isDue: weeklyPlanning.isDueToday,
+      currentStreak: weeklyPlanning?.currentStreak || 0,
+      longestStreak: weeklyPlanning?.longestStreak || 0,
+      isDue: weeklyPlanning?.isDueToday || false,
       unit: 'week'
     }
   ];
-
-  if (isLoading) {
-    return null;
-  }
 
   const getStreakColor = (streak: number) => {
     if (streak >= 7) return "text-orange-500";

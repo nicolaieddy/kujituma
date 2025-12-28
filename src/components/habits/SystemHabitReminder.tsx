@@ -15,7 +15,7 @@ export const SystemHabitReminder = ({
   onOpenWeeklyPlanning 
 }: SystemHabitReminderProps) => {
   const { user } = useAuth();
-  const { dailyCheckIn, weeklyPlanning, isLoading } = useSystemHabitStreaks();
+  const streaks = useSystemHabitStreaks();
   const [dismissedDaily, setDismissedDaily] = useState(false);
   const [dismissedWeekly, setDismissedWeekly] = useState(false);
 
@@ -25,12 +25,15 @@ export const SystemHabitReminder = ({
     setDismissedWeekly(false);
   }, [user?.id]);
 
-  if (isLoading || !user) {
+  // Return null early if loading or no user or no streaks data
+  if (streaks.isLoading || !user || !streaks.dailyCheckIn || !streaks.weeklyPlanning) {
     return null;
   }
 
-  const showDailyReminder = dailyCheckIn.isDueToday && !dismissedDaily;
-  const showWeeklyReminder = weeklyPlanning.isDueToday && !dismissedWeekly;
+  const { dailyCheckIn, weeklyPlanning } = streaks;
+
+  const showDailyReminder = dailyCheckIn?.isDueToday && !dismissedDaily;
+  const showWeeklyReminder = weeklyPlanning?.isDueToday && !dismissedWeekly;
 
   if (!showDailyReminder && !showWeeklyReminder) {
     return null;
@@ -54,8 +57,8 @@ export const SystemHabitReminder = ({
           </AlertTitle>
           <AlertDescription className="flex items-center justify-between mt-2">
             <span className="text-muted-foreground">
-              {dailyCheckIn.currentStreak > 0 
-                ? `Keep your ${dailyCheckIn.currentStreak}-day streak going!`
+              {(dailyCheckIn?.currentStreak || 0) > 0 
+                ? `Keep your ${dailyCheckIn?.currentStreak}-day streak going!`
                 : "Start building your daily check-in habit today!"
               }
             </span>
@@ -90,8 +93,8 @@ export const SystemHabitReminder = ({
           </AlertTitle>
           <AlertDescription className="flex items-center justify-between mt-2">
             <span className="text-muted-foreground">
-              {weeklyPlanning.currentStreak > 0 
-                ? `Maintain your ${weeklyPlanning.currentStreak}-week streak!`
+              {(weeklyPlanning?.currentStreak || 0) > 0 
+                ? `Maintain your ${weeklyPlanning?.currentStreak}-week streak!`
                 : "Plan your week for better focus and productivity!"
               }
             </span>
