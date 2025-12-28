@@ -28,14 +28,22 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
         return;
       }
 
-      // Check lightweight cache first
       const cacheKey = lightweightCache.keys.userProfile(user.id);
-      const cached = lightweightCache.get<UserProfile>(cacheKey);
       
-      if (cached) {
-        setUserProfile(cached);
+      // Check memory cache first
+      const memoryCached = lightweightCache.get<UserProfile>(cacheKey);
+      if (memoryCached) {
+        setUserProfile(memoryCached);
         setIsLoading(false);
         return;
+      }
+
+      // Check persistent cache for instant load on repeat visits
+      const persistentCached = lightweightCache.getPersistent<UserProfile>(cacheKey);
+      if (persistentCached) {
+        setUserProfile(persistentCached);
+        setIsLoading(false);
+        // Still fetch fresh data in background
       }
 
       try {
@@ -47,8 +55,9 @@ export const UserProfileAvatar = ({ className = "h-9 w-9" }: UserProfileAvatarPr
 
         if (data && !error) {
           setUserProfile(data);
-          // Cache for 5 minutes
+          // Cache in memory and persist to localStorage
           lightweightCache.set(cacheKey, data, 5 * 60 * 1000);
+          lightweightCache.setPersistent(cacheKey, data);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
