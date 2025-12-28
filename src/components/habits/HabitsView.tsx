@@ -188,6 +188,19 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
         </Card>
       </div>
 
+      {/* Add Habit Button - positioned after stats like Goals tab */}
+      {onCreateGoal && (
+        <div className="flex justify-center">
+          <Button 
+            onClick={onCreateGoal}
+            className="gradient-primary shadow-elegant gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add New Habit
+          </Button>
+        </div>
+      )}
+
       {/* Streak Leaderboard */}
       <HabitStreakLeaderboard 
         habitStats={habitStats} 
@@ -387,18 +400,6 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
         </div>
       )}
 
-      {/* Add Habit Button */}
-      {onCreateGoal && (
-        <div className="flex justify-center pt-6">
-          <Button 
-            onClick={onCreateGoal}
-            className="gradient-primary shadow-elegant gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Add New Habit
-          </Button>
-        </div>
-      )}
 
       {/* Habit Detail Modal */}
       <HabitDetailModal
