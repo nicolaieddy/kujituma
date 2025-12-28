@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useCallback } from 'react';
+import { memo, useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { UnifiedPost } from '@/services/unifiedPostsService';
 import { CompactFeedPostCard } from './CompactFeedPostCard';
 import { EnhancedFeedPostCard } from './EnhancedFeedPostCard';
@@ -21,7 +21,8 @@ const PostItem = memo(({
   onLike,
   onComment,
   onCommentLike,
-  onContextMenu
+  onContextMenu,
+  scrollRef
 }: {
   post: UnifiedPost;
   useEnhancedView: boolean;
@@ -30,6 +31,7 @@ const PostItem = memo(({
   onComment: (postId: string, message: string) => void;
   onCommentLike: (commentId: string) => void;
   onContextMenu: (post: UnifiedPost, x: number, y: number) => void;
+  scrollRef?: React.RefObject<HTMLDivElement>;
 }) => {
   const { isMobile } = useDeviceType();
   
@@ -63,7 +65,8 @@ const PostItem = memo(({
 
   return (
     <div 
-      className={isHighlighted ? "ring-2 ring-blue-400 ring-opacity-50 rounded-lg" : ""}
+      ref={scrollRef}
+      className={isHighlighted ? "ring-2 ring-primary ring-opacity-50 rounded-lg animate-pulse" : ""}
       onContextMenu={handleContextMenu}
       onTouchStart={isMobile ? handleTouchStart : undefined}
       style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 200px' }}
@@ -84,6 +87,20 @@ export const VirtualizedFeedList = memo(({
   onCommentLike
 }: VirtualizedFeedListProps) => {
   const [contextMenu, setContextMenu] = useState<{ post: UnifiedPost; x: number; y: number } | null>(null);
+  const highlightedRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to highlighted post when it becomes available
+  useEffect(() => {
+    if (highlightedPostId && highlightedRef.current) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => {
+        highlightedRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 100);
+    }
+  }, [highlightedPostId, posts]);
 
   const handleContextMenu = useCallback((post: UnifiedPost, x: number, y: number) => {
     setContextMenu({ post, x, y });
@@ -104,6 +121,7 @@ export const VirtualizedFeedList = memo(({
         onComment={onComment}
         onCommentLike={onCommentLike}
         onContextMenu={handleContextMenu}
+        scrollRef={highlightedPostId === post.id ? highlightedRef : undefined}
       />
     )), [posts, useEnhancedView, highlightedPostId, onLike, onComment, onCommentLike, handleContextMenu]);
 
