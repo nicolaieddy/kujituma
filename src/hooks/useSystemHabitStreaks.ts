@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useAllWeeklyPlanningSessions } from "@/hooks/useAllWeeklyPlanningSessions";
-import { format, parseISO, startOfWeek, differenceInDays, differenceInWeeks, isToday, isSameWeek } from "date-fns";
+import { format, parseISO, startOfWeek, differenceInDays, differenceInWeeks } from "date-fns";
 
 interface SystemHabitStreak {
   currentStreak: number;
