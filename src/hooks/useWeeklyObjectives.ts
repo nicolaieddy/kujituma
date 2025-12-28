@@ -5,14 +5,16 @@ import { HabitStreaksService } from "@/services/habitStreaksService";
 import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { celebrateStreakMilestone, getStreakMilestoneMessage } from "@/utils/confetti";
 import { offlineDataService } from "@/services/offlineDataService";
+import { offlineSyncService } from "@/services/offlineSyncService";
 
 export const useWeeklyObjectives = (currentWeekStart: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const hasGeneratedRef = useRef<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
 
   // Generate recurring objectives when week changes
   useEffect(() => {
@@ -45,12 +47,16 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
         // Cache for offline use
         offlineDataService.cacheWeeklyObjectives(data, currentWeekStart);
         offlineDataService.updateLastSync();
+        setIsCached(false);
         return data;
       } catch (err) {
         // If offline, try to get cached data
         if (!navigator.onLine) {
           const cached = await offlineDataService.getCachedWeeklyObjectives(currentWeekStart);
-          if (cached) return cached;
+          if (cached) {
+            setIsCached(true);
+            return cached;
+          }
         }
         throw err;
       }
@@ -195,6 +201,7 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     objectives,
     isLoading: objectivesLoading,
     error: objectivesError,
+    isCached,
     createObjective,
     updateObjective,
     deleteObjective,
