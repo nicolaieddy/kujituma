@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Goal, GoalStatus } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
-import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle } from "lucide-react";
+import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2 } from "lucide-react";
 import { formatRelativeTime } from "@/utils/dateUtils";
+import { toast } from "@/hooks/use-toast";
 
 interface ProfileGoalsProps {
   userId: string;
   isOwnProfile?: boolean;
   viewerType?: 'owner' | 'friend' | 'public';
+  onGoalUpdate?: () => void;
 }
 
 const COLUMNS = [
@@ -34,9 +37,10 @@ const COLUMNS = [
   }
 ];
 
-export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner' }: ProfileGoalsProps) => {
+export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner', onGoalUpdate }: ProfileGoalsProps) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
+  const [togglingGoalId, setTogglingGoalId] = useState<string | null>(null);
 
   // Determine effective view mode
   const effectiveIsOwner = viewerType === 'owner' || isOwnProfile;
@@ -59,6 +63,31 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
 
     fetchGoals();
   }, [userId, effectiveIsOwner]);
+
+  // Toggle goal visibility
+  const handleToggleVisibility = async (goal: Goal) => {
+    setTogglingGoalId(goal.id);
+    try {
+      const updatedGoal = await GoalsService.updateGoal(goal.id, { is_public: !goal.is_public });
+      setGoals(goals.map(g => g.id === goal.id ? updatedGoal : g));
+      toast({
+        title: updatedGoal.is_public ? "Goal is now public" : "Goal is now private",
+        description: updatedGoal.is_public 
+          ? "Anyone who views your profile can see this goal." 
+          : "Only you can see this goal.",
+      });
+      onGoalUpdate?.();
+    } catch (error) {
+      console.error('Error toggling goal visibility:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update goal visibility.",
+        variant: "destructive",
+      });
+    } finally {
+      setTogglingGoalId(null);
+    }
+  };
 
   // Filter goals based on viewer type
   const visibleGoals = showPrivateGoals 
@@ -176,13 +205,40 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
                       <Card key={goal.id} className="bg-accent border-border hover:bg-accent/80 transition-all duration-200">
                         <CardContent className="p-4">
                           <div className="flex justify-between items-start mb-2">
-                            <h5 className="text-foreground font-medium text-sm line-clamp-2">
+                            <h5 className="text-foreground font-medium text-sm line-clamp-2 flex-1 pr-2">
                               {goal.title}
                             </h5>
-                            {showPrivateGoals && !goal.is_public && (
-                              <Badge variant="secondary" className="text-xs ml-2">
-                                Private
-                              </Badge>
+                            {showPrivateGoals && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      {togglingGoalId === goal.id ? (
+                                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                                      ) : (
+                                        <>
+                                          {goal.is_public ? (
+                                            <Eye className="h-3.5 w-3.5 text-muted-foreground" />
+                                          ) : (
+                                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                                          )}
+                                        </>
+                                      )}
+                                      <Switch
+                                        checked={goal.is_public}
+                                        onCheckedChange={() => handleToggleVisibility(goal)}
+                                        disabled={togglingGoalId === goal.id}
+                                        className="scale-75"
+                                      />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    <p className="text-xs">
+                                      {goal.is_public ? "Public - Click to make private" : "Private - Click to make public"}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
                             )}
                           </div>
                           
