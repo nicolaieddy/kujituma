@@ -94,6 +94,7 @@ const Admin = () => {
               newUsersThisWeek={analytics.newUsersThisWeek}
               activeUsersThisWeek={analytics.activeUsersThisWeek}
               averagePostsPerUser={analytics.averagePostsPerUser}
+              monthlyData={analytics.monthlyData}
             />
             <UsersOverview users={users} />
           </TabsContent>
