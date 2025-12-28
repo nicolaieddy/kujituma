@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -19,11 +20,14 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
+import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { HabitsService } from "@/services/habitsService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CalendarDays, Loader2, Sparkles } from "lucide-react";
+import { CalendarDays, Loader2, Sparkles, Target, Lightbulb, CheckCircle, Circle, Brain } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
+import { subDays } from "date-fns";
 
 interface WeeklyPlanningDialogProps {
   open: boolean;
@@ -41,6 +45,15 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
     isCached,
     lastSync
   } = useWeeklyPlanning(weekStart);
+  
+  // Get current week's objectives
+  const { objectives: currentWeekObjectives, isLoading: objectivesLoading } = useWeeklyProgress(weekStart);
+  
+  // Get last week's data for AI summary
+  const lastWeekStartDate = subDays(new Date(weekStart + 'T00:00:00'), 7);
+  const lastWeekStart = WeeklyProgressService.getWeekStart(lastWeekStartDate);
+  const { planningSession: lastWeekPlanning } = useWeeklyPlanning(lastWeekStart);
+  const { objectives: lastWeekObjectives, progressPost: lastWeekProgress } = useWeeklyProgress(lastWeekStart);
   
   const [lastWeekReflection, setLastWeekReflection] = useState("");
   const [weekIntention, setWeekIntention] = useState("");
@@ -65,8 +78,92 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   
   const weekRange = WeeklyProgressService.formatWeekRange(weekStart);
   
+  // Generate AI-like summary based on last week's data
+  const generateLastWeekSummary = () => {
+    const completedCount = lastWeekObjectives.filter(o => o.is_completed).length;
+    const totalCount = lastWeekObjectives.length;
+    const completionRate = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    
+    const parts: string[] = [];
+    
+    if (totalCount > 0) {
+      parts.push(`Last week you completed ${completedCount} of ${totalCount} objectives (${completionRate}%).`);
+    }
+    
+    if (lastWeekPlanning?.last_week_reflection) {
+      parts.push(`Your reflection: "${lastWeekPlanning.last_week_reflection}"`);
+    }
+    
+    if (lastWeekPlanning?.week_intention) {
+      parts.push(`Your intention was: "${lastWeekPlanning.week_intention}"`);
+    }
+    
+    if (lastWeekProgress?.notes) {
+      parts.push(`Notes: "${lastWeekProgress.notes}"`);
+    }
+    
+    if (parts.length === 0) {
+      return null;
+    }
+    
+    return parts.join(" ");
+  };
+  
+  const lastWeekSummary = generateLastWeekSummary();
+  
   const content = (
     <div className="space-y-5">
+      {/* AI Summary of Last Week */}
+      {lastWeekSummary && (
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-lg p-4 border border-primary/20">
+          <div className="flex items-start gap-3">
+            <div className="bg-primary/20 rounded-full p-1.5 shrink-0">
+              <Brain className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-1">Last Week Summary</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {lastWeekSummary}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Current Week Objectives Preview */}
+      {currentWeekObjectives.length > 0 && (
+        <div className="bg-muted/50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-medium flex items-center gap-2">
+              <Target className="h-4 w-4 text-primary" />
+              Objectives for This Week
+            </p>
+            <Badge variant="secondary" className="text-xs">
+              {currentWeekObjectives.length} planned
+            </Badge>
+          </div>
+          <div className="space-y-2 max-h-[120px] overflow-y-auto">
+            {currentWeekObjectives.slice(0, 5).map((obj) => (
+              <div key={obj.id} className="flex items-center gap-2 text-sm">
+                {obj.is_completed ? (
+                  <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
+                )}
+                <span className={obj.is_completed ? "line-through text-muted-foreground" : ""}>
+                  {obj.text}
+                </span>
+              </div>
+            ))}
+            {currentWeekObjectives.length > 5 && (
+              <p className="text-xs text-muted-foreground pl-6">
+                +{currentWeekObjectives.length - 5} more
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+      
       {/* Last Week Reflection */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
