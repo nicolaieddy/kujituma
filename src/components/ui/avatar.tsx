@@ -1,5 +1,4 @@
 import * as React from "react";
-import { useState, useEffect, useRef } from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { cn } from "@/lib/utils";
 
@@ -18,89 +17,16 @@ const Avatar = React.forwardRef<
 ));
 Avatar.displayName = AvatarPrimitive.Root.displayName;
 
-interface AvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
-  enableLazyLoading?: boolean;
-}
-
 const AvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
-  AvatarImageProps
->(({ className, src, enableLazyLoading = true, ...props }, ref) => {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isInView, setIsInView] = useState(!enableLazyLoading);
-  const [imageSrc, setImageSrc] = useState<string | undefined>(
-    enableLazyLoading ? undefined : src
-  );
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!enableLazyLoading || !containerRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsInView(true);
-            observer.disconnect();
-          }
-        });
-      },
-      { rootMargin: "100px", threshold: 0.01 }
-    );
-
-    observer.observe(containerRef.current);
-    return () => observer.disconnect();
-  }, [enableLazyLoading]);
-
-  useEffect(() => {
-    if (isInView && src) {
-      const img = new Image();
-      img.onload = () => {
-        setImageSrc(src);
-        setIsLoaded(true);
-      };
-      img.onerror = () => setImageSrc(undefined);
-      img.src = src;
-    }
-  }, [isInView, src]);
-
-  if (!enableLazyLoading) {
-    return (
-      <AvatarPrimitive.Image
-        ref={ref}
-        src={src}
-        className={cn("aspect-square h-full w-full", className)}
-        {...props}
-      />
-    );
-  }
-
-  return (
-    <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-full">
-      {/* Skeleton pulse placeholder */}
-      <div
-        className={cn(
-          "absolute inset-0 bg-muted animate-pulse transition-opacity duration-300",
-          isLoaded ? "opacity-0" : "opacity-100"
-        )}
-      />
-
-      {/* Actual image */}
-      {imageSrc && (
-        <AvatarPrimitive.Image
-          ref={ref}
-          src={imageSrc}
-          className={cn(
-            "aspect-square h-full w-full transition-opacity duration-300",
-            isLoaded ? "opacity-100" : "opacity-0",
-            className
-          )}
-          {...props}
-        />
-      )}
-    </div>
-  );
-});
+  React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image>
+>(({ className, ...props }, ref) => (
+  <AvatarPrimitive.Image
+    ref={ref}
+    className={cn("aspect-square h-full w-full object-cover", className)}
+    {...props}
+  />
+));
 AvatarImage.displayName = AvatarPrimitive.Image.displayName;
 
 const AvatarFallback = React.forwardRef<
