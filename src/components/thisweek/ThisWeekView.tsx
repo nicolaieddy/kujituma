@@ -1,10 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useRouteBlocker } from "@/hooks/useRouteBlocker";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
-import { useUnsavedChanges } from "@/contexts/UnsavedChangesContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,7 +14,6 @@ import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
-import { UnsavedChangesDialog } from "@/components/thisweek/UnsavedChangesDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
 import { useHabitStats } from "@/hooks/useHabitStats";
@@ -37,7 +34,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { goals, isCached: goalsCached } = useGoals();
   const { habitStats, refetch: refetchHabits } = useHabitStats();
   const { lastSync, isOffline } = useOfflineStatus();
-  const { setHasUnsavedChanges } = useUnsavedChanges();
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -45,14 +41,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [hasFetchedSuggestions, setHasFetchedSuggestions] = useState(false);
-  
-  // Unsaved changes state
-  const [showUnsavedDialog, setShowUnsavedDialog] = useState(false);
-  const [pendingNavigation, setPendingNavigation] = useState<'previous' | 'next' | 'route' | null>(null);
-  const [isSavingBeforeNav, setIsSavingBeforeNav] = useState(false);
-  const saveUnsavedRef = useRef<(() => Promise<boolean>) | null>(null);
-  const clearUnsavedRef = useRef<(() => void) | null>(null);
-  const hasUnsavedRef = useRef(false);
   
   const {
     objectives,
@@ -122,83 +110,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     clearSuggestions();
   }, [currentWeekStart, clearSuggestions]);
 
-  // Handle unsaved changes state from WeeklyObjectivesList
-  const handleUnsavedStateChange = useCallback((
-    hasUnsaved: boolean, 
-    saveFunc: () => Promise<boolean>, 
-    clearFunc: () => void
-  ) => {
-    hasUnsavedRef.current = hasUnsaved;
-    saveUnsavedRef.current = saveFunc;
-    clearUnsavedRef.current = clearFunc;
-    setHasUnsavedChanges(hasUnsaved);
-  }, [setHasUnsavedChanges]);
-
-  // Block route navigation when there are unsaved changes
-  const shouldBlockNavigation = useCallback(
-    ({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }) =>
-      hasUnsavedRef.current && currentLocation.pathname !== nextLocation.pathname,
-    []
-  );
-  const blocker = useRouteBlocker(shouldBlockNavigation);
-
-  // Show dialog when blocker is triggered
-  useEffect(() => {
-    if (blocker.state === 'blocked') {
-      setShowUnsavedDialog(true);
-      setPendingNavigation('route');
-    }
-  }, [blocker.state]);
-
-  // Intercept week navigation to check for unsaved changes
+  // Simple week navigation (no blocking needed - auto-save handles data)
   const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
-    if (hasUnsavedRef.current) {
-      setPendingNavigation(direction);
-      setShowUnsavedDialog(true);
-    } else if (onNavigateWeek) {
+    if (onNavigateWeek) {
       onNavigateWeek(direction);
     }
   }, [onNavigateWeek]);
-
-  const handleUnsavedDialogClose = () => {
-    setShowUnsavedDialog(false);
-    setPendingNavigation(null);
-    if (blocker.state === 'blocked') {
-      blocker.reset();
-    }
-  };
-
-  const handleUnsavedDiscard = () => {
-    if (clearUnsavedRef.current) {
-      clearUnsavedRef.current();
-    }
-    setShowUnsavedDialog(false);
-    
-    if (blocker.state === 'blocked') {
-      blocker.proceed();
-    } else if (pendingNavigation && pendingNavigation !== 'route' && onNavigateWeek) {
-      onNavigateWeek(pendingNavigation);
-    }
-    setPendingNavigation(null);
-  };
-
-  const handleUnsavedSave = async () => {
-    if (saveUnsavedRef.current) {
-      setIsSavingBeforeNav(true);
-      const success = await saveUnsavedRef.current();
-      setIsSavingBeforeNav(false);
-      if (success) {
-        setShowUnsavedDialog(false);
-        
-        if (blocker.state === 'blocked') {
-          blocker.proceed();
-        } else if (pendingNavigation && pendingNavigation !== 'route' && onNavigateWeek) {
-          onNavigateWeek(pendingNavigation);
-        }
-        setPendingNavigation(null);
-      }
-    }
-  };
 
   const handleAddSuggestion = async (text: string) => {
     try {
@@ -564,7 +481,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
             currentWeekStart={currentWeekStart}
             onMoveObjectiveToWeek={handleMoveObjectiveToWeek}
-            onUnsavedStateChange={handleUnsavedStateChange}
+            
           />
         </CardContent>
       </Card>
@@ -616,14 +533,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onUpdate={refetchHabits}
       />
 
-      {/* Unsaved Changes Dialog */}
-      <UnsavedChangesDialog
-        isOpen={showUnsavedDialog}
-        onClose={handleUnsavedDialogClose}
-        onDiscard={handleUnsavedDiscard}
-        onSave={handleUnsavedSave}
-        isSaving={isSavingBeforeNav}
-      />
     </div>
   );
 };
