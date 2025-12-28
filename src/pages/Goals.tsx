@@ -254,7 +254,7 @@ const Goals = () => {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="weekly" className="mt-6">
+            <TabsContent value="weekly" className="mt-6" forceMount>
               <ThisWeekView 
                 weekStart={currentWeekStart}
                 onNavigateWeek={navigateToWeek}
