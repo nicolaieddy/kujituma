@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Goal, GoalStatus } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
-import { Clock, Play, CheckCircle, Target, Calendar, EyeOff } from "lucide-react";
+import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle } from "lucide-react";
 import { formatRelativeTime } from "@/utils/dateUtils";
 
 interface ProfileGoalsProps {
@@ -116,6 +117,25 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
           <div className="flex items-center gap-2">
             <Target className="h-5 w-5" />
             Goals
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="font-medium mb-1">Goal Visibility</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <strong>Public goals</strong> are visible to anyone who views your profile.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <strong>Private goals</strong> are only visible to you.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    To change visibility, edit the goal from your Goals page and toggle the "Make this goal public" option.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           {!showPrivateGoals && hiddenGoalsCount > 0 && (
             <div className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
