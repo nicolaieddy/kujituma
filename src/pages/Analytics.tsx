@@ -2,7 +2,9 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 
@@ -10,6 +12,7 @@ const Analytics = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
+  const { isOffline } = useOfflineStatus();
   const isMobile = useIsMobile();
 
   const handleSignOut = async () => {
@@ -31,6 +34,18 @@ const Analytics = () => {
   if (!user) {
     navigate('/auth');
     return null;
+  }
+
+  if (isOffline) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
+        <OfflineFallback 
+          title="Analytics unavailable offline"
+          description="Analytics data requires an internet connection to load. Please reconnect to view your stats."
+        />
+      </div>
+    );
   }
 
   return (

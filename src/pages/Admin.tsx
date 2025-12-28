@@ -1,11 +1,12 @@
-
 import { lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminData } from "@/hooks/useAdminData";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 
 // Lazy load admin components for code splitting
 const PostsManagement = lazy(() => import("@/components/admin/PostsManagement"));
@@ -45,6 +46,7 @@ const AdminTabSkeleton = () => (
 
 const Admin = () => {
   const { signOut } = useAuth();
+  const { isOffline } = useOfflineStatus();
   const {
     posts,
     users,
@@ -76,6 +78,18 @@ const Admin = () => {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-foreground">Access denied. Admin privileges required.</div>
+      </div>
+    );
+  }
+
+  if (isOffline) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
+        <OfflineFallback 
+          title="Admin panel unavailable offline"
+          description="The admin dashboard requires an internet connection to manage posts and users."
+        />
       </div>
     );
   }
