@@ -15,6 +15,7 @@ import { HabitCard } from "./HabitCard";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
 import { HabitSearchFilter, HabitFilters } from "./HabitSearchFilter";
+import { SystemRitualsSection } from "./SystemRitualsSection";
 import { HabitStats } from "@/services/habitStreaksService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
@@ -92,23 +93,30 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   }
 
   // Show empty state only if no habits AND no future habits
+  // But still show system rituals
   if (habitStats.length === 0 && futureHabits.length === 0) {
     return (
-      <div className="text-center py-12">
-        <div className="mb-6">
-          <RefreshCw className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No Habits Yet</h3>
-          <p className="text-muted-foreground max-w-md mx-auto mb-6">
-            Create a goal with recurring objectives to start tracking your habits. 
-            Habits automatically create weekly objectives to help you build consistency.
-          </p>
+      <div className="space-y-8">
+        {/* System Rituals - always shown */}
+        <SystemRitualsSection />
+
+        {/* Empty state for user-created habits */}
+        <div className="text-center py-12 border-2 border-dashed rounded-lg">
+          <div className="mb-6">
+            <RefreshCw className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+            <h3 className="text-lg font-semibold text-foreground mb-2">No Custom Habits Yet</h3>
+            <p className="text-muted-foreground max-w-md mx-auto mb-6">
+              Create a goal with recurring objectives to start tracking your own habits. 
+              Habits automatically create weekly objectives to help you build consistency.
+            </p>
+          </div>
+          {onCreateGoal && (
+            <Button onClick={onCreateGoal} className="gradient-primary shadow-elegant">
+              <Plus className="h-4 w-4 mr-2" />
+              Create Recurring Goal
+            </Button>
+          )}
         </div>
-        {onCreateGoal && (
-          <Button onClick={onCreateGoal} className="gradient-primary shadow-elegant">
-            <Plus className="h-4 w-4 mr-2" />
-            Create Recurring Goal
-          </Button>
-        )}
       </div>
     );
   }
@@ -308,7 +316,9 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
         availableCategories={availableCategories}
       />
 
-      {/* No Results State */}
+      {/* System Rituals - always visible, not affected by filters */}
+      {!hasActiveFilters && <SystemRitualsSection />}
+
       {hasActiveFilters && totalFiltered === 0 && (
         <div className="text-center py-12 border-2 border-dashed rounded-lg">
           <SearchX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
