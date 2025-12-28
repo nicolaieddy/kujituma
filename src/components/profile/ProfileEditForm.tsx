@@ -9,16 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
 import { ProfileStats } from "./ProfileStats";
 import { ProfileGoals } from "./ProfileGoals";
-import linkedinIcon from "@/assets/linkedin-icon.png";
-import instagramIcon from "@/assets/instagram-icon.png";
-import xIcon from "@/assets/x-icon.png";
-import tiktokIcon from "@/assets/tiktok-icon.png";
+import { SocialLinkPicker, SOCIAL_PLATFORMS } from "./SocialLinkPicker";
+import { SocialLinksDisplay } from "./SocialLinksDisplay";
 import { Calendar, Clock } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 
@@ -34,6 +32,17 @@ interface Profile {
   instagram_url?: string;
   tiktok_url?: string;
   twitter_url?: string;
+  youtube_url?: string;
+  email_contact?: string;
+  website_url?: string;
+  github_url?: string;
+  snapchat_url?: string;
+  medium_url?: string;
+  substack_url?: string;
+  whatsapp_url?: string;
+  telegram_url?: string;
+  signal_url?: string;
+  phone_number?: string;
   show_email?: boolean;
   commitment_visibility?: 'private' | 'friends' | 'public';
   created_at: string;
@@ -46,6 +55,18 @@ interface ProfileEditFormProps {
   onCancel: () => void;
 }
 
+// Helper to extract social links from profile
+const extractSocialLinks = (profile: Profile): Record<string, string> => {
+  const links: Record<string, string> = {};
+  SOCIAL_PLATFORMS.forEach(platform => {
+    const value = profile[platform.id as keyof Profile];
+    if (typeof value === 'string' && value) {
+      links[platform.id] = value;
+    }
+  });
+  return links;
+};
+
 export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditFormProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -56,13 +77,11 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [previewViewerType, setPreviewViewerType] = useState<'friend' | 'public'>('friend');
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [showSocialPicker, setShowSocialPicker] = useState(false);
+  const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => extractSocialLinks(profile));
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
-    linkedin_url: profile.linkedin_url || '',
-    instagram_url: profile.instagram_url || '',
-    tiktok_url: profile.tiktok_url || '',
-    twitter_url: profile.twitter_url || '',
     avatar_url: profile.avatar_url || '',
     cover_photo_url: profile.cover_photo_url || '',
     cover_photo_position: profile.cover_photo_position ?? 50,
@@ -72,20 +91,20 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
 
   // Check if there are unsaved changes
   const hasUnsavedChanges = useMemo(() => {
+    const originalLinks = extractSocialLinks(profile);
+    const linksChanged = JSON.stringify(socialLinks) !== JSON.stringify(originalLinks);
+    
     return (
       formData.full_name !== (profile.full_name || '') ||
       formData.about_me !== (profile.about_me || '') ||
-      formData.linkedin_url !== (profile.linkedin_url || '') ||
-      formData.instagram_url !== (profile.instagram_url || '') ||
-      formData.tiktok_url !== (profile.tiktok_url || '') ||
-      formData.twitter_url !== (profile.twitter_url || '') ||
       formData.avatar_url !== (profile.avatar_url || '') ||
       formData.cover_photo_url !== (profile.cover_photo_url || '') ||
       formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
       formData.show_email !== (profile.show_email ?? false) ||
-      formData.commitment_visibility !== (profile.commitment_visibility || 'friends')
+      formData.commitment_visibility !== (profile.commitment_visibility || 'friends') ||
+      linksChanged
     );
-  }, [formData, profile]);
+  }, [formData, profile, socialLinks]);
 
   // Warn before browser navigation with unsaved changes
   useEffect(() => {
@@ -239,15 +258,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
         .update({
           full_name: formData.full_name,
           about_me: formData.about_me,
-          linkedin_url: formData.linkedin_url,
-          instagram_url: formData.instagram_url,
-          tiktok_url: formData.tiktok_url,
-          twitter_url: formData.twitter_url,
           avatar_url: formData.avatar_url,
           cover_photo_url: formData.cover_photo_url,
           cover_photo_position: formData.cover_photo_position,
           show_email: formData.show_email,
           commitment_visibility: formData.commitment_visibility,
+          // Social links
+          linkedin_url: socialLinks.linkedin_url || '',
+          instagram_url: socialLinks.instagram_url || '',
+          tiktok_url: socialLinks.tiktok_url || '',
+          twitter_url: socialLinks.twitter_url || '',
+          youtube_url: socialLinks.youtube_url || '',
+          email_contact: socialLinks.email_contact || '',
+          website_url: socialLinks.website_url || '',
+          github_url: socialLinks.github_url || '',
+          snapchat_url: socialLinks.snapchat_url || '',
+          medium_url: socialLinks.medium_url || '',
+          substack_url: socialLinks.substack_url || '',
+          whatsapp_url: socialLinks.whatsapp_url || '',
+          telegram_url: socialLinks.telegram_url || '',
+          signal_url: socialLinks.signal_url || '',
+          phone_number: socialLinks.phone_number || '',
           updated_at: new Date().toISOString()
         })
         .eq('id', user.id)
@@ -291,10 +322,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     cover_photo_url: formData.cover_photo_url,
     cover_photo_position: formData.cover_photo_position,
     about_me: formData.about_me,
-    linkedin_url: formData.linkedin_url,
-    instagram_url: formData.instagram_url,
-    tiktok_url: formData.tiktok_url,
-    twitter_url: formData.twitter_url,
     show_email: formData.show_email,
     created_at: profile.created_at,
     last_active_at: profile.last_active_at,
@@ -405,28 +432,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                   )}
                   
                   {/* Social links */}
-                  {(previewProfile.linkedin_url || previewProfile.instagram_url || previewProfile.tiktok_url || previewProfile.twitter_url) && (
-                    <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                      {previewProfile.linkedin_url && (
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {previewProfile.instagram_url && (
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          <img src={instagramIcon} alt="Instagram" className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {previewProfile.tiktok_url && (
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          <img src={tiktokIcon} alt="TikTok" className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {previewProfile.twitter_url && (
-                        <Button variant="ghost" size="sm" className="h-8 px-2">
-                          <img src={xIcon} alt="X" className="h-4 w-4" />
-                        </Button>
-                      )}
+                  {Object.keys(socialLinks).length > 0 && (
+                    <div className="mt-3">
+                      <SocialLinksDisplay socialLinks={socialLinks} size="sm" />
                     </div>
                   )}
                 </div>
@@ -670,50 +678,37 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 placeholder="Tell us about yourself..."
               />
             </div>
+          </div>
 
-            <div>
-              <Label htmlFor="linkedin_url" className="text-foreground">LinkedIn Profile</Label>
-              <Input
-                id="linkedin_url"
-                type="url"
-                value={formData.linkedin_url}
-                onChange={(e) => handleInputChange('linkedin_url', e.target.value)}
-                placeholder="https://linkedin.com/in/yourprofile"
-              />
+          {/* Social Links Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-foreground text-lg font-semibold">Social Links</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowSocialPicker(true)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Social
+              </Button>
             </div>
-
-            <div>
-              <Label htmlFor="instagram_url" className="text-foreground">Instagram Profile</Label>
-              <Input
-                id="instagram_url"
-                type="url"
-                value={formData.instagram_url}
-                onChange={(e) => handleInputChange('instagram_url', e.target.value)}
-                placeholder="https://instagram.com/yourusername"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="tiktok_url" className="text-foreground">TikTok Profile</Label>
-              <Input
-                id="tiktok_url"
-                type="url"
-                value={formData.tiktok_url}
-                onChange={(e) => handleInputChange('tiktok_url', e.target.value)}
-                placeholder="https://tiktok.com/@yourusername"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="twitter_url" className="text-foreground">Twitter Profile</Label>
-              <Input
-                id="twitter_url"
-                type="url"
-                value={formData.twitter_url}
-                onChange={(e) => handleInputChange('twitter_url', e.target.value)}
-                placeholder="https://twitter.com/yourusername"
-              />
-            </div>
+            
+            {Object.keys(socialLinks).length > 0 ? (
+              <div className="p-4 bg-accent/50 border border-border rounded-lg">
+                <SocialLinksDisplay socialLinks={socialLinks} />
+                <p className="text-xs text-muted-foreground mt-3">
+                  Click "Add Social" to add or remove links
+                </p>
+              </div>
+            ) : (
+              <div className="p-4 bg-accent/50 border border-border rounded-lg text-center">
+                <p className="text-muted-foreground text-sm">
+                  No social links added yet. Click "Add Social" to get started.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Privacy Settings */}
@@ -803,6 +798,14 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Social Link Picker Dialog */}
+      <SocialLinkPicker
+        open={showSocialPicker}
+        onOpenChange={setShowSocialPicker}
+        socialLinks={socialLinks}
+        onSocialLinksChange={setSocialLinks}
+      />
     </Card>
   );
 };

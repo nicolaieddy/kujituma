@@ -3,14 +3,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Calendar, Clock, UserPlus, UserMinus, UserCheck } from "lucide-react";
-import linkedinIcon from "@/assets/linkedin-icon.png";
-import instagramIcon from "@/assets/instagram-icon.png";
-import xIcon from "@/assets/x-icon.png";
-import tiktokIcon from "@/assets/tiktok-icon.png";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { ProfileStats } from "./ProfileStats";
 import { UnfriendConfirmDialog } from "./UnfriendConfirmDialog";
+import { SocialLinksDisplay } from "./SocialLinksDisplay";
+import { SOCIAL_PLATFORMS } from "./SocialLinkPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,50 +109,20 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
               )}
               
               {/* Social links inline */}
-              {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
-                <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
-                  {profile.linkedin_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2"
-                      onClick={() => window.open(profile.linkedin_url, '_blank')}
-                    >
-                      <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {profile.instagram_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2"
-                      onClick={() => window.open(profile.instagram_url, '_blank')}
-                    >
-                      <img src={instagramIcon} alt="Instagram" className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {profile.tiktok_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2"
-                      onClick={() => window.open(profile.tiktok_url, '_blank')}
-                    >
-                      <img src={tiktokIcon} alt="TikTok" className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {profile.twitter_url && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-2"
-                      onClick={() => window.open(profile.twitter_url, '_blank')}
-                    >
-                      <img src={xIcon} alt="X" className="h-4 w-4" />
-                    </Button>
-                  )}
-                </div>
-              )}
+              {(() => {
+                const socialLinks: Record<string, string> = {};
+                SOCIAL_PLATFORMS.forEach(platform => {
+                  const value = (profile as any)[platform.id];
+                  if (typeof value === 'string' && value) {
+                    socialLinks[platform.id] = value;
+                  }
+                });
+                return Object.keys(socialLinks).length > 0 ? (
+                  <div className="mt-3">
+                    <SocialLinksDisplay socialLinks={socialLinks} size="sm" />
+                  </div>
+                ) : null;
+              })()}
             </div>
 
             {/* Friendship Actions */}
