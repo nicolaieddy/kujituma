@@ -2,7 +2,7 @@ import { Target, Flame, BookOpen, Users } from "lucide-react";
 
 export const LandingFeatures = () => {
   return (
-    <div className="py-12 px-4">
+    <div className="py-8 px-4">
       {/* Feature Grid */}
       <section className="max-w-4xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">

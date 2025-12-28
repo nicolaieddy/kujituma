@@ -1,6 +1,6 @@
 export const LandingHero = () => {
   return (
-    <section className="relative min-h-[60vh] flex items-center justify-center">
+    <section className="relative min-h-[50vh] flex items-center justify-center pt-16">
       {/* Full-bleed background image */}
       <div className="absolute inset-0 z-0">
         <img 
