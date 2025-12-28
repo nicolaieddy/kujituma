@@ -39,13 +39,13 @@ interface FeatureItemProps {
 }
 
 const FeatureItem = ({ icon: Icon, title, description }: FeatureItemProps) => (
-  <div className="flex flex-col items-center text-center gap-1.5 group max-w-xs">
+  <div className="flex flex-col gap-1.5 group w-72">
     <div className="flex items-center gap-2">
       <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center transition-transform duration-200 group-hover:scale-110">
         <Icon className="w-5 h-5 text-foreground" />
       </div>
       <h3 className="text-base font-semibold text-foreground">{title}</h3>
     </div>
-    <p className="text-sm text-foreground/70">{description}</p>
+    <p className="text-sm text-foreground/70 pl-12">{description}</p>
   </div>
 );
