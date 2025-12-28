@@ -135,10 +135,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   }, [setHasUnsavedChanges]);
 
   // Block route navigation when there are unsaved changes
-  const blocker = useRouteBlocker(
-    ({ currentLocation, nextLocation }) =>
-      hasUnsavedRef.current && currentLocation.pathname !== nextLocation.pathname
+  const shouldBlockNavigation = useCallback(
+    ({ currentLocation, nextLocation }: { currentLocation: { pathname: string }; nextLocation: { pathname: string } }) =>
+      hasUnsavedRef.current && currentLocation.pathname !== nextLocation.pathname,
+    []
   );
+  const blocker = useRouteBlocker(shouldBlockNavigation);
 
   // Show dialog when blocker is triggered
   useEffect(() => {
