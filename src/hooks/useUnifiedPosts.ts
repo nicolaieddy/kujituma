@@ -16,16 +16,63 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
   const [error, setError] = useState<string | null>(null);
   const [isCached, setIsCached] = useState(false);
   const offsetRef = useRef(0);
+  const prefetchedPostsRef = useRef<UnifiedPost[] | null>(null);
+  const isPrefetchingRef = useRef(false);
   const limit = 10;
+
+  // Prefetch next page in background
+  const prefetchNextPage = useCallback(async (currentOffset: number) => {
+    if (isPrefetchingRef.current) return;
+    
+    isPrefetchingRef.current = true;
+    try {
+      const nextOffset = currentOffset;
+      let nextPosts: UnifiedPost[];
+      
+      if (feedType === 'user' || userId) {
+        nextPosts = await unifiedPostsService.getUserPosts(userId, filterPeriod, limit, nextOffset);
+      } else {
+        nextPosts = await unifiedPostsService.getAllPosts(filterPeriod, limit, nextOffset);
+      }
+      
+      // Only cache if we got posts
+      if (nextPosts.length > 0) {
+        prefetchedPostsRef.current = nextPosts;
+      }
+    } catch (err) {
+      // Silently fail prefetch - it's just an optimization
+      console.debug('Prefetch failed:', err);
+    } finally {
+      isPrefetchingRef.current = false;
+    }
+  }, [feedType, userId, filterPeriod, limit]);
 
   const fetchPosts = useCallback(async (loadMore = false) => {
     const startTime = Date.now();
     try {
       if (loadMore) {
         setLoadingMore(true);
+        
+        // Use prefetched posts if available
+        if (prefetchedPostsRef.current) {
+          const prefetched = prefetchedPostsRef.current;
+          prefetchedPostsRef.current = null;
+          
+          setPosts(prev => [...prev, ...prefetched]);
+          offsetRef.current += limit;
+          setHasMore(prefetched.length === limit);
+          setLoadingMore(false);
+          
+          // Prefetch next page
+          if (prefetched.length === limit) {
+            prefetchNextPage(offsetRef.current);
+          }
+          return;
+        }
       } else {
         setLoading(true);
         offsetRef.current = 0;
+        prefetchedPostsRef.current = null;
       }
       
       const currentOffset = loadMore ? offsetRef.current : 0;
@@ -53,6 +100,11 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
       
       setHasMore(newPosts.length === limit);
       setError(null);
+      
+      // Prefetch next page after loading
+      if (newPosts.length === limit) {
+        prefetchNextPage(offsetRef.current);
+      }
     } catch (err) {
       console.error('Error fetching posts:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -63,7 +115,7 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [feedType, userId, filterPeriod, limit]);
+  }, [feedType, userId, filterPeriod, limit, prefetchNextPage]);
 
   const loadMorePosts = useCallback(() => {
     if (!loadingMore && hasMore) {
