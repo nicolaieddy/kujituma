@@ -9,9 +9,24 @@ interface WeeklyData {
   progressNotes?: string;
 }
 
+interface SuggestionsData {
+  incompleteObjectives: { text: string; weekStart: string }[];
+  completedObjectives: { text: string }[];
+  goals: { title: string; description?: string }[];
+}
+
+interface ObjectiveSuggestion {
+  text: string;
+  reason: string;
+  priority: "high" | "medium" | "low";
+  source: "carryover" | "goal-aligned" | "new";
+}
+
 export const useWeeklyInsights = () => {
   const [insight, setInsight] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<ObjectiveSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const generateInsights = async (weeklyData: WeeklyData) => {
@@ -25,7 +40,7 @@ export const useWeeklyInsights = () => {
 
     try {
       const { data, error: funcError } = await supabase.functions.invoke('weekly-insights', {
-        body: { weeklyData }
+        body: { type: 'insights', weeklyData }
       });
 
       if (funcError) {
@@ -33,19 +48,7 @@ export const useWeeklyInsights = () => {
       }
 
       if (data?.error) {
-        if (data.error.includes("Rate limit")) {
-          toast({
-            title: "Please wait",
-            description: "AI is busy. Try again in a moment.",
-            variant: "default",
-          });
-        } else if (data.error.includes("credits")) {
-          toast({
-            title: "AI Credits",
-            description: "AI credits exhausted. Contact workspace admin.",
-            variant: "destructive",
-          });
-        }
+        handleAIError(data.error);
         setError(data.error);
         return null;
       }
@@ -61,10 +64,72 @@ export const useWeeklyInsights = () => {
     }
   };
 
+  const generateSuggestions = async (suggestionsData: SuggestionsData) => {
+    // Need at least some data to generate suggestions
+    if (suggestionsData.incompleteObjectives.length === 0 && 
+        suggestionsData.completedObjectives.length === 0 && 
+        suggestionsData.goals.length === 0) {
+      return [];
+    }
+
+    setIsSuggestionsLoading(true);
+    setError(null);
+
+    try {
+      const { data, error: funcError } = await supabase.functions.invoke('weekly-insights', {
+        body: { type: 'suggestions', suggestionsData }
+      });
+
+      if (funcError) {
+        throw funcError;
+      }
+
+      if (data?.error) {
+        handleAIError(data.error);
+        setError(data.error);
+        return [];
+      }
+
+      const parsedSuggestions = data.suggestions || [];
+      setSuggestions(parsedSuggestions);
+      return parsedSuggestions;
+    } catch (err) {
+      console.error("Failed to generate suggestions:", err);
+      setError("Failed to generate suggestions");
+      return [];
+    } finally {
+      setIsSuggestionsLoading(false);
+    }
+  };
+
+  const handleAIError = (errorMessage: string) => {
+    if (errorMessage.includes("Rate limit")) {
+      toast({
+        title: "Please wait",
+        description: "AI is busy. Try again in a moment.",
+        variant: "default",
+      });
+    } else if (errorMessage.includes("credits")) {
+      toast({
+        title: "AI Credits",
+        description: "AI credits exhausted. Contact workspace admin.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const clearSuggestions = () => {
+    setSuggestions([]);
+  };
+
   return {
     insight,
+    suggestions,
     isLoading,
+    isSuggestionsLoading,
     error,
     generateInsights,
+    generateSuggestions,
+    clearSuggestions,
   };
 };
