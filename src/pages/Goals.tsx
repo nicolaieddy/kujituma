@@ -21,6 +21,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
+import { GoalsSkeleton, GoalCardSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Goals = () => {
   const navigate = useNavigate();
@@ -266,7 +267,11 @@ const Goals = () => {
                   </div>
 
                   {goalsLoading ? (
-                    <div className="text-center text-muted-foreground">Loading goals...</div>
+                    <div className="space-y-4">
+                      {Array.from({ length: 3 }).map((_, i) => (
+                        <GoalCardSkeleton key={i} />
+                      ))}
+                    </div>
                   ) : (
                     <OrganizedGoalsView
                       activeGoals={activeGoals}
