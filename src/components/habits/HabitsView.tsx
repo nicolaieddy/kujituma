@@ -389,11 +389,10 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
 
       {/* Add Habit Button */}
       {onCreateGoal && (
-        <div className="text-center pt-4">
+        <div className="flex justify-center pt-6">
           <Button 
-            variant="outline" 
             onClick={onCreateGoal}
-            className="gap-2"
+            className="gradient-primary shadow-elegant gap-2"
           >
             <Plus className="h-4 w-4" />
             Add New Habit
