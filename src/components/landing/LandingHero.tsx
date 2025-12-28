@@ -41,6 +41,7 @@ export const LandingHero = ({
             src="/kilimanjaro-background.jpg" 
             alt="Mount Kilimanjaro"
             className="w-full h-full object-cover"
+            fetchPriority="high"
           />
         </div>
       </div>
