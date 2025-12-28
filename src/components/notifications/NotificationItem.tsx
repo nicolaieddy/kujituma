@@ -29,8 +29,12 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
     // Navigate based on notification type
     if (notification.type === 'friend_request') {
       navigate('/friends?tab=requests');
+    } else if (notification.type === 'friend_request_accepted') {
+      // Navigate to the user's profile
+      navigate(`/profile/${notification.triggered_by_user_id}`);
     } else if (notification.related_post_id) {
-      navigate('/feed');
+      // Navigate to feed with the specific post highlighted
+      navigate(`/feed?post=${notification.related_post_id}`);
     }
     
     onMarkRead();
