@@ -10,7 +10,7 @@ import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Inbox } from "lucide-react";
-import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
+import { FriendsSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Friends = () => {
   const navigate = useNavigate();
@@ -46,8 +46,19 @@ const Friends = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <KilimanjaroLoader />
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-heading">Friends</h1>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              Connect with other members of the community and follow their progress.
+            </p>
+          </div>
+          <div className="max-w-4xl mx-auto">
+            <FriendsSkeleton />
+          </div>
+        </div>
       </div>
     );
   }

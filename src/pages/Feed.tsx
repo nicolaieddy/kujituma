@@ -6,7 +6,7 @@ import { FeedView } from "@/components/feed/FeedView";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { CommunitySidebar } from "@/components/community/CommunitySidebar";
 import { CommunityRightSidebar } from "@/components/community/CommunityRightSidebar";
-import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
+import { FeedSkeletonList } from "@/components/feed/FeedPostSkeleton";
 
 const Feed = () => {
   const navigate = useNavigate();
@@ -26,9 +26,25 @@ const Feed = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <KilimanjaroLoader />
-      </div>
+      <SidebarProvider>
+        <div className="min-h-screen min-h-[100dvh] bg-background flex w-full">
+          <CommunitySidebar />
+          <SidebarInset className="flex-1">
+            <DashboardHeader isAdmin={false} onSignOut={() => {}} />
+            <div className="flex-1 p-3 sm:p-4 md:p-6">
+              <div className="max-w-2xl mx-auto">
+                <div className="text-center mb-4 sm:mb-6 md:mb-8">
+                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Community</h1>
+                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2 mt-2">
+                    See how everyone in the community is progressing on their weekly journeys.
+                  </p>
+                </div>
+                <FeedSkeletonList count={3} />
+              </div>
+            </div>
+          </SidebarInset>
+        </div>
+      </SidebarProvider>
     );
   }
 

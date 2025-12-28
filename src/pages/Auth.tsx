@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { KilimanjaroLoader } from '@/components/ui/kilimanjaro-loader';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -36,8 +36,16 @@ const Auth = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <KilimanjaroLoader />
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center pb-6">
+            <Skeleton className="h-8 w-48 mx-auto mb-3" />
+            <Skeleton className="h-4 w-64 mx-auto" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-12 w-full" />
+          </CardContent>
+        </Card>
       </div>
     );
   }

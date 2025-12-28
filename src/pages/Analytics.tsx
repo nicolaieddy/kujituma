@@ -6,7 +6,7 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
+import { AnalyticsSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -25,8 +25,21 @@ const Analytics = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <KilimanjaroLoader />
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
+        <div className="container mx-auto px-4 py-6">
+          <div className="text-center mb-8">
+            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-heading">
+              Analytics Dashboard
+            </h1>
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+              Track your progress, completion rates, and streaks to stay motivated.
+            </p>
+          </div>
+          <div className="max-w-6xl mx-auto">
+            <AnalyticsSkeleton />
+          </div>
+        </div>
       </div>
     );
   }
