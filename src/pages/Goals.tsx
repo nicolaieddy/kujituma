@@ -19,18 +19,22 @@ import { HabitsView } from "@/components/habits/HabitsView";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { KilimanjaroLoader } from "@/components/ui/kilimanjaro-loader";
+import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 
 const Goals = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
+  const { lastSync, isOffline } = useOfflineStatus();
   const { 
     activeGoals,
     deprioritizedGoals,
     completedGoalsByYear,
     previousYearUnfinishedGoals,
     isLoading: goalsLoading, 
+    isCached: goalsCached,
     createGoal, 
     updateGoal, 
     deleteGoal,
@@ -187,7 +191,10 @@ const Goals = () => {
 
       <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
         <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground mb-4 font-serif`}>Goals & Progress</h1>
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground font-serif`}>Goals & Progress</h1>
+            <CachedDataIndicator isCached={goalsCached || isOffline} lastSync={lastSync} />
+          </div>
           <p className={`text-muted-foreground ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto leading-relaxed`}>
             Manage your long-term goals and track your weekly progress.
           </p>

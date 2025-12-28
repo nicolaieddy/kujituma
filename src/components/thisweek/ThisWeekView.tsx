@@ -19,6 +19,8 @@ import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitStats } from "@/services/habitStreaksService";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
+import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -27,8 +29,9 @@ interface ThisWeekViewProps {
 
 export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) => {
   const { user } = useAuth();
-  const { goals } = useGoals();
+  const { goals, isCached: goalsCached } = useGoals();
   const { habitStats, refetch: refetchHabits } = useHabitStats();
+  const { lastSync, isOffline } = useOfflineStatus();
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -265,6 +268,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         completedCount={completedCount}
         totalCount={totalCount}
         onNavigateWeek={onNavigateWeek}
+        isCached={goalsCached || isOffline}
+        lastSync={lastSync}
       />
 
       {/* Habits Due This Week */}

@@ -1,4 +1,5 @@
 import { get, set, del } from 'idb-keyval';
+import { toast } from '@/hooks/use-toast';
 
 interface QueuedMutation {
   id: string;
@@ -35,7 +36,7 @@ class OfflineSyncService {
     this.listeners.forEach(listener => listener());
   }
 
-  // Add a mutation to the queue
+  // Add a mutation to the queue with toast notification
   async queueMutation(mutation: Omit<QueuedMutation, 'id' | 'timestamp'>): Promise<void> {
     const queue = await this.getQueue();
     const newMutation: QueuedMutation = {
@@ -47,6 +48,12 @@ class OfflineSyncService {
     await set(QUEUE_KEY, queue);
     this.notifyListeners();
     console.log('Queued offline mutation:', newMutation);
+    
+    // Show toast notification
+    toast({
+      title: "Saved offline",
+      description: "Your change will sync when you're back online.",
+    });
   }
 
   // Get all queued mutations
@@ -119,10 +126,20 @@ class OfflineSyncService {
     this.isSyncing = false;
     this.notifyListeners();
 
+    // Show appropriate toast based on sync results
     if (failedMutations.length > 0) {
       console.warn(`${failedMutations.length} mutations failed to sync`);
-    } else {
+      toast({
+        title: "Some changes couldn't sync",
+        description: `${failedMutations.length} change${failedMutations.length !== 1 ? 's' : ''} will retry later.`,
+        variant: "destructive",
+      });
+    } else if (queue.length > 0) {
       console.log('All mutations synced successfully');
+      toast({
+        title: "Synced successfully",
+        description: `${queue.length} offline change${queue.length !== 1 ? 's' : ''} saved to server.`,
+      });
     }
   }
 
