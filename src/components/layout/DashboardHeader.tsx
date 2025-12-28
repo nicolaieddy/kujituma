@@ -20,7 +20,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center space-x-8">
           <h1 
-            className="text-xl font-bold leading-none text-primary cursor-pointer hover:text-primary/80 transition-colors duration-200 font-serif" 
+            className="text-xl font-bold leading-none text-primary cursor-pointer hover:text-primary/80 transition-colors duration-200 font-heading" 
             onClick={() => navigate('/community')}
           >
             Kujituma

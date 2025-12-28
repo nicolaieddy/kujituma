@@ -168,7 +168,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   return (
     <Card className="max-w-2xl mx-auto border-border hover:border-primary/20 transition-all shadow-soft">
       <CardHeader>
-        <CardTitle className="text-foreground text-center font-serif text-2xl">Edit Profile</CardTitle>
+        <CardTitle className="text-foreground text-center font-heading text-2xl">Edit Profile</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">

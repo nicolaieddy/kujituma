@@ -305,7 +305,7 @@ export const OrganizedGoalsView = ({
           {(filteredActiveGoals.length > 0 || currentYearCompletedGoals.length > 0 || !hasActiveFilters) && (
             <section>
               <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-xl font-semibold text-foreground font-serif">Active Goals</h2>
+                <h2 className="text-xl font-semibold text-foreground font-heading">Active Goals</h2>
                 <Badge variant="secondary" className="text-xs">
                   {filteredActiveGoals.length + currentYearCompletedGoals.length}
                 </Badge>
