@@ -26,6 +26,7 @@ interface Profile {
   tiktok_url?: string;
   twitter_url?: string;
   show_email?: boolean;
+  social_links_order?: string[];
   created_at: string;
   last_active_at?: string;
 }
@@ -119,7 +120,7 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
                 });
                 return Object.keys(socialLinks).length > 0 ? (
                   <div className="mt-3">
-                    <SocialLinksDisplay socialLinks={socialLinks} size="sm" />
+                    <SocialLinksDisplay socialLinks={socialLinks} linkOrder={profile.social_links_order} size="sm" />
                   </div>
                 ) : null;
               })()}
