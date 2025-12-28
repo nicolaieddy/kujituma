@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -21,6 +21,9 @@ import { HabitStats } from "@/services/habitStreaksService";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
+import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
+import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
+import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -38,6 +41,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [showShareConfirmation, setShowShareConfirmation] = useState(false);
   const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
   const [showHabitModal, setShowHabitModal] = useState(false);
+  const [hasFetchedSuggestions, setHasFetchedSuggestions] = useState(false);
   
   const {
     objectives,
@@ -54,6 +58,80 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     isDeletingAll,
     isLoading: weeklyDataLoading,
   } = useWeeklyProgress(weekStart);
+
+  // Get all objectives for suggestions
+  const { objectives: allObjectives } = useAllWeeklyObjectives();
+  
+  // AI Suggestions
+  const { suggestions, isSuggestionsLoading, generateSuggestions, clearSuggestions } = useWeeklyInsights();
+
+  // Generate suggestions when on current week with few objectives
+  const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
+  const isWeekCompleted = progressPost?.is_completed || false;
+  
+  useEffect(() => {
+    if (
+      isCurrentWeek && 
+      !isWeekCompleted && 
+      !hasFetchedSuggestions && 
+      !weeklyDataLoading &&
+      goals && 
+      goals.length > 0 &&
+      (objectives?.length || 0) < 3
+    ) {
+      setHasFetchedSuggestions(true);
+      
+      // Get incomplete objectives from previous weeks
+      const incompleteFromPast = allObjectives
+        .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+        .map(o => ({ text: o.text, weekStart: o.week_start }));
+      
+      // Get completed objectives for context
+      const completedRecently = allObjectives
+        .filter(o => o.is_completed)
+        .slice(0, 10)
+        .map(o => ({ text: o.text }));
+      
+      generateSuggestions({
+        incompleteObjectives: incompleteFromPast,
+        completedObjectives: completedRecently,
+        goals: goals.filter(g => g.status === 'in_progress' || g.status === 'not_started')
+          .map(g => ({ title: g.title, description: g.description || undefined })),
+      });
+    }
+  }, [isCurrentWeek, isWeekCompleted, hasFetchedSuggestions, weeklyDataLoading, goals, objectives, allObjectives, currentWeekStart, generateSuggestions]);
+
+  // Reset when week changes
+  useEffect(() => {
+    setHasFetchedSuggestions(false);
+    clearSuggestions();
+  }, [currentWeekStart, clearSuggestions]);
+
+  const handleAddSuggestion = async (text: string) => {
+    await createObjective({
+      text,
+      week_start: currentWeekStart,
+      goal_id: null,
+    });
+  };
+
+  const handleRefreshSuggestions = () => {
+    const incompleteFromPast = allObjectives
+      .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+      .map(o => ({ text: o.text, weekStart: o.week_start }));
+    
+    const completedRecently = allObjectives
+      .filter(o => o.is_completed)
+      .slice(0, 10)
+      .map(o => ({ text: o.text }));
+    
+    generateSuggestions({
+      incompleteObjectives: incompleteFromPast,
+      completedObjectives: completedRecently,
+      goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
+        .map(g => ({ title: g.title, description: g.description || undefined })),
+    });
+  };
 
   const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
     updateObjective(id, { goal_id: goalId });
@@ -282,10 +360,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const hasShared = !!feedPost;
-  const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   
   // Enforce immutability: once a week is completed (shared), it becomes read-only
-  const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
 
   const handleHabitClick = (habit: HabitStats) => {
@@ -324,6 +400,16 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           objectives={objectives || []}
           onHabitClick={handleHabitClick}
           onToggleObjective={handleToggleObjective}
+        />
+      )}
+
+      {/* AI Suggestions - Show when on current week with few objectives */}
+      {isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
+        <AISuggestionsCard
+          suggestions={suggestions}
+          isLoading={isSuggestionsLoading}
+          onAddSuggestion={handleAddSuggestion}
+          onRefresh={handleRefreshSuggestions}
         />
       )}
 
