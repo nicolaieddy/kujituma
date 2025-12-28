@@ -9,6 +9,7 @@ import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { ProfilePublicView } from "@/components/profile/ProfilePublicView";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
+import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Button } from "@/components/ui/button";
 import { Edit3, Eye } from "lucide-react";
 
@@ -191,8 +192,8 @@ const Profile = () => {
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <div className="flex items-center justify-center min-h-[80vh]">
-          <p className="text-foreground">Loading profile...</p>
+        <div className="container mx-auto px-4 py-8">
+          <ProfileSkeleton />
         </div>
       </div>
     );
