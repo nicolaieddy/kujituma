@@ -19,7 +19,8 @@ const Admin = () => {
     loading,
     isAdmin,
     togglePostVisibility,
-    deletePost
+    deletePost,
+    refreshMonthlyData
   } = useAdminData();
 
   const handleSignOut = async () => {
@@ -95,6 +96,7 @@ const Admin = () => {
               activeUsersThisWeek={analytics.activeUsersThisWeek}
               averagePostsPerUser={analytics.averagePostsPerUser}
               monthlyData={analytics.monthlyData}
+              onMonthRangeChange={refreshMonthlyData}
             />
             <UsersOverview users={users} />
           </TabsContent>
