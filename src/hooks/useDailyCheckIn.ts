@@ -11,6 +11,7 @@ export const useDailyCheckIn = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCached, setIsCached] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
 
   // Get today's date for caching
   const today = new Date().toISOString().split('T')[0];
@@ -25,6 +26,7 @@ export const useDailyCheckIn = () => {
           offlineDataService.cacheDailyCheckIn(data, today);
         }
         offlineDataService.updateLastSync();
+        setLastSync(new Date());
         setIsCached(false);
         return data;
       } catch (err) {
@@ -33,6 +35,8 @@ export const useDailyCheckIn = () => {
           const cached = await offlineDataService.getCachedDailyCheckIn(today);
           if (cached) {
             setIsCached(true);
+            const syncTime = await offlineDataService.getLastSync();
+            setLastSync(syncTime ? new Date(syncTime) : null);
             return cached;
           }
         }
@@ -120,6 +124,7 @@ export const useDailyCheckIn = () => {
     recentCheckIns,
     isLoading,
     isCached,
+    lastSync,
     hasCheckedInToday: !!todayCheckIn,
     submitCheckIn: checkInMutation.mutateAsync,
     isSubmitting: checkInMutation.isPending,
