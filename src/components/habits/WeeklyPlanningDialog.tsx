@@ -22,6 +22,7 @@ import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CalendarDays, Loader2, Sparkles } from "lucide-react";
+import { hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 
 interface WeeklyPlanningDialogProps {
@@ -52,6 +53,7 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   }, [planningSession]);
   
   const handleComplete = async () => {
+    hapticSuccess();
     await savePlanningSession({
       week_start: weekStart,
       last_week_reflection: lastWeekReflection,

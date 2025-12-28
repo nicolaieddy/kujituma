@@ -29,6 +29,7 @@ import { startOfWeek, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
 import { celebrateGoalComplete } from "@/utils/confetti";
+import { hapticSelection, hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 
 interface DailyCheckInDialogProps {
@@ -113,6 +114,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const prevCompletedRef = useRef<number>(0);
 
   const handleHabitToggle = (goalId: string, habitItemId: string) => {
+    hapticSelection();
     const today = new Date();
     toggleCompletion(goalId, habitItemId, today);
   };
@@ -164,6 +166,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   }, [habitItemsDueToday, todayIndex]);
   
   const handleSubmit = async () => {
+    hapticSuccess();
     await submitCheckIn({
       mood_rating: moodRating,
       energy_level: energyLevel,
