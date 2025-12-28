@@ -6,6 +6,11 @@ interface UsePullToRefreshOptions {
   enabled?: boolean
 }
 
+interface RefreshResult {
+  isFromCache: boolean;
+  timestamp: Date;
+}
+
 export const usePullToRefresh = ({ 
   onRefresh, 
   threshold = 80,
@@ -14,6 +19,8 @@ export const usePullToRefresh = ({
   const [isPulling, setIsPulling] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [pullDistance, setPullDistance] = useState(0)
+  const [lastRefresh, setLastRefresh] = useState<RefreshResult | null>(null)
+  const [showFeedback, setShowFeedback] = useState(false)
   const startY = useRef(0)
   const containerRef = useRef<HTMLDivElement>(null)
 
@@ -44,8 +51,14 @@ export const usePullToRefresh = ({
 
     if (pullDistance >= threshold) {
       setIsRefreshing(true)
+      const startTime = Date.now()
       try {
         await onRefresh()
+        const duration = Date.now() - startTime
+        // If refresh was very fast (<100ms), likely from cache
+        const isFromCache = duration < 100
+        setLastRefresh({ isFromCache, timestamp: new Date() })
+        setShowFeedback(true)
       } finally {
         setIsRefreshing(false)
       }
@@ -55,6 +68,10 @@ export const usePullToRefresh = ({
     setPullDistance(0)
     startY.current = 0
   }, [enabled, isPulling, pullDistance, threshold, onRefresh])
+
+  const hideFeedback = useCallback(() => {
+    setShowFeedback(false)
+  }, [])
 
   useEffect(() => {
     const container = containerRef.current
@@ -78,6 +95,9 @@ export const usePullToRefresh = ({
     isPulling,
     isRefreshing,
     progress,
-    pullDistance
+    pullDistance,
+    lastRefresh,
+    showFeedback,
+    hideFeedback
   }
 }
