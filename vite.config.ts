@@ -77,6 +77,37 @@ export default defineConfig(({ mode }) => ({
                   statuses: [0, 200]
                 }
               }
+            },
+            {
+              // Cache Supabase API responses with NetworkFirst strategy
+              urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
+              handler: 'NetworkFirst',
+              options: {
+                cacheName: 'supabase-api-cache',
+                expiration: {
+                  maxEntries: 100,
+                  maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                },
+                networkTimeoutSeconds: 10
+              }
+            },
+            {
+              // Cache Supabase storage/images
+              urlPattern: /^https:\/\/.*\.supabase\.co\/storage\/.*/i,
+              handler: 'CacheFirst',
+              options: {
+                cacheName: 'supabase-storage-cache',
+                expiration: {
+                  maxEntries: 50,
+                  maxAgeSeconds: 60 * 60 * 24 * 30 // 30 days
+                },
+                cacheableResponse: {
+                  statuses: [0, 200]
+                }
+              }
             }
           ]
         }

@@ -7,6 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { useEffect, useRef } from "react";
 import { celebrateStreakMilestone, getStreakMilestoneMessage } from "@/utils/confetti";
+import { offlineDataService } from "@/services/offlineDataService";
 
 export const useWeeklyObjectives = (currentWeekStart: string) => {
   const { user } = useAuth();
@@ -38,7 +39,22 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
 
   const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
-    queryFn: () => WeeklyProgressService.getWeeklyObjectives(currentWeekStart),
+    queryFn: async () => {
+      try {
+        const data = await WeeklyProgressService.getWeeklyObjectives(currentWeekStart);
+        // Cache for offline use
+        offlineDataService.cacheWeeklyObjectives(data, currentWeekStart);
+        offlineDataService.updateLastSync();
+        return data;
+      } catch (err) {
+        // If offline, try to get cached data
+        if (!navigator.onLine) {
+          const cached = await offlineDataService.getCachedWeeklyObjectives(currentWeekStart);
+          if (cached) return cached;
+        }
+        throw err;
+      }
+    },
     enabled: !!user && !!currentWeekStart,
     staleTime: 2 * 60 * 1000, // Consider data fresh for 2 minutes
     gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
