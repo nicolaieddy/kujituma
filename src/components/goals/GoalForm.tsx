@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { X, CalendarIcon, Plus, Trash2, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { X, CalendarIcon, Plus, Trash2, RefreshCw, Eye, EyeOff, Users } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal, RecurrenceFrequency, HabitItem } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
@@ -76,7 +76,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         start_date: initialData.start_date || '',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
-        is_public: initialData.is_public ?? true,
+        visibility: initialData.visibility ?? 'public',
         is_recurring: initialData.is_recurring ?? false,
         recurrence_frequency: initialData.recurrence_frequency || 'weekly',
         recurring_objective_text: initialData.recurring_objective_text || '',
@@ -90,7 +90,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       start_date: '',
       target_date: '',
       category: '',
-      is_public: true,
+      visibility: 'public',
       is_recurring: false,
       recurrence_frequency: 'weekly',
       recurring_objective_text: '',
@@ -122,7 +122,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         start_date: initialData.start_date || '',
         target_date: initialData.target_date || '',
         category: initialData.category || '',
-        is_public: initialData.is_public ?? true,
+        visibility: initialData.visibility ?? 'public',
         is_recurring: initialData.is_recurring ?? false,
         recurrence_frequency: initialData.recurrence_frequency || 'weekly',
         recurring_objective_text: initialData.recurring_objective_text || '',
@@ -136,7 +136,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         start_date: '',
         target_date: '',
         category: '',
-        is_public: true,
+        visibility: 'public',
         is_recurring: false,
         recurrence_frequency: 'weekly',
         recurring_objective_text: '',
@@ -179,7 +179,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       description: formData.description?.trim() || '',
       timeframe: 'Custom Date',
       category: formData.category === 'none' ? '' : (formData.category?.trim() || ''),
-      is_public: formData.is_public,
+      visibility: formData.visibility,
       is_recurring: formData.is_recurring,
       // Explicitly set to null if not recurring to clear any existing value
       recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : null,
@@ -612,28 +612,55 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
           <div className={`${isMobile ? 'p-4' : 'p-5'} bg-muted/50 rounded-lg border`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                {formData.is_public ? (
+                {formData.visibility === 'public' ? (
                   <Eye className="h-5 w-5 text-foreground" />
+                ) : formData.visibility === 'friends' ? (
+                  <Users className="h-5 w-5 text-foreground" />
                 ) : (
                   <EyeOff className="h-5 w-5 text-foreground" />
                 )}
                 <div>
-                  <Label htmlFor="is_public" className="font-medium">
-                    {formData.is_public ? 'Public Goal' : 'Private Goal'}
+                  <Label htmlFor="visibility" className="font-medium">
+                    Goal Visibility
                   </Label>
                   <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                    {formData.is_public 
+                    {formData.visibility === 'public' 
                       ? 'Visible on your public profile' 
-                      : 'Only visible to you'
+                      : formData.visibility === 'friends'
+                        ? 'Visible to friends only'
+                        : 'Only visible to you'
                     }
                   </p>
                 </div>
               </div>
-              <Switch
-                id="is_public"
-                checked={formData.is_public}
-                onCheckedChange={(checked) => setFormData({ ...formData, is_public: checked })}
-              />
+              <Select
+                value={formData.visibility}
+                onValueChange={(value: 'public' | 'friends' | 'private') => setFormData({ ...formData, visibility: value })}
+              >
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="public">
+                    <div className="flex items-center gap-2">
+                      <Eye className="h-4 w-4" />
+                      Public
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="friends">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Friends
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="private">
+                    <div className="flex items-center gap-2">
+                      <EyeOff className="h-4 w-4" />
+                      Private
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 

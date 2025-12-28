@@ -1,4 +1,6 @@
 
+export type GoalVisibility = 'public' | 'friends' | 'private';
+
 export interface HabitItem {
   id: string;
   text: string;
@@ -22,7 +24,7 @@ export interface Goal {
   completed_at: string | null;
   deprioritized_at: string | null;
   order_index: number;
-  is_public: boolean;
+  visibility: GoalVisibility;
   is_recurring: boolean;
   recurrence_frequency: RecurrenceFrequency | null;
   recurring_objective_text: string | null;
@@ -60,7 +62,7 @@ export interface CreateGoalData {
   start_date?: string;
   target_date?: string;
   category?: string;
-  is_public?: boolean;
+  visibility?: GoalVisibility;
   is_recurring?: boolean;
   recurrence_frequency?: RecurrenceFrequency;
   recurring_objective_text?: string;
@@ -77,7 +79,7 @@ export interface UpdateGoalData {
   category?: string;
   notes?: string;
   order_index?: number;
-  is_public?: boolean;
+  visibility?: GoalVisibility;
   is_recurring?: boolean;
   recurrence_frequency?: RecurrenceFrequency;
   recurring_objective_text?: string;
