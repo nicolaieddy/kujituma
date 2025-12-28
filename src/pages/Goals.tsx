@@ -28,32 +28,22 @@ const Goals = () => {
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
   const { lastSync, isOffline } = useOfflineStatus();
-  const { 
+  const {
     activeGoals,
     deprioritizedGoals,
     completedGoalsByYear,
     previousYearUnfinishedGoals,
-    isLoading: goalsLoading, 
+    isLoading: goalsLoading,
     isCached: goalsCached,
-    createGoal, 
-    updateGoal, 
+    createGoal,
+    updateGoal,
     deleteGoal,
     deprioritizeGoal,
     reprioritizeGoal,
     togglePauseGoal,
-    reorderGoals
+    reorderGoals,
   } = useGoals();
-  const { objectives, createObjective, updateObjective, deleteObjective, isLoading: objectivesLoading } = useAllWeeklyObjectives();
-  const { habitStats } = useHabitStats();
-  
-  // Create a map of goal IDs to current streaks for quick lookup
-  const habitStreaks = useMemo(() => {
-    const streakMap: Record<string, number> = {};
-    habitStats.forEach(stat => {
-      streakMap[stat.goal.id] = stat.currentStreak;
-    });
-    return streakMap;
-  }, [habitStats]);
+
   const [showForm, setShowForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
@@ -63,6 +53,22 @@ const Goals = () => {
   );
   const [activeTab, setActiveTab] = useState("weekly");
   const [createWithRecurring, setCreateWithRecurring] = useState(false);
+
+  // Only load these when actually needed (big perf win on initial Weekly tab load)
+  const { objectives, createObjective, updateObjective, deleteObjective } = useAllWeeklyObjectives({
+    enabled: activeTab === "longterm" && showDetailModal,
+  });
+  const { habitStats } = useHabitStats({ enabled: activeTab === "longterm" });
+
+  // Create a map of goal IDs to current streaks for quick lookup
+  const habitStreaks = useMemo(() => {
+    const streakMap: Record<string, number> = {};
+    habitStats.forEach((stat) => {
+      streakMap[stat.goal.id] = stat.currentStreak;
+    });
+    return streakMap;
+  }, [habitStats]);
+
 
   const handleSignOut = async () => {
     try {
