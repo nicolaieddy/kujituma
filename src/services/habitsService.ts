@@ -70,6 +70,21 @@ export class HabitsService {
     if (error) throw error;
     return (data || []) as DailyCheckIn[];
   }
+
+  static async getAllDailyCheckIns(limit: number = 30): Promise<DailyCheckIn[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return [];
+    
+    const { data, error } = await supabase
+      .from('daily_check_ins')
+      .select('*')
+      .eq('user_id', user.user.id)
+      .order('check_in_date', { ascending: false })
+      .limit(limit);
+    
+    if (error) throw error;
+    return (data || []) as DailyCheckIn[];
+  }
   
   // ============ STREAKS ============
   
@@ -297,6 +312,20 @@ export class HabitsService {
   }
   
   // ============ WEEKLY PLANNING SESSIONS ============
+
+  static async getAllWeeklyPlanningSessions(): Promise<WeeklyPlanningSession[]> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) return [];
+    
+    const { data, error } = await supabase
+      .from('weekly_planning_sessions')
+      .select('*')
+      .eq('user_id', user.user.id)
+      .order('week_start', { ascending: false });
+    
+    if (error) throw error;
+    return (data || []) as WeeklyPlanningSession[];
+  }
   
   static async getWeeklyPlanningSession(weekStart: string): Promise<WeeklyPlanningSession | null> {
     const { data: user } = await supabase.auth.getUser();

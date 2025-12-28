@@ -1,10 +1,19 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronLeft, ChevronRight, ClipboardList } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, ClipboardList, Sun, CalendarDays, CheckCircle } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { StreakCounter } from "@/components/habits/StreakCounter";
 import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
+import { useRitualsTrigger } from "@/contexts/RitualsContext";
+import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
+import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface WeekHeaderProps {
   weekNumber: number;
@@ -26,6 +35,15 @@ export const WeekHeader = ({
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   
   const { openQuarterlyHistory } = useQuarterlyReviewTrigger();
+  const { 
+    openWeeklyPlanning, 
+    openWeeklyPlanningHistory,
+    openDailyCheckIn,
+    openDailyCheckInHistory 
+  } = useRitualsTrigger();
+  
+  const { hasCompletedPlanning } = useWeeklyPlanning(currentWeekStart);
+  const { hasCheckedInToday } = useDailyCheckIn();
   
   return (
     <Card className="border-border">
@@ -59,7 +77,70 @@ export const WeekHeader = ({
               <p className="text-muted-foreground mt-1">{weekRange}</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            {/* Daily Check-in Button */}
+            {isCurrentWeek && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={hasCheckedInToday ? openDailyCheckInHistory : openDailyCheckIn}
+                      className={`text-muted-foreground hover:text-foreground relative ${
+                        !hasCheckedInToday ? 'animate-pulse' : ''
+                      }`}
+                    >
+                      <Sun className="h-5 w-5" />
+                      {hasCheckedInToday && (
+                        <CheckCircle className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{hasCheckedInToday ? 'View Check-in History' : 'Daily Check-in'}</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            )}
+
+            {/* Weekly Planning Button */}
+            {isCurrentWeek && (
+              <DropdownMenu>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`text-muted-foreground hover:text-foreground relative ${
+                            !hasCompletedPlanning ? 'animate-pulse' : ''
+                          }`}
+                        >
+                          <CalendarDays className="h-5 w-5" />
+                          {hasCompletedPlanning && (
+                            <CheckCircle className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
+                          )}
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Weekly Planning</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={openWeeklyPlanning}>
+                    {hasCompletedPlanning ? 'View This Week\'s Plan' : 'Start Planning'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={openWeeklyPlanningHistory}>
+                    Planning History
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {/* Quarterly Review Button */}
             {isCurrentWeek && (
               <TooltipProvider>
