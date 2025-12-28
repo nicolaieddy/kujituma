@@ -1,6 +1,8 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Navigate } from "react-router-dom";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { MainNavigation } from "@/components/layout/MainNavigation";
+import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DailyCheckInsTab } from "@/components/rituals/DailyCheckInsTab";
 import { WeeklyPlanningTab } from "@/components/rituals/WeeklyPlanningTab";
@@ -9,6 +11,7 @@ import { Sun, CalendarDays, ClipboardList } from "lucide-react";
 
 const Rituals = () => {
   const { user, loading } = useAuth();
+  const { isOffline } = useOfflineStatus();
 
   if (loading) {
     return (
@@ -20,6 +23,18 @@ const Rituals = () => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (isOffline) {
+    return (
+      <div className="min-h-screen bg-background">
+        <MainNavigation />
+        <OfflineFallback 
+          title="Rituals unavailable offline"
+          description="Your rituals data requires an internet connection to load. Please reconnect to track your check-ins and reviews."
+        />
+      </div>
+    );
   }
 
   return (
