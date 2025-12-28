@@ -78,165 +78,172 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
-      <Card className="glass-card shadow-elegant hover:shadow-lift transition-all">
+      <Card className="glass-card shadow-elegant hover:shadow-lift transition-all overflow-hidden">
+        {/* Unified Profile Header */}
+        <div className="bg-gradient-to-b from-primary/5 to-transparent pt-8 pb-6 px-8">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+              <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
+                <User className="h-12 w-12" />
+              </AvatarFallback>
+            </Avatar>
+            
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{profile.full_name}</h1>
+              {profile.show_email && profile.email && (
+                <p className="text-muted-foreground">{profile.email}</p>
+              )}
+              
+              {/* Social links inline */}
+              {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
+                <div className="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+                  {profile.linkedin_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => window.open(profile.linkedin_url, '_blank')}
+                    >
+                      <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {profile.instagram_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => window.open(profile.instagram_url, '_blank')}
+                    >
+                      <img src={instagramIcon} alt="Instagram" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {profile.tiktok_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => window.open(profile.tiktok_url, '_blank')}
+                    >
+                      <img src={tiktokIcon} alt="TikTok" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {profile.twitter_url && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => window.open(profile.twitter_url, '_blank')}
+                    >
+                      <img src={xIcon} alt="X" className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
 
-        <CardContent className="p-8">
-          {/* Friendship Actions - for non-own profiles */}
-          {!isOwnProfile && user && (
-            <div className="flex justify-center mb-8">
-              {is_friend ? (
-                <Button
-                  variant="outline"
-                  className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                  onClick={() => setShowUnfriendDialog(true)}
-                >
-                  <UserCheck className="h-4 w-4 mr-2" />
-                  Friends
-                </Button>
-              ) : friend_request_status === 'sent' ? (
-                <Button
-                  variant="outline"
-                  className="bg-accent/50 border-accent text-accent-foreground"
-                  disabled
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Request Sent
-                </Button>
-              ) : friend_request_status === 'received' ? (
-                <div className="flex gap-2">
+            {/* Friendship Actions */}
+            {!isOwnProfile && user && (
+              <div className="flex-shrink-0">
+                {is_friend ? (
                   <Button
                     variant="outline"
                     className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                    onClick={() => handleRespondToRequest('accepted')}
+                    onClick={() => setShowUnfriendDialog(true)}
                   >
                     <UserCheck className="h-4 w-4 mr-2" />
-                    Accept
+                    Friends
                   </Button>
+                ) : friend_request_status === 'sent' ? (
                   <Button
                     variant="outline"
-                    className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
-                    onClick={() => handleRespondToRequest('rejected')}
+                    className="bg-accent/50 border-accent text-accent-foreground"
+                    disabled
                   >
-                    <UserMinus className="h-4 w-4 mr-2" />
-                    Decline
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Request Sent
                   </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
-                  onClick={handleSendFriendRequest}
-                >
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add Friend
-                </Button>
-              )}
-            </div>
-          )}
+                ) : friend_request_status === 'received' ? (
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
+                      onClick={() => handleRespondToRequest('accepted')}
+                    >
+                      <UserCheck className="h-4 w-4 mr-1" />
+                      Accept
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
+                      onClick={() => handleRespondToRequest('rejected')}
+                    >
+                      <UserMinus className="h-4 w-4 mr-1" />
+                      Decline
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
+                    onClick={handleSendFriendRequest}
+                  >
+                    <UserPlus className="h-4 w-4 mr-2" />
+                    Add Friend
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <CardContent className="p-8 pt-4">
 
           {/* About Me Section */}
           {profile.about_me && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-foreground mb-4">About Me</h2>
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-foreground mb-2">About</h2>
               <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
                 {profile.about_me}
               </p>
             </div>
           )}
 
-          {/* Social Media Links */}
-          {(profile.linkedin_url || profile.instagram_url || profile.tiktok_url || profile.twitter_url) && (
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-foreground mb-4">Connect</h2>
-              <div className="flex flex-wrap gap-3">
-                {profile.linkedin_url && (
-                  <Button
-                    variant="outline"
-                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary hover:shadow-md transition-all"
-                    onClick={() => window.open(profile.linkedin_url, '_blank')}
-                  >
-                    <img src={linkedinIcon} alt="LinkedIn" className="h-4 w-4 mr-2 opacity-70" />
-                    LinkedIn
-                  </Button>
-                )}
-                {profile.instagram_url && (
-                  <Button
-                    variant="outline"
-                    className="bg-accent/50 border-accent text-accent-foreground hover:bg-accent hover:shadow-md transition-all"
-                    onClick={() => window.open(profile.instagram_url, '_blank')}
-                  >
-                    <img src={instagramIcon} alt="Instagram" className="h-4 w-4 mr-2 opacity-70" />
-                    Instagram
-                  </Button>
-                )}
-                {profile.tiktok_url && (
-                  <Button
-                    variant="outline"
-                    className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary hover:shadow-md transition-all"
-                    onClick={() => window.open(profile.tiktok_url, '_blank')}
-                  >
-                    <img src={tiktokIcon} alt="TikTok" className="h-4 w-4 mr-2 opacity-70" />
-                    TikTok
-                  </Button>
-                )}
-                {profile.twitter_url && (
-                  <Button
-                    variant="outline"
-                    className="bg-muted border-border text-foreground hover:bg-muted/80 hover:shadow-md transition-all"
-                    onClick={() => window.open(profile.twitter_url, '_blank')}
-                  >
-                    <img src={xIcon} alt="X" className="h-4 w-4 mr-2 opacity-70" />
-                    X
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-
           {/* Member Info */}
-          <div className="border-t border-border pt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-foreground">Member Information</h2>
-              {isOwnProfile && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    const newShowEmail = !profile.show_email;
-                    supabase
-                      .from('profiles')
-                      .update({ show_email: newShowEmail })
-                      .eq('id', profile.id)
-                      .then(() => {
-                        window.location.reload();
-                      });
-                  }}
-                  className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all text-xs"
-                >
-                  {profile.show_email ? 'Hide Email' : 'Show Email'}
-                </Button>
-              )}
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2 text-primary" />
+              <span>Joined {formatDate(profile.created_at)}</span>
             </div>
-            <div className="space-y-3">
-              <div className="flex items-center text-muted-foreground">
-                <Calendar className="h-5 w-5 mr-3 text-primary" />
-                <span>Member since {formatDate(profile.created_at)}</span>
+            
+            {profile.last_active_at && (
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-primary" />
+                <span>Active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
               </div>
-              
-              {profile.show_email && profile.email && (
-                <div className="flex items-center text-muted-foreground">
-                  <User className="h-5 w-5 mr-3 text-primary" />
-                  <span>{profile.email}</span>
-                </div>
-              )}
-              
-              {profile.last_active_at && (
-                <div className="flex items-center text-muted-foreground">
-                  <Clock className="h-5 w-5 mr-3 text-primary" />
-                  <span>Last active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
-                </div>
-              )}
-            </div>
+            )}
+            
+            {isOwnProfile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const newShowEmail = !profile.show_email;
+                  supabase
+                    .from('profiles')
+                    .update({ show_email: newShowEmail })
+                    .eq('id', profile.id)
+                    .then(() => {
+                      window.location.reload();
+                    });
+                }}
+                className="text-xs h-auto py-1 px-2"
+              >
+                {profile.show_email ? 'Hide Email' : 'Show Email'}
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>
