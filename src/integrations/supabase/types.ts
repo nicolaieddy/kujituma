@@ -743,16 +743,27 @@ export type Database = {
           cover_photo_url: string | null
           created_at: string
           email: string
+          email_contact: string | null
           full_name: string
+          github_url: string | null
           google_id: string | null
           id: string
           instagram_url: string | null
           last_active_at: string | null
           linkedin_url: string | null
+          medium_url: string | null
+          phone_number: string | null
           show_email: boolean
+          signal_url: string | null
+          snapchat_url: string | null
+          substack_url: string | null
+          telegram_url: string | null
           tiktok_url: string | null
           twitter_url: string | null
           updated_at: string
+          website_url: string | null
+          whatsapp_url: string | null
+          youtube_url: string | null
         }
         Insert: {
           about_me?: string | null
@@ -762,16 +773,27 @@ export type Database = {
           cover_photo_url?: string | null
           created_at?: string
           email: string
+          email_contact?: string | null
           full_name: string
+          github_url?: string | null
           google_id?: string | null
           id: string
           instagram_url?: string | null
           last_active_at?: string | null
           linkedin_url?: string | null
+          medium_url?: string | null
+          phone_number?: string | null
           show_email?: boolean
+          signal_url?: string | null
+          snapchat_url?: string | null
+          substack_url?: string | null
+          telegram_url?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string
+          website_url?: string | null
+          whatsapp_url?: string | null
+          youtube_url?: string | null
         }
         Update: {
           about_me?: string | null
@@ -781,16 +803,27 @@ export type Database = {
           cover_photo_url?: string | null
           created_at?: string
           email?: string
+          email_contact?: string | null
           full_name?: string
+          github_url?: string | null
           google_id?: string | null
           id?: string
           instagram_url?: string | null
           last_active_at?: string | null
           linkedin_url?: string | null
+          medium_url?: string | null
+          phone_number?: string | null
           show_email?: boolean
+          signal_url?: string | null
+          snapchat_url?: string | null
+          substack_url?: string | null
+          telegram_url?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
           updated_at?: string
+          website_url?: string | null
+          whatsapp_url?: string | null
+          youtube_url?: string | null
         }
         Relationships: []
       }
