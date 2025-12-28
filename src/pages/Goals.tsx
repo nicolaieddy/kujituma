@@ -261,14 +261,14 @@ const Goals = () => {
               />
             </TabsContent>
 
-            <TabsContent value="habits" className="mt-6">
+            <TabsContent value="habits" className="mt-6" forceMount>
               <HabitsView 
                 onCreateGoal={handleCreateHabit} 
                 onEditGoal={handleEditGoal}
               />
             </TabsContent>
             
-            <TabsContent value="longterm" className="mt-6">
+            <TabsContent value="longterm" className="mt-6" forceMount>
               {showForm ? (
                 <div className="mb-8">
                   <GoalForm

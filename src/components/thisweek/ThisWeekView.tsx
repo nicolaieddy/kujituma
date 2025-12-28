@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -42,6 +42,17 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [showHabitModal, setShowHabitModal] = useState(false);
   const [hasFetchedSuggestions, setHasFetchedSuggestions] = useState(false);
   
+  // Track mounted state to prevent state updates after unmount
+  const mountedRef = useRef(true);
+
+  // Reset mounted ref on mount/unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+  
   const {
     objectives,
     progressPost,
@@ -62,51 +73,67 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { objectives: allObjectives } = useAllWeeklyObjectives();
   
   // AI Suggestions
-  const { suggestions, isSuggestionsLoading, generateSuggestions, clearSuggestions } = useWeeklyInsights();
+  const { suggestions, isSuggestionsLoading, generateSuggestions, clearSuggestions, cleanup: cleanupInsights } = useWeeklyInsights();
+
+  // Cleanup insights on unmount
+  useEffect(() => {
+    return () => {
+      cleanupInsights();
+    };
+  }, [cleanupInsights]);
 
   // Generate suggestions when on current week with few objectives
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   const isWeekCompleted = progressPost?.is_completed || false;
   
   useEffect(() => {
-    try {
-      if (
-        isCurrentWeek && 
-        !isWeekCompleted && 
-        !hasFetchedSuggestions && 
-        !weeklyDataLoading &&
-        goals && 
-        goals.length > 0 &&
-        (objectives?.length || 0) < 3
-      ) {
-        setHasFetchedSuggestions(true);
-        
-        // Get incomplete objectives from previous weeks
-        const incompleteFromPast = (allObjectives || [])
-          .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
-          .map(o => ({ text: o.text, weekStart: o.week_start }));
-        
-        // Get completed objectives for context
-        const completedRecently = (allObjectives || [])
-          .filter(o => o.is_completed)
-          .slice(0, 10)
-          .map(o => ({ text: o.text }));
-        
-        generateSuggestions({
-          incompleteObjectives: incompleteFromPast,
-          completedObjectives: completedRecently,
-          goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
-            .map(g => ({ title: g.title, description: g.description || undefined })),
-        }).catch(err => console.error('[ThisWeekView] Failed to generate suggestions:', err));
-      }
-    } catch (err) {
-      console.error('[ThisWeekView] Error in suggestions effect:', err);
+    // Don't run if already fetched or component unmounted
+    if (hasFetchedSuggestions || !mountedRef.current) return;
+    
+    // Check conditions
+    if (
+      !isCurrentWeek || 
+      isWeekCompleted || 
+      weeklyDataLoading ||
+      !goals || 
+      goals.length === 0 ||
+      (objectives?.length || 0) >= 3
+    ) {
+      return;
     }
+
+    // Set fetched immediately to prevent re-runs
+    setHasFetchedSuggestions(true);
+    
+    // Get incomplete objectives from previous weeks
+    const incompleteFromPast = (allObjectives || [])
+      .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+      .map(o => ({ text: o.text, weekStart: o.week_start }));
+    
+    // Get completed objectives for context
+    const completedRecently = (allObjectives || [])
+      .filter(o => o.is_completed)
+      .slice(0, 10)
+      .map(o => ({ text: o.text }));
+    
+    generateSuggestions({
+      incompleteObjectives: incompleteFromPast,
+      completedObjectives: completedRecently,
+      goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
+        .map(g => ({ title: g.title, description: g.description || undefined })),
+    }).catch(err => {
+      // Only log if still mounted
+      if (mountedRef.current) {
+        console.error('[ThisWeekView] Failed to generate suggestions:', err);
+      }
+    });
   }, [isCurrentWeek, isWeekCompleted, hasFetchedSuggestions, weeklyDataLoading, goals, objectives, allObjectives, currentWeekStart, generateSuggestions]);
 
   // Reset when week changes
   useEffect(() => {
-    setHasFetchedSuggestions(false);
+    if (mountedRef.current) {
+      setHasFetchedSuggestions(false);
+    }
     clearSuggestions();
   }, [currentWeekStart, clearSuggestions]);
 
