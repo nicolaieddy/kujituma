@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
@@ -44,6 +44,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [uploading, setUploading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [formData, setFormData] = useState({
     full_name: profile.full_name || '',
     about_me: profile.about_me || '',
@@ -232,10 +233,116 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     }
   };
 
+  // Create a preview profile object from form data
+  const previewProfile = {
+    id: profile.id,
+    email: profile.email,
+    full_name: formData.full_name,
+    avatar_url: formData.avatar_url,
+    cover_photo_url: formData.cover_photo_url,
+    cover_photo_position: formData.cover_photo_position,
+    about_me: formData.about_me,
+    linkedin_url: formData.linkedin_url,
+    instagram_url: formData.instagram_url,
+    tiktok_url: formData.tiktok_url,
+    twitter_url: formData.twitter_url,
+    show_email: formData.show_email,
+    created_at: profile.created_at,
+    last_active_at: profile.last_active_at,
+  };
+
+  if (isPreviewMode) {
+    return (
+      <div className="space-y-4">
+        <div className="max-w-4xl mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Eye className="h-4 w-4" />
+            <span>Preview: How others see your profile</span>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsPreviewMode(false)}
+            >
+              <Edit3 className="h-4 w-4 mr-2" />
+              Back to Edit
+            </Button>
+            <Button
+              size="sm"
+              disabled={loading}
+              onClick={handleSubmit}
+              className="gradient-primary"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {loading ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Inline preview using the same styles as ProfilePublicView */}
+        <div className="max-w-4xl mx-auto">
+          <Card className="glass-card shadow-elegant overflow-hidden">
+            {/* Cover Photo */}
+            <div 
+              className="h-32 sm:h-40 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 relative"
+              style={previewProfile.cover_photo_url ? {
+                backgroundImage: `url(${previewProfile.cover_photo_url})`,
+                backgroundSize: 'cover',
+                backgroundPosition: `center ${previewProfile.cover_photo_position ?? 50}%`
+              } : undefined}
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+            </div>
+            
+            {/* Profile Header */}
+            <div className="px-6 sm:px-8 pb-6 -mt-16 relative z-10">
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+                  <AvatarImage src={previewProfile.avatar_url} alt={previewProfile.full_name} />
+                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
+                    <User className="h-12 w-12" />
+                  </AvatarFallback>
+                </Avatar>
+                
+                <div className="flex-1 text-center sm:text-left">
+                  <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{previewProfile.full_name}</h1>
+                  {previewProfile.show_email && previewProfile.email && (
+                    <p className="text-muted-foreground">{previewProfile.email}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <CardContent className="p-6 sm:p-8 pt-0">
+              {previewProfile.about_me && (
+                <div className="mb-6">
+                  <h2 className="text-lg font-semibold text-foreground mb-2">About</h2>
+                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                    {previewProfile.about_me}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <Card className="max-w-2xl mx-auto border-border hover:border-primary/20 transition-all shadow-soft">
-      <CardHeader>
-        <CardTitle className="text-foreground text-center font-heading text-2xl">Edit Profile</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-foreground font-heading text-2xl">Edit Profile</CardTitle>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => setIsPreviewMode(true)}
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          Preview
+        </Button>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
