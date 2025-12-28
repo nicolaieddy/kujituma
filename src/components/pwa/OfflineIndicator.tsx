@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { WifiOff, Wifi, Database, RefreshCw, CloudOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { offlineDataService } from '@/services/offlineDataService';
 import { offlineSyncService } from '@/services/offlineSyncService';
+import { toast } from '@/hooks/use-toast';
 
 export const OfflineIndicator = () => {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -10,11 +11,21 @@ export const OfflineIndicator = () => {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
     const handleOnline = async () => {
       setIsOffline(false);
       setIsSyncing(true);
+      
+      // Show toast when coming back online
+      toast({
+        title: "You're back online",
+        description: pendingCount > 0 
+          ? `Syncing ${pendingCount} pending change${pendingCount !== 1 ? 's' : ''}...`
+          : "Connection restored",
+        duration: 3000,
+      });
       
       // Trigger sync
       await offlineSyncService.processQueue();
@@ -32,6 +43,13 @@ export const OfflineIndicator = () => {
     const handleOffline = () => {
       setIsOffline(true);
       setShowIndicator(true);
+      
+      // Show toast when going offline
+      toast({
+        title: "You're offline",
+        description: "Some features may be limited. Changes will sync when you reconnect.",
+        duration: 5000,
+      });
     };
 
     window.addEventListener('online', handleOnline);
@@ -44,10 +62,11 @@ export const OfflineIndicator = () => {
       setIsSyncing(offlineSyncService.syncing);
     });
 
-    // Set initial state
-    if (!navigator.onLine) {
+    // Set initial state (no toast on initial load)
+    if (!navigator.onLine && !hasInitialized.current) {
       setShowIndicator(true);
     }
+    hasInitialized.current = true;
 
     // Get initial values
     offlineDataService.getLastSync().then((timestamp) => {
@@ -60,7 +79,7 @@ export const OfflineIndicator = () => {
       window.removeEventListener('offline', handleOffline);
       unsubscribe();
     };
-  }, []);
+  }, [pendingCount]);
 
   if (!showIndicator && pendingCount === 0) return null;
 
