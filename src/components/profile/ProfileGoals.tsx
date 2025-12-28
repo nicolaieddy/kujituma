@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Goal, GoalStatus } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
-import { Clock, Play, CheckCircle, Target, Calendar } from "lucide-react";
+import { Clock, Play, CheckCircle, Target, Calendar, EyeOff } from "lucide-react";
 import { formatRelativeTime } from "@/utils/dateUtils";
 
 interface ProfileGoalsProps {
@@ -64,6 +64,9 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
     ? goals 
     : goals.filter(goal => goal.is_public);
 
+  // Count hidden private goals
+  const hiddenGoalsCount = goals.filter(goal => !goal.is_public).length;
+
   const goalsByStatus = {
     not_started: visibleGoals.filter(goal => goal.status === 'not_started'),
     in_progress: visibleGoals.filter(goal => goal.status === 'in_progress'),
@@ -109,9 +112,17 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
   return (
     <Card className="border-border">
       <CardHeader>
-        <CardTitle className="text-foreground flex items-center gap-2">
-          <Target className="h-5 w-5" />
-          Goals
+        <CardTitle className="text-foreground flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Target className="h-5 w-5" />
+            Goals
+          </div>
+          {!showPrivateGoals && hiddenGoalsCount > 0 && (
+            <div className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
+              <EyeOff className="h-3.5 w-3.5" />
+              <span>{hiddenGoalsCount} private {hiddenGoalsCount === 1 ? 'goal' : 'goals'} hidden</span>
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>
