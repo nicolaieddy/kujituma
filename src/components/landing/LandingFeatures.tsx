@@ -5,7 +5,7 @@ export const LandingFeatures = () => {
     <div className="py-8 px-4 mt-4">
       {/* Feature Grid */}
       <section className="max-w-3xl mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+        <div className="flex flex-col gap-5">
           <FeatureItem 
             icon={Target}
             title="Plan"
