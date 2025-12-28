@@ -6,7 +6,7 @@
 
 @layer base {
   :root {
-    /* Refined Green Theme - Better Contrast & Cohesion */
+    /* Mountain Teal Theme - Calm Focus & Professional */
     --background: 0 0% 100%;
     --foreground: 0 0% 9%;
 
@@ -16,8 +16,8 @@
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 9%;
 
-    --primary: 158 64% 28%;
-    --primary-foreground: 0 0% 100%;
+    --primary: 158 65% 22%;
+    --primary-foreground: 0 0% 98%;
 
     --secondary: 158 15% 95%;
     --secondary-foreground: 0 0% 9%;
@@ -33,23 +33,23 @@
 
     --border: 158 10% 85%;
     --input: 158 10% 88%;
-    --ring: 158 64% 28%;
+    --ring: 158 65% 22%;
 
     --radius: 0.5rem;
 
     /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(158, 64%, 28%) 0%, hsl(158, 64%, 38%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(158, 65%, 22%) 0%, hsl(158, 65%, 32%) 100%);
     --gradient-accent: linear-gradient(135deg, hsl(158, 15%, 95%) 0%, hsl(0, 0%, 100%) 100%);
     --gradient-glass: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 9%;
-    --sidebar-primary: 158 64% 28%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 158 65% 22%;
+    --sidebar-primary-foreground: 0 0% 98%;
     --sidebar-accent: 158 15% 95%;
     --sidebar-accent-foreground: 0 0% 9%;
     --sidebar-border: 158 10% 85%;
-    --sidebar-ring: 158 64% 28%;
+    --sidebar-ring: 158 65% 22%;
   }
 
 }
