@@ -11,8 +11,14 @@ const QuarterlyReviewContext = createContext<QuarterlyReviewContextType | null>(
 
 export const useQuarterlyReviewTrigger = () => {
   const context = useContext(QuarterlyReviewContext);
+  // Return safe no-op defaults if not in provider (prevents crashes during rapid tab switching)
   if (!context) {
-    throw new Error("useQuarterlyReviewTrigger must be used within QuarterlyReviewProvider");
+    return {
+      openQuarterlyReview: () => {},
+      openQuarterlyHistory: () => {},
+      isHistoryOpen: false,
+      setHistoryOpen: () => {},
+    };
   }
   return context;
 };

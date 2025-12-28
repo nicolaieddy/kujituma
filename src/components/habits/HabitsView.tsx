@@ -55,6 +55,88 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   const [scheduledSort, setScheduledSort] = useState<'date' | 'alpha' | 'frequency'>('date');
   const [filters, setFilters] = useState<HabitFilters>(initialFilters);
 
+  // ALL useMemo hooks MUST be called before any early returns (React hooks rule)
+  const availableCategories = useMemo(() => {
+    const allHabits = [...habitStats.map(h => h.goal), ...futureHabits];
+    const categories = allHabits
+      .map(g => g.category)
+      .filter((c): c is string => !!c && c.trim() !== '');
+    return [...new Set(categories)].sort();
+  }, [habitStats, futureHabits]);
+
+  const filteredHabitStats = useMemo(() => {
+    return habitStats.filter((stats: HabitStats) => {
+      const goal = stats.goal;
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          goal.title.toLowerCase().includes(searchLower) ||
+          goal.description?.toLowerCase().includes(searchLower) ||
+          goal.category?.toLowerCase().includes(searchLower) ||
+          goal.recurring_objective_text?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+      // Frequency filter
+      if (filters.frequencies.length > 0) {
+        if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
+          return false;
+        }
+      }
+      // Category filter
+      if (filters.categories.length > 0) {
+        if (!goal.category || !filters.categories.includes(goal.category)) {
+          return false;
+        }
+      }
+      // Status filters
+      if (filters.showPausedOnly && !goal.is_paused) return false;
+      if (filters.showActiveOnly && goal.is_paused) return false;
+      return true;
+    });
+  }, [habitStats, filters]);
+
+  const filteredFutureHabits = useMemo(() => {
+    return futureHabits.filter((goal: Goal) => {
+      // Search filter
+      if (filters.search) {
+        const searchLower = filters.search.toLowerCase();
+        const matchesSearch = 
+          goal.title.toLowerCase().includes(searchLower) ||
+          goal.description?.toLowerCase().includes(searchLower) ||
+          goal.category?.toLowerCase().includes(searchLower);
+        if (!matchesSearch) return false;
+      }
+      // Frequency filter
+      if (filters.frequencies.length > 0) {
+        if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
+          return false;
+        }
+      }
+      // Category filter
+      if (filters.categories.length > 0) {
+        if (!goal.category || !filters.categories.includes(goal.category)) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [futureHabits, filters]);
+
+  // Derived values (not hooks, so can be computed after useMemo)
+  const activeHabitsList = filteredHabitStats.filter(h => 
+    (h.goal.status === 'not_started' || h.goal.status === 'in_progress') && !h.goal.is_paused
+  );
+  const pausedHabitsList = filteredHabitStats.filter(h => 
+    h.goal.is_paused && h.goal.status !== 'completed' && h.goal.status !== 'deprioritized'
+  );
+  const inactiveHabitsList = filteredHabitStats.filter(h => 
+    h.goal.status === 'completed' || h.goal.status === 'deprioritized'
+  );
+  const hasActiveFilters = filters.search || filters.frequencies.length > 0 || 
+    filters.categories.length > 0 || filters.showPausedOnly || filters.showActiveOnly;
+  const totalFiltered = filteredHabitStats.length + filteredFutureHabits.length;
+
   const handleHabitClick = (stats: HabitStats) => {
     setSelectedHabit(stats);
     setShowDetailModal(true);
@@ -79,11 +161,24 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
     if (goalToDelete) {
       deleteGoal(goalToDelete.id);
       setGoalToDelete(null);
-      // Refetch after a short delay to let the mutation complete
       setTimeout(() => refetch(), 500);
     }
   };
 
+  const getFrequencyLabel = (frequency: string | null | undefined): string => {
+    const labels: Record<string, string> = {
+      daily: 'Daily',
+      weekdays: 'Weekdays',
+      weekly: 'Weekly',
+      biweekly: 'Bi-weekly',
+      monthly: 'Monthly',
+      monthly_last_week: 'Monthly (last week)',
+      quarterly: 'Quarterly'
+    };
+    return labels[frequency || ''] || 'Recurring';
+  };
+
+  // Now safe to have early returns - all hooks are already called
   if (isLoading) {
     return (
       <div className="text-center text-muted-foreground py-8">
@@ -120,120 +215,6 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
       </div>
     );
   }
-
-  const getFrequencyLabel = (frequency: string | null | undefined): string => {
-    const labels: Record<string, string> = {
-      daily: 'Daily',
-      weekdays: 'Weekdays',
-      weekly: 'Weekly',
-      biweekly: 'Bi-weekly',
-      monthly: 'Monthly',
-      monthly_last_week: 'Monthly (last week)',
-      quarterly: 'Quarterly'
-    };
-    return labels[frequency || ''] || 'Recurring';
-  };
-
-  // Extract unique categories from all habits
-  const availableCategories = useMemo(() => {
-    const allHabits = [...habitStats.map(h => h.goal), ...futureHabits];
-    const categories = allHabits
-      .map(g => g.category)
-      .filter((c): c is string => !!c && c.trim() !== '');
-    return [...new Set(categories)].sort();
-  }, [habitStats, futureHabits]);
-
-  // Filter function for habit stats
-  const filterHabitStats = (stats: HabitStats): boolean => {
-    const goal = stats.goal;
-
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch = 
-        goal.title.toLowerCase().includes(searchLower) ||
-        goal.description?.toLowerCase().includes(searchLower) ||
-        goal.category?.toLowerCase().includes(searchLower) ||
-        goal.recurring_objective_text?.toLowerCase().includes(searchLower);
-      if (!matchesSearch) return false;
-    }
-
-    // Frequency filter
-    if (filters.frequencies.length > 0) {
-      if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
-        return false;
-      }
-    }
-
-    // Category filter
-    if (filters.categories.length > 0) {
-      if (!goal.category || !filters.categories.includes(goal.category)) {
-        return false;
-      }
-    }
-
-    // Status filters
-    if (filters.showPausedOnly && !goal.is_paused) return false;
-    if (filters.showActiveOnly && goal.is_paused) return false;
-
-    return true;
-  };
-
-  // Filter function for future habits (Goal objects)
-  const filterFutureHabit = (goal: Goal): boolean => {
-    // Search filter
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-      const matchesSearch = 
-        goal.title.toLowerCase().includes(searchLower) ||
-        goal.description?.toLowerCase().includes(searchLower) ||
-        goal.category?.toLowerCase().includes(searchLower);
-      if (!matchesSearch) return false;
-    }
-
-    // Frequency filter
-    if (filters.frequencies.length > 0) {
-      if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
-        return false;
-      }
-    }
-
-    // Category filter
-    if (filters.categories.length > 0) {
-      if (!goal.category || !filters.categories.includes(goal.category)) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  // Apply filters to habit lists
-  const filteredHabitStats = useMemo(() => 
-    habitStats.filter(filterHabitStats), 
-    [habitStats, filters]
-  );
-
-  const filteredFutureHabits = useMemo(() => 
-    futureHabits.filter(filterFutureHabit), 
-    [futureHabits, filters]
-  );
-
-  // Separate active, paused, and completed/deprioritized habits from filtered list
-  const activeHabitsList = filteredHabitStats.filter(h => 
-    (h.goal.status === 'not_started' || h.goal.status === 'in_progress') && !h.goal.is_paused
-  );
-  const pausedHabitsList = filteredHabitStats.filter(h => 
-    h.goal.is_paused && h.goal.status !== 'completed' && h.goal.status !== 'deprioritized'
-  );
-  const inactiveHabitsList = filteredHabitStats.filter(h => 
-    h.goal.status === 'completed' || h.goal.status === 'deprioritized'
-  );
-
-  const hasActiveFilters = filters.search || filters.frequencies.length > 0 || 
-    filters.categories.length > 0 || filters.showPausedOnly || filters.showActiveOnly;
-
-  const totalFiltered = filteredHabitStats.length + filteredFutureHabits.length;
 
   return (
     <div className="space-y-6">
