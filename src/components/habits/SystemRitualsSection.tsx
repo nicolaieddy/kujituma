@@ -1,7 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, TrendingUp, Calendar, CheckCircle2, ClipboardList, Lock, Sun, CalendarDays } from "lucide-react";
+import { Flame, TrendingUp, Calendar, Lock, Sun, CalendarDays, ClipboardList, MousePointer } from "lucide-react";
 import { useStreaks } from "@/hooks/useStreaks";
+import { useRitualsTrigger } from "@/contexts/RitualsContext";
+import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
@@ -14,6 +16,7 @@ interface SystemRitual {
   currentStreak: number;
   longestStreak: number;
   color: string;
+  onClick?: () => void;
 }
 
 interface SystemRitualCardProps {
@@ -36,12 +39,17 @@ const SystemRitualCard = ({ ritual }: SystemRitualCardProps) => {
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.2 }}
+      whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
+      whileTap={{ scale: 0.98 }}
     >
-      <Card className="border-border hover:border-primary/30 hover:shadow-lg transition-all">
+      <Card 
+        className="border-border hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer group"
+        onClick={ritual.onClick}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1 pr-16">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <CardTitle className="text-lg font-semibold flex items-center gap-2 group-hover:text-primary transition-colors">
                 <div className={cn("p-1.5 rounded-lg", ritual.color)}>
                   <IconComponent className="h-4 w-4" />
                 </div>
@@ -50,6 +58,10 @@ const SystemRitualCard = ({ ritual }: SystemRitualCardProps) => {
               <p className="text-sm text-muted-foreground mt-1">
                 {ritual.description}
               </p>
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-primary flex items-center gap-1 mt-1">
+                <MousePointer className="h-3 w-3" />
+                Click to open
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className="text-xs">
@@ -96,6 +108,9 @@ export const SystemRitualsSection = () => {
     isLoading 
   } = useStreaks();
 
+  const { openDailyCheckIn, openWeeklyPlanning } = useRitualsTrigger();
+  const { openQuarterlyReview } = useQuarterlyReviewTrigger();
+
   if (isLoading) {
     return null;
   }
@@ -110,6 +125,7 @@ export const SystemRitualsSection = () => {
       currentStreak: currentDailyStreak,
       longestStreak: longestDailyStreak,
       color: "bg-amber-500/10 text-amber-500",
+      onClick: openDailyCheckIn,
     },
     {
       id: "weekly-planning",
@@ -120,6 +136,7 @@ export const SystemRitualsSection = () => {
       currentStreak: currentWeeklyStreak,
       longestStreak: longestWeeklyStreak,
       color: "bg-blue-500/10 text-blue-500",
+      onClick: openWeeklyPlanning,
     },
     {
       id: "quarterly-review",
@@ -130,6 +147,7 @@ export const SystemRitualsSection = () => {
       currentStreak: 0, // Quarterly streaks not tracked yet
       longestStreak: 0,
       color: "bg-purple-500/10 text-purple-500",
+      onClick: openQuarterlyReview,
     },
   ];
 
