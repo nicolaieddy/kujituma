@@ -31,6 +31,12 @@ interface AdminUser {
   last_active_at?: string;
 }
 
+interface MonthlyData {
+  month: string;
+  signups: number;
+  activeUsers: number;
+}
+
 interface AnalyticsData {
   totalUsers: number;
   totalPosts: number;
@@ -40,6 +46,7 @@ interface AnalyticsData {
   postsThisWeek: number;
   commentsThisWeek: number;
   averagePostsPerUser: number;
+  monthlyData: MonthlyData[];
 }
 
 export const useAdminData = () => {
@@ -55,7 +62,8 @@ export const useAdminData = () => {
     activeUsersThisWeek: 0,
     postsThisWeek: 0,
     commentsThisWeek: 0,
-    averagePostsPerUser: 0
+    averagePostsPerUser: 0,
+    monthlyData: []
   });
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -135,6 +143,51 @@ export const useAdminData = () => {
     }
   };
 
+  const calculateMonthlyData = async (): Promise<MonthlyData[]> => {
+    const months: MonthlyData[] = [];
+    const now = new Date();
+
+    // Get last 6 months of data
+    for (let i = 5; i >= 0; i--) {
+      const monthStart = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
+      const monthLabel = monthStart.toLocaleDateString('en-US', { month: 'short' });
+
+      // Get signups for this month
+      const { count: signups } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', monthStart.toISOString())
+        .lte('created_at', monthEnd.toISOString());
+
+      // Get active users this month (posted or commented)
+      const { data: monthlyPosts } = await supabase
+        .from('posts')
+        .select('user_id')
+        .gte('created_at', monthStart.toISOString())
+        .lte('created_at', monthEnd.toISOString());
+
+      const { data: monthlyComments } = await supabase
+        .from('comments')
+        .select('user_id')
+        .gte('created_at', monthStart.toISOString())
+        .lte('created_at', monthEnd.toISOString());
+
+      const activeUserSet = new Set([
+        ...(monthlyPosts?.map(p => p.user_id) || []),
+        ...(monthlyComments?.map(c => c.user_id) || [])
+      ]);
+
+      months.push({
+        month: monthLabel,
+        signups: signups || 0,
+        activeUsers: activeUserSet.size
+      });
+    }
+
+    return months;
+  };
+
   const fetchAnalytics = async () => {
     try {
       const now = new Date();
@@ -189,6 +242,9 @@ export const useAdminData = () => {
 
       const averagePostsPerUser = totalUsers > 0 ? totalPosts / totalUsers : 0;
 
+      // Calculate monthly data for the last 6 months
+      const monthlyData = await calculateMonthlyData();
+
       setAnalytics({
         totalUsers: totalUsers || 0,
         totalPosts: totalPosts || 0,
@@ -197,7 +253,8 @@ export const useAdminData = () => {
         activeUsersThisWeek: activeUserIds.size,
         postsThisWeek: postsThisWeek || 0,
         commentsThisWeek: commentsThisWeek || 0,
-        averagePostsPerUser
+        averagePostsPerUser,
+        monthlyData
       });
     } catch (error) {
       console.error('Error fetching analytics:', error);

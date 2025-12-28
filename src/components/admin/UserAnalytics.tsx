@@ -1,18 +1,27 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, Activity, TrendingUp, BarChart3 } from "lucide-react";
+import MonthlyUserCharts from "./MonthlyUserCharts";
+
+interface MonthlyData {
+  month: string;
+  signups: number;
+  activeUsers: number;
+}
 
 interface UserAnalyticsProps {
   totalUsers: number;
   newUsersThisWeek: number;
   activeUsersThisWeek: number;
   averagePostsPerUser: number;
+  monthlyData: MonthlyData[];
 }
 
 const UserAnalytics = ({
   totalUsers,
   newUsersThisWeek,
   activeUsersThisWeek,
-  averagePostsPerUser
+  averagePostsPerUser,
+  monthlyData
 }: UserAnalyticsProps) => {
   const metrics = [
     {
@@ -66,6 +75,9 @@ const UserAnalytics = ({
           );
         })}
       </div>
+
+      {/* Monthly Charts */}
+      <MonthlyUserCharts monthlyData={monthlyData} />
     </div>
   );
 };
