@@ -14,10 +14,12 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isCached, setIsCached] = useState(false);
   const offsetRef = useRef(0);
   const limit = 10;
 
   const fetchPosts = useCallback(async (loadMore = false) => {
+    const startTime = Date.now();
     try {
       if (loadMore) {
         setLoadingMore(true);
@@ -33,6 +35,12 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
         newPosts = await unifiedPostsService.getUserPosts(userId, filterPeriod, limit, currentOffset);
       } else {
         newPosts = await unifiedPostsService.getAllPosts(filterPeriod, limit, currentOffset);
+      }
+
+      // Detect if data came from cache (very fast response)
+      const duration = Date.now() - startTime;
+      if (!loadMore) {
+        setIsCached(duration < 50);
       }
 
       if (loadMore) {
@@ -183,6 +191,7 @@ export const useUnifiedPosts = (options: UseUnifiedPostsOptions = {}) => {
     loadingMore,
     hasMore,
     error,
+    isCached,
     createPost,
     addComment,
     togglePostLike,

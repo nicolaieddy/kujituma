@@ -1,13 +1,47 @@
 
+import { lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
-
-import PostsManagement from "@/components/admin/PostsManagement";
-import UsersOverview from "@/components/admin/UsersOverview";
-import UserAnalytics from "@/components/admin/UserAnalytics";
-import PostAnalytics from "@/components/admin/PostAnalytics";
 import { useAdminData } from "@/hooks/useAdminData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+
+// Lazy load admin components for code splitting
+const PostsManagement = lazy(() => import("@/components/admin/PostsManagement"));
+const UsersOverview = lazy(() => import("@/components/admin/UsersOverview"));
+const UserAnalytics = lazy(() => import("@/components/admin/UserAnalytics"));
+const PostAnalytics = lazy(() => import("@/components/admin/PostAnalytics"));
+
+// Loading skeleton for admin tabs
+const AdminTabSkeleton = () => (
+  <div className="space-y-6">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <Card key={i} className="border-border">
+          <CardContent className="p-4">
+            <Skeleton className="h-4 w-20 mb-2" />
+            <Skeleton className="h-8 w-16" />
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+    <Card className="border-border">
+      <CardHeader>
+        <Skeleton className="h-6 w-40" />
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-4 flex-1" />
+            <Skeleton className="h-8 w-20 rounded" />
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  </div>
+);
 
 const Admin = () => {
   const { signOut } = useAuth();
@@ -72,29 +106,33 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="posts" className="mt-6 space-y-6">
-            <PostAnalytics
-              totalPosts={analytics.totalPosts}
-              totalComments={analytics.totalComments}
-              postsThisWeek={analytics.postsThisWeek}
-              commentsThisWeek={analytics.commentsThisWeek}
-            />
-            <PostsManagement
-              posts={posts}
-              onToggleVisibility={togglePostVisibility}
-              onDeletePost={deletePost}
-            />
+            <Suspense fallback={<AdminTabSkeleton />}>
+              <PostAnalytics
+                totalPosts={analytics.totalPosts}
+                totalComments={analytics.totalComments}
+                postsThisWeek={analytics.postsThisWeek}
+                commentsThisWeek={analytics.commentsThisWeek}
+              />
+              <PostsManagement
+                posts={posts}
+                onToggleVisibility={togglePostVisibility}
+                onDeletePost={deletePost}
+              />
+            </Suspense>
           </TabsContent>
 
           <TabsContent value="users" className="mt-6 space-y-6">
-            <UserAnalytics
-              totalUsers={analytics.totalUsers}
-              newUsersThisWeek={analytics.newUsersThisWeek}
-              activeUsersThisWeek={analytics.activeUsersThisWeek}
-              averagePostsPerUser={analytics.averagePostsPerUser}
-              monthlyData={analytics.monthlyData}
-              onMonthRangeChange={refreshMonthlyData}
-            />
-            <UsersOverview users={users} />
+            <Suspense fallback={<AdminTabSkeleton />}>
+              <UserAnalytics
+                totalUsers={analytics.totalUsers}
+                newUsersThisWeek={analytics.newUsersThisWeek}
+                activeUsersThisWeek={analytics.activeUsersThisWeek}
+                averagePostsPerUser={analytics.averagePostsPerUser}
+                monthlyData={analytics.monthlyData}
+                onMonthRangeChange={refreshMonthlyData}
+              />
+              <UsersOverview users={users} />
+            </Suspense>
           </TabsContent>
         </Tabs>
       </div>
