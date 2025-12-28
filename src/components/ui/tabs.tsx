@@ -44,6 +44,8 @@ const TabsContent = React.forwardRef<
     ref={ref}
     className={cn(
       "mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      // When forceMount is used, hide inactive tabs properly
+      "data-[state=inactive]:hidden",
       className
     )}
     {...props}

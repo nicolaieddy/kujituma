@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -28,6 +28,18 @@ export const useWeeklyInsights = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Track mounted state to prevent state updates after unmount
+  const mountedRef = useRef(true);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Cleanup on unmount
+  const cleanup = useCallback(() => {
+    mountedRef.current = false;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, []);
 
   const generateInsights = async (weeklyData: WeeklyData) => {
     // Don't generate if no meaningful data
@@ -35,13 +47,24 @@ export const useWeeklyInsights = () => {
       return null;
     }
 
-    setIsLoading(true);
-    setError(null);
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    if (mountedRef.current) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const { data, error: funcError } = await supabase.functions.invoke('weekly-insights', {
         body: { type: 'insights', weeklyData }
       });
+
+      // Check if still mounted before updating state
+      if (!mountedRef.current) return null;
 
       if (funcError) {
         const msg = `[weekly-insights] ${funcError.message}`;
@@ -69,15 +92,21 @@ export const useWeeklyInsights = () => {
       setInsight(data.insight);
       return data.insight;
     } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') return null;
+      if (!mountedRef.current) return null;
+      
       console.error("Failed to generate insights:", err);
       setError("Failed to generate insights");
       return null;
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) {
+        setIsLoading(false);
+      }
     }
   };
 
-  const generateSuggestions = async (suggestionsData: SuggestionsData) => {
+  const generateSuggestions = useCallback(async (suggestionsData: SuggestionsData) => {
     // Need at least some data to generate suggestions
     if (suggestionsData.incompleteObjectives.length === 0 && 
         suggestionsData.completedObjectives.length === 0 && 
@@ -85,13 +114,24 @@ export const useWeeklyInsights = () => {
       return [];
     }
 
-    setIsSuggestionsLoading(true);
-    setError(null);
+    // Cancel any pending request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    if (mountedRef.current) {
+      setIsSuggestionsLoading(true);
+      setError(null);
+    }
 
     try {
       const { data, error: funcError } = await supabase.functions.invoke('weekly-insights', {
         body: { type: 'suggestions', suggestionsData }
       });
+
+      // Check if still mounted before updating state
+      if (!mountedRef.current) return [];
 
       if (funcError) {
         const msg = `[weekly-insights] ${funcError.message}`;
@@ -123,14 +163,20 @@ export const useWeeklyInsights = () => {
       setSuggestions(parsedSuggestions);
       return parsedSuggestions;
     } catch (err) {
+      // Ignore abort errors
+      if (err instanceof Error && err.name === 'AbortError') return [];
+      if (!mountedRef.current) return [];
+      
       console.error("Failed to generate suggestions:", err);
       setError("Failed to generate suggestions");
       setSuggestions([]);
       return [];
     } finally {
-      setIsSuggestionsLoading(false);
+      if (mountedRef.current) {
+        setIsSuggestionsLoading(false);
+      }
     }
-  };
+  }, []);
 
   const handleAIError = (errorMessage: string) => {
     if (errorMessage.includes("Rate limit")) {
@@ -148,9 +194,18 @@ export const useWeeklyInsights = () => {
     }
   };
 
-  const clearSuggestions = () => {
-    setSuggestions([]);
-  };
+  const clearSuggestions = useCallback(() => {
+    if (mountedRef.current) {
+      setSuggestions([]);
+    }
+    // Cancel any pending request when clearing
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+  }, []);
+
+  // Reset mounted ref when hook is re-initialized
+  mountedRef.current = true;
 
   return {
     insight,
@@ -161,5 +216,6 @@ export const useWeeklyInsights = () => {
     generateInsights,
     generateSuggestions,
     clearSuggestions,
+    cleanup,
   };
 };

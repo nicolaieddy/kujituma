@@ -15,9 +15,22 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
   const queryClient = useQueryClient();
   const hasGeneratedRef = useRef<string | null>(null);
   const [isCached, setIsCached] = useState(false);
+  
+  // Track mounted state to prevent state updates after unmount
+  const mountedRef = useRef(true);
+
+  // Reset mounted ref on mount/unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Generate recurring objectives when week changes
   useEffect(() => {
+    let cancelled = false;
+    
     const generateRecurringObjectives = async () => {
       if (!user || !currentWeekStart) return;
       
@@ -27,6 +40,10 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
 
       try {
         const created = await RecurringObjectivesService.generateRecurringObjectivesForWeek(currentWeekStart);
+        
+        // Check if still mounted and not cancelled before updating
+        if (cancelled || !mountedRef.current) return;
+        
         if (created > 0) {
           // Invalidate to refresh the list with new objectives
           queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
@@ -37,6 +54,10 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     };
 
     generateRecurringObjectives();
+    
+    return () => {
+      cancelled = true;
+    };
   }, [user, currentWeekStart, queryClient]);
 
   const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
