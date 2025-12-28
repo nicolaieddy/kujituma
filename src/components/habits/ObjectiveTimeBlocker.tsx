@@ -13,8 +13,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
-import { Clock, CalendarIcon } from "lucide-react";
+import { Clock, CalendarIcon, AlertTriangle } from "lucide-react";
 import { format, addDays, startOfWeek, isSameDay, isToday, isTomorrow, isSameWeek, parseISO } from "date-fns";
 import { cn } from "@/lib/utils";
 import { DayContentProps } from "react-day-picker";
@@ -26,7 +36,7 @@ interface ObjectiveTimeBlockerProps {
   onUpdate: (day: string | null, time: string | null) => void;
   disabled?: boolean;
   currentWeekStart: string;
-  onMoveToWeek?: (newWeekStart: string) => void;
+  onMoveToWeek?: (newWeekStart: string, scheduledDay: string) => void;
   allObjectives?: WeeklyObjective[];
 }
 
@@ -66,6 +76,8 @@ export const ObjectiveTimeBlocker = ({
 }: ObjectiveTimeBlockerProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [localTime, setLocalTime] = useState(scheduledTime || '');
+  const [showMoveConfirmation, setShowMoveConfirmation] = useState(false);
+  const [pendingMoveDate, setPendingMoveDate] = useState<Date | null>(null);
   
   // Build a map of dates to objective counts for the current week
   const objectiveCountsByDate = useMemo(() => {
@@ -152,9 +164,8 @@ export const ObjectiveTimeBlocker = ({
   };
   
   const handleDateSelect = (date: Date | undefined) => {
-    setSelectedDate(date);
-    
     if (!date) {
+      setSelectedDate(undefined);
       onUpdate(null, localTime || null);
       return;
     }
@@ -164,23 +175,36 @@ export const ObjectiveTimeBlocker = ({
     // Check if selected date is in the current week
     if (isSameWeek(date, weekStart, { weekStartsOn: 1 })) {
       // Same week - just update the day
+      setSelectedDate(date);
       const dayOfWeek = date.getDay();
       const dayName = REVERSE_DAY_MAP[dayOfWeek];
       onUpdate(dayName, localTime || null);
     } else {
-      // Different week - need to move the objective
-      const newWeekStart = startOfWeek(date, { weekStartsOn: 1 });
-      const dayOfWeek = date.getDay();
-      const dayName = REVERSE_DAY_MAP[dayOfWeek];
-      
-      if (onMoveToWeek) {
-        onMoveToWeek(format(newWeekStart, 'yyyy-MM-dd'));
-        onUpdate(dayName, localTime || null);
-      } else {
-        // Fallback: just update the day (won't move to different week)
-        onUpdate(dayName, localTime || null);
-      }
+      // Different week - show confirmation dialog
+      setPendingMoveDate(date);
+      setShowMoveConfirmation(true);
     }
+  };
+  
+  const handleConfirmMove = () => {
+    if (!pendingMoveDate || !onMoveToWeek) return;
+    
+    const newWeekStart = startOfWeek(pendingMoveDate, { weekStartsOn: 1 });
+    const dayOfWeek = pendingMoveDate.getDay();
+    const dayName = REVERSE_DAY_MAP[dayOfWeek];
+    
+    // Move to the new week with the scheduled day
+    onMoveToWeek(format(newWeekStart, 'yyyy-MM-dd'), dayName);
+    
+    setSelectedDate(pendingMoveDate);
+    setShowMoveConfirmation(false);
+    setPendingMoveDate(null);
+    setIsOpen(false);
+  };
+  
+  const handleCancelMove = () => {
+    setShowMoveConfirmation(false);
+    setPendingMoveDate(null);
   };
   
   const handleSave = () => {
@@ -213,85 +237,116 @@ export const ObjectiveTimeBlocker = ({
   
   const display = formatDisplay();
   
+  // Calculate the week range for the pending move
+  const getPendingWeekRange = () => {
+    if (!pendingMoveDate) return '';
+    const weekStart = startOfWeek(pendingMoveDate, { weekStartsOn: 1 });
+    const weekEnd = addDays(weekStart, 6);
+    return `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
+  };
+  
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled}
-          className={`h-6 px-2 text-xs ${
-            display 
-              ? 'text-primary hover:text-primary bg-primary/10 hover:bg-primary/20' 
-              : 'text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Clock className="h-3 w-3 mr-1" />
-          {display || 'Schedule'}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-auto p-4" align="start">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1">
-              <CalendarIcon className="h-3 w-3" />
-              Date (optional)
-            </Label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={handleDateSelect}
-              className={cn("rounded-md border pointer-events-auto")}
-              components={{
-                DayContent: CustomDayContent,
-              }}
-              initialFocus
-            />
-            {selectedDate && !isSameWeek(selectedDate, parseISO(currentWeekStart), { weekStartsOn: 1 }) && (
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                This will move the objective to a different week
+    <>
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={disabled}
+            className={`h-6 px-2 text-xs ${
+              display 
+                ? 'text-primary hover:text-primary bg-primary/10 hover:bg-primary/20' 
+                : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Clock className="h-3 w-3 mr-1" />
+            {display || 'Schedule'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-4" align="start">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1">
+                <CalendarIcon className="h-3 w-3" />
+                Date (optional)
+              </Label>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={handleDateSelect}
+                className={cn("rounded-md border pointer-events-auto")}
+                components={{
+                  DayContent: CustomDayContent,
+                }}
+                initialFocus
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label className="text-xs flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                Time (optional)
+              </Label>
+              <Select value={localTime} onValueChange={setLocalTime}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="Select time..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_SLOTS.map(time => (
+                    <SelectItem key={time} value={time} className="text-xs">
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 text-xs"
+                onClick={handleClear}
+              >
+                Clear
+              </Button>
+              <Button 
+                size="sm" 
+                className="flex-1 text-xs"
+                onClick={handleSave}
+              >
+                Save
+              </Button>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+      
+      <AlertDialog open={showMoveConfirmation} onOpenChange={setShowMoveConfirmation}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Move to Different Week?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You're about to reschedule this objective to <strong>{pendingMoveDate && format(pendingMoveDate, 'EEEE, MMM d')}</strong> (Week of {getPendingWeekRange()}).
               </p>
-            )}
-          </div>
-          
-          <div className="space-y-2">
-            <Label className="text-xs flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Time (optional)
-            </Label>
-            <Select value={localTime} onValueChange={setLocalTime}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Select time..." />
-              </SelectTrigger>
-              <SelectContent>
-                {TIME_SLOTS.map(time => (
-                  <SelectItem key={time} value={time} className="text-xs">
-                    {time}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="flex-1 text-xs"
-              onClick={handleClear}
-            >
-              Clear
-            </Button>
-            <Button 
-              size="sm" 
-              className="flex-1 text-xs"
-              onClick={handleSave}
-            >
-              Save
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
+              <p className="text-amber-600 dark:text-amber-400">
+                This objective will be marked as <strong>"Incomplete - Moved"</strong> in the current week, 
+                indicating it was rescheduled rather than completed.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelMove}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmMove}>
+              Move to Next Week
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
