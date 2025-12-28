@@ -81,73 +81,58 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
       <Card className="glass-card shadow-elegant hover:shadow-lift transition-all">
 
         <CardContent className="p-8">
-          {/* Profile Header */}
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <Avatar className="h-32 w-32 border-4 border-border">
-                <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-                <AvatarFallback className="bg-primary text-primary-foreground text-4xl">
-                  <User className="h-16 w-16" />
-                </AvatarFallback>
-              </Avatar>
-            </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2 font-heading">{profile.full_name}</h1>
-            
-            {/* Friendship Actions */}
-            {!isOwnProfile && user && (
-              <div className="flex flex-col items-center gap-2 mt-4">
-                <div className="flex justify-center">
-                  {is_friend ? (
-                    <Button
-                      variant="outline"
-                      className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                      onClick={() => setShowUnfriendDialog(true)}
-                    >
-                      <UserCheck className="h-4 w-4 mr-2" />
-                      Friends
-                    </Button>
-                  ) : friend_request_status === 'sent' ? (
-                    <Button
-                      variant="outline"
-                      className="bg-accent/50 border-accent text-accent-foreground"
-                      disabled
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Request Sent
-                    </Button>
-                  ) : friend_request_status === 'received' ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
-                        onClick={() => handleRespondToRequest('accepted')}
-                      >
-                        <UserCheck className="h-4 w-4 mr-2" />
-                        Accept
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
-                        onClick={() => handleRespondToRequest('rejected')}
-                      >
-                        <UserMinus className="h-4 w-4 mr-2" />
-                        Decline
-                      </Button>
-                    </div>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
-                      onClick={handleSendFriendRequest}
-                    >
-                      <UserPlus className="h-4 w-4 mr-2" />
-                      Add Friend
-                    </Button>
-                  )}
+          {/* Friendship Actions - for non-own profiles */}
+          {!isOwnProfile && user && (
+            <div className="flex justify-center mb-8">
+              {is_friend ? (
+                <Button
+                  variant="outline"
+                  className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
+                  onClick={() => setShowUnfriendDialog(true)}
+                >
+                  <UserCheck className="h-4 w-4 mr-2" />
+                  Friends
+                </Button>
+              ) : friend_request_status === 'sent' ? (
+                <Button
+                  variant="outline"
+                  className="bg-accent/50 border-accent text-accent-foreground"
+                  disabled
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Request Sent
+                </Button>
+              ) : friend_request_status === 'received' ? (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="bg-primary/10 border-primary/30 text-primary hover:bg-primary/20 transition-all"
+                    onClick={() => handleRespondToRequest('accepted')}
+                  >
+                    <UserCheck className="h-4 w-4 mr-2" />
+                    Accept
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="bg-destructive/10 border-destructive/30 text-destructive hover:bg-destructive/20 transition-all"
+                    onClick={() => handleRespondToRequest('rejected')}
+                  >
+                    <UserMinus className="h-4 w-4 mr-2" />
+                    Decline
+                  </Button>
                 </div>
-              </div>
-            )}
-          </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="bg-secondary/50 border-secondary text-secondary-foreground hover:bg-secondary transition-all"
+                  onClick={handleSendFriendRequest}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Friend
+                </Button>
+              )}
+            </div>
+          )}
 
           {/* About Me Section */}
           {profile.about_me && (
