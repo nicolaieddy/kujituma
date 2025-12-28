@@ -20,6 +20,7 @@ import { startOfWeek, isToday } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
 import { celebrateGoalComplete } from "@/utils/confetti";
+import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 
 interface DailyCheckInDialogProps {
   open: boolean;
@@ -43,7 +44,7 @@ const ENERGY_OPTIONS = [
 ];
 
 export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogProps) => {
-  const { submitCheckIn, isSubmitting, todayCheckIn } = useDailyCheckIn();
+  const { submitCheckIn, isSubmitting, todayCheckIn, isCached, lastSync } = useDailyCheckIn();
   const { goals } = useGoals();
   
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -174,10 +175,13 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-2xl">☀️</span>
-            Daily Check-In
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <span className="text-2xl">☀️</span>
+              Daily Check-In
+            </DialogTitle>
+            <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
+          </div>
           <DialogDescription>
             Take 30 seconds to set your intention for today
           </DialogDescription>

@@ -11,6 +11,7 @@ export const useWeeklyPlanning = (weekStart: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCached, setIsCached] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
 
   const { data: planningSession, isLoading } = useQuery({
     queryKey: ['weekly-planning', user?.id, weekStart],
@@ -22,6 +23,7 @@ export const useWeeklyPlanning = (weekStart: string) => {
           offlineDataService.cacheWeeklyPlanning(data, weekStart);
         }
         offlineDataService.updateLastSync();
+        setLastSync(new Date());
         setIsCached(false);
         return data;
       } catch (err) {
@@ -30,6 +32,8 @@ export const useWeeklyPlanning = (weekStart: string) => {
           const cached = await offlineDataService.getCachedWeeklyPlanning(weekStart);
           if (cached) {
             setIsCached(true);
+            const syncTime = await offlineDataService.getLastSync();
+            setLastSync(syncTime ? new Date(syncTime) : null);
             return cached;
           }
         }
@@ -126,6 +130,7 @@ export const useWeeklyPlanning = (weekStart: string) => {
     planningSession,
     isLoading,
     isCached,
+    lastSync,
     hasCompletedPlanning: planningSession?.is_completed || false,
     savePlanningSession: saveMutation.mutateAsync,
     completePlanningSession: completeMutation.mutateAsync,

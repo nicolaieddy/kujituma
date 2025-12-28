@@ -15,6 +15,7 @@ import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { HabitsService } from "@/services/habitsService";
 import { CalendarDays, Loader2, Sparkles } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 
 interface WeeklyPlanningDialogProps {
   open: boolean;
@@ -28,7 +29,9 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
     planningSession,
     savePlanningSession, 
     completePlanningSession, 
-    isCompleting 
+    isCompleting,
+    isCached,
+    lastSync
   } = useWeeklyPlanning(weekStart);
   
   const [lastWeekReflection, setLastWeekReflection] = useState("");
@@ -57,10 +60,13 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CalendarDays className="h-5 w-5 text-primary" />
-            Weekly Planning Ritual
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5 text-primary" />
+              Weekly Planning Ritual
+            </DialogTitle>
+            <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
+          </div>
           <DialogDescription>
             Set yourself up for success this week ({weekRange})
           </DialogDescription>
