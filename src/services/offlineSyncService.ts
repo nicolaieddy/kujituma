@@ -87,11 +87,23 @@ class OfflineSyncService {
         
         switch (mutation.type) {
           case 'create':
-            // Use type assertion for dynamic table access
-            const insertResult = await (supabase as any)
-              .from(mutation.table)
-              .insert(mutation.data);
-            error = insertResult.error;
+            // Use upsert for tables with unique constraints (like daily_check_ins)
+            if (mutation.table === 'daily_check_ins') {
+              const upsertResult = await (supabase as any)
+                .from(mutation.table)
+                .upsert(mutation.data, { onConflict: 'user_id,check_in_date' });
+              error = upsertResult.error;
+            } else if (mutation.table === 'weekly_planning_sessions') {
+              const upsertResult = await (supabase as any)
+                .from(mutation.table)
+                .upsert(mutation.data, { onConflict: 'user_id,week_start' });
+              error = upsertResult.error;
+            } else {
+              const insertResult = await (supabase as any)
+                .from(mutation.table)
+                .insert(mutation.data);
+              error = insertResult.error;
+            }
             break;
           case 'update':
             const updateResult = await (supabase as any)
