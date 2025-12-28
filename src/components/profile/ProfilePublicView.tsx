@@ -91,7 +91,7 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
                 </AvatarFallback>
               </Avatar>
             </div>
-            <h1 className="text-3xl font-bold text-foreground mb-2 font-serif">{profile.full_name}</h1>
+            <h1 className="text-3xl font-bold text-foreground mb-2 font-heading">{profile.full_name}</h1>
             
             {/* Friendship Actions */}
             {!isOwnProfile && user && (

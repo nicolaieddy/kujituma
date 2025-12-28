@@ -78,7 +78,7 @@ const Friends = () => {
 
       <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-serif">Friends</h1>
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-heading">Friends</h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
             Connect with other members of the community and follow their progress.
           </p>

@@ -17,7 +17,7 @@ export const LandingHero = () => {
 
       {/* Hero content */}
       <div className="relative z-10 text-center px-4 max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground font-serif mb-4">
+        <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground font-heading mb-4">
           Kujituma
         </h1>
         <p className="text-xl md:text-2xl text-foreground font-light mb-6">

@@ -193,7 +193,7 @@ const Goals = () => {
       <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
         <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
           <div className="flex items-center justify-center gap-2 mb-4">
-            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground font-serif`}>Goals & Progress</h1>
+            <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground font-heading`}>Goals & Progress</h1>
             <CachedDataIndicator isCached={goalsCached || isOffline} lastSync={lastSync} />
           </div>
           <p className={`text-muted-foreground ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto leading-relaxed`}>

@@ -94,7 +94,7 @@ export const GoalsKanban = ({ goalsByStatus, onEdit, onDelete, onStatusChange, o
             <div className={`flex items-center justify-between ${isMobile ? 'py-3 px-4 bg-muted rounded-lg' : ''}`}>
               <div className="flex items-center gap-2">
                 <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-foreground`} />
-                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-foreground font-serif`}>{column.title}</h3>
+                <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-foreground font-heading`}>{column.title}</h3>
               </div>
               <Badge className={`${column.color} text-xs shadow-sm`}>
                 {goals.length}
