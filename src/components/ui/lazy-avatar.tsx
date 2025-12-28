@@ -3,9 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
 import { cn } from "@/lib/utils";
 
-interface LazyAvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {
-  blurDataUrl?: string;
-}
+interface LazyAvatarImageProps extends React.ComponentPropsWithoutRef<typeof AvatarPrimitive.Image> {}
 
 const Avatar = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Root>,
@@ -25,15 +23,11 @@ Avatar.displayName = "LazyAvatar";
 const LazyAvatarImage = React.forwardRef<
   React.ElementRef<typeof AvatarPrimitive.Image>,
   LazyAvatarImageProps
->(({ className, src, blurDataUrl, ...props }, ref) => {
+>(({ className, src, ...props }, ref) => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isInView, setIsInView] = useState(false);
   const [imageSrc, setImageSrc] = useState<string | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Generate a blur placeholder as base64 SVG
-  const blurPlaceholder = blurDataUrl || 
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGZpbHRlciBpZD0iYiI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTAiLz48L2ZpbHRlcj48L2RlZnM+PHJlY3QgZmlsbD0iI2UyZThlYyIgZmlsdGVyPSJ1cmwoI2IpIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIi8+PC9zdmc+";
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -48,7 +42,7 @@ const LazyAvatarImage = React.forwardRef<
         });
       },
       {
-        rootMargin: "100px", // Start loading 100px before visible
+        rootMargin: "100px",
         threshold: 0.01,
       }
     );
@@ -59,7 +53,6 @@ const LazyAvatarImage = React.forwardRef<
 
   useEffect(() => {
     if (isInView && src) {
-      // Preload image
       const img = new Image();
       img.onload = () => {
         setImageSrc(src);
@@ -74,17 +67,12 @@ const LazyAvatarImage = React.forwardRef<
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-full">
-      {/* Blur placeholder */}
+      {/* Skeleton pulse placeholder */}
       <div
         className={cn(
-          "absolute inset-0 bg-cover bg-center transition-opacity duration-300",
+          "absolute inset-0 bg-muted animate-pulse transition-opacity duration-300",
           isLoaded ? "opacity-0" : "opacity-100"
         )}
-        style={{ 
-          backgroundImage: `url(${blurPlaceholder})`,
-          filter: "blur(4px)",
-          transform: "scale(1.1)",
-        }}
       />
       
       {/* Actual image */}
