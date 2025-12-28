@@ -34,14 +34,6 @@ const LandingPage = () => {
         <LandingFeatures />
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="text-muted-foreground text-sm">
-            © 2025 Kujituma
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };
