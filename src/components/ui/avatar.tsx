@@ -33,10 +33,6 @@ const AvatarImage = React.forwardRef<
   );
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Blur placeholder as base64 SVG
-  const blurPlaceholder =
-    "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PGZpbHRlciBpZD0iYiI+PGZlR2F1c3NpYW5CbHVyIHN0ZERldmlhdGlvbj0iMTAiLz48L2ZpbHRlcj48L2RlZnM+PHJlY3QgZmlsbD0iI2UyZThlYyIgZmlsdGVyPSJ1cmwoI2IpIiB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIi8+PC9zdmc+";
-
   useEffect(() => {
     if (!enableLazyLoading || !containerRef.current) return;
 
@@ -81,17 +77,12 @@ const AvatarImage = React.forwardRef<
 
   return (
     <div ref={containerRef} className="relative w-full h-full overflow-hidden rounded-full">
-      {/* Blur placeholder */}
+      {/* Skeleton pulse placeholder */}
       <div
         className={cn(
-          "absolute inset-0 bg-cover bg-center transition-opacity duration-300 rounded-full",
+          "absolute inset-0 bg-muted animate-pulse transition-opacity duration-300",
           isLoaded ? "opacity-0" : "opacity-100"
         )}
-        style={{
-          backgroundImage: `url(${blurPlaceholder})`,
-          filter: "blur(4px)",
-          transform: "scale(1.1)",
-        }}
       />
 
       {/* Actual image */}
