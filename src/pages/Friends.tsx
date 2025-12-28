@@ -2,9 +2,11 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useFriends } from "@/hooks/useFriends";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { FriendsView } from "@/components/friends/FriendsView";
+import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Users, UserPlus, Inbox } from "lucide-react";
@@ -14,6 +16,7 @@ const Friends = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
+  const { isOffline } = useOfflineStatus();
   const { isAdmin } = useAdminStatus();
   const { friends, friendRequests, loading } = useFriends();
   
@@ -52,6 +55,18 @@ const Friends = () => {
   if (!user) {
     navigate('/auth');
     return null;
+  }
+
+  if (isOffline) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
+        <OfflineFallback 
+          title="Friends unavailable offline"
+          description="Friends and discovery features require an internet connection. Please reconnect to access this section."
+        />
+      </div>
+    );
   }
 
   return (

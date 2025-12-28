@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
+import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { ProfilePublicView } from "@/components/profile/ProfilePublicView";
+import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { Button } from "@/components/ui/button";
 import { Edit3, Eye } from "lucide-react";
 
@@ -36,6 +38,7 @@ const Profile = () => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const { isAdmin } = useAdminStatus();
+  const { isOffline } = useOfflineStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>({ is_friend: false });
   const [isEditing, setIsEditing] = useState(false);
@@ -168,6 +171,18 @@ const Profile = () => {
         <div className="flex items-center justify-center min-h-screen">
           <p className="text-foreground">Please sign in to view your profile.</p>
         </div>
+      </div>
+    );
+  }
+
+  if (isOffline && !profile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
+        <OfflineFallback 
+          title="Profile unavailable offline"
+          description="Profile data requires an internet connection to load. Please reconnect to view this profile."
+        />
       </div>
     );
   }
