@@ -89,31 +89,27 @@ export const FeedView = memo(({ feedType, highlightedPostId }: FeedViewProps) =>
         onComplete={hideFeedback}
       />
       
-      {/* View Toggle */}
-      <div className="flex items-center justify-between bg-accent rounded-lg p-3 border border-border">
-        <div className="flex items-center gap-2">
-          <span className="text-foreground text-sm font-medium">Display Mode:</span>
-        </div>
-        <div className="flex items-center bg-muted rounded-lg p-1">
-          <Button
-            variant={useEnhancedView ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setUseEnhancedView(true)}
-            className={`px-3 py-1 text-xs ${useEnhancedView ? '' : 'text-muted-foreground'}`}
-          >
-            <LayoutGrid className="h-3 w-3 mr-1" />
-            Enhanced
-          </Button>
-          <Button
-            variant={!useEnhancedView ? "default" : "ghost"}
-            size="sm"
-            onClick={() => setUseEnhancedView(false)}
-            className={`px-3 py-1 text-xs ${!useEnhancedView ? '' : 'text-muted-foreground'}`}
-          >
-            <List className="h-3 w-3 mr-1" />
-            Compact
-          </Button>
-        </div>
+      {/* View Toggle - Minimal */}
+      <div className="flex items-center justify-end gap-1 mb-2">
+        <span className="text-xs text-muted-foreground mr-2">View:</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setUseEnhancedView(true)}
+          className={`h-8 px-3 text-xs ${useEnhancedView ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <LayoutGrid className="h-3.5 w-3.5 mr-1.5" />
+          Detailed
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setUseEnhancedView(false)}
+          className={`h-8 px-3 text-xs ${!useEnhancedView ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+        >
+          <List className="h-3.5 w-3.5 mr-1.5" />
+          Compact
+        </Button>
       </div>
 
       {/* Posts */}

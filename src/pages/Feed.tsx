@@ -3,10 +3,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { FeedView } from "@/components/feed/FeedView";
-import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { CommunitySidebar } from "@/components/community/CommunitySidebar";
-import { CommunityRightSidebar } from "@/components/community/CommunityRightSidebar";
 import { FeedSkeletonList } from "@/components/feed/FeedPostSkeleton";
+import { Users, UserPlus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const Feed = () => {
   const navigate = useNavigate();
@@ -26,25 +25,12 @@ const Feed = () => {
 
   if (authLoading) {
     return (
-      <SidebarProvider>
-        <div className="min-h-screen min-h-[100dvh] bg-background flex w-full">
-          <CommunitySidebar />
-          <SidebarInset className="flex-1">
-            <DashboardHeader isAdmin={false} onSignOut={() => {}} />
-            <div className="flex-1 p-3 sm:p-4 md:p-6">
-              <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-4 sm:mb-6 md:mb-8">
-                  <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Community</h1>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2 mt-2">
-                    See how everyone in the community is progressing on their weekly journeys.
-                  </p>
-                </div>
-                <FeedSkeletonList count={3} />
-              </div>
-            </div>
-          </SidebarInset>
-        </div>
-      </SidebarProvider>
+      <div className="min-h-screen min-h-[100dvh] bg-background">
+        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
+        <main className="container max-w-3xl mx-auto px-4 py-6">
+          <FeedSkeletonList count={3} />
+        </main>
+      </div>
     );
   }
 
@@ -54,50 +40,41 @@ const Feed = () => {
   }
 
   return (
-    <SidebarProvider>
-      <div className="min-h-screen min-h-[100dvh] bg-background flex w-full">
-        <CommunitySidebar />
-        
-        <SidebarInset className="flex-1">
-          <DashboardHeader 
-            isAdmin={isAdmin}
-            onSignOut={handleSignOut}
-          />
+    <div className="min-h-screen min-h-[100dvh] bg-background">
+      <DashboardHeader 
+        isAdmin={isAdmin}
+        onSignOut={handleSignOut}
+      />
 
-          <div className="flex-1 flex">
-            {/* Main Feed Content */}
-            <div className="flex-1 p-3 sm:p-4 md:p-6">
-              <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-4 sm:mb-6 md:mb-8">
-                  <div className="flex items-center gap-2 sm:gap-3 justify-center mb-2 sm:mb-4">
-                    <SidebarTrigger />
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">Community</h1>
-                  </div>
-                  <p className="text-muted-foreground text-sm sm:text-base md:text-lg max-w-2xl mx-auto px-2">
-                    See how everyone in the community is progressing on their weekly journeys.
-                  </p>
-                  <div className="mt-3 sm:mt-4">
-                    <button
-                      onClick={() => navigate('/friends')}
-                      className="text-primary hover:text-primary/80 transition-colors text-xs sm:text-sm underline"
-                    >
-                      Find friends to connect with →
-                    </button>
-                  </div>
-                </div>
-
-                <FeedView feedType="all" highlightedPostId={highlightedPostId} />
+      <main className="container max-w-3xl mx-auto px-4 py-6 sm:py-8">
+        {/* Clean Header */}
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
               </div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Community</h1>
             </div>
-
-            {/* Right Sidebar */}
-            <div className="hidden xl:block border-l border-border/50">
-              <CommunityRightSidebar />
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/friends')}
+              className="gap-2"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">Find Friends</span>
+            </Button>
           </div>
-        </SidebarInset>
-      </div>
-    </SidebarProvider>
+          <p className="text-muted-foreground text-sm sm:text-base pl-12">
+            See how everyone is progressing on their weekly journeys.
+          </p>
+        </div>
+
+        {/* Feed Content */}
+        <FeedView feedType="all" highlightedPostId={highlightedPostId} />
+      </main>
+    </div>
   );
 };
 
