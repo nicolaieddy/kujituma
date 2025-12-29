@@ -6,10 +6,11 @@ import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { CheckInHeatmap } from "./CheckInHeatmap";
+import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle } from "lucide-react";
+import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle, ChevronRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const moodEmojis = ['😔', '😕', '😐', '🙂', '😊'];
 
@@ -17,6 +18,8 @@ export const DailyCheckInsTab = () => {
   const { checkIns, analytics, isLoading } = useAllDailyCheckIns(90);
   const { hasCheckedInToday, todayCheckIn } = useDailyCheckIn();
   const { openDailyCheckIn } = useRitualsTrigger();
+  const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Prepare chart data for mood/energy trends
   const trendData = useMemo(() => {
@@ -219,7 +222,14 @@ export const DailyCheckInsTab = () => {
           </CardHeader>
           <CardContent className="space-y-3">
             {checkIns.slice(0, 7).map((checkIn) => (
-              <div key={checkIn.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
+              <div 
+                key={checkIn.id} 
+                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group"
+                onClick={() => {
+                  setSelectedCheckIn(checkIn);
+                  setIsDetailOpen(true);
+                }}
+              >
                 <div className="flex items-center gap-3">
                   <div className="text-center min-w-[60px]">
                     <p className="text-sm font-medium">{format(parseISO(checkIn.check_in_date), 'EEE')}</p>
@@ -237,16 +247,26 @@ export const DailyCheckInsTab = () => {
                     )}
                   </div>
                 </div>
-                {checkIn.focus_today && (
-                  <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                    {checkIn.focus_today}
-                  </p>
-                )}
+                <div className="flex items-center gap-2">
+                  {checkIn.focus_today && (
+                    <p className="text-sm text-muted-foreground truncate max-w-[200px]">
+                      {checkIn.focus_today}
+                    </p>
+                  )}
+                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
               </div>
             ))}
           </CardContent>
         </Card>
       )}
+
+      {/* Detail Modal */}
+      <CheckInDetailModal
+        checkIn={selectedCheckIn}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      />
     </div>
   );
 };

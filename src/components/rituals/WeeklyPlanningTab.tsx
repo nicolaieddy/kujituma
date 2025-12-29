@@ -6,14 +6,18 @@ import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { PlanningTrendsChart } from "./PlanningTrendsChart";
-import { CalendarDays, Target, Lightbulb, Plus, CheckCircle, Clock } from "lucide-react";
+import { WeeklySessionDetailModal } from "./WeeklySessionDetailModal";
+import { CalendarDays, Target, Lightbulb, Plus, CheckCircle, Clock, ChevronRight } from "lucide-react";
 import { format, parseISO, getISOWeek } from "date-fns";
+import { useState } from "react";
 
 export const WeeklyPlanningTab = () => {
   const { sessions, isLoading } = useAllWeeklyPlanningSessions();
   const currentWeekStart = WeeklyProgressService.getWeekStart();
   const { planningSession: currentSession } = useWeeklyPlanning(currentWeekStart);
   const { openWeeklyPlanning } = useRitualsTrigger();
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const getWeekLabel = (weekStart: string) => {
     const date = parseISO(weekStart);
@@ -100,15 +104,25 @@ export const WeeklyPlanningTab = () => {
               .filter(s => s.week_start !== currentWeekStart)
               .slice(0, 8)
               .map((session) => (
-                <div key={session.id} className="p-4 rounded-lg bg-muted/30 space-y-3">
+                <div 
+                  key={session.id} 
+                  className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group space-y-3"
+                  onClick={() => {
+                    setSelectedSession(session);
+                    setIsDetailOpen(true);
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{getWeekLabel(session.week_start)}</p>
                       <p className="text-xs text-muted-foreground">{getWeekRange(session.week_start)}</p>
                     </div>
-                    <Badge variant={session.is_completed ? "default" : "secondary"} className="text-xs">
-                      {session.is_completed ? "Completed" : "Draft"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={session.is_completed ? "default" : "secondary"} className="text-xs">
+                        {session.is_completed ? "Completed" : "Draft"}
+                      </Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                   </div>
                   
                   {session.last_week_reflection && (
@@ -129,6 +143,13 @@ export const WeeklyPlanningTab = () => {
           </CardContent>
         </Card>
       )}
+
+      {/* Detail Modal */}
+      <WeeklySessionDetailModal
+        session={selectedSession}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      />
     </div>
   );
 };

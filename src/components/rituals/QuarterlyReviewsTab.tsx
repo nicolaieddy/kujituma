@@ -4,9 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
 import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
-import { Trophy, AlertCircle, Lightbulb, Rocket, Plus, CheckCircle, Clock, TrendingUp } from "lucide-react";
+import { QuarterlyReviewDetailModal } from "./QuarterlyReviewDetailModal";
+import { Trophy, AlertCircle, Lightbulb, Rocket, Plus, CheckCircle, Clock, TrendingUp, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 const quarterNames = ['', 'Q1', 'Q2', 'Q3', 'Q4'];
 const quarterFullNames = ['', 'Jan - Mar', 'Apr - Jun', 'Jul - Sep', 'Oct - Dec'];
@@ -14,6 +15,8 @@ const quarterFullNames = ['', 'Jan - Mar', 'Apr - Jun', 'Jul - Sep', 'Oct - Dec'
 export const QuarterlyReviewsTab = () => {
   const { allReviews, currentReview, year, quarter, isLoading } = useQuarterlyReview();
   const { openQuarterlyReview } = useQuarterlyReviewTrigger();
+  const [selectedReview, setSelectedReview] = useState<any>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   const stats = useMemo(() => {
     if (!allReviews) return { completed: 0, total: 0 };
@@ -123,15 +126,25 @@ export const QuarterlyReviewsTab = () => {
                 return b.quarter - a.quarter;
               })
               .map((review) => (
-                <div key={review.id} className="p-4 rounded-lg bg-muted/30 space-y-3">
+                <div 
+                  key={review.id} 
+                  className="p-4 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group space-y-3"
+                  onClick={() => {
+                    setSelectedReview(review);
+                    setIsDetailOpen(true);
+                  }}
+                >
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium">{quarterNames[review.quarter]} {review.year}</p>
                       <p className="text-xs text-muted-foreground">{quarterFullNames[review.quarter]}</p>
                     </div>
-                    <Badge variant={review.is_completed ? "default" : "secondary"} className="text-xs">
-                      {review.is_completed ? "Completed" : "Draft"}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={review.is_completed ? "default" : "secondary"} className="text-xs">
+                        {review.is_completed ? "Completed" : "Draft"}
+                      </Badge>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
                   </div>
                   
                   {review.completed_at && (
@@ -177,6 +190,13 @@ export const QuarterlyReviewsTab = () => {
           No past reviews yet. Complete your first quarterly review to see your history!
         </p>
       )}
+
+      {/* Detail Modal */}
+      <QuarterlyReviewDetailModal
+        review={selectedReview}
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+      />
     </div>
   );
 };
