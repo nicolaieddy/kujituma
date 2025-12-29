@@ -8,6 +8,7 @@ import { DailyCheckInsTab } from "@/components/rituals/DailyCheckInsTab";
 import { WeeklyPlanningTab } from "@/components/rituals/WeeklyPlanningTab";
 import { QuarterlyReviewsTab } from "@/components/rituals/QuarterlyReviewsTab";
 import { StreakHistoryChart } from "@/components/rituals/StreakHistoryChart";
+import { CheckInHeatmap } from "@/components/rituals/CheckInHeatmap";
 import { Sun, CalendarDays, ClipboardList } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -67,6 +68,9 @@ const Rituals = () => {
 
         {/* Streak History Chart */}
         <StreakHistoryChart />
+
+        {/* Check-in Heatmap */}
+        <CheckInHeatmap />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-md">

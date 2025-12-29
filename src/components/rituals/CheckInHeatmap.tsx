@@ -1,12 +1,19 @@
 import { useMemo } from "react";
 import { DailyCheckIn } from "@/types/habits";
-import { format, eachDayOfInterval, subDays, parseISO, startOfWeek, getDay } from "date-fns";
+import { format, eachDayOfInterval, subDays, getDay, isSameDay } from "date-fns";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { Skeleton } from "@/components/ui/skeleton";
+import { CalendarDays } from "lucide-react";
 
 interface CheckInHeatmapProps {
-  checkIns: DailyCheckIn[];
+  checkIns?: DailyCheckIn[];
   weeks?: number;
+  showCard?: boolean;
 }
 
 const moodColors: Record<number, string> = {
@@ -17,7 +24,7 @@ const moodColors: Record<number, string> = {
   5: "bg-emerald-500",
 };
 
-export const CheckInHeatmap = ({ checkIns, weeks = 12 }: CheckInHeatmapProps) => {
+const HeatmapGrid = ({ checkIns, weeks = 52 }: { checkIns: DailyCheckIn[]; weeks: number }) => {
   const today = new Date();
   const startDate = subDays(today, weeks * 7);
 
@@ -60,22 +67,49 @@ export const CheckInHeatmap = ({ checkIns, weeks = 12 }: CheckInHeatmapProps) =>
     return grouped;
   }, [days]);
 
-  const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  // Generate month labels
+  const monthLabels = useMemo(() => {
+    const labels: { label: string; weekIndex: number }[] = [];
+    let lastMonth = -1;
+    weeksData.forEach((week, weekIndex) => {
+      const month = week[0].getMonth();
+      if (month !== lastMonth) {
+        labels.push({ label: format(week[0], 'MMM'), weekIndex });
+        lastMonth = month;
+      }
+    });
+    return labels;
+  }, [weeksData]);
+
+  const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
   return (
     <div className="space-y-2">
-      <div className="flex gap-1">
+      {/* Month labels */}
+      <div className="flex ml-8 text-xs text-muted-foreground">
+        {monthLabels.map(({ label, weekIndex }, i) => {
+          const prevIndex = i > 0 ? monthLabels[i - 1].weekIndex : 0;
+          const offset = i === 0 ? weekIndex * 16 : (weekIndex - prevIndex) * 16;
+          return (
+            <div key={i} style={{ marginLeft: i === 0 ? offset : offset - 16 }}>
+              {label}
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-1 overflow-x-auto pb-2">
         {/* Day labels column */}
-        <div className="flex flex-col gap-1 pr-1">
+        <div className="flex flex-col gap-1 pr-1 flex-shrink-0">
           {dayLabels.map((label, i) => (
-            <div key={i} className="h-3 w-3 text-[10px] text-muted-foreground flex items-center justify-center">
-              {i % 2 === 1 ? label : ''}
+            <div key={i} className="h-3 w-6 text-[10px] text-muted-foreground flex items-center justify-end pr-1">
+              {label}
             </div>
           ))}
         </div>
         
         {/* Weeks */}
-        <div className="flex gap-1 overflow-x-auto">
+        <div className="flex gap-1">
           {weeksData.map((week, weekIndex) => (
             <div key={weekIndex} className="flex flex-col gap-1">
               {/* Fill empty days at start of first week */}
@@ -88,6 +122,7 @@ export const CheckInHeatmap = ({ checkIns, weeks = 12 }: CheckInHeatmapProps) =>
                 const checkIn = checkInMap[dateStr];
                 const hasCheckIn = !!checkIn;
                 const mood = checkIn?.mood_rating;
+                const isToday = isSameDay(day, today);
                 
                 return (
                   <TooltipProvider key={dateStr}>
@@ -95,21 +130,22 @@ export const CheckInHeatmap = ({ checkIns, weeks = 12 }: CheckInHeatmapProps) =>
                       <TooltipTrigger asChild>
                         <div
                           className={cn(
-                            "h-3 w-3 rounded-sm transition-colors cursor-pointer",
+                            "h-3 w-3 rounded-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/50",
                             hasCheckIn && mood
                               ? moodColors[mood]
                               : hasCheckIn
                               ? "bg-primary/60"
-                              : "bg-muted/40"
+                              : "bg-muted/40",
+                            isToday && "ring-2 ring-primary"
                           )}
                         />
                       </TooltipTrigger>
                       <TooltipContent side="top" className="text-xs">
-                        <p className="font-medium">{format(day, 'MMM d, yyyy')}</p>
+                        <p className="font-medium">{format(day, 'EEEE, MMM d, yyyy')}</p>
                         {hasCheckIn ? (
-                          <div className="text-muted-foreground">
-                            {mood && <span>Mood: {['😔', '😕', '😐', '🙂', '😊'][mood - 1]}</span>}
-                            {checkIn.energy_level && <span> Energy: {checkIn.energy_level}/5</span>}
+                          <div className="text-muted-foreground space-y-0.5">
+                            {mood && <p>Mood: {['😔', '😕', '😐', '🙂', '😊'][mood - 1]} {mood}/5</p>}
+                            {checkIn.energy_level && <p>Energy: ⚡ {checkIn.energy_level}/5</p>}
                           </div>
                         ) : (
                           <span className="text-muted-foreground">No check-in</span>
@@ -125,7 +161,7 @@ export const CheckInHeatmap = ({ checkIns, weeks = 12 }: CheckInHeatmapProps) =>
       </div>
       
       {/* Legend */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
         <span>Less</span>
         <div className="flex gap-1">
           <div className="h-3 w-3 rounded-sm bg-muted/40" />
@@ -136,5 +172,68 @@ export const CheckInHeatmap = ({ checkIns, weeks = 12 }: CheckInHeatmapProps) =>
         <span>More</span>
       </div>
     </div>
+  );
+};
+
+export const CheckInHeatmap = ({ checkIns: propCheckIns, weeks = 52, showCard = true }: CheckInHeatmapProps) => {
+  const { user } = useAuth();
+
+  // Fetch check-ins if not provided via props
+  const { data: fetchedCheckIns, isLoading } = useQuery({
+    queryKey: ['daily-check-ins-heatmap', user?.id, weeks],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('daily_check_ins')
+        .select('*')
+        .eq('user_id', user!.id)
+        .gte('check_in_date', format(subDays(new Date(), weeks * 7), 'yyyy-MM-dd'))
+        .order('check_in_date', { ascending: false });
+      
+      if (error) throw error;
+      return data as DailyCheckIn[];
+    },
+    enabled: !!user && !propCheckIns,
+  });
+
+  const checkIns = propCheckIns || fetchedCheckIns || [];
+  const totalCheckIns = checkIns.length;
+
+  if (isLoading && !propCheckIns) {
+    if (!showCard) {
+      return <Skeleton className="h-32 w-full" />;
+    }
+    return (
+      <Card>
+        <CardHeader className="pb-2">
+          <Skeleton className="h-6 w-48" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-32 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!showCard) {
+    return <HeatmapGrid checkIns={checkIns} weeks={weeks} />;
+  }
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CalendarDays className="h-5 w-5 text-primary" />
+            Daily Check-in Activity
+          </CardTitle>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span>{totalCheckIns} check-ins this year</span>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <HeatmapGrid checkIns={checkIns} weeks={weeks} />
+      </CardContent>
+    </Card>
   );
 };
