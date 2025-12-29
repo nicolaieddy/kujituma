@@ -1,11 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Flame, TrendingUp, Calendar, Lock, Sun, CalendarDays, ClipboardList, MousePointer } from "lucide-react";
+import { Flame, TrendingUp, Calendar, Lock, Sun, CalendarDays, ClipboardList, MousePointer, ExternalLink } from "lucide-react";
 import { useStreaks } from "@/hooks/useStreaks";
-import { useRitualsTrigger } from "@/contexts/RitualsContext";
-import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 interface SystemRitual {
   id: string;
@@ -59,8 +58,8 @@ const SystemRitualCard = ({ ritual }: SystemRitualCardProps) => {
                 {ritual.description}
               </p>
               <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-primary flex items-center gap-1 mt-1">
-                <MousePointer className="h-3 w-3" />
-                Click to open
+                <ExternalLink className="h-3 w-3" />
+                View Dashboard
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -108,8 +107,7 @@ export const SystemRitualsSection = () => {
     isLoading 
   } = useStreaks();
 
-  const { openDailyCheckIn, openWeeklyPlanning } = useRitualsTrigger();
-  const { openQuarterlyReview } = useQuarterlyReviewTrigger();
+  const navigate = useNavigate();
 
   if (isLoading) {
     return null;
@@ -125,7 +123,7 @@ export const SystemRitualsSection = () => {
       currentStreak: currentDailyStreak,
       longestStreak: longestDailyStreak,
       color: "bg-amber-500/10 text-amber-500",
-      onClick: openDailyCheckIn,
+      onClick: () => navigate('/rituals?tab=daily'),
     },
     {
       id: "weekly-planning",
@@ -136,7 +134,7 @@ export const SystemRitualsSection = () => {
       currentStreak: currentWeeklyStreak,
       longestStreak: longestWeeklyStreak,
       color: "bg-blue-500/10 text-blue-500",
-      onClick: openWeeklyPlanning,
+      onClick: () => navigate('/rituals?tab=weekly'),
     },
     {
       id: "quarterly-review",
@@ -147,7 +145,7 @@ export const SystemRitualsSection = () => {
       currentStreak: 0, // Quarterly streaks not tracked yet
       longestStreak: 0,
       color: "bg-purple-500/10 text-purple-500",
-      onClick: openQuarterlyReview,
+      onClick: () => navigate('/rituals?tab=quarterly'),
     },
   ];
 

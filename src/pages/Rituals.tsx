@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { Navigate } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { MainNavigation } from "@/components/layout/MainNavigation";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
@@ -8,10 +8,26 @@ import { DailyCheckInsTab } from "@/components/rituals/DailyCheckInsTab";
 import { WeeklyPlanningTab } from "@/components/rituals/WeeklyPlanningTab";
 import { QuarterlyReviewsTab } from "@/components/rituals/QuarterlyReviewsTab";
 import { Sun, CalendarDays, ClipboardList } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const Rituals = () => {
   const { user, loading } = useAuth();
   const { isOffline } = useOfflineStatus();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab');
+  const [activeTab, setActiveTab] = useState(tabParam || 'daily');
+
+  // Sync URL param with tab state
+  useEffect(() => {
+    if (tabParam && ['daily', 'weekly', 'quarterly'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    setSearchParams({ tab: value });
+  };
 
   if (loading) {
     return (
@@ -48,7 +64,7 @@ const Rituals = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="daily" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-md">
             <TabsTrigger value="daily" className="flex items-center gap-2">
               <Sun className="h-4 w-4" />
