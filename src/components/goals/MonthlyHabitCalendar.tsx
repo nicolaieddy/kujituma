@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   startOfMonth, 
   endOfMonth, 
@@ -14,7 +14,7 @@ import {
 } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Check } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, CalendarCheck } from "lucide-react";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,23 +26,31 @@ interface MonthlyHabitCalendarProps {
   frequency: string;
 }
 
-const WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const WEEKDAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export const MonthlyHabitCalendar = ({ habitId, goalId, frequency }: MonthlyHabitCalendarProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // Fetch completions for the current month
+  // Memoize month boundaries
+  const { monthStart, monthEnd, monthKey } = useMemo(() => ({
+    monthStart: startOfMonth(currentMonth),
+    monthEnd: endOfMonth(currentMonth),
+    monthKey: format(currentMonth, 'yyyy-MM')
+  }), [currentMonth]);
+
+  // Fetch completions for the current month with stale time
   const { data: completions = [], isLoading } = useQuery({
-    queryKey: ['habit-monthly-completions', habitId, format(currentMonth, 'yyyy-MM')],
+    queryKey: ['habit-monthly-completions', habitId, monthKey],
     queryFn: async () => {
       const allCompletions = await HabitCompletionsService.getHabitItemCompletions(habitId);
-      const monthStart = format(startOfMonth(currentMonth), 'yyyy-MM-dd');
-      const monthEnd = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
-      return allCompletions.filter(c => c.completion_date >= monthStart && c.completion_date <= monthEnd);
+      const monthStartStr = format(monthStart, 'yyyy-MM-dd');
+      const monthEndStr = format(monthEnd, 'yyyy-MM-dd');
+      return allCompletions.filter(c => c.completion_date >= monthStartStr && c.completion_date <= monthEndStr);
     },
     enabled: !!user,
+    staleTime: 30000, // Cache for 30 seconds
   });
 
   // Toggle completion mutation
@@ -61,18 +69,23 @@ export const MonthlyHabitCalendar = ({ habitId, goalId, frequency }: MonthlyHabi
     },
   });
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const daysInMonth = useMemo(() => 
+    eachDayOfInterval({ start: monthStart, end: monthEnd }), 
+    [monthStart, monthEnd]
+  );
 
   // Calculate padding for the first week (Monday = 0, Sunday = 6)
-  const firstDayOfWeek = getDay(monthStart);
-  const paddingDays = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+  const paddingDays = useMemo(() => {
+    const firstDayOfWeek = getDay(monthStart);
+    return firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+  }, [monthStart]);
 
-  const isCompleted = (date: Date) => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return completions.some(c => c.completion_date === dateStr);
-  };
+  const completionSet = useMemo(() => 
+    new Set(completions.map(c => c.completion_date)), 
+    [completions]
+  );
+
+  const isCompleted = (date: Date) => completionSet.has(format(date, 'yyyy-MM-dd'));
 
   const handleDayClick = (date: Date) => {
     if (isFuture(date) && !isToday(date)) return;
@@ -83,24 +96,30 @@ export const MonthlyHabitCalendar = ({ habitId, goalId, frequency }: MonthlyHabi
   const isCurrentMonth = isSameMonth(currentMonth, new Date());
 
   return (
-    <div className="space-y-3">
-      {/* Month navigation */}
+    <div className="space-y-2 p-2 bg-muted/30 rounded-lg">
+      {/* Header with explanation */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
+        <CalendarCheck className="h-3.5 w-3.5 text-emerald-500" />
+        <span>Tap days to log completions</span>
+      </div>
+
+      {/* Month navigation - compact */}
       <div className="flex items-center justify-between">
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 p-0"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3 w-3" />
         </Button>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-foreground">
-            {format(currentMonth, 'MMMM yyyy')}
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-foreground">
+            {format(currentMonth, 'MMM yyyy')}
           </span>
           {completedCount > 0 && (
-            <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-              {completedCount} {completedCount === 1 ? 'day' : 'days'}
+            <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full">
+              {completedCount}
             </span>
           )}
         </div>
@@ -109,23 +128,23 @@ export const MonthlyHabitCalendar = ({ habitId, goalId, frequency }: MonthlyHabi
           size="sm"
           onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
           disabled={isCurrentMonth}
-          className="h-7 w-7 p-0"
+          className="h-6 w-6 p-0"
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-3 w-3" />
         </Button>
       </div>
 
-      {/* Weekday headers */}
-      <div className="grid grid-cols-7 gap-1">
-        {WEEKDAY_LABELS.map(day => (
-          <div key={day} className="text-center text-[10px] text-muted-foreground font-medium py-1">
+      {/* Weekday headers - super compact */}
+      <div className="grid grid-cols-7 gap-0.5">
+        {WEEKDAY_LABELS.map((day, i) => (
+          <div key={i} className="text-center text-[9px] text-muted-foreground font-medium">
             {day}
           </div>
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      {/* Calendar grid - compact */}
+      <div className="grid grid-cols-7 gap-0.5">
         {/* Padding for days before month start */}
         {Array.from({ length: paddingDays }).map((_, i) => (
           <div key={`pad-${i}`} className="aspect-square" />
@@ -146,18 +165,18 @@ export const MonthlyHabitCalendar = ({ habitId, goalId, frequency }: MonthlyHabi
               onClick={() => handleDayClick(date)}
               disabled={future || isLogging}
               className={cn(
-                "aspect-square rounded-md text-xs font-medium transition-all relative",
+                "aspect-square rounded text-[10px] font-medium transition-all relative",
                 "flex items-center justify-center",
-                "hover:bg-muted/60 focus:outline-none focus:ring-2 focus:ring-primary/50",
-                today && "ring-2 ring-emerald-400/50",
+                "hover:bg-muted/60 focus:outline-none focus:ring-1 focus:ring-primary/50",
+                today && "ring-1 ring-emerald-400/50",
                 completed && "bg-emerald-500 text-white hover:bg-emerald-600",
-                !completed && !future && "bg-muted/30 text-foreground",
+                !completed && !future && "bg-background text-foreground",
                 future && "opacity-30 cursor-not-allowed bg-transparent text-muted-foreground",
                 isLogging && "opacity-50"
               )}
             >
               {completed ? (
-                <Check className="h-3.5 w-3.5" />
+                <Check className="h-2.5 w-2.5" />
               ) : (
                 format(date, 'd')
               )}
@@ -165,13 +184,6 @@ export const MonthlyHabitCalendar = ({ habitId, goalId, frequency }: MonthlyHabi
           );
         })}
       </div>
-
-      {/* Helper text */}
-      <p className="text-[10px] text-muted-foreground text-center">
-        {frequency === 'quarterly' 
-          ? "Click any day to mark completion for this quarter"
-          : "Click any day to mark completion for this month"}
-      </p>
     </div>
   );
 };
