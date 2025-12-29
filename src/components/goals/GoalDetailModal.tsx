@@ -2,13 +2,15 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Goal, GoalStatus } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalObjectivesList } from "./GoalObjectivesList";
 import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
 import { HabitItemsCard } from "./HabitItemsCard";
-import { Edit, CheckCircle, Play, Clock, Trash2 } from "lucide-react";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, Target } from "lucide-react";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 interface GoalDetailModalProps {
   goal: Goal | null;
@@ -59,6 +61,8 @@ export const GoalDetailModal = ({
   onDeleteObjective,
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [quickAddText, setQuickAddText] = useState("");
+  const [isQuickAdding, setIsQuickAdding] = useState(false);
 
   if (!goal) return null;
 
@@ -87,7 +91,17 @@ export const GoalDetailModal = ({
 
   const handleClose = () => {
     setIsEditing(false);
+    setIsQuickAdding(false);
+    setQuickAddText("");
     onClose();
+  };
+
+  const handleQuickAddObjective = () => {
+    if (!quickAddText.trim()) return;
+    const currentWeekStart = WeeklyProgressService.getWeekStart();
+    onCreateObjective(goal.id, quickAddText.trim(), currentWeekStart);
+    setQuickAddText("");
+    setIsQuickAdding(false);
   };
 
   return (
@@ -165,6 +179,58 @@ export const GoalDetailModal = ({
           </div>
         ) : (
           <div className="mt-6 space-y-6">
+            {/* Quick Add Objective */}
+            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
+              {isQuickAdding ? (
+                <div className="flex items-center gap-2 flex-1">
+                  <Target className="h-5 w-5 text-primary flex-shrink-0" />
+                  <Input
+                    value={quickAddText}
+                    onChange={(e) => setQuickAddText(e.target.value)}
+                    placeholder="Quick add objective for this week..."
+                    className="flex-1"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleQuickAddObjective();
+                      } else if (e.key === 'Escape') {
+                        setIsQuickAdding(false);
+                        setQuickAddText("");
+                      }
+                    }}
+                  />
+                  <Button 
+                    size="sm" 
+                    onClick={handleQuickAddObjective}
+                    disabled={!quickAddText.trim()}
+                    className="gradient-primary"
+                  >
+                    Add
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="ghost"
+                    onClick={() => {
+                      setIsQuickAdding(false);
+                      setQuickAddText("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="flex-1 justify-start gap-2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsQuickAdding(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Quick add objective for this week
+                </Button>
+              )}
+            </div>
+
             {/* Habits Section - only show if has habit_items */}
             {goal.habit_items && goal.habit_items.length > 0 && (
               <>
