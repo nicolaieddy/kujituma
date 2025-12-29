@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { useGoals } from "@/hooks/useGoals";
+import { GoalHabitGroup } from "./GoalHabitGroup";
 import { HabitCard } from "./HabitCard";
 import { HabitDetailModal } from "./HabitDetailModal";
 import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
@@ -346,7 +347,7 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
         />
       )}
 
-      {/* Active Habits */}
+      {/* Active Habits - Grouped by Goal */}
       {activeHabitsList.length > 0 && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -354,9 +355,9 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
               <Flame className="h-5 w-5 text-primary" />
               Active Habits
             </h3>
-            <Badge variant="secondary">{activeHabitsList.length}</Badge>
+            <Badge variant="secondary">{activeHabitsList.length} goals</Badge>
           </div>
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
             {activeHabitsList.map(stats => {
               const isHighlighted = highlightedGoalId === stats.goal.id;
               return (
@@ -368,8 +369,9 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
                     isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse"
                   )}
                 >
-                  <HabitCard 
-                    habitStats={stats} 
+                  <GoalHabitGroup 
+                    goal={stats.goal}
+                    habitStats={stats}
                     onClick={() => handleHabitClick(stats)}
                   />
                 </div>
@@ -388,10 +390,10 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
               Paused Habits
             </h3>
             <Badge variant="outline" className="border-slate-500/30 text-slate-500">
-              {pausedHabitsList.length}
+              {pausedHabitsList.length} goals
             </Badge>
           </div>
-          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
+          <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
             {pausedHabitsList.map(stats => {
               const isHighlighted = highlightedGoalId === stats.goal.id;
               return (
@@ -403,15 +405,16 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
                     isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse"
                   )}
                 >
-                  <HabitCard 
-                    habitStats={stats} 
+                  <GoalHabitGroup 
+                    goal={stats.goal}
+                    habitStats={stats}
                     onClick={() => handleHabitClick(stats)}
                     isPaused
                   />
                   <Button
                     size="sm"
                     variant="outline"
-                    className="absolute top-3 right-3 gap-1.5 bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground"
+                    className="absolute top-3 right-3 gap-1.5 bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground z-10"
                     onClick={(e) => handleResume(stats.goal.id, e)}
                   >
                     <PlayCircle className="h-4 w-4" />
