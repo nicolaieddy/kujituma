@@ -1,10 +1,17 @@
 
 export type GoalVisibility = 'public' | 'friends' | 'private';
 
+export interface CustomSchedule {
+  interval: number;
+  unit: 'day' | 'week' | 'month';
+  daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, etc.
+}
+
 export interface HabitItem {
   id: string;
   text: string;
-  frequency: RecurrenceFrequency;
+  frequency: RecurrenceFrequency | 'custom';
+  customSchedule?: CustomSchedule;
 }
 
 export interface Goal {

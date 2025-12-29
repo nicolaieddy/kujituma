@@ -4,14 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Goal, GoalStatus, HabitItem, RecurrenceFrequency } from "@/types/goals";
+import { Goal, GoalStatus, HabitItem, CustomSchedule } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalObjectivesList } from "./GoalObjectivesList";
 import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
-import { Edit, CheckCircle, Play, Clock, Trash2, Plus, Target, RefreshCw, ArrowRight, X, Pencil } from "lucide-react";
-import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, ArrowRight, X, Pencil } from "lucide-react";
 import { Link } from "react-router-dom";
+import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
+
+type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
 interface GoalDetailModalProps {
   goal: Goal | null;
@@ -33,7 +35,8 @@ const frequencyLabels: Record<string, string> = {
   biweekly: 'Bi-weekly',
   monthly: 'Monthly',
   monthly_last_week: 'Monthly (Last Week)',
-  quarterly: 'Quarterly'
+  quarterly: 'Quarterly',
+  custom: 'Custom'
 };
 
 const STATUS_CONFIG = {
@@ -72,14 +75,16 @@ export const GoalDetailModal = ({
   onDeleteObjective,
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [quickAddText, setQuickAddText] = useState("");
-  const [isQuickAdding, setIsQuickAdding] = useState(false);
   const [isAddingHabit, setIsAddingHabit] = useState(false);
   const [newHabitText, setNewHabitText] = useState("");
-  const [newHabitFrequency, setNewHabitFrequency] = useState<RecurrenceFrequency>("weekly");
+  const [newHabitFrequency, setNewHabitFrequency] = useState<HabitFrequency>("weekly");
+  const [newHabitCustomSchedule, setNewHabitCustomSchedule] = useState<CustomSchedule | undefined>();
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
   const [editingHabitText, setEditingHabitText] = useState("");
-  const [editingHabitFrequency, setEditingHabitFrequency] = useState<RecurrenceFrequency>("weekly");
+  const [editingHabitFrequency, setEditingHabitFrequency] = useState<HabitFrequency>("weekly");
+  const [editingHabitCustomSchedule, setEditingHabitCustomSchedule] = useState<CustomSchedule | undefined>();
+  const [showEditCustomPicker, setShowEditCustomPicker] = useState(false);
 
   if (!goal) return null;
 
@@ -109,19 +114,12 @@ export const GoalDetailModal = ({
 
   const handleClose = () => {
     setIsEditing(false);
-    setIsQuickAdding(false);
-    setQuickAddText("");
     setIsAddingHabit(false);
     setNewHabitText("");
+    setNewHabitFrequency("weekly");
+    setNewHabitCustomSchedule(undefined);
+    setEditingHabitId(null);
     onClose();
-  };
-
-  const handleQuickAddObjective = () => {
-    if (!quickAddText.trim()) return;
-    const currentWeekStart = WeeklyProgressService.getWeekStart();
-    onCreateObjective(goal.id, quickAddText.trim(), currentWeekStart);
-    setQuickAddText("");
-    setIsQuickAdding(false);
   };
 
   const handleAddHabit = () => {
@@ -130,11 +128,13 @@ export const GoalDetailModal = ({
       id: crypto.randomUUID(),
       text: newHabitText.trim(),
       frequency: newHabitFrequency,
+      ...(newHabitFrequency === 'custom' && newHabitCustomSchedule && { customSchedule: newHabitCustomSchedule }),
     };
     const updatedHabits = [...habitItems, newHabit];
     onEdit({ ...goal, habit_items: updatedHabits });
     setNewHabitText("");
     setNewHabitFrequency("weekly");
+    setNewHabitCustomSchedule(undefined);
     setIsAddingHabit(false);
   };
 
@@ -146,24 +146,53 @@ export const GoalDetailModal = ({
   const handleStartEditHabit = (habit: HabitItem) => {
     setEditingHabitId(habit.id);
     setEditingHabitText(habit.text);
-    setEditingHabitFrequency(habit.frequency);
+    setEditingHabitFrequency(habit.frequency as HabitFrequency);
+    setEditingHabitCustomSchedule(habit.customSchedule);
   };
 
   const handleSaveEditHabit = () => {
     if (!editingHabitId || !editingHabitText.trim()) return;
     const updatedHabits = habitItems.map(h => 
       h.id === editingHabitId 
-        ? { ...h, text: editingHabitText.trim(), frequency: editingHabitFrequency }
+        ? { 
+            ...h, 
+            text: editingHabitText.trim(), 
+            frequency: editingHabitFrequency,
+            customSchedule: editingHabitFrequency === 'custom' ? editingHabitCustomSchedule : undefined
+          }
         : h
     );
     onEdit({ ...goal, habit_items: updatedHabits });
     setEditingHabitId(null);
     setEditingHabitText("");
+    setEditingHabitCustomSchedule(undefined);
   };
 
   const handleCancelEditHabit = () => {
     setEditingHabitId(null);
     setEditingHabitText("");
+    setEditingHabitCustomSchedule(undefined);
+  };
+
+  const getHabitFrequencyLabel = (habit: HabitItem): string => {
+    if (habit.frequency === 'custom' && habit.customSchedule) {
+      return formatCustomSchedule(habit.customSchedule);
+    }
+    return frequencyLabels[habit.frequency] || habit.frequency;
+  };
+
+  const handleNewFrequencyChange = (value: HabitFrequency) => {
+    setNewHabitFrequency(value);
+    if (value === 'custom') {
+      setShowCustomPicker(true);
+    }
+  };
+
+  const handleEditFrequencyChange = (value: HabitFrequency) => {
+    setEditingHabitFrequency(value);
+    if (value === 'custom') {
+      setShowEditCustomPicker(true);
+    }
   };
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -240,57 +269,6 @@ export const GoalDetailModal = ({
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {/* Quick Add Objective */}
-            <div className="flex items-center gap-3 p-4 rounded-lg bg-muted/30 border border-border/50">
-              {isQuickAdding ? (
-                <div className="flex items-center gap-2 flex-1">
-                  <Target className="h-5 w-5 text-primary flex-shrink-0" />
-                  <Input
-                    value={quickAddText}
-                    onChange={(e) => setQuickAddText(e.target.value)}
-                    placeholder="Quick add objective for this week..."
-                    className="flex-1"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleQuickAddObjective();
-                      } else if (e.key === 'Escape') {
-                        setIsQuickAdding(false);
-                        setQuickAddText("");
-                      }
-                    }}
-                  />
-                  <Button 
-                    size="sm" 
-                    onClick={handleQuickAddObjective}
-                    disabled={!quickAddText.trim()}
-                    className="gradient-primary"
-                  >
-                    Add
-                  </Button>
-                  <Button 
-                    size="sm" 
-                    variant="ghost"
-                    onClick={() => {
-                      setIsQuickAdding(false);
-                      setQuickAddText("");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  variant="ghost"
-                  className="flex-1 justify-start gap-2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setIsQuickAdding(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Quick add objective for this week
-                </Button>
-              )}
-            </div>
 
             {/* Habits Section - always visible with add capability */}
             <div className="space-y-3">
@@ -345,7 +323,7 @@ export const GoalDetailModal = ({
                           />
                           <Select
                             value={editingHabitFrequency}
-                            onValueChange={(value: RecurrenceFrequency) => setEditingHabitFrequency(value)}
+                            onValueChange={(value: HabitFrequency) => handleEditFrequencyChange(value)}
                           >
                             <SelectTrigger className="w-32 h-8">
                               <SelectValue />
@@ -357,6 +335,7 @@ export const GoalDetailModal = ({
                               <SelectItem value="biweekly">Bi-weekly</SelectItem>
                               <SelectItem value="monthly">Monthly</SelectItem>
                               <SelectItem value="quarterly">Quarterly</SelectItem>
+                              <SelectItem value="custom">Custom...</SelectItem>
                             </SelectContent>
                           </Select>
                           <Button 
@@ -392,7 +371,7 @@ export const GoalDetailModal = ({
                               className="hover:opacity-80 transition-opacity"
                             >
                               <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs cursor-pointer hover:border-primary/50">
-                                {frequencyLabels[habit.frequency] || habit.frequency}
+                                {getHabitFrequencyLabel(habit)}
                               </Badge>
                             </button>
                             <Link 
@@ -440,18 +419,19 @@ export const GoalDetailModal = ({
                   <div className="flex items-center gap-2">
                     <Select
                       value={newHabitFrequency}
-                      onValueChange={(value: RecurrenceFrequency) => setNewHabitFrequency(value)}
+                      onValueChange={(value: HabitFrequency) => handleNewFrequencyChange(value)}
                     >
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Frequency" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="bg-background border border-border z-50">
                         <SelectItem value="daily">Daily</SelectItem>
                         <SelectItem value="weekdays">Weekdays</SelectItem>
                         <SelectItem value="weekly">Weekly</SelectItem>
                         <SelectItem value="biweekly">Bi-weekly</SelectItem>
                         <SelectItem value="monthly">Monthly</SelectItem>
                         <SelectItem value="quarterly">Quarterly</SelectItem>
+                        <SelectItem value="custom">Custom...</SelectItem>
                       </SelectContent>
                     </Select>
                     <Button 
@@ -505,6 +485,36 @@ export const GoalDetailModal = ({
           </div>
         )}
       </DialogContent>
+
+      {/* Custom Recurrence Picker for new habit */}
+      <CustomRecurrencePicker
+        isOpen={showCustomPicker}
+        onClose={() => {
+          setShowCustomPicker(false);
+          if (!newHabitCustomSchedule) {
+            setNewHabitFrequency("weekly");
+          }
+        }}
+        onSave={(schedule) => {
+          setNewHabitCustomSchedule(schedule);
+        }}
+        initialSchedule={newHabitCustomSchedule}
+      />
+
+      {/* Custom Recurrence Picker for editing habit */}
+      <CustomRecurrencePicker
+        isOpen={showEditCustomPicker}
+        onClose={() => {
+          setShowEditCustomPicker(false);
+          if (!editingHabitCustomSchedule) {
+            setEditingHabitFrequency("weekly");
+          }
+        }}
+        onSave={(schedule) => {
+          setEditingHabitCustomSchedule(schedule);
+        }}
+        initialSchedule={editingHabitCustomSchedule}
+      />
     </Dialog>
   );
 };
