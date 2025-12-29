@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DailyCheckInsTab } from "@/components/rituals/DailyCheckInsTab";
 import { WeeklyPlanningTab } from "@/components/rituals/WeeklyPlanningTab";
 import { QuarterlyReviewsTab } from "@/components/rituals/QuarterlyReviewsTab";
+import { StreakHistoryChart } from "@/components/rituals/StreakHistoryChart";
 import { Sun, CalendarDays, ClipboardList } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -56,13 +57,16 @@ const Rituals = () => {
   return (
     <div className="min-h-screen bg-background">
       <MainNavigation />
-      <main className="container mx-auto px-4 py-6 max-w-6xl">
-        <div className="mb-6">
+      <main className="container mx-auto px-4 py-6 max-w-6xl space-y-6">
+        <div>
           <h1 className="text-3xl font-bold text-foreground">Rituals Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Track your daily check-ins, weekly planning, and quarterly reviews
           </p>
         </div>
+
+        {/* Streak History Chart */}
+        <StreakHistoryChart />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 max-w-md">
