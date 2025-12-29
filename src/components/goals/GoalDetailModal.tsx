@@ -328,7 +328,7 @@ export const GoalDetailModal = ({
                             <SelectTrigger className="w-32 h-8">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="bg-background border border-border z-50">
+                            <SelectContent className="bg-background border border-border z-[200]">
                               <SelectItem value="daily">Daily</SelectItem>
                               <SelectItem value="weekdays">Weekdays</SelectItem>
                               <SelectItem value="weekly">Weekly</SelectItem>
@@ -424,7 +424,7 @@ export const GoalDetailModal = ({
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Frequency" />
                       </SelectTrigger>
-                      <SelectContent className="bg-background border border-border z-50">
+                      <SelectContent className="bg-background border border-border z-[200]">
                         <SelectItem value="daily">Daily</SelectItem>
                         <SelectItem value="weekdays">Weekdays</SelectItem>
                         <SelectItem value="weekly">Weekly</SelectItem>
