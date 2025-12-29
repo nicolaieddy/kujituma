@@ -5,7 +5,6 @@ export interface HabitItem {
   id: string;
   text: string;
   frequency: RecurrenceFrequency;
-  creates_objective?: boolean; // If true, auto-creates weekly objectives
 }
 
 export interface Goal {

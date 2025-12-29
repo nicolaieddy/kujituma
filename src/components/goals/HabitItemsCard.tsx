@@ -19,20 +19,8 @@ const frequencyLabels: Record<string, string> = {
 };
 
 export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
-  // Combine habit_items with recurring objective if exists
-  const baseHabitItems = goal.habit_items || [];
-  
-  // If goal has recurring objective, treat it as a habit item too
-  const recurringHabit = goal.is_recurring && goal.recurring_objective_text ? {
-    id: `recurring-${goal.id}`,
-    text: goal.recurring_objective_text,
-    frequency: goal.recurrence_frequency || 'weekly'
-  } : null;
-
-  const habitItems = recurringHabit 
-    ? [recurringHabit, ...baseHabitItems]
-    : baseHabitItems;
-    
+  // Only show actual habit items - no merging with recurring_objective_text
+  const habitItems = goal.habit_items || [];
   const hasHabits = habitItems.length > 0;
 
   if (!hasHabits) return null;
@@ -54,7 +42,7 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
           </Link>
         </div>
         <p className="text-muted-foreground text-xs">
-          Recurring actions tied to this goal
+          Recurring behaviors tied to this goal
         </p>
       </CardHeader>
       <CardContent>
