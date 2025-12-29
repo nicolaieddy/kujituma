@@ -19,8 +19,11 @@ export interface UserStreaks {
   longest_daily_streak: number;
   current_weekly_streak: number;
   longest_weekly_streak: number;
+  current_quarterly_streak: number;
+  longest_quarterly_streak: number;
   last_check_in_date?: string;
   last_week_completed?: string;
+  last_quarter_completed?: string;
   created_at: string;
   updated_at: string;
 }

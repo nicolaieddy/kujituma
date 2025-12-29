@@ -43,5 +43,7 @@ export const useStreaks = () => {
     longestDailyStreak: streaks?.longest_daily_streak || 0,
     currentWeeklyStreak: streaks?.current_weekly_streak || 0,
     longestWeeklyStreak: streaks?.longest_weekly_streak || 0,
+    currentQuarterlyStreak: streaks?.current_quarterly_streak || 0,
+    longestQuarterlyStreak: streaks?.longest_quarterly_streak || 0,
   };
 };
