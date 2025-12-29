@@ -165,17 +165,18 @@ export const GoalDetailModal = ({
           </div>
         ) : (
           <div className="mt-6 space-y-6">
-            {/* Habit Items with weekly tracking - show if has habit_items OR is recurring */}
-            {((goal.habit_items && goal.habit_items.length > 0) || goal.is_recurring) && (
-              <HabitItemsCard goal={goal} />
+            {/* Habits Section - only show if has habit_items */}
+            {goal.habit_items && goal.habit_items.length > 0 && (
+              <>
+                <HabitItemsCard goal={goal} />
+                <HabitCompletionTimeline 
+                  goal={goal} 
+                  objectives={relatedObjectives} 
+                />
+              </>
             )}
             
-            {goal.is_recurring && (
-              <HabitCompletionTimeline 
-                goal={goal} 
-                objectives={relatedObjectives} 
-              />
-            )}
+            {/* Objectives Section - one-time tasks */}
             <GoalObjectivesList
               goal={goal}
               objectives={relatedObjectives}

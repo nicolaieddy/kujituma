@@ -1,11 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { RecurringObjectivesService } from "@/services/recurringObjectivesService";
 import { HabitStreaksService } from "@/services/habitStreaksService";
 import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { celebrateStreakMilestone, getStreakMilestoneMessage } from "@/utils/confetti";
 import { offlineDataService } from "@/services/offlineDataService";
 import { offlineSyncService } from "@/services/offlineSyncService";
@@ -13,52 +12,7 @@ import { offlineSyncService } from "@/services/offlineSyncService";
 export const useWeeklyObjectives = (currentWeekStart: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const hasGeneratedRef = useRef<string | null>(null);
   const [isCached, setIsCached] = useState(false);
-  
-  // Track mounted state to prevent state updates after unmount
-  const mountedRef = useRef(true);
-
-  // Reset mounted ref on mount/unmount
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  // Generate recurring objectives when week changes
-  useEffect(() => {
-    let cancelled = false;
-    
-    const generateRecurringObjectives = async () => {
-      if (!user || !currentWeekStart) return;
-      
-      // Only generate once per week to avoid duplicates
-      if (hasGeneratedRef.current === currentWeekStart) return;
-      hasGeneratedRef.current = currentWeekStart;
-
-      try {
-        const created = await RecurringObjectivesService.generateRecurringObjectivesForWeek(currentWeekStart);
-        
-        // Check if still mounted and not cancelled before updating
-        if (cancelled || !mountedRef.current) return;
-        
-        if (created > 0) {
-          // Invalidate to refresh the list with new objectives
-          queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
-        }
-      } catch (error) {
-        console.error('Error generating recurring objectives:', error);
-      }
-    };
-
-    generateRecurringObjectives();
-    
-    return () => {
-      cancelled = true;
-    };
-  }, [user, currentWeekStart, queryClient]);
 
   const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
