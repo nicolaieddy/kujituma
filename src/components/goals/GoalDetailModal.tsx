@@ -77,6 +77,9 @@ export const GoalDetailModal = ({
   const [isAddingHabit, setIsAddingHabit] = useState(false);
   const [newHabitText, setNewHabitText] = useState("");
   const [newHabitFrequency, setNewHabitFrequency] = useState<RecurrenceFrequency>("weekly");
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editingHabitText, setEditingHabitText] = useState("");
+  const [editingHabitFrequency, setEditingHabitFrequency] = useState<RecurrenceFrequency>("weekly");
 
   if (!goal) return null;
 
@@ -140,6 +143,28 @@ export const GoalDetailModal = ({
     onEdit({ ...goal, habit_items: updatedHabits });
   };
 
+  const handleStartEditHabit = (habit: HabitItem) => {
+    setEditingHabitId(habit.id);
+    setEditingHabitText(habit.text);
+    setEditingHabitFrequency(habit.frequency);
+  };
+
+  const handleSaveEditHabit = () => {
+    if (!editingHabitId || !editingHabitText.trim()) return;
+    const updatedHabits = habitItems.map(h => 
+      h.id === editingHabitId 
+        ? { ...h, text: editingHabitText.trim(), frequency: editingHabitFrequency }
+        : h
+    );
+    onEdit({ ...goal, habit_items: updatedHabits });
+    setEditingHabitId(null);
+    setEditingHabitText("");
+  };
+
+  const handleCancelEditHabit = () => {
+    setEditingHabitId(null);
+    setEditingHabitText("");
+  };
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
@@ -301,25 +326,92 @@ export const GoalDetailModal = ({
                       key={habit.id} 
                       className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 group"
                     >
-                      <Link 
-                        to={`/?tab=habits&highlightGoal=${goal.id}`}
-                        className="text-foreground text-sm hover:text-primary transition-colors"
-                      >
-                        {habit.text}
-                      </Link>
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs">
-                          {frequencyLabels[habit.frequency] || habit.frequency}
-                        </Badge>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => handleRemoveHabit(habit.id)}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
+                      {editingHabitId === habit.id ? (
+                        // Editing mode
+                        <div className="flex items-center gap-2 flex-1">
+                          <Input
+                            value={editingHabitText}
+                            onChange={(e) => setEditingHabitText(e.target.value)}
+                            className="flex-1 h-8"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleSaveEditHabit();
+                              } else if (e.key === 'Escape') {
+                                handleCancelEditHabit();
+                              }
+                            }}
+                          />
+                          <Select
+                            value={editingHabitFrequency}
+                            onValueChange={(value: RecurrenceFrequency) => setEditingHabitFrequency(value)}
+                          >
+                            <SelectTrigger className="w-32 h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border border-border z-50">
+                              <SelectItem value="daily">Daily</SelectItem>
+                              <SelectItem value="weekdays">Weekdays</SelectItem>
+                              <SelectItem value="weekly">Weekly</SelectItem>
+                              <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                              <SelectItem value="monthly">Monthly</SelectItem>
+                              <SelectItem value="quarterly">Quarterly</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button 
+                            size="sm" 
+                            onClick={handleSaveEditHabit}
+                            disabled={!editingHabitText.trim()}
+                            className="h-8 gradient-primary"
+                          >
+                            Save
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost"
+                            onClick={handleCancelEditHabit}
+                            className="h-8"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      ) : (
+                        // Display mode
+                        <>
+                          <button 
+                            onClick={() => handleStartEditHabit(habit)}
+                            className="text-foreground text-sm hover:text-primary transition-colors text-left"
+                          >
+                            {habit.text}
+                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => handleStartEditHabit(habit)}
+                              className="hover:opacity-80 transition-opacity"
+                            >
+                              <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs cursor-pointer hover:border-primary/50">
+                                {frequencyLabels[habit.frequency] || habit.frequency}
+                              </Badge>
+                            </button>
+                            <Link 
+                              to={`/?tab=habits&highlightGoal=${goal.id}`}
+                              className="h-6 w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80"
+                              title="Track in Habits tab"
+                            >
+                              <ArrowRight className="h-3 w-3" />
+                            </Link>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => handleRemoveHabit(habit.id)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </>
+                      )}
                     </div>
                   ))}
                 </div>
