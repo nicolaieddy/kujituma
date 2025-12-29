@@ -7,8 +7,9 @@ import { cn } from "@/lib/utils";
 
 export interface CustomSchedule {
   interval: number;
-  unit: 'day' | 'week' | 'month';
+  unit: 'day' | 'week' | 'month' | 'year';
   daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, etc.
+  monthWeek?: 'first' | 'second' | 'third' | 'fourth' | 'last'; // For monthly on specific week
 }
 
 interface CustomRecurrencePickerProps {
@@ -28,6 +29,14 @@ const DAYS = [
   { label: 'S', fullLabel: 'Saturday', value: 6 },
 ];
 
+const MONTH_WEEK_OPTIONS = [
+  { value: 'first', label: 'First week' },
+  { value: 'second', label: 'Second week' },
+  { value: 'third', label: 'Third week' },
+  { value: 'fourth', label: 'Fourth week' },
+  { value: 'last', label: 'Last week' },
+];
+
 export const CustomRecurrencePicker = ({
   isOpen,
   onClose,
@@ -35,18 +44,26 @@ export const CustomRecurrencePicker = ({
   initialSchedule,
 }: CustomRecurrencePickerProps) => {
   const [interval, setInterval] = useState(initialSchedule?.interval || 1);
-  const [unit, setUnit] = useState<'day' | 'week' | 'month'>(initialSchedule?.unit || 'week');
+  const [unit, setUnit] = useState<'day' | 'week' | 'month' | 'year'>(initialSchedule?.unit || 'week');
   const [selectedDays, setSelectedDays] = useState<number[]>(initialSchedule?.daysOfWeek || [1]); // Default Monday
+  const [monthWeek, setMonthWeek] = useState<'first' | 'second' | 'third' | 'fourth' | 'last'>(
+    initialSchedule?.monthWeek || 'last'
+  );
+  const [useMonthWeek, setUseMonthWeek] = useState(!!initialSchedule?.monthWeek);
 
   useEffect(() => {
     if (initialSchedule) {
       setInterval(initialSchedule.interval);
       setUnit(initialSchedule.unit);
       setSelectedDays(initialSchedule.daysOfWeek || [1]);
+      setMonthWeek(initialSchedule.monthWeek || 'last');
+      setUseMonthWeek(!!initialSchedule.monthWeek);
     } else {
       setInterval(1);
       setUnit('week');
       setSelectedDays([1]);
+      setMonthWeek('last');
+      setUseMonthWeek(false);
     }
   }, [initialSchedule, isOpen]);
 
@@ -66,6 +83,7 @@ export const CustomRecurrencePicker = ({
       interval,
       unit,
       ...(unit === 'week' && { daysOfWeek: selectedDays }),
+      ...(unit === 'month' && useMonthWeek && { monthWeek }),
     };
     onSave(schedule);
     onClose();
@@ -76,6 +94,7 @@ export const CustomRecurrencePicker = ({
       day: count === 1 ? 'day' : 'days',
       week: count === 1 ? 'week' : 'weeks',
       month: count === 1 ? 'month' : 'months',
+      year: count === 1 ? 'year' : 'years',
     };
     return labels[u as keyof typeof labels] || u;
   };
@@ -99,7 +118,7 @@ export const CustomRecurrencePicker = ({
               onChange={(e) => setInterval(Math.max(1, parseInt(e.target.value) || 1))}
               className="w-16 text-center"
             />
-            <Select value={unit} onValueChange={(v: 'day' | 'week' | 'month') => setUnit(v)}>
+            <Select value={unit} onValueChange={(v: 'day' | 'week' | 'month' | 'year') => setUnit(v)}>
               <SelectTrigger className="w-28">
                 <SelectValue />
               </SelectTrigger>
@@ -107,6 +126,7 @@ export const CustomRecurrencePicker = ({
                 <SelectItem value="day">{getUnitLabel('day', interval)}</SelectItem>
                 <SelectItem value="week">{getUnitLabel('week', interval)}</SelectItem>
                 <SelectItem value="month">{getUnitLabel('month', interval)}</SelectItem>
+                <SelectItem value="year">{getUnitLabel('year', interval)}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -135,6 +155,38 @@ export const CustomRecurrencePicker = ({
               </div>
             </div>
           )}
+
+          {/* Monthly on specific week - only show for monthly */}
+          {unit === 'month' && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="useMonthWeek"
+                  checked={useMonthWeek}
+                  onChange={(e) => setUseMonthWeek(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <label htmlFor="useMonthWeek" className="text-sm text-foreground">
+                  On specific week of month
+                </label>
+              </div>
+              {useMonthWeek && (
+                <Select value={monthWeek} onValueChange={(v: 'first' | 'second' | 'third' | 'fourth' | 'last') => setMonthWeek(v)}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border">
+                    {MONTH_WEEK_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2 pt-2">
@@ -152,14 +204,29 @@ export const CustomRecurrencePicker = ({
 
 // Helper function to format custom schedule for display
 export const formatCustomSchedule = (schedule: CustomSchedule): string => {
-  const { interval, unit, daysOfWeek } = schedule;
+  const { interval, unit, daysOfWeek, monthWeek } = schedule;
   
   if (unit === 'day') {
     return interval === 1 ? 'Daily' : `Every ${interval} days`;
   }
   
+  if (unit === 'year') {
+    return interval === 1 ? 'Annually' : `Every ${interval} years`;
+  }
+  
   if (unit === 'month') {
-    return interval === 1 ? 'Monthly' : `Every ${interval} months`;
+    const weekLabel = monthWeek ? {
+      first: 'first week',
+      second: 'second week', 
+      third: 'third week',
+      fourth: 'fourth week',
+      last: 'last week'
+    }[monthWeek] : '';
+    
+    if (interval === 1) {
+      return weekLabel ? `Monthly (${weekLabel})` : 'Monthly';
+    }
+    return weekLabel ? `Every ${interval} months (${weekLabel})` : `Every ${interval} months`;
   }
   
   // Weekly

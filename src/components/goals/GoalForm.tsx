@@ -9,14 +9,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { X, CalendarIcon, Plus, RefreshCw, Eye, EyeOff, Users } from "lucide-react";
+import { X, CalendarIcon, Plus, Eye, EyeOff, Users } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal, HabitItem } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
 import { CustomCategoriesService } from "@/services/customCategoriesService";
 import { CustomGoalCategory } from "@/types/customCategories";
 import { toast } from "@/hooks/use-toast";
-import { HabitItemsEditor } from "./HabitItemsEditor";
 import { format, parseISO, addMonths, endOfQuarter, endOfYear } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -483,36 +482,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
             </div>
           </div>
 
-          {/* Habits Section */}
-          <div className={`${isMobile ? 'p-4' : 'p-5'} bg-muted/50 rounded-lg border`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <RefreshCw className={`h-5 w-5 ${formData.habit_items.length > 0 ? 'text-primary' : 'text-foreground'}`} />
-                <div>
-                  <Label htmlFor="has_habits" className="font-medium">
-                    Habits
-                  </Label>
-                  <p className={`text-muted-foreground ${isMobile ? 'text-sm' : 'text-sm'}`}>
-                    Track recurring behaviors for this goal
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pl-8">
-              <HabitItemsEditor
-                habitItems={formData.habit_items}
-                onChange={(items) => setFormData({ ...formData, habit_items: items, is_recurring: items.length > 0 })}
-                defaultFrequency="daily"
-              />
-              
-              {formData.habit_items.length > 0 && (
-                <div className="text-xs text-muted-foreground bg-background/50 rounded-md p-3 mt-3">
-                  <p>These habits will be tracked in the <strong>Habits</strong> tab with checkboxes based on their frequency.</p>
-                </div>
-              )}
-            </div>
-          </div>
 
           <div className={`${isMobile ? 'p-4' : 'p-5'} bg-muted/50 rounded-lg border`}>
             <div className="flex items-center justify-between">

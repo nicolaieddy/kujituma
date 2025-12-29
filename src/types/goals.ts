@@ -3,8 +3,9 @@ export type GoalVisibility = 'public' | 'friends' | 'private';
 
 export interface CustomSchedule {
   interval: number;
-  unit: 'day' | 'week' | 'month';
+  unit: 'day' | 'week' | 'month' | 'year';
   daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, etc.
+  monthWeek?: 'first' | 'second' | 'third' | 'fourth' | 'last'; // For monthly on specific week
 }
 
 export interface HabitItem {
