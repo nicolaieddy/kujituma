@@ -9,7 +9,7 @@ import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalObjectivesList } from "./GoalObjectivesList";
 import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
-import { Edit, CheckCircle, Play, Clock, Trash2, Plus, Target, RefreshCw, ArrowRight, X } from "lucide-react";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, Target, RefreshCw, ArrowRight, X, Pencil } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { Link } from "react-router-dom";
 
@@ -381,8 +381,9 @@ export const GoalDetailModal = ({
                         <>
                           <button 
                             onClick={() => handleStartEditHabit(habit)}
-                            className="text-foreground text-sm hover:text-primary transition-colors text-left"
+                            className="flex items-center gap-2 text-foreground text-sm hover:text-primary transition-colors text-left group/edit"
                           >
+                            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 group-hover/edit:opacity-100 transition-opacity text-muted-foreground" />
                             {habit.text}
                           </button>
                           <div className="flex items-center gap-2">
