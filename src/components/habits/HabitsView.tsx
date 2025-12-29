@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { toast } from "sonner";
 import { format, parseISO, differenceInDays, startOfDay } from "date-fns";
 import { Goal, RecurrenceFrequency } from "@/types/goals";
+import { useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -54,6 +56,34 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
   const [goalToDelete, setGoalToDelete] = useState<Goal | null>(null);
   const [scheduledSort, setScheduledSort] = useState<'date' | 'alpha' | 'frequency'>('date');
   const [filters, setFilters] = useState<HabitFilters>(initialFilters);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [highlightedGoalId, setHighlightedGoalId] = useState<string | null>(null);
+  const highlightedCardRef = useRef<HTMLDivElement>(null);
+
+  // Handle highlight goal from URL params
+  useEffect(() => {
+    const highlightGoal = searchParams.get('highlightGoal');
+    if (highlightGoal && !isLoading) {
+      setHighlightedGoalId(highlightGoal);
+      // Clean up URL param after reading
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlightGoal');
+      setSearchParams(newParams, { replace: true });
+      
+      // Scroll to the card after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        highlightedCardRef.current?.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      }, 100);
+      
+      // Remove highlight after animation
+      setTimeout(() => {
+        setHighlightedGoalId(null);
+      }, 3000);
+    }
+  }, [searchParams, isLoading, setSearchParams]);
 
   // ALL useMemo hooks MUST be called before any early returns (React hooks rule)
   const availableCategories = useMemo(() => {
@@ -327,13 +357,24 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
             <Badge variant="secondary">{activeHabitsList.length}</Badge>
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-            {activeHabitsList.map(stats => (
-              <HabitCard 
-                key={stats.goal.id} 
-                habitStats={stats} 
-                onClick={() => handleHabitClick(stats)}
-              />
-            ))}
+            {activeHabitsList.map(stats => {
+              const isHighlighted = highlightedGoalId === stats.goal.id;
+              return (
+                <div
+                  key={stats.goal.id}
+                  ref={isHighlighted ? highlightedCardRef : undefined}
+                  className={cn(
+                    "rounded-lg transition-all duration-500",
+                    isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse"
+                  )}
+                >
+                  <HabitCard 
+                    habitStats={stats} 
+                    onClick={() => handleHabitClick(stats)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -351,24 +392,34 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
             </Badge>
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-            {pausedHabitsList.map(stats => (
-              <div key={stats.goal.id} className="relative">
-                <HabitCard 
-                  habitStats={stats} 
-                  onClick={() => handleHabitClick(stats)}
-                  isPaused
-                />
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="absolute top-3 right-3 gap-1.5 bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground"
-                  onClick={(e) => handleResume(stats.goal.id, e)}
+            {pausedHabitsList.map(stats => {
+              const isHighlighted = highlightedGoalId === stats.goal.id;
+              return (
+                <div 
+                  key={stats.goal.id} 
+                  ref={isHighlighted ? highlightedCardRef : undefined}
+                  className={cn(
+                    "relative rounded-lg transition-all duration-500",
+                    isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse"
+                  )}
                 >
-                  <PlayCircle className="h-4 w-4" />
-                  Resume
-                </Button>
-              </div>
-            ))}
+                  <HabitCard 
+                    habitStats={stats} 
+                    onClick={() => handleHabitClick(stats)}
+                    isPaused
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="absolute top-3 right-3 gap-1.5 bg-background/80 backdrop-blur-sm hover:bg-primary hover:text-primary-foreground"
+                    onClick={(e) => handleResume(stats.goal.id, e)}
+                  >
+                    <PlayCircle className="h-4 w-4" />
+                    Resume
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -498,13 +549,24 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
             <Badge variant="outline">{inactiveHabitsList.length}</Badge>
           </div>
           <div className={`grid gap-4 ${isMobile ? 'grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3'}`}>
-            {inactiveHabitsList.map(stats => (
-              <HabitCard 
-                key={stats.goal.id} 
-                habitStats={stats}
-                onClick={() => handleHabitClick(stats)}
-              />
-            ))}
+            {inactiveHabitsList.map(stats => {
+              const isHighlighted = highlightedGoalId === stats.goal.id;
+              return (
+                <div
+                  key={stats.goal.id}
+                  ref={isHighlighted ? highlightedCardRef : undefined}
+                  className={cn(
+                    "rounded-lg transition-all duration-500",
+                    isHighlighted && "ring-2 ring-primary ring-offset-2 ring-offset-background animate-pulse"
+                  )}
+                >
+                  <HabitCard 
+                    habitStats={stats}
+                    onClick={() => handleHabitClick(stats)}
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
