@@ -308,7 +308,77 @@ export class HabitsService {
       .single();
     
     if (error) throw error;
+    
+    // Update quarterly streak after completing review
+    await this.updateQuarterlyStreak(year, quarter);
+    
     return data as QuarterlyReview;
+  }
+  
+  static async updateQuarterlyStreak(year: number, quarter: number): Promise<UserStreaks> {
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) throw new Error('User not authenticated');
+    
+    const quarterKey = `${year}-Q${quarter}`;
+    
+    // Calculate previous quarter
+    let prevYear = year;
+    let prevQuarter = quarter - 1;
+    if (prevQuarter === 0) {
+      prevQuarter = 4;
+      prevYear = year - 1;
+    }
+    const prevQuarterKey = `${prevYear}-Q${prevQuarter}`;
+    
+    let streaks = await this.getStreaks();
+    
+    if (!streaks) {
+      const { data, error } = await supabase
+        .from('user_streaks')
+        .insert({
+          user_id: user.user.id,
+          current_daily_streak: 0,
+          longest_daily_streak: 0,
+          current_weekly_streak: 0,
+          longest_weekly_streak: 0,
+          current_quarterly_streak: 1,
+          longest_quarterly_streak: 1,
+          last_quarter_completed: quarterKey
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      return data as UserStreaks;
+    }
+    
+    // Already recorded this quarter
+    if (streaks.last_quarter_completed === quarterKey) {
+      return streaks;
+    }
+    
+    let newQuarterlyStreak = 1;
+    
+    // If last completed quarter was the previous quarter, increment streak
+    if (streaks.last_quarter_completed === prevQuarterKey) {
+      newQuarterlyStreak = (streaks.current_quarterly_streak || 0) + 1;
+    }
+    
+    const longestQuarterly = Math.max(newQuarterlyStreak, streaks.longest_quarterly_streak || 0);
+    
+    const { data, error } = await supabase
+      .from('user_streaks')
+      .update({
+        current_quarterly_streak: newQuarterlyStreak,
+        longest_quarterly_streak: longestQuarterly,
+        last_quarter_completed: quarterKey
+      })
+      .eq('user_id', user.user.id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data as UserStreaks;
   }
   
   // ============ WEEKLY PLANNING SESSIONS ============

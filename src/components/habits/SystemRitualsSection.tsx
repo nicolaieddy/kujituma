@@ -104,6 +104,8 @@ export const SystemRitualsSection = () => {
     longestDailyStreak, 
     currentWeeklyStreak, 
     longestWeeklyStreak,
+    currentQuarterlyStreak,
+    longestQuarterlyStreak,
     isLoading 
   } = useStreaks();
 
@@ -142,8 +144,8 @@ export const SystemRitualsSection = () => {
       description: "Review your quarter - celebrate wins, learn from challenges",
       frequency: "Quarterly",
       icon: ClipboardList,
-      currentStreak: 0, // Quarterly streaks not tracked yet
-      longestStreak: 0,
+      currentStreak: currentQuarterlyStreak,
+      longestStreak: longestQuarterlyStreak,
       color: "bg-purple-500/10 text-purple-500",
       onClick: () => navigate('/rituals?tab=quarterly'),
     },

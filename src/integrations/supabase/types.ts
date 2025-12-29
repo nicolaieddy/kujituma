@@ -948,11 +948,14 @@ export type Database = {
         Row: {
           created_at: string
           current_daily_streak: number
+          current_quarterly_streak: number
           current_weekly_streak: number
           id: string
           last_check_in_date: string | null
+          last_quarter_completed: string | null
           last_week_completed: string | null
           longest_daily_streak: number
+          longest_quarterly_streak: number
           longest_weekly_streak: number
           updated_at: string
           user_id: string
@@ -960,11 +963,14 @@ export type Database = {
         Insert: {
           created_at?: string
           current_daily_streak?: number
+          current_quarterly_streak?: number
           current_weekly_streak?: number
           id?: string
           last_check_in_date?: string | null
+          last_quarter_completed?: string | null
           last_week_completed?: string | null
           longest_daily_streak?: number
+          longest_quarterly_streak?: number
           longest_weekly_streak?: number
           updated_at?: string
           user_id: string
@@ -972,11 +978,14 @@ export type Database = {
         Update: {
           created_at?: string
           current_daily_streak?: number
+          current_quarterly_streak?: number
           current_weekly_streak?: number
           id?: string
           last_check_in_date?: string | null
+          last_quarter_completed?: string | null
           last_week_completed?: string | null
           longest_daily_streak?: number
+          longest_quarterly_streak?: number
           longest_weekly_streak?: number
           updated_at?: string
           user_id?: string
