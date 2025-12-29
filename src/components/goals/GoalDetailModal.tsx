@@ -3,14 +3,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Goal, GoalStatus } from "@/types/goals";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Goal, GoalStatus, HabitItem, RecurrenceFrequency } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalObjectivesList } from "./GoalObjectivesList";
 import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
-import { HabitItemsCard } from "./HabitItemsCard";
-import { Edit, CheckCircle, Play, Clock, Trash2, Plus, Target } from "lucide-react";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, Target, RefreshCw, ArrowRight, X } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { Link } from "react-router-dom";
 
 interface GoalDetailModalProps {
   goal: Goal | null;
@@ -24,6 +25,16 @@ interface GoalDetailModalProps {
   onUpdateObjective: (id: string, updates: any) => void;
   onDeleteObjective: (id: string) => void;
 }
+
+const frequencyLabels: Record<string, string> = {
+  daily: 'Daily',
+  weekdays: 'Weekdays',
+  weekly: 'Weekly',
+  biweekly: 'Bi-weekly',
+  monthly: 'Monthly',
+  monthly_last_week: 'Monthly (Last Week)',
+  quarterly: 'Quarterly'
+};
 
 const STATUS_CONFIG = {
   not_started: { 
@@ -63,12 +74,16 @@ export const GoalDetailModal = ({
   const [isEditing, setIsEditing] = useState(false);
   const [quickAddText, setQuickAddText] = useState("");
   const [isQuickAdding, setIsQuickAdding] = useState(false);
+  const [isAddingHabit, setIsAddingHabit] = useState(false);
+  const [newHabitText, setNewHabitText] = useState("");
+  const [newHabitFrequency, setNewHabitFrequency] = useState<RecurrenceFrequency>("weekly");
 
   if (!goal) return null;
 
   const config = STATUS_CONFIG[goal.status];
   const IconComponent = config.icon;
   const relatedObjectives = weeklyObjectives.filter(obj => obj.goal_id === goal.id);
+  const habitItems = goal.habit_items || [];
 
   const handleStatusChange = (newStatus: GoalStatus) => {
     if (newStatus !== goal.status) {
@@ -93,6 +108,8 @@ export const GoalDetailModal = ({
     setIsEditing(false);
     setIsQuickAdding(false);
     setQuickAddText("");
+    setIsAddingHabit(false);
+    setNewHabitText("");
     onClose();
   };
 
@@ -102,6 +119,25 @@ export const GoalDetailModal = ({
     onCreateObjective(goal.id, quickAddText.trim(), currentWeekStart);
     setQuickAddText("");
     setIsQuickAdding(false);
+  };
+
+  const handleAddHabit = () => {
+    if (!newHabitText.trim()) return;
+    const newHabit: HabitItem = {
+      id: crypto.randomUUID(),
+      text: newHabitText.trim(),
+      frequency: newHabitFrequency,
+    };
+    const updatedHabits = [...habitItems, newHabit];
+    onEdit({ ...goal, habit_items: updatedHabits });
+    setNewHabitText("");
+    setNewHabitFrequency("weekly");
+    setIsAddingHabit(false);
+  };
+
+  const handleRemoveHabit = (habitId: string) => {
+    const updatedHabits = habitItems.filter(h => h.id !== habitId);
+    onEdit({ ...goal, habit_items: updatedHabits });
   };
 
   return (
@@ -231,15 +267,138 @@ export const GoalDetailModal = ({
               )}
             </div>
 
-            {/* Habits Section - only show if has habit_items */}
-            {goal.habit_items && goal.habit_items.length > 0 && (
-              <>
-                <HabitItemsCard goal={goal} />
-                <HabitCompletionTimeline 
-                  goal={goal} 
-                  objectives={relatedObjectives} 
-                />
-              </>
+            {/* Habits Section - always visible with add capability */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-5 w-5 text-primary" />
+                  <h3 className="font-semibold text-foreground">Habits</h3>
+                  {habitItems.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {habitItems.length}
+                    </Badge>
+                  )}
+                </div>
+                {habitItems.length > 0 && (
+                  <Link 
+                    to={`/?tab=habits&highlightGoal=${goal.id}`}
+                    className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
+                  >
+                    Track in Habits
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                )}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                Recurring behaviors tied to this goal - tracked in the Habits tab
+              </p>
+
+              {/* Saved habits list */}
+              {habitItems.length > 0 && (
+                <div className="space-y-2">
+                  {habitItems.map((habit) => (
+                    <div 
+                      key={habit.id} 
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 group"
+                    >
+                      <Link 
+                        to={`/?tab=habits&highlightGoal=${goal.id}`}
+                        className="text-foreground text-sm hover:text-primary transition-colors"
+                      >
+                        {habit.text}
+                      </Link>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs">
+                          {frequencyLabels[habit.frequency] || habit.frequency}
+                        </Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRemoveHabit(habit.id)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new habit */}
+              {isAddingHabit ? (
+                <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-3">
+                  <Input
+                    value={newHabitText}
+                    onChange={(e) => setNewHabitText(e.target.value)}
+                    placeholder="What habit do you want to build?"
+                    className="flex-1"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddHabit();
+                      } else if (e.key === 'Escape') {
+                        setIsAddingHabit(false);
+                        setNewHabitText("");
+                      }
+                    }}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Select
+                      value={newHabitFrequency}
+                      onValueChange={(value: RecurrenceFrequency) => setNewHabitFrequency(value)}
+                    >
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Frequency" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekdays">Weekdays</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="quarterly">Quarterly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button 
+                      size="sm" 
+                      onClick={handleAddHabit}
+                      disabled={!newHabitText.trim()}
+                      className="gradient-primary"
+                    >
+                      Add Habit
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => {
+                        setIsAddingHabit(false);
+                        setNewHabitText("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground border border-dashed border-border/50"
+                  onClick={() => setIsAddingHabit(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Add a habit to track
+                </Button>
+              )}
+            </div>
+
+            {/* Habit Completion Timeline - only show if habits exist */}
+            {habitItems.length > 0 && (
+              <HabitCompletionTimeline 
+                goal={goal} 
+                objectives={relatedObjectives} 
+              />
             )}
             
             {/* Objectives Section - one-time tasks */}
