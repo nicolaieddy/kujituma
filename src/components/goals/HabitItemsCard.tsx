@@ -46,7 +46,7 @@ export const HabitItemsCard = ({ goal }: HabitItemsCardProps) => {
             Habits ({habitItems.length})
           </CardTitle>
           <Link 
-            to="/?tab=habits" 
+            to={`/?tab=habits&highlightGoal=${goal.id}`}
             className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
           >
             Track in Habits
