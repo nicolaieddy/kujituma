@@ -13,7 +13,6 @@ import { useHabitStats } from "@/hooks/useHabitStats";
 import { useGoals } from "@/hooks/useGoals";
 import { GoalHabitGroup } from "./GoalHabitGroup";
 import { HabitCard } from "./HabitCard";
-import { HabitDetailModal } from "./HabitDetailModal";
 import { HabitStreakLeaderboard } from "./HabitStreakLeaderboard";
 import { HabitSearchFilter, HabitFilters } from "./HabitSearchFilter";
 import { SystemRitualsSection } from "./SystemRitualsSection";
@@ -104,15 +103,15 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
         const matchesSearch = 
           goal.title.toLowerCase().includes(searchLower) ||
           goal.description?.toLowerCase().includes(searchLower) ||
-          goal.category?.toLowerCase().includes(searchLower) ||
-          goal.recurring_objective_text?.toLowerCase().includes(searchLower);
+          goal.category?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
-      // Frequency filter
+      // Frequency filter - check habit_items frequencies
       if (filters.frequencies.length > 0) {
-        if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
-          return false;
-        }
+        const hasMatchingFrequency = goal.habit_items?.some(h => 
+          filters.frequencies.includes(h.frequency as RecurrenceFrequency)
+        );
+        if (!hasMatchingFrequency) return false;
       }
       // Category filter
       if (filters.categories.length > 0) {
@@ -138,11 +137,12 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
           goal.category?.toLowerCase().includes(searchLower);
         if (!matchesSearch) return false;
       }
-      // Frequency filter
+      // Frequency filter - check habit_items frequencies
       if (filters.frequencies.length > 0) {
-        if (!goal.recurrence_frequency || !filters.frequencies.includes(goal.recurrence_frequency as RecurrenceFrequency)) {
-          return false;
-        }
+        const hasMatchingFrequency = goal.habit_items?.some(h => 
+          filters.frequencies.includes(h.frequency as RecurrenceFrequency)
+        );
+        if (!hasMatchingFrequency) return false;
       }
       // Category filter
       if (filters.categories.length > 0) {
@@ -473,12 +473,13 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
                 if (scheduledSort === 'alpha') {
                   return a.title.localeCompare(b.title);
                 }
-                // frequency sort
+                // frequency sort - use first habit item frequency
+                const getFirstFreq = (g: Goal) => g.habit_items?.[0]?.frequency || '';
                 const freqOrder: Record<string, number> = {
                   daily: 1, weekdays: 2, weekly: 3, biweekly: 4, monthly: 5, monthly_last_week: 6, quarterly: 7
                 };
-                const orderA = freqOrder[a.recurrence_frequency || ''] || 99;
-                const orderB = freqOrder[b.recurrence_frequency || ''] || 99;
+                const orderA = freqOrder[getFirstFreq(a)] || 99;
+                const orderB = freqOrder[getFirstFreq(b)] || 99;
                 return orderA - orderB;
               })
               .map((goal: Goal) => (
@@ -494,7 +495,7 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
                       )}
                     </div>
                     <Badge variant="secondary" className="ml-2 shrink-0 bg-blue-500/10 text-blue-600">
-                      {getFrequencyLabel(goal.recurrence_frequency)}
+                      {getFrequencyLabel(goal.habit_items?.[0]?.frequency)}
                     </Badge>
                   </div>
                   <div className="flex items-center justify-between mt-3">
@@ -573,15 +574,6 @@ export const HabitsView = ({ onCreateGoal, onEditGoal }: HabitsViewProps) => {
           </div>
         </div>
       )}
-
-
-      {/* Habit Detail Modal */}
-      <HabitDetailModal
-        habitStats={selectedHabit}
-        isOpen={showDetailModal}
-        onClose={handleCloseModal}
-        onUpdate={handleUpdate}
-      />
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={!!goalToDelete} onOpenChange={(open) => !open && setGoalToDelete(null)}>

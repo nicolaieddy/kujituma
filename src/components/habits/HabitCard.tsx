@@ -33,11 +33,15 @@ export const HabitCard = ({ habitStats, onClick, isPaused = false }: HabitCardPr
 
   const streakBadge = getStreakBadge(currentStreak);
 
-  const frequencyLabel = {
+  // Get frequency from the first habit item if available
+  const firstHabit = goal.habit_items?.[0];
+  const frequencyLabel = firstHabit ? {
+    daily: "Daily",
+    weekdays: "Weekdays", 
     weekly: "Weekly",
     biweekly: "Bi-weekly",
     monthly: "Monthly"
-  }[goal.recurrence_frequency || 'weekly'];
+  }[firstHabit.frequency] || "Weekly" : "Weekly";
 
   return (
     <motion.div
@@ -66,9 +70,9 @@ export const HabitCard = ({ habitStats, onClick, isPaused = false }: HabitCardPr
                 )}
                 {goal.title}
               </CardTitle>
-              {goal.recurring_objective_text && goal.recurring_objective_text !== goal.title && (
+              {goal.description && goal.description !== goal.title && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  {goal.recurring_objective_text}
+                  {goal.description}
                 </p>
               )}
               <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-primary flex items-center gap-1 mt-1">

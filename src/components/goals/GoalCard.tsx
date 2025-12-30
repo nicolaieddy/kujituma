@@ -23,82 +23,8 @@ import { cn } from "@/lib/utils";
 import { startOfWeek, addWeeks, startOfMonth, endOfMonth, isBefore, format, getMonth } from "date-fns";
 
 const getNextScheduledDate = (goal: Goal): string | null => {
-  if (!goal.is_recurring) return null;
-  
-  const frequency = goal.recurrence_frequency || 'weekly';
-  const today = new Date();
-  const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
-  
-  switch (frequency) {
-    case 'daily':
-    case 'weekdays':
-    case 'weekly':
-      return format(currentWeekStart, 'MMM d');
-    
-    case 'biweekly': {
-      const goalCreatedDate = new Date(goal.created_at);
-      const goalCreatedWeekStart = startOfWeek(goalCreatedDate, { weekStartsOn: 1 });
-      let nextDate = goalCreatedWeekStart;
-      while (isBefore(nextDate, currentWeekStart) || format(nextDate, 'yyyy-MM-dd') < format(currentWeekStart, 'yyyy-MM-dd')) {
-        nextDate = addWeeks(nextDate, 2);
-      }
-      return format(nextDate, 'MMM d');
-    }
-    
-    case 'monthly': {
-      let checkMonth = startOfMonth(today);
-      let firstWeek = startOfWeek(checkMonth, { weekStartsOn: 1 });
-      if (isBefore(firstWeek, checkMonth)) {
-        firstWeek = addWeeks(firstWeek, 1);
-      }
-      if (isBefore(firstWeek, currentWeekStart)) {
-        checkMonth = startOfMonth(addWeeks(today, 4));
-        firstWeek = startOfWeek(checkMonth, { weekStartsOn: 1 });
-        if (isBefore(firstWeek, checkMonth)) {
-          firstWeek = addWeeks(firstWeek, 1);
-        }
-      }
-      return format(firstWeek, 'MMM d');
-    }
-    
-    case 'monthly_last_week': {
-      let monthEnd = endOfMonth(today);
-      let lastWeek = startOfWeek(monthEnd, { weekStartsOn: 1 });
-      if (isBefore(lastWeek, currentWeekStart)) {
-        monthEnd = endOfMonth(addWeeks(today, 4));
-        lastWeek = startOfWeek(monthEnd, { weekStartsOn: 1 });
-      }
-      return format(lastWeek, 'MMM d');
-    }
-    
-    case 'quarterly': {
-      const quarterStartMonths = [0, 3, 6, 9];
-      let currentMonth = getMonth(today);
-      let nextQuarterMonth = quarterStartMonths.find(m => m >= currentMonth) ?? quarterStartMonths[0];
-      let year = today.getFullYear();
-      if (nextQuarterMonth < currentMonth) year++;
-      
-      const quarterStart = new Date(year, nextQuarterMonth, 1);
-      let firstWeek = startOfWeek(quarterStart, { weekStartsOn: 1 });
-      if (isBefore(firstWeek, quarterStart)) {
-        firstWeek = addWeeks(firstWeek, 1);
-      }
-      if (isBefore(firstWeek, currentWeekStart)) {
-        const nextQuarterIdx = (quarterStartMonths.indexOf(nextQuarterMonth) + 1) % 4;
-        nextQuarterMonth = quarterStartMonths[nextQuarterIdx];
-        if (nextQuarterIdx === 0) year++;
-        const nextQuarterStart = new Date(year, nextQuarterMonth, 1);
-        firstWeek = startOfWeek(nextQuarterStart, { weekStartsOn: 1 });
-        if (isBefore(firstWeek, nextQuarterStart)) {
-          firstWeek = addWeeks(firstWeek, 1);
-        }
-      }
-      return format(firstWeek, 'MMM d');
-    }
-    
-    default:
-      return format(currentWeekStart, 'MMM d');
-  }
+  // No longer needed - habits don't have auto-scheduled dates like old recurring goals
+  return null;
 };
 
 interface GoalCardProps {
@@ -335,35 +261,6 @@ export const GoalCard = ({
                     </TooltipContent>
                   </Tooltip>
                 )}
-                {/* Show Recurring badge for recurring goals without habit_items */}
-                {goal.is_recurring && (!goal.habit_items || goal.habit_items.length === 0) && (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-xs gap-1 cursor-help",
-                          goal.is_paused 
-                            ? "border-amber-500/30 text-amber-600 bg-amber-500/5" 
-                            : "border-primary/30 text-primary bg-primary/5"
-                        )}
-                      >
-                        {goal.is_paused ? <Pause className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
-                        {goal.is_paused ? 'Paused' : 'Recurring'}
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {goal.is_paused ? (
-                        <p className="text-amber-600">Recurring goal paused - no new objectives will be created</p>
-                      ) : (
-                        <>
-                          <p className="capitalize">{goal.recurrence_frequency?.replace('_', ' ') || 'Weekly'}</p>
-                          <p className="text-xs text-muted-foreground">Next: {getNextScheduledDate(goal)}</p>
-                        </>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                )}
               </div>
               <h3 className={cn(
                 "font-semibold text-lg leading-tight group-hover:text-primary transition-colors",
@@ -414,8 +311,8 @@ export const GoalCard = ({
                 
                 <DropdownMenuSeparator />
                 
-                {/* Pause/Resume for recurring goals */}
-                {goal.is_recurring && onPauseToggle && goal.status !== 'completed' && goal.status !== 'deprioritized' && (
+                {/* Pause/Resume for goals with habits */}
+                {goal.habit_items && goal.habit_items.length > 0 && onPauseToggle && goal.status !== 'completed' && goal.status !== 'deprioritized' && (
                   goal.is_paused ? (
                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onPauseToggle(goal.id, false); }}>
                       <PlayCircle className="h-4 w-4 mr-2" />

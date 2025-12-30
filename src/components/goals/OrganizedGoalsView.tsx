@@ -183,7 +183,8 @@ export const OrganizedGoalsView = ({
   const filterGoal = (goal: Goal): boolean => {
     // Paused filter (only show paused habits)
     if (filters.showPausedOnly) {
-      if (!goal.is_recurring || !goal.is_paused) return false;
+      const hasHabits = goal.habit_items && goal.habit_items.length > 0;
+      if (!hasHabits || !goal.is_paused) return false;
     }
 
     // Search filter
@@ -353,7 +354,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
-                              currentStreak={goal.is_recurring ? habitStreaks[goal.id] : undefined}
+                              currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
                             />
                           ))
                         )}
@@ -391,7 +392,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
-                              currentStreak={goal.is_recurring ? habitStreaks[goal.id] : undefined}
+                              currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
                             />
                           ))
                         )}
@@ -429,7 +430,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
-                              currentStreak={goal.is_recurring ? habitStreaks[goal.id] : undefined}
+                              currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
                             />
                           ))
                         )}
