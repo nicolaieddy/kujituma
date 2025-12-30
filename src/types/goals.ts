@@ -32,9 +32,6 @@ export interface Goal {
   deprioritized_at: string | null;
   order_index: number;
   visibility: GoalVisibility;
-  is_recurring: boolean;
-  recurrence_frequency: RecurrenceFrequency | null;
-  recurring_objective_text: string | null;
   is_paused: boolean;
   paused_at: string | null;
   habit_items: HabitItem[];
@@ -70,9 +67,6 @@ export interface CreateGoalData {
   target_date?: string;
   category?: string;
   visibility?: GoalVisibility;
-  is_recurring?: boolean;
-  recurrence_frequency?: RecurrenceFrequency;
-  recurring_objective_text?: string;
   habit_items?: HabitItem[];
 }
 
@@ -87,9 +81,6 @@ export interface UpdateGoalData {
   notes?: string;
   order_index?: number;
   visibility?: GoalVisibility;
-  is_recurring?: boolean;
-  recurrence_frequency?: RecurrenceFrequency;
-  recurring_objective_text?: string;
   is_paused?: boolean;
   paused_at?: string | null;
   habit_items?: HabitItem[];

@@ -281,7 +281,7 @@ export const HabitsDueThisWeek = ({
                 "text-sm font-medium truncate",
                 habit.isCompletedThisWeek && "line-through text-muted-foreground"
               )}>
-                {habit.goal.recurring_objective_text || habit.goal.title}
+                {habit.goal.title}
               </p>
               <p className="text-xs text-muted-foreground truncate">
                 {habit.goal.title}

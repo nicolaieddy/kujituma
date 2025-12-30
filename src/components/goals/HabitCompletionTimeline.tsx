@@ -34,8 +34,10 @@ const getWeekNumber = (weekStart: string) => {
 };
 
 export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTimelineProps) => {
+  const hasHabits = goal.habit_items && goal.habit_items.length > 0;
+  
   const timelineData = useMemo(() => {
-    if (!goal.is_recurring) return [];
+    if (!hasHabits) return [];
 
     const today = new Date();
     const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -169,7 +171,7 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
   const totalTracked = completedCount + missedCount;
   const completionRate = totalTracked > 0 ? Math.round((completedCount / totalTracked) * 100) : 0;
 
-  if (!goal.is_recurring || timelineData.length === 0) {
+  if (!hasHabits || timelineData.length === 0) {
     return null;
   }
 

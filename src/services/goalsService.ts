@@ -15,9 +15,6 @@ export class GoalsService {
         target_date: data.target_date || null,
         category: data.category || '',
         visibility: data.visibility ?? 'public',
-        is_recurring: data.is_recurring ?? false,
-        recurrence_frequency: data.is_recurring ? (data.recurrence_frequency || 'weekly') : null,
-        recurring_objective_text: data.is_recurring ? (data.recurring_objective_text || null) : null,
         habit_items: data.habit_items ? JSON.parse(JSON.stringify(data.habit_items)) : [],
         user_id: (await supabase.auth.getUser()).data.user?.id
       })

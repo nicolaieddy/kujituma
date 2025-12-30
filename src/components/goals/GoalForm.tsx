@@ -42,9 +42,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         target_date: initialData.target_date || '',
         category: initialData.category || '',
         visibility: initialData.visibility ?? 'public',
-        is_recurring: initialData.is_recurring ?? false,
-        recurrence_frequency: initialData.recurrence_frequency || 'weekly',
-        recurring_objective_text: initialData.recurring_objective_text || '',
         habit_items: initialData.habit_items || []
       };
     }
@@ -56,9 +53,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       target_date: '',
       category: '',
       visibility: 'public',
-      is_recurring: false,
-      recurrence_frequency: 'weekly',
-      recurring_objective_text: '',
       habit_items: []
     };
   });
@@ -88,9 +82,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         target_date: initialData.target_date || '',
         category: initialData.category || '',
         visibility: initialData.visibility ?? 'public',
-        is_recurring: initialData.is_recurring ?? false,
-        recurrence_frequency: initialData.recurrence_frequency || 'weekly',
-        recurring_objective_text: initialData.recurring_objective_text || '',
         habit_items: initialData.habit_items || []
       });
     } else {
@@ -102,9 +93,6 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
         target_date: '',
         category: '',
         visibility: 'public',
-        is_recurring: false,
-        recurrence_frequency: 'weekly',
-        recurring_objective_text: '',
         habit_items: []
       });
     }
@@ -145,13 +133,7 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
       timeframe: 'Custom Date',
       category: formData.category === 'none' ? '' : (formData.category?.trim() || ''),
       visibility: formData.visibility,
-      is_recurring: formData.is_recurring,
-      // Explicitly set to null if not recurring to clear any existing value
-      recurrence_frequency: formData.is_recurring ? formData.recurrence_frequency : null,
-      recurring_objective_text: formData.is_recurring && formData.recurring_objective_text?.trim() 
-        ? formData.recurring_objective_text.trim() 
-        : null,
-      habit_items: formData.is_recurring ? formData.habit_items : [],
+      habit_items: formData.habit_items || [],
       start_date: formData.start_date || null,
       target_date: formData.target_date
     };

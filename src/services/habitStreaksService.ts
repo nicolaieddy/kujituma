@@ -29,9 +29,9 @@ export interface StreakCheckResult {
 
 export class HabitStreaksService {
   /**
-   * Get all recurring goals (habits) for the current user
+   * Get all goals with habits for the current user
    */
-  static async getRecurringGoals(): Promise<Goal[]> {
+  static async getGoalsWithHabits(): Promise<Goal[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
@@ -39,18 +39,18 @@ export class HabitStreaksService {
       .from('goals')
       .select('*')
       .eq('user_id', user.id)
-      .eq('is_recurring', true)
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return parseGoals(data);
+    // Filter to only goals with habit_items
+    return parseGoals(data).filter(g => g.habit_items && g.habit_items.length > 0);
   }
 
   /**
-   * Get all weekly objectives for recurring goals
+   * Get all weekly objectives for goals with habits
    */
-  static async getRecurringObjectives(goalIds: string[]): Promise<any[]> {
+  static async getHabitObjectives(goalIds: string[]): Promise<any[]> {
     if (goalIds.length === 0) return [];
 
     const { data: { user } } = await supabase.auth.getUser();
@@ -149,10 +149,10 @@ export class HabitStreaksService {
   }
 
   /**
-   * Get stats for all recurring goals
+   * Get stats for all goals with habits
    */
   static async getAllHabitStats(): Promise<HabitStats[]> {
-    const goals = await this.getRecurringGoals();
+    const goals = await this.getGoalsWithHabits();
     if (goals.length === 0) return [];
 
     // Filter out goals that haven't started yet
@@ -175,16 +175,16 @@ export class HabitStreaksService {
     if (activeGoals.length === 0) return [];
 
     const goalIds = activeGoals.map(g => g.id);
-    const objectives = await this.getRecurringObjectives(goalIds);
+    const objectives = await this.getHabitObjectives(goalIds);
 
     return activeGoals.map(goal => this.calculateHabitStats(goal, objectives));
   }
 
   /**
-   * Get future recurring goals (habits that haven't started yet)
+   * Get future goals with habits (habits that haven't started yet)
    */
   static async getFutureHabits(): Promise<Goal[]> {
-    const goals = await this.getRecurringGoals();
+    const goals = await this.getGoalsWithHabits();
     if (goals.length === 0) return [];
 
     const today = new Date();
@@ -223,7 +223,8 @@ export class HabitStreaksService {
     if (objError || !objective || !objective.goal_id) return null;
 
     const goal = parseGoal(objective.goals);
-    if (!goal?.is_recurring) return null;
+    const hasHabits = goal?.habit_items && goal.habit_items.length > 0;
+    if (!hasHabits) return null;
 
     // Get all objectives for this goal
     const { data: allObjectives, error: allError } = await supabase
