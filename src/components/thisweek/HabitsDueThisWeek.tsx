@@ -14,7 +14,6 @@ import { useHabitCompletions } from "@/hooks/useHabitCompletions";
 interface HabitsDueThisWeekProps {
   habits: HabitStats[];
   objectives: WeeklyObjective[];
-  onHabitClick?: (habit: HabitStats) => void;
   onToggleObjective?: (objectiveId: string, isCompleted: boolean) => void;
   weekStart?: Date;
 }
@@ -24,7 +23,6 @@ const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 export const HabitsDueThisWeek = ({ 
   habits, 
   objectives, 
-  onHabitClick, 
   onToggleObjective,
   weekStart: propWeekStart 
 }: HabitsDueThisWeekProps) => {
@@ -252,12 +250,11 @@ export const HabitsDueThisWeek = ({
         {legacyHabitsWithStatus.map((habit) => (
           <div
             key={habit.goal.id}
-            onClick={() => onHabitClick?.(habit)}
             className={cn(
-              "flex items-center gap-3 p-2 sm:p-3 rounded-lg border transition-all cursor-pointer group",
+              "flex items-center gap-3 p-2 sm:p-3 rounded-lg border transition-all",
               habit.isCompletedThisWeek
                 ? "bg-success/10 border-success/20"
-                : "bg-background/50 border-border hover:border-primary/30 hover:bg-primary/5"
+                : "bg-background/50 border-border"
             )}
           >
             {/* Completion Status */}
