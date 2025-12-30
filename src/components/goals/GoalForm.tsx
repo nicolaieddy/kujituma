@@ -10,7 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { X, CalendarIcon, Plus, Eye, EyeOff, Users } from "lucide-react";
-import { CreateGoalData, GoalTimeframe, Goal, HabitItem } from "@/types/goals";
+import { CreateGoalData, GoalTimeframe, Goal, HabitItem, RecurrenceFrequency } from "@/types/goals";
+import { HabitItemsEditor } from "./HabitItemsEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PREDEFINED_CATEGORIES } from "@/types/customCategories";
 import { CustomCategoriesService } from "@/services/customCategoriesService";
@@ -518,6 +519,15 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Habit Items Editor */}
+          <div className={`${isMobile ? 'p-4' : 'p-5'} bg-muted/50 rounded-lg border`}>
+            <HabitItemsEditor
+              habitItems={formData.habit_items}
+              onChange={(items) => setFormData({ ...formData, habit_items: items })}
+              defaultFrequency="weekly"
+            />
           </div>
 
           <div className={`flex ${isMobile ? 'flex-col gap-3' : 'flex-row gap-3'} pt-2`}>
