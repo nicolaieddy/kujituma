@@ -15,7 +15,7 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
-import { HabitDetailModal } from "@/components/habits/HabitDetailModal";
+
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { HabitStats } from "@/services/habitStreaksService";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
@@ -38,8 +38,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [showShareConfirmation, setShowShareConfirmation] = useState(false);
-  const [selectedHabit, setSelectedHabit] = useState<HabitStats | null>(null);
-  const [showHabitModal, setShowHabitModal] = useState(false);
   const [hasFetchedSuggestions, setHasFetchedSuggestions] = useState(false);
   
   // Track mounted state to prevent state updates after unmount
@@ -437,15 +435,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Enforce immutability: once a week is completed (shared), it becomes read-only
   const isReadOnly = isWeekCompleted;
 
-  const handleHabitClick = (habit: HabitStats) => {
-    setSelectedHabit(habit);
-    setShowHabitModal(true);
-  };
-
-  const handleCloseHabitModal = () => {
-    setShowHabitModal(false);
-    setSelectedHabit(null);
-  };
 
   // Show loading skeleton while data is being fetched
   if (weeklyDataLoading) {
@@ -471,7 +460,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         <HabitsDueThisWeek
           habits={habitStats}
           objectives={objectives || []}
-          onHabitClick={handleHabitClick}
           onToggleObjective={handleToggleObjective}
         />
       )}
@@ -550,14 +538,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onClose={() => setShowShareConfirmation(false)}
         onConfirm={handleConfirmShare}
         isSharing={isSharing}
-      />
-
-      {/* Habit Detail Modal */}
-      <HabitDetailModal
-        habitStats={selectedHabit}
-        isOpen={showHabitModal}
-        onClose={handleCloseHabitModal}
-        onUpdate={refetchHabits}
       />
 
     </div>
