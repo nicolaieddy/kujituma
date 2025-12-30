@@ -54,14 +54,63 @@ export const useGoals = () => {
 
   const createGoalMutation = useMutation({
     mutationFn: GoalsService.createGoal,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
+    onMutate: async (newGoalData) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['goals', user?.id] });
+
+      // Snapshot the previous value
+      const previousGoals = queryClient.getQueryData<Goal[]>(['goals', user?.id]);
+
+      // Optimistically add the new goal with a temporary ID
+      if (previousGoals) {
+        const optimisticGoal: Goal = {
+          id: `temp-${Date.now()}`,
+          user_id: user?.id || '',
+          title: newGoalData.title,
+          description: newGoalData.description || null,
+          category: newGoalData.category || null,
+          timeframe: newGoalData.timeframe,
+          target_date: newGoalData.target_date || null,
+          start_date: newGoalData.start_date || null,
+          status: 'not_started',
+          visibility: newGoalData.visibility || 'private',
+          is_recurring: newGoalData.is_recurring || false,
+          recurrence_frequency: newGoalData.recurrence_frequency || null,
+          recurring_objective_text: newGoalData.recurring_objective_text || null,
+          habit_items: newGoalData.habit_items || null,
+          notes: null,
+          order_index: 0,
+          is_paused: false,
+          paused_at: null,
+          deprioritized_at: null,
+          completed_at: null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        };
+        queryClient.setQueryData(['goals', user?.id], [optimisticGoal, ...previousGoals]);
+      }
+
+      return { previousGoals };
+    },
+    onSuccess: (newGoal) => {
+      // Replace the optimistic goal with the real one from the server
+      const currentGoals = queryClient.getQueryData<Goal[]>(['goals', user?.id]);
+      if (currentGoals) {
+        const updatedGoals = currentGoals.map(g => 
+          g.id.startsWith('temp-') ? newGoal : g
+        );
+        queryClient.setQueryData(['goals', user?.id], updatedGoals);
+      }
       toast({
         title: "Success",
         description: "Goal created successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousGoals) {
+        queryClient.setQueryData(['goals', user?.id], context.previousGoals);
+      }
       console.error('Error creating goal:', error);
       toast({
         title: "Error",
