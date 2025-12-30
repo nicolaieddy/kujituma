@@ -9,9 +9,14 @@ import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalObjectivesList } from "./GoalObjectivesList";
 import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
-import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, ArrowRight, X, Pencil } from "lucide-react";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, ArrowRight, X, Pencil, GripVertical } from "lucide-react";
 import { Link } from "react-router-dom";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
+import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { cn } from "@/lib/utils";
+import { SortableHabitRow } from "./SortableHabitRow";
 
 type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
@@ -194,6 +199,26 @@ export const GoalDetailModal = ({
       setShowEditCustomPicker(true);
     }
   };
+
+  const handleHabitDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = habitItems.findIndex(item => item.id === active.id);
+      const newIndex = habitItems.findIndex(item => item.id === over.id);
+      const reorderedHabits = arrayMove(habitItems, oldIndex, newIndex);
+      onEdit({ ...goal, habit_items: reorderedHabits });
+    }
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    })
+  );
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
@@ -293,108 +318,41 @@ export const GoalDetailModal = ({
                 )}
               </div>
               <p className="text-muted-foreground text-xs">
-                Recurring behaviors tied to this goal - tracked in the Habits tab
+                Recurring behaviors tied to this goal - drag to reorder
               </p>
 
-              {/* Saved habits list */}
+              {/* Saved habits list with drag and drop */}
               {habitItems.length > 0 && (
-                <div className="space-y-2">
-                  {habitItems.map((habit) => (
-                    <div 
-                      key={habit.id} 
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/30 group"
-                    >
-                      {editingHabitId === habit.id ? (
-                        // Editing mode
-                        <div className="flex items-center gap-2 flex-1">
-                          <Input
-                            value={editingHabitText}
-                            onChange={(e) => setEditingHabitText(e.target.value)}
-                            className="flex-1 h-8"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleSaveEditHabit();
-                              } else if (e.key === 'Escape') {
-                                handleCancelEditHabit();
-                              }
-                            }}
-                          />
-                          <Select
-                            value={editingHabitFrequency}
-                            onValueChange={(value: HabitFrequency) => handleEditFrequencyChange(value)}
-                          >
-                            <SelectTrigger className="w-32 h-8">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="bg-background border border-border z-[200]">
-                              <SelectItem value="daily">Daily</SelectItem>
-                              <SelectItem value="weekdays">Weekdays</SelectItem>
-                              <SelectItem value="weekly">Weekly</SelectItem>
-                              <SelectItem value="biweekly">Bi-weekly</SelectItem>
-                              <SelectItem value="monthly">Monthly</SelectItem>
-                              <SelectItem value="quarterly">Quarterly</SelectItem>
-                              <SelectItem value="custom">Custom...</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <Button 
-                            size="sm" 
-                            onClick={handleSaveEditHabit}
-                            disabled={!editingHabitText.trim()}
-                            className="h-8 gradient-primary"
-                          >
-                            Save
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="ghost"
-                            onClick={handleCancelEditHabit}
-                            className="h-8"
-                          >
-                            Cancel
-                          </Button>
-                        </div>
-                      ) : (
-                        // Display mode
-                        <>
-                          <button 
-                            onClick={() => handleStartEditHabit(habit)}
-                            className="flex items-center gap-2 text-foreground text-sm hover:text-primary transition-colors text-left group/edit"
-                          >
-                            <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-50 group-hover/edit:opacity-100 transition-opacity text-muted-foreground" />
-                            {habit.text}
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleStartEditHabit(habit)}
-                              className="hover:opacity-80 transition-opacity"
-                            >
-                              <Badge variant="outline" className="bg-muted/50 text-muted-foreground border-border/50 text-xs cursor-pointer hover:border-primary/50">
-                                {getHabitFrequencyLabel(habit)}
-                              </Badge>
-                            </button>
-                            <Link 
-                              to={`/?tab=habits&highlightGoal=${goal.id}`}
-                              className="h-6 w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80"
-                              title="Track in Habits tab"
-                            >
-                              <ArrowRight className="h-3 w-3" />
-                            </Link>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => handleRemoveHabit(habit.id)}
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </>
-                      )}
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleHabitDragEnd}
+                >
+                  <SortableContext
+                    items={habitItems.map(h => h.id)}
+                    strategy={verticalListSortingStrategy}
+                  >
+                    <div className="space-y-2">
+                      {habitItems.map((habit) => (
+                        <SortableHabitRow
+                          key={habit.id}
+                          habit={habit}
+                          goalId={goal.id}
+                          isEditing={editingHabitId === habit.id}
+                          editingText={editingHabitText}
+                          editingFrequency={editingHabitFrequency}
+                          onEditingTextChange={setEditingHabitText}
+                          onEditingFrequencyChange={handleEditFrequencyChange}
+                          onStartEdit={handleStartEditHabit}
+                          onSaveEdit={handleSaveEditHabit}
+                          onCancelEdit={handleCancelEditHabit}
+                          onRemove={handleRemoveHabit}
+                          getFrequencyLabel={getHabitFrequencyLabel}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </SortableContext>
+                </DndContext>
               )}
 
               {/* Add new habit */}
