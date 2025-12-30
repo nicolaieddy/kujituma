@@ -13,7 +13,6 @@ type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' |
 
 interface SortableHabitRowProps {
   habit: HabitItem;
-  goalId: string;
   isEditing: boolean;
   editingText: string;
   editingFrequency: HabitFrequency;
@@ -28,7 +27,6 @@ interface SortableHabitRowProps {
 
 export const SortableHabitRow = ({
   habit,
-  goalId,
   isEditing,
   editingText,
   editingFrequency,
@@ -144,9 +142,9 @@ export const SortableHabitRow = ({
               </Badge>
             </button>
             <Link 
-              to={`/?tab=habits&highlightGoal=${goalId}`}
+              to="/analytics"
               className="h-6 w-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity text-primary hover:text-primary/80"
-              title="Track in Habits tab"
+              title="View habit analytics"
             >
               <ArrowRight className="h-3 w-3" />
             </Link>

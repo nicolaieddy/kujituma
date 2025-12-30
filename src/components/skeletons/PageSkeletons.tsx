@@ -15,7 +15,6 @@ export const GoalsSkeleton = () => {
         <div className="flex gap-2 bg-muted p-1 rounded-lg mb-6">
           <Skeleton className="h-10 flex-1 rounded-md" />
           <Skeleton className="h-10 flex-1 rounded-md" />
-          <Skeleton className="h-10 flex-1 rounded-md" />
         </div>
 
         {/* Content skeleton - cards */}

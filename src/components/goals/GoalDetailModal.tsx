@@ -309,10 +309,10 @@ export const GoalDetailModal = ({
                 </div>
                 {habitItems.length > 0 && (
                   <Link 
-                    to={`/?tab=habits&highlightGoal=${goal.id}`}
+                    to="/analytics"
                     className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
                   >
-                    Track in Habits
+                    View Analytics
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 )}
@@ -337,7 +337,6 @@ export const GoalDetailModal = ({
                         <SortableHabitRow
                           key={habit.id}
                           habit={habit}
-                          goalId={goal.id}
                           isEditing={editingHabitId === habit.id}
                           editingText={editingHabitText}
                           editingFrequency={editingHabitFrequency}

@@ -1,5 +1,5 @@
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,7 +7,6 @@ import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
-import { useHabitStats } from "@/hooks/useHabitStats";
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { OrganizedGoalsView } from "@/components/goals/OrganizedGoalsView";
@@ -15,7 +14,6 @@ import { GoalDetailModal } from "@/components/goals/GoalDetailModal";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
-import { HabitsView } from "@/components/habits/HabitsView";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
@@ -52,22 +50,11 @@ const Goals = () => {
     WeeklyProgressService.getWeekStart()
   );
   const [activeTab, setActiveTab] = useState("weekly");
-  const [createWithRecurring, setCreateWithRecurring] = useState(false);
 
-  // Only load these when actually needed (big perf win on initial Weekly tab load)
+  // Only load these when actually needed
   const { objectives, createObjective, updateObjective, deleteObjective } = useAllWeeklyObjectives({
     enabled: activeTab === "longterm" && showDetailModal,
   });
-  const { habitStats } = useHabitStats({ enabled: activeTab === "longterm" });
-
-  // Create a map of goal IDs to current streaks for quick lookup
-  const habitStreaks = useMemo(() => {
-    const streakMap: Record<string, number> = {};
-    habitStats.forEach((stat) => {
-      streakMap[stat.goal.id] = stat.currentStreak;
-    });
-    return streakMap;
-  }, [habitStats]);
 
 
   const handleSignOut = async () => {
@@ -81,7 +68,6 @@ const Goals = () => {
   const handleCreateGoal = (data: any) => {
     createGoal(data);
     setShowForm(false);
-    setCreateWithRecurring(false);
   };
 
   const handleEditGoal = (goal: Goal) => {
@@ -104,13 +90,6 @@ const Goals = () => {
   const handleCancelForm = () => {
     setShowForm(false);
     setEditingGoal(null);
-    setCreateWithRecurring(false);
-  };
-
-  const handleCreateHabit = () => {
-    setCreateWithRecurring(true);
-    setActiveTab("longterm");
-    setShowForm(true);
   };
 
   const handleStatusChange = (id: string, status: any) => {
@@ -231,19 +210,13 @@ const Goals = () => {
 
         <div className={`${isMobile ? 'max-w-full' : 'max-w-6xl'} mx-auto`}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className={`grid w-full grid-cols-3 bg-muted ${isMobile ? 'h-11' : 'h-12'}`}>
+            <TabsList className={`grid w-full grid-cols-2 bg-muted ${isMobile ? 'h-11' : 'h-12'}`}>
               <TabsTrigger 
                 value="weekly" 
                 data-tour="weekly-tab"
                 className={isMobile ? 'text-sm' : 'text-base'}
               >
                 Weekly Plan
-              </TabsTrigger>
-              <TabsTrigger 
-                value="habits" 
-                className={isMobile ? 'text-sm' : 'text-base'}
-              >
-                Habits
               </TabsTrigger>
               <TabsTrigger 
                 value="longterm" 
@@ -260,25 +233,15 @@ const Goals = () => {
                 onNavigateWeek={navigateToWeek}
               />
             </TabsContent>
-
-            <TabsContent value="habits" className="mt-6">
-              <HabitsView 
-                onCreateGoal={handleCreateHabit} 
-                onEditGoal={handleEditGoal}
-              />
-            </TabsContent>
             
             <TabsContent value="longterm" className="mt-6">
               {showForm ? (
                 <div className="mb-8">
                   <GoalForm
-                    key={editingGoal ? editingGoal.id : (createWithRecurring ? 'new-recurring' : 'new')}
+                    key={editingGoal ? editingGoal.id : 'new'}
                     onSubmit={editingGoal ? handleUpdateGoal : handleCreateGoal}
                     onCancel={handleCancelForm}
-                    initialData={editingGoal || (createWithRecurring ? { 
-                      is_recurring: true, 
-                      recurrence_frequency: 'weekly' 
-                    } as any : null)}
+                    initialData={editingGoal}
                   />
                 </div>
               ) : (
@@ -317,7 +280,6 @@ const Goals = () => {
                       onDeprioritizeAll={handleDeprioritizeAll}
                       onReorder={handleGoalReorder}
                       isLoading={goalsLoading}
-                      habitStreaks={habitStreaks}
                     />
                   )}
                 </>
