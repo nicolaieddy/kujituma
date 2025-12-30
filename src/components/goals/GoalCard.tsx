@@ -306,7 +306,8 @@ export const GoalCard = ({
                     {goal.visibility === 'public' ? 'Public' : goal.visibility === 'friends' ? 'Friends' : 'Private'}
                   </Badge>
                 )}
-                {goal.is_recurring && (
+                {/* Show Habit badge only for goals with habit_items */}
+                {goal.habit_items && goal.habit_items.length > 0 && (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Badge 
@@ -325,6 +326,35 @@ export const GoalCard = ({
                     <TooltipContent>
                       {goal.is_paused ? (
                         <p className="text-amber-600">Habit paused - no new objectives will be created</p>
+                      ) : (
+                        <>
+                          <p>{goal.habit_items.length} habit{goal.habit_items.length > 1 ? 's' : ''} to track</p>
+                          <p className="text-xs text-muted-foreground">Click to view details</p>
+                        </>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* Show Recurring badge for recurring goals without habit_items */}
+                {goal.is_recurring && (!goal.habit_items || goal.habit_items.length === 0) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-xs gap-1 cursor-help",
+                          goal.is_paused 
+                            ? "border-amber-500/30 text-amber-600 bg-amber-500/5" 
+                            : "border-primary/30 text-primary bg-primary/5"
+                        )}
+                      >
+                        {goal.is_paused ? <Pause className="h-3 w-3" /> : <RefreshCw className="h-3 w-3" />}
+                        {goal.is_paused ? 'Paused' : 'Recurring'}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {goal.is_paused ? (
+                        <p className="text-amber-600">Recurring goal paused - no new objectives will be created</p>
                       ) : (
                         <>
                           <p className="capitalize">{goal.recurrence_frequency?.replace('_', ' ') || 'Weekly'}</p>
