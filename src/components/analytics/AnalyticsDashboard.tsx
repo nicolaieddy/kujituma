@@ -4,6 +4,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip, PieChart, Pie } from 'recharts';
 import { Target, TrendingUp, TrendingDown, Flame, CheckCircle2, Calendar as CalendarIcon, Award, Zap, BarChart3, ArrowUpRight, ArrowDownRight, Minus, Grid3X3, Circle, CheckCircle, ExternalLink, Trophy, CalendarRange, RefreshCw, Activity } from 'lucide-react';
+import { IndividualHabitAnalytics } from './IndividualHabitAnalytics';
 import { useAnalytics, HeatmapWeek, CategoryBreakdown, DateRangeFilter, CustomDateRange, HabitAnalytics, HabitDayData } from '@/hooks/useAnalytics';
 import { format, parseISO } from 'date-fns';
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -848,6 +849,9 @@ export const AnalyticsDashboard = () => {
       {analytics.habitAnalytics.topHabits.length > 1 && (
         <HabitComparisonView habits={analytics.habitAnalytics.topHabits} avgRate={analytics.habitAnalytics.dailyCompletionRate} />
       )}
+
+      {/* Individual Habit Analytics - Streak Charts & Calendars */}
+      <IndividualHabitAnalytics />
 
       {/* Activity Heatmap */}
       <Card>
