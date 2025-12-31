@@ -114,6 +114,26 @@ export const useAccountabilityPartners = () => {
     return result;
   }, [toast, fetchData]);
 
+  const cancelPartnerRequest = useCallback(async (requestId: string) => {
+    const result = await accountabilityService.cancelPartnerRequest(requestId);
+    
+    if (result.success) {
+      toast({
+        title: "Request cancelled",
+        description: "Your partner request has been cancelled.",
+      });
+      fetchData();
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to cancel request.",
+        variant: "destructive",
+      });
+    }
+    
+    return result;
+  }, [toast, fetchData]);
+
   const recordCheckIn = useCallback(async (partnershipId: string, message?: string) => {
     const result = await accountabilityService.recordCheckIn(partnershipId, message);
     
@@ -142,6 +162,7 @@ export const useAccountabilityPartners = () => {
     sendPartnerRequest,
     respondToPartnerRequest,
     removePartner,
+    cancelPartnerRequest,
     recordCheckIn,
     refetch: fetchData
   };
