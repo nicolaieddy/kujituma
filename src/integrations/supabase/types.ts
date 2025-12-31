@@ -133,7 +133,9 @@ export type Database = {
           created_at: string
           id: string
           message: string | null
+          receiver_can_view_sender_goals: boolean
           receiver_id: string
+          sender_can_view_receiver_goals: boolean
           sender_id: string
           status: string
           updated_at: string
@@ -142,7 +144,9 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
+          receiver_can_view_sender_goals?: boolean
           receiver_id: string
+          sender_can_view_receiver_goals?: boolean
           sender_id: string
           status?: string
           updated_at?: string
@@ -151,7 +155,9 @@ export type Database = {
           created_at?: string
           id?: string
           message?: string | null
+          receiver_can_view_sender_goals?: boolean
           receiver_id?: string
+          sender_can_view_receiver_goals?: boolean
           sender_id?: string
           status?: string
           updated_at?: string
@@ -1287,7 +1293,12 @@ export type Database = {
         Returns: boolean
       }
       send_accountability_partner_request: {
-        Args: { _message: string; _receiver_id: string }
+        Args: {
+          _message: string
+          _receiver_can_view_sender_goals?: boolean
+          _receiver_id: string
+          _sender_can_view_receiver_goals?: boolean
+        }
         Returns: string
       }
       send_friend_request: { Args: { _receiver_id: string }; Returns: string }

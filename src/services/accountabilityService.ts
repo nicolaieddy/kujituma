@@ -116,11 +116,17 @@ class AccountabilityService {
     };
   }
 
-  async sendPartnerRequest(receiverId: string, message: string = ''): Promise<{ success: boolean; error?: string; requestId?: string }> {
+  async sendPartnerRequest(
+    receiverId: string, 
+    message: string = '',
+    visibilitySettings?: { senderCanViewReceiverGoals?: boolean; receiverCanViewSenderGoals?: boolean }
+  ): Promise<{ success: boolean; error?: string; requestId?: string }> {
     try {
       const { data, error } = await supabase.rpc('send_accountability_partner_request', {
         _receiver_id: receiverId,
         _message: message,
+        _sender_can_view_receiver_goals: visibilitySettings?.senderCanViewReceiverGoals ?? true,
+        _receiver_can_view_sender_goals: visibilitySettings?.receiverCanViewSenderGoals ?? true,
       });
 
       if (error) {

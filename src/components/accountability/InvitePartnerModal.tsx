@@ -12,16 +12,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Friend } from '@/services/friendsService';
 import { useFriends } from '@/hooks/useFriends';
 import { useDebounce } from '@/hooks/useDebounce';
-import { Search, UserPlus, Users } from 'lucide-react';
+import { Search, UserPlus, Users, Eye, EyeOff } from 'lucide-react';
 import { AccountabilityPartner } from '@/services/accountabilityService';
 
 interface InvitePartnerModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInvite: (userId: string, message: string) => Promise<{ success: boolean }>;
+  onInvite: (
+    userId: string, 
+    message: string, 
+    visibilitySettings: { senderCanViewReceiverGoals: boolean; receiverCanViewSenderGoals: boolean }
+  ) => Promise<{ success: boolean }>;
   existingPartners: AccountabilityPartner[];
 }
 
@@ -36,6 +41,8 @@ export const InvitePartnerModal = ({
   const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
   const [message, setMessage] = useState('');
   const [isInviting, setIsInviting] = useState(false);
+  const [canViewTheirGoals, setCanViewTheirGoals] = useState(true);
+  const [theyCanViewMyGoals, setTheyCanViewMyGoals] = useState(true);
   const debouncedSearch = useDebounce(searchQuery, 300);
 
   // Filter friends who are not already partners
@@ -54,13 +61,18 @@ export const InvitePartnerModal = ({
     if (!selectedFriend) return;
     
     setIsInviting(true);
-    const result = await onInvite(selectedFriend.friend_id, message);
+    const result = await onInvite(selectedFriend.friend_id, message, {
+      senderCanViewReceiverGoals: canViewTheirGoals,
+      receiverCanViewSenderGoals: theyCanViewMyGoals,
+    });
     setIsInviting(false);
     
     if (result.success) {
       setSelectedFriend(null);
       setMessage('');
       setSearchQuery('');
+      setCanViewTheirGoals(true);
+      setTheyCanViewMyGoals(true);
       onOpenChange(false);
     }
   };
@@ -69,6 +81,8 @@ export const InvitePartnerModal = ({
     setSelectedFriend(null);
     setMessage('');
     setSearchQuery('');
+    setCanViewTheirGoals(true);
+    setTheyCanViewMyGoals(true);
     onOpenChange(false);
   };
 
@@ -182,6 +196,46 @@ export const InvitePartnerModal = ({
                   onChange={(e) => setMessage(e.target.value)}
                   rows={3}
                 />
+              </div>
+
+              {/* Visibility Settings */}
+              <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
+                <Label className="text-sm font-medium flex items-center gap-2">
+                  <Eye className="h-4 w-4" />
+                  Visibility Settings
+                </Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="view-their-goals" className="text-sm font-normal">
+                        I can view their goals
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        See your partner's goals and progress
+                      </p>
+                    </div>
+                    <Switch
+                      id="view-their-goals"
+                      checked={canViewTheirGoals}
+                      onCheckedChange={setCanViewTheirGoals}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="they-view-my-goals" className="text-sm font-normal">
+                        They can view my goals
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        Share your goals and progress with them
+                      </p>
+                    </div>
+                    <Switch
+                      id="they-view-my-goals"
+                      checked={theyCanViewMyGoals}
+                      onCheckedChange={setTheyCanViewMyGoals}
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-2">
