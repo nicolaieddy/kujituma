@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
+import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -40,6 +41,11 @@ const PartnerDashboard = () => {
   } | null>(null);
   const [goals, setGoals] = useState<PartnerGoal[]>([]);
   const [weeklyObjectives, setWeeklyObjectives] = useState<PartnerWeeklyObjective[]>([]);
+  const [partnershipDetails, setPartnershipDetails] = useState<{
+    id: string;
+    user1_id: string;
+    user2_id: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [canViewPartner, setCanViewPartner] = useState(true);
@@ -78,10 +84,11 @@ const PartnerDashboard = () => {
         
         setCanViewPartner(true);
         
-        const [profile, goalsData, objectivesData] = await Promise.all([
+        const [profile, goalsData, objectivesData, partnership] = await Promise.all([
           accountabilityService.getPartnerProfile(partnerId),
           accountabilityService.getPartnerGoals(partnerId),
-          accountabilityService.getPartnerWeeklyObjectives(partnerId, getWeekStart())
+          accountabilityService.getPartnerWeeklyObjectives(partnerId, getWeekStart()),
+          accountabilityService.getPartnershipDetails(partnerId)
         ]);
         
         if (!profile) {
@@ -92,6 +99,7 @@ const PartnerDashboard = () => {
         setPartnerProfile(profile);
         setGoals(goalsData);
         setWeeklyObjectives(objectivesData);
+        setPartnershipDetails(partnership);
       } catch (err) {
         console.error('Error fetching partner data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load partner data');
@@ -344,6 +352,18 @@ const PartnerDashboard = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Visibility History Timeline */}
+          {partnershipDetails && user && partnerProfile && (
+            <VisibilityHistoryTimeline
+              partnershipId={partnershipDetails.id}
+              partnerId={partnerId!}
+              partnerName={partnerProfile.full_name}
+              currentUserId={user.id}
+              user1Id={partnershipDetails.user1_id}
+              user2Id={partnershipDetails.user2_id}
+            />
+          )}
         </div>
       </div>
     </div>

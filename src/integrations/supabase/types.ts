@@ -620,6 +620,51 @@ export type Database = {
         }
         Relationships: []
       }
+      partnership_visibility_history: {
+        Row: {
+          changed_by: string
+          created_at: string
+          field_changed: string
+          id: string
+          new_value: boolean
+          old_value: boolean | null
+          partnership_id: string
+        }
+        Insert: {
+          changed_by: string
+          created_at?: string
+          field_changed: string
+          id?: string
+          new_value: boolean
+          old_value?: boolean | null
+          partnership_id: string
+        }
+        Update: {
+          changed_by?: string
+          created_at?: string
+          field_changed?: string
+          id?: string
+          new_value?: boolean
+          old_value?: boolean | null
+          partnership_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_visibility_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "partnership_visibility_history_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_likes: {
         Row: {
           created_at: string | null
