@@ -74,6 +74,10 @@ class AccountabilityService {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
 
+    // Get existing partners to filter out stale requests
+    const existingPartners = await this.getPartners();
+    const partnerIds = new Set(existingPartners.map(p => p.partner_id));
+
     // Fetch sent requests
     const { data: sentData, error: sentError } = await supabase
       .from('accountability_partner_requests')
@@ -112,9 +116,13 @@ class AccountabilityService {
       throw receivedError;
     }
 
+    // Filter out requests where a partnership already exists
+    const filteredSent = (sentData || []).filter(r => !partnerIds.has(r.receiver_id));
+    const filteredReceived = (receivedData || []).filter(r => !partnerIds.has(r.sender_id));
+
     return {
-      sent: (sentData || []) as AccountabilityPartnerRequest[],
-      received: (receivedData || []) as AccountabilityPartnerRequest[],
+      sent: filteredSent as AccountabilityPartnerRequest[],
+      received: filteredReceived as AccountabilityPartnerRequest[],
     };
   }
 
