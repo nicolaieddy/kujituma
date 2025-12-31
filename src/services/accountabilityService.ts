@@ -19,6 +19,8 @@ export interface AccountabilityPartnerRequest {
   status: string;
   created_at: string;
   updated_at: string;
+  sender_can_view_receiver_goals: boolean;
+  receiver_can_view_sender_goals: boolean;
   sender_profile?: {
     full_name: string;
     avatar_url: string | null;
