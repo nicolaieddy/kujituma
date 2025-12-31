@@ -344,6 +344,29 @@ class AccountabilityService {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
   }
+
+  async getPartnershipDetails(partnerId: string): Promise<{
+    id: string;
+    user1_id: string;
+    user2_id: string;
+  } | null> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return null;
+
+    const { data, error } = await supabase
+      .from('accountability_partnerships')
+      .select('id, user1_id, user2_id')
+      .or(`and(user1_id.eq.${user.id},user2_id.eq.${partnerId}),and(user1_id.eq.${partnerId},user2_id.eq.${user.id})`)
+      .eq('status', 'active')
+      .single();
+
+    if (error) {
+      console.error('Error fetching partnership details:', error);
+      return null;
+    }
+
+    return data;
+  }
 }
 
 export const accountabilityService = new AccountabilityService();
