@@ -181,7 +181,9 @@ export type Database = {
           last_check_in_at: string | null
           status: string
           updated_at: string
+          user1_can_view_user2_goals: boolean
           user1_id: string
+          user2_can_view_user1_goals: boolean
           user2_id: string
         }
         Insert: {
@@ -191,7 +193,9 @@ export type Database = {
           last_check_in_at?: string | null
           status?: string
           updated_at?: string
+          user1_can_view_user2_goals?: boolean
           user1_id: string
+          user2_can_view_user1_goals?: boolean
           user2_id: string
         }
         Update: {
@@ -201,7 +205,9 @@ export type Database = {
           last_check_in_at?: string | null
           status?: string
           updated_at?: string
+          user1_can_view_user2_goals?: boolean
           user1_id?: string
+          user2_can_view_user1_goals?: boolean
           user2_id?: string
         }
         Relationships: [
@@ -1201,8 +1207,10 @@ export type Database = {
         Args: never
         Returns: {
           avatar_url: string
+          can_view_partner_goals: boolean
           full_name: string
           last_check_in_at: string
+          partner_can_view_my_goals: boolean
           partner_id: string
           partnership_id: string
           status: string

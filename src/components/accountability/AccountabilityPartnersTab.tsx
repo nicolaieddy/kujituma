@@ -15,7 +15,8 @@ export const AccountabilityPartnersTab = () => {
     sendPartnerRequest,
     respondToPartnerRequest,
     removePartner,
-    recordCheckIn
+    recordCheckIn,
+    refetch
   } = useAccountabilityPartners();
   
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
@@ -94,6 +95,7 @@ export const AccountabilityPartnersTab = () => {
                   partner={partner}
                   onRemove={handleRemovePartner}
                   onCheckIn={handleCheckIn}
+                  onVisibilityChange={refetch}
                   loading={loading}
                 />
               ))}

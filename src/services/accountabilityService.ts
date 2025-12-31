@@ -7,6 +7,8 @@ export interface AccountabilityPartner {
   partnership_id: string;
   status: string;
   last_check_in_at: string | null;
+  can_view_partner_goals: boolean;
+  partner_can_view_my_goals: boolean;
 }
 
 export interface AccountabilityPartnerRequest {
@@ -274,6 +276,54 @@ class AccountabilityService {
         .from('accountability_partnerships')
         .update({ last_check_in_at: new Date().toISOString() })
         .eq('id', partnershipId);
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  async updateVisibilitySettings(
+    partnerId: string, 
+    settings: { canViewPartnerGoals?: boolean; partnerCanViewMyGoals?: boolean }
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      // Determine if current user is user1 or user2 in the partnership
+      const { data: partnership, error: fetchError } = await supabase
+        .from('accountability_partnerships')
+        .select('id, user1_id, user2_id')
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${partnerId}),and(user1_id.eq.${partnerId},user2_id.eq.${user.id})`)
+        .eq('status', 'active')
+        .single();
+
+      if (fetchError || !partnership) {
+        return { success: false, error: 'Partnership not found' };
+      }
+
+      const isUser1 = partnership.user1_id === user.id;
+      const updateData: Record<string, boolean> = {};
+
+      // Map the settings to the correct columns
+      if (settings.canViewPartnerGoals !== undefined) {
+        // Current user's ability to view partner's goals
+        updateData[isUser1 ? 'user1_can_view_user2_goals' : 'user2_can_view_user1_goals'] = settings.canViewPartnerGoals;
+      }
+      if (settings.partnerCanViewMyGoals !== undefined) {
+        // Partner's ability to view current user's goals
+        updateData[isUser1 ? 'user2_can_view_user1_goals' : 'user1_can_view_user2_goals'] = settings.partnerCanViewMyGoals;
+      }
+
+      const { error } = await supabase
+        .from('accountability_partnerships')
+        .update(updateData)
+        .eq('id', partnership.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
 
       return { success: true };
     } catch (err) {

@@ -42,6 +42,7 @@ const PartnerDashboard = () => {
   const [weeklyObjectives, setWeeklyObjectives] = useState<PartnerWeeklyObjective[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [canViewPartner, setCanViewPartner] = useState(true);
 
   // Get current week start (Monday)
   const getWeekStart = () => {
@@ -57,6 +58,25 @@ const PartnerDashboard = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // First check if we have permission to view this partner
+        const partners = await accountabilityService.getPartners();
+        const partnerData = partners.find(p => p.partner_id === partnerId);
+        
+        if (!partnerData) {
+          setError('Partner not found or partnership not active');
+          return;
+        }
+        
+        if (!partnerData.can_view_partner_goals) {
+          setCanViewPartner(false);
+          // Still fetch profile for display
+          const profile = await accountabilityService.getPartnerProfile(partnerId);
+          setPartnerProfile(profile);
+          return;
+        }
+        
+        setCanViewPartner(true);
         
         const [profile, goalsData, objectivesData] = await Promise.all([
           accountabilityService.getPartnerProfile(partnerId),
@@ -129,6 +149,55 @@ const PartnerDashboard = () => {
                 <p className="text-destructive font-medium">{error}</p>
                 <p className="text-muted-foreground text-sm mt-2">
                   Make sure you are connected as accountability partners.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access restricted message if partner hasn't granted view permission
+  if (!canViewPartner && partnerProfile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
+        <div className="container mx-auto px-4 py-6">
+          <div className="max-w-4xl mx-auto">
+            <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-6">
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Back to Partners
+            </Button>
+            
+            {/* Partner Header */}
+            <Card className="border-border mb-6">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                    <AvatarImage src={partnerProfile.avatar_url || undefined} />
+                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                      {partnerProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1">
+                    <h1 className="text-2xl font-bold text-foreground">
+                      {partnerProfile.full_name}
+                    </h1>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-muted">
+              <CardContent className="py-12 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <Target className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <p className="text-foreground font-medium mb-2">Access Restricted</p>
+                <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                  {partnerProfile.full_name} hasn't granted you permission to view their goals yet. 
+                  You can adjust visibility settings in your partnership configuration.
                 </p>
               </CardContent>
             </Card>
