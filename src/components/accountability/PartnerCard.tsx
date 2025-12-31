@@ -22,15 +22,16 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { CheckInDialog } from './CheckInDialog';
 import { AccountabilityPartner, accountabilityService } from '@/services/accountabilityService';
-import { Eye, EyeOff, MoreVertical, UserMinus, MessageSquare, Clock, Settings2 } from 'lucide-react';
+import { Eye, EyeOff, MoreVertical, UserMinus, MessageSquare, Clock, Settings2, Calendar, User } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 
 interface PartnerCardProps {
   partner: AccountabilityPartner;
   onRemove: (partnerId: string) => Promise<void>;
-  onCheckIn: (partnershipId: string) => Promise<void>;
+  onCheckIn: (partnershipId: string, message?: string) => Promise<void>;
   onVisibilityChange?: () => void;
   loading?: boolean;
 }
@@ -40,6 +41,7 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
   const { toast } = useToast();
   const [showRemoveDialog, setShowRemoveDialog] = useState(false);
   const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+  const [showCheckInDialog, setShowCheckInDialog] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
   const [canViewPartner, setCanViewPartner] = useState(partner.can_view_partner_goals);
@@ -52,16 +54,20 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
     setShowRemoveDialog(false);
   };
 
-  const handleViewDashboard = () => {
+  const handleViewWeeklyPlan = () => {
     if (!partner.can_view_partner_goals) {
       toast({
         title: "Access restricted",
-        description: "You don't have permission to view this partner's goals.",
+        description: "You don't have permission to view this partner's weekly plan.",
         variant: "destructive",
       });
       return;
     }
     navigate(`/partner/${partner.partner_id}`);
+  };
+
+  const handleCheckIn = async (message?: string) => {
+    await onCheckIn(partner.partnership_id, message);
   };
 
   const handleVisibilityUpdate = async (
@@ -144,12 +150,12 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={handleViewDashboard}
+                onClick={handleViewWeeklyPlan}
                 disabled={!canViewPartner}
                 className="hidden sm:flex"
               >
-                <Eye className="h-4 w-4 mr-2" />
-                View Goals
+                <Calendar className="h-4 w-4 mr-2" />
+                View Weekly Plan
               </Button>
               
               <DropdownMenu>
@@ -159,11 +165,15 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleViewDashboard} className="sm:hidden" disabled={!canViewPartner}>
-                    <Eye className="h-4 w-4 mr-2" />
-                    View Goals
+                  <DropdownMenuItem onClick={handleViewWeeklyPlan} className="sm:hidden" disabled={!canViewPartner}>
+                    <Calendar className="h-4 w-4 mr-2" />
+                    View Weekly Plan
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => onCheckIn(partner.partnership_id)}>
+                  <DropdownMenuItem onClick={() => navigate(`/profile/${partner.partner_id}`)}>
+                    <User className="h-4 w-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowCheckInDialog(true)}>
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Record Check-in
                   </DropdownMenuItem>
@@ -185,6 +195,14 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
           </div>
         </CardContent>
       </Card>
+
+      {/* Check-in Dialog */}
+      <CheckInDialog
+        open={showCheckInDialog}
+        onOpenChange={setShowCheckInDialog}
+        partnerName={partner.full_name}
+        onConfirm={handleCheckIn}
+      />
 
       {/* Visibility Settings Dialog */}
       <AlertDialog open={showSettingsDialog} onOpenChange={setShowSettingsDialog}>
