@@ -17,6 +17,7 @@ export const AccountabilityPartnersTab = () => {
     sendPartnerRequest,
     respondToPartnerRequest,
     removePartner,
+    cancelPartnerRequest,
     recordCheckIn,
     refetch
   } = useAccountabilityPartners();
@@ -42,7 +43,7 @@ export const AccountabilityPartnersTab = () => {
   };
 
   const handleCancelRequest = async (requestId: string) => {
-    await respondToPartnerRequest(requestId, 'rejected');
+    await cancelPartnerRequest(requestId);
   };
 
   const handleRemovePartner = async (partnerId: string) => {

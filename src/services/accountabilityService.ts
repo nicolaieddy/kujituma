@@ -172,6 +172,28 @@ class AccountabilityService {
     }
   }
 
+  async cancelPartnerRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('accountability_partner_requests')
+        .delete()
+        .eq('id', requestId)
+        .eq('sender_id', user.id)
+        .eq('status', 'pending');
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
   async removePartner(partnerId: string): Promise<{ success: boolean; error?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
