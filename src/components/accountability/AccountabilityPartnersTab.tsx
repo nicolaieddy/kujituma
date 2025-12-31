@@ -5,7 +5,9 @@ import { useAccountabilityPartners } from '@/hooks/useAccountabilityPartners';
 import { PartnerCard } from './PartnerCard';
 import { PartnerRequestCard } from './PartnerRequestCard';
 import { InvitePartnerModal } from './InvitePartnerModal';
+import { AcceptPartnerDialog } from './AcceptPartnerDialog';
 import { Users, UserPlus, Inbox, Handshake } from 'lucide-react';
+import { AccountabilityPartnerRequest } from '@/services/accountabilityService';
 
 export const AccountabilityPartnersTab = () => {
   const { 
@@ -20,9 +22,19 @@ export const AccountabilityPartnersTab = () => {
   } = useAccountabilityPartners();
   
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [acceptDialogOpen, setAcceptDialogOpen] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState<AccountabilityPartnerRequest | null>(null);
 
-  const handleAcceptRequest = async (requestId: string) => {
-    await respondToPartnerRequest(requestId, 'accepted');
+  const handleOpenAcceptDialog = (request: AccountabilityPartnerRequest) => {
+    setSelectedRequest(request);
+    setAcceptDialogOpen(true);
+  };
+
+  const handleAcceptRequest = async (
+    requestId: string, 
+    visibilitySettings: { senderCanViewReceiverGoals: boolean; receiverCanViewSenderGoals: boolean }
+  ) => {
+    await respondToPartnerRequest(requestId, 'accepted', visibilitySettings);
   };
 
   const handleRejectRequest = async (requestId: string) => {
@@ -41,8 +53,12 @@ export const AccountabilityPartnersTab = () => {
     await recordCheckIn(partnershipId);
   };
 
-  const handleInvite = async (userId: string, message: string) => {
-    return await sendPartnerRequest(userId, message);
+  const handleInvite = async (
+    userId: string, 
+    message: string,
+    visibilitySettings: { senderCanViewReceiverGoals: boolean; receiverCanViewSenderGoals: boolean }
+  ) => {
+    return await sendPartnerRequest(userId, message, visibilitySettings);
   };
 
   if (loading) {
@@ -123,7 +139,7 @@ export const AccountabilityPartnersTab = () => {
                       key={request.id}
                       request={request}
                       type="received"
-                      onAccept={handleAcceptRequest}
+                      onAccept={() => handleOpenAcceptDialog(request)}
                       onReject={handleRejectRequest}
                       loading={loading}
                     />
@@ -165,6 +181,14 @@ export const AccountabilityPartnersTab = () => {
         onOpenChange={setInviteModalOpen}
         onInvite={handleInvite}
         existingPartners={partners}
+      />
+
+      <AcceptPartnerDialog
+        open={acceptDialogOpen}
+        onOpenChange={setAcceptDialogOpen}
+        request={selectedRequest}
+        onAccept={handleAcceptRequest}
+        loading={loading}
       />
     </div>
   );

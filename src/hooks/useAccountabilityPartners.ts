@@ -70,9 +70,10 @@ export const useAccountabilityPartners = () => {
 
   const respondToPartnerRequest = useCallback(async (
     requestId: string, 
-    response: 'accepted' | 'rejected'
+    response: 'accepted' | 'rejected',
+    visibilityOverrides?: { senderCanViewReceiverGoals: boolean; receiverCanViewSenderGoals: boolean }
   ) => {
-    const result = await accountabilityService.respondToPartnerRequest(requestId, response);
+    const result = await accountabilityService.respondToPartnerRequest(requestId, response, visibilityOverrides);
     
     if (result.success) {
       toast({

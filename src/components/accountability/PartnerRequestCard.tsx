@@ -10,7 +10,7 @@ import { formatDistanceToNow } from 'date-fns';
 interface PartnerRequestCardProps {
   request: AccountabilityPartnerRequest;
   type: 'sent' | 'received';
-  onAccept?: (requestId: string) => Promise<void>;
+  onAccept?: (requestId: string) => void | Promise<void>;
   onReject?: (requestId: string) => Promise<void>;
   onCancel?: (requestId: string) => Promise<void>;
   loading?: boolean;
