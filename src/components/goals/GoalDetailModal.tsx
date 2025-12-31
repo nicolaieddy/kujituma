@@ -91,6 +91,16 @@ export const GoalDetailModal = ({
   const [editingHabitCustomSchedule, setEditingHabitCustomSchedule] = useState<CustomSchedule | undefined>();
   const [showEditCustomPicker, setShowEditCustomPicker] = useState(false);
 
+  // Hooks must be called unconditionally before any early returns
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    })
+  );
+
   if (!goal) return null;
 
   const config = STATUS_CONFIG[goal.status];
@@ -211,14 +221,6 @@ export const GoalDetailModal = ({
     }
   };
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 8 },
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
-    })
-  );
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
