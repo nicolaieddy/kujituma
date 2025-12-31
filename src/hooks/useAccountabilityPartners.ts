@@ -44,8 +44,12 @@ export const useAccountabilityPartners = () => {
     fetchData();
   }, [fetchData]);
 
-  const sendPartnerRequest = useCallback(async (userId: string, message: string = '') => {
-    const result = await accountabilityService.sendPartnerRequest(userId, message);
+  const sendPartnerRequest = useCallback(async (
+    userId: string, 
+    message: string = '',
+    visibilitySettings?: { senderCanViewReceiverGoals: boolean; receiverCanViewSenderGoals: boolean }
+  ) => {
+    const result = await accountabilityService.sendPartnerRequest(userId, message, visibilitySettings);
     
     if (result.success) {
       toast({
