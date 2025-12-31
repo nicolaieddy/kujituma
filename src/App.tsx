@@ -28,6 +28,7 @@ import LandingPage from "./pages/LandingPage";
 const Install = lazy(() => import("./pages/Install"));
 const Rituals = lazy(() => import("./pages/Rituals"));
 const Debug = lazy(() => import("./pages/Debug"));
+const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -90,6 +91,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
         <Route path="/rituals" element={<Rituals />} />
         <Route path="/install" element={<Install />} />
         <Route path="/debug" element={<Debug />} />
+        <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
         <Route path="*" element={<Feed />} />
       </Routes>
     </Suspense>
