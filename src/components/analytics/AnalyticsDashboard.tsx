@@ -16,7 +16,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
@@ -158,33 +158,36 @@ export const AnalyticsDashboard = () => {
             </SelectContent>
           </Select>
           
-          <Popover open={calendarOpen && dateRange === 'custom'} onOpenChange={setCalendarOpen} modal={true}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className={cn(
-                  "h-10 w-10",
-                  dateRange === 'custom' && "border-primary"
-                )}
-              >
-                <CalendarIcon className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0 z-[9999]" align="end" sideOffset={4}>
-              <div className="p-3 border-b">
-                <p className="text-sm font-medium">Select date range</p>
-                <p className="text-xs text-muted-foreground">Choose a single date or a range</p>
-              </div>
+          <Dialog open={calendarOpen && dateRange === 'custom'} onOpenChange={setCalendarOpen}>
+            <Button
+              variant="outline"
+              size="icon"
+              className={cn(
+                "h-10 w-10",
+                dateRange === 'custom' && "border-primary"
+              )}
+              onClick={() => {
+                if (dateRange === 'custom') {
+                  setCalendarOpen(true);
+                }
+              }}
+            >
+              <CalendarIcon className="h-4 w-4" />
+            </Button>
+            <DialogContent className="sm:max-w-fit">
+              <DialogHeader>
+                <DialogTitle>Select date range</DialogTitle>
+                <DialogDescription>Choose a single date or a range</DialogDescription>
+              </DialogHeader>
               <Calendar
                 mode="range"
                 selected={tempDateRange}
                 onSelect={handleCalendarSelect}
                 numberOfMonths={2}
-                className={cn("p-3 pointer-events-auto")}
+                className="p-3"
                 disabled={(date) => date > new Date()}
               />
-              <div className="p-3 border-t flex justify-end gap-2">
+              <div className="flex justify-end gap-2 pt-2">
                 <Button variant="ghost" size="sm" onClick={() => setCalendarOpen(false)}>
                   Cancel
                 </Button>
@@ -192,8 +195,8 @@ export const AnalyticsDashboard = () => {
                   Apply
                 </Button>
               </div>
-            </PopoverContent>
-          </Popover>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
