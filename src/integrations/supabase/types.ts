@@ -1285,7 +1285,12 @@ export type Database = {
       }
       remove_friend: { Args: { _friend_id: string }; Returns: boolean }
       respond_to_accountability_partner_request: {
-        Args: { _request_id: string; _response: string }
+        Args: {
+          _override_receiver_can_view_sender_goals?: boolean
+          _override_sender_can_view_receiver_goals?: boolean
+          _request_id: string
+          _response: string
+        }
         Returns: boolean
       }
       respond_to_friend_request: {

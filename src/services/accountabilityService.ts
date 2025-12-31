@@ -141,11 +141,17 @@ class AccountabilityService {
     }
   }
 
-  async respondToPartnerRequest(requestId: string, response: 'accepted' | 'rejected'): Promise<{ success: boolean; error?: string }> {
+  async respondToPartnerRequest(
+    requestId: string, 
+    response: 'accepted' | 'rejected',
+    visibilityOverrides?: { senderCanViewReceiverGoals?: boolean; receiverCanViewSenderGoals?: boolean }
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabase.rpc('respond_to_accountability_partner_request', {
         _request_id: requestId,
         _response: response,
+        _override_sender_can_view_receiver_goals: visibilityOverrides?.senderCanViewReceiverGoals ?? null,
+        _override_receiver_can_view_sender_goals: visibilityOverrides?.receiverCanViewSenderGoals ?? null,
       });
 
       if (error) {
