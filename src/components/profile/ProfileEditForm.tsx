@@ -803,29 +803,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               />
             </div>
 
-            <div className="p-4 bg-accent/50 border border-border rounded-lg hover:bg-accent transition-all">
-              <Label htmlFor="commitment_visibility" className="text-foreground text-sm font-medium">
-                Commitment Visibility
-              </Label>
-              <p className="text-muted-foreground text-xs mt-1 mb-3">
-                Control who can see your weekly top 3 commitments
-              </p>
-              <Select
-                value={formData.commitment_visibility}
-                onValueChange={(value: 'private' | 'friends' | 'public') => 
-                  setFormData({ ...formData, commitment_visibility: value })
-                }
-              >
-                <SelectTrigger id="commitment_visibility">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="private">Private (Only me)</SelectItem>
-                  <SelectItem value="friends">Friends only</SelectItem>
-                  <SelectItem value="public">Public (Everyone)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Action Buttons */}
