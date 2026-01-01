@@ -809,7 +809,6 @@ export type Database = {
           linkedin_url: string | null
           medium_url: string | null
           phone_number: string | null
-          show_email: boolean
           signal_url: string | null
           snapchat_url: string | null
           social_links_order: string[] | null
@@ -839,7 +838,6 @@ export type Database = {
           linkedin_url?: string | null
           medium_url?: string | null
           phone_number?: string | null
-          show_email?: boolean
           signal_url?: string | null
           snapchat_url?: string | null
           social_links_order?: string[] | null
@@ -869,7 +867,6 @@ export type Database = {
           linkedin_url?: string | null
           medium_url?: string | null
           phone_number?: string | null
-          show_email?: boolean
           signal_url?: string | null
           snapchat_url?: string | null
           social_links_order?: string[] | null
