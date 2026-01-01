@@ -14,8 +14,8 @@ export const NotificationBell = () => {
 
   const handleOpenChange = async (open: boolean) => {
     setIsOpen(open);
-    // Mark all as read when closing the popover if there are unread notifications
-    if (!open && unreadCount > 0) {
+    // Mark all as read when opening the popover if there are unread notifications
+    if (open && unreadCount > 0) {
       await markAllAsRead();
     }
   };
