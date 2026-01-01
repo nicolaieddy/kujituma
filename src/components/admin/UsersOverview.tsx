@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
+import UserDetailDrawer from "./UserDetailDrawer";
 
 interface AdminUser {
   id: string;
@@ -41,6 +42,8 @@ const formatDuration = (seconds: number): string => {
 const UsersOverview = ({ users }: UsersOverviewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('last_active_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -49,6 +52,11 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
       setSortKey(key);
       setSortDirection('desc');
     }
+  };
+
+  const handleUserClick = (user: AdminUser) => {
+    setSelectedUser(user);
+    setDrawerOpen(true);
   };
 
   const sortedUsers = useMemo(() => {
@@ -121,84 +129,96 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
   };
 
   return (
-    <Card className="border-border">
-      <CardHeader>
-        <CardTitle className="text-foreground">Users Overview</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {users.length === 0 ? (
-          <div className="text-center text-muted-foreground py-8">
-            <p>No users found. Check the console for debugging information.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-border">
-                  <SortableHeader label="User" sortKeyName="full_name" />
-                  <SortableHeader label="Email" sortKeyName="email" />
-                  <SortableHeader label="Role" sortKeyName="role" />
-                  <SortableHeader label="Posts" sortKeyName="posts_count" />
-                  <SortableHeader label="Time Spent" sortKeyName="total_time_seconds" />
-                  <SortableHeader label="Days Active" sortKeyName="days_active" />
-                  <SortableHeader label="Last Active" sortKeyName="last_active_at" />
-                  <SortableHeader label="Joined" sortKeyName="created_at" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedUsers.map((user) => (
-                  <TableRow key={user.id} className="border-border">
-                    <TableCell>
-                      <div className="flex items-center space-x-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={user.avatar_url} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            <User className="h-4 w-4" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-foreground font-medium">{user.full_name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground">{user.email}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === 'admin' ? "destructive" : "secondary"}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-foreground">{user.posts_count}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-foreground">
-                        {formatDuration(user.total_time_seconds || 0)}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-foreground">{user.days_active || 0}</span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground text-sm">
-                        {user.last_active_at
-                          ? formatTimeAgo(new Date(user.last_active_at).getTime())
-                          : 'Never'
-                        }
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className="text-muted-foreground text-sm">
-                        {formatTimeAgo(new Date(user.created_at).getTime())}
-                      </span>
-                    </TableCell>
+    <>
+      <Card className="border-border">
+        <CardHeader>
+          <CardTitle className="text-foreground">Users Overview</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {users.length === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              <p>No users found. Check the console for debugging information.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-border">
+                    <SortableHeader label="User" sortKeyName="full_name" />
+                    <SortableHeader label="Email" sortKeyName="email" />
+                    <SortableHeader label="Role" sortKeyName="role" />
+                    <SortableHeader label="Posts" sortKeyName="posts_count" />
+                    <SortableHeader label="Time Spent" sortKeyName="total_time_seconds" />
+                    <SortableHeader label="Days Active" sortKeyName="days_active" />
+                    <SortableHeader label="Last Active" sortKeyName="last_active_at" />
+                    <SortableHeader label="Joined" sortKeyName="created_at" />
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+                </TableHeader>
+                <TableBody>
+                  {sortedUsers.map((user) => (
+                    <TableRow 
+                      key={user.id} 
+                      className="border-border cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => handleUserClick(user)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={user.avatar_url} />
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              <User className="h-4 w-4" />
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-foreground font-medium">{user.full_name}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground">{user.email}</span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'admin' ? "destructive" : "secondary"}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-foreground">{user.posts_count}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-foreground">
+                          {formatDuration(user.total_time_seconds || 0)}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-foreground">{user.days_active || 0}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground text-sm">
+                          {user.last_active_at
+                            ? formatTimeAgo(new Date(user.last_active_at).getTime())
+                            : 'Never'
+                          }
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-muted-foreground text-sm">
+                          {formatTimeAgo(new Date(user.created_at).getTime())}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <UserDetailDrawer
+        user={selectedUser}
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+      />
+    </>
   );
 };
 
