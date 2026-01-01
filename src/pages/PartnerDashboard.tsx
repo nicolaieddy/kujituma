@@ -8,13 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
+import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { 
   accountabilityService, 
   PartnerGoal, 
   PartnerWeeklyObjective 
 } from '@/services/accountabilityService';
+import { toast } from 'sonner';
 import { 
   ArrowLeft, 
   Target, 
@@ -22,9 +25,12 @@ import {
   Circle,
   Calendar,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  MessageSquare,
+  History,
+  Clock
 } from 'lucide-react';
-import { format, startOfWeek, addWeeks, subWeeks, isSameWeek } from 'date-fns';
+import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, formatDistanceToNow } from 'date-fns';
 
 const PartnerDashboard = () => {
   const { partnerId } = useParams<{ partnerId: string }>();
@@ -45,6 +51,7 @@ const PartnerDashboard = () => {
     id: string;
     user1_id: string;
     user2_id: string;
+    last_check_in_at: string | null;
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingObjectives, setLoadingObjectives] = useState(false);
@@ -53,6 +60,7 @@ const PartnerDashboard = () => {
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
+  const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
 
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -160,6 +168,20 @@ const PartnerDashboard = () => {
       await signOut();
     } catch (error) {
       console.error('Error signing out:', error);
+    }
+  };
+
+  const handleRecordCheckIn = async (message?: string) => {
+    if (!partnershipDetails) return;
+    try {
+      await accountabilityService.recordCheckIn(partnershipDetails.id, message);
+      // Refresh partnership details to get updated last_check_in_at
+      const updatedPartnership = await accountabilityService.getPartnershipDetails(partnerId!);
+      setPartnershipDetails(updatedPartnership);
+      toast.success('Check-in recorded!');
+    } catch (err) {
+      console.error('Error recording check-in:', err);
+      toast.error('Failed to record check-in');
     }
   };
 
@@ -276,7 +298,7 @@ const PartnerDashboard = () => {
             Back to Partners
           </Button>
 
-          {/* Partner Header */}
+          {/* Partner Header with Check-in Actions */}
           <Card className="border-border">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -286,7 +308,7 @@ const PartnerDashboard = () => {
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <h1 className="text-2xl font-bold text-foreground">
                     {partnerProfile?.full_name}
                   </h1>
@@ -300,8 +322,53 @@ const PartnerDashboard = () => {
                   View Profile
                 </Button>
               </div>
+              
+              {/* Subtle check-in action row */}
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4" />
+                  {partnershipDetails?.last_check_in_at ? (
+                    <span>Last check-in {formatDistanceToNow(new Date(partnershipDetails.last_check_in_at), { addSuffix: true })}</span>
+                  ) : (
+                    <span>No check-ins yet</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => navigate(`/partner/${partnerId}/check-ins`)}
+                        className="gap-1.5"
+                      >
+                        <History className="h-4 w-4" />
+                        <span className="hidden sm:inline">History</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>View check-in history</TooltipContent>
+                  </Tooltip>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setCheckInDialogOpen(true)}
+                    className="gap-1.5"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Record Check-in
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
+
+          {/* Check-in Dialog */}
+          <CheckInDialog
+            open={checkInDialogOpen}
+            onOpenChange={setCheckInDialogOpen}
+            partnerName={partnerProfile?.full_name || 'Partner'}
+            onConfirm={handleRecordCheckIn}
+          />
 
           {/* Weekly Progress Summary */}
           <Card className="border-border">
