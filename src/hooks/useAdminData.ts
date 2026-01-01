@@ -31,6 +31,9 @@ interface AdminUser {
   last_active_at?: string;
   total_time_seconds?: number;
   days_active?: number;
+  total_clicks?: number;
+  total_scrolls?: number;
+  total_keypresses?: number;
 }
 
 interface MonthlyData {

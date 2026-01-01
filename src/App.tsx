@@ -12,6 +12,7 @@ import { RoutableErrorBoundary } from "@/components/errors/RoutableErrorBoundary
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
+import { useOnlinePresence } from "@/hooks/useOnlinePresence";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense, useEffect } from "react";
 import { GoalsService } from "@/services/goalsService";
@@ -75,8 +76,10 @@ const HomePage = () => {
 const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
   // Track user activity to update last_active_at timestamp
   useUserActivity();
-  // Track session time for analytics
+  // Track session time and engagement for analytics
   useSessionTracking();
+  // Track online presence for real-time status
+  useOnlinePresence();
   // Prefetch goals data when user is authenticated
   usePrefetchGoals(queryClient);
 
