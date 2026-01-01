@@ -101,9 +101,13 @@ const Goals = () => {
   };
 
   const handleCarryOverAll = () => {
-    // Update all previous year goals to current year context (re-confirms as active)
+    // Update all previous year goals to current year with new start date
+    const today = new Date().toISOString().split('T')[0];
     previousYearUnfinishedGoals.forEach(goal => {
-      updateGoal(goal.id, { status: 'not_started' });
+      updateGoal(goal.id, { 
+        status: goal.status === 'not_started' ? 'not_started' : goal.status,
+        start_date: today 
+      });
     });
   };
 
