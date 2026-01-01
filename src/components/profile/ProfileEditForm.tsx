@@ -43,7 +43,6 @@ interface Profile {
   telegram_url?: string;
   signal_url?: string;
   phone_number?: string;
-  show_email?: boolean;
   social_links_order?: string[];
   created_at: string;
   last_active_at?: string;
@@ -87,7 +86,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     avatar_url: profile.avatar_url || '',
     cover_photo_url: profile.cover_photo_url || '',
     cover_photo_position: profile.cover_photo_position ?? 50,
-    show_email: profile.show_email ?? false,
   });
 
   // Check if there are unsaved changes
@@ -102,7 +100,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       formData.avatar_url !== (profile.avatar_url || '') ||
       formData.cover_photo_url !== (profile.cover_photo_url || '') ||
       formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
-      formData.show_email !== (profile.show_email ?? false) ||
       linksChanged ||
       orderChanged
     );
@@ -312,7 +309,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           avatar_url: formData.avatar_url,
           cover_photo_url: formData.cover_photo_url,
           cover_photo_position: formData.cover_photo_position,
-          show_email: formData.show_email,
           // Social links
           linkedin_url: socialLinks.linkedin_url || '',
           instagram_url: socialLinks.instagram_url || '',
@@ -367,13 +363,11 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   // Create a preview profile object from form data
   const previewProfile = {
     id: profile.id,
-    email: profile.email,
     full_name: formData.full_name,
     avatar_url: formData.avatar_url,
     cover_photo_url: formData.cover_photo_url,
     cover_photo_position: formData.cover_photo_position,
     about_me: formData.about_me,
-    show_email: formData.show_email,
     created_at: profile.created_at,
     last_active_at: profile.last_active_at,
   };
@@ -478,9 +472,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 
                 <div className="flex-1 text-center sm:text-left">
                   <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{previewProfile.full_name}</h1>
-                  {previewProfile.show_email && previewProfile.email && (
-                    <p className="text-muted-foreground">{previewProfile.email}</p>
-                  )}
                   
                   {/* Social links */}
                   {Object.keys(socialLinks).length > 0 && (
@@ -779,27 +770,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
             )}
           </div>
 
-          {/* Privacy Settings */}
-          <div className="space-y-4">
-            <h3 className="text-foreground text-lg font-semibold">Privacy Settings</h3>
-            
-            <div className="flex items-center justify-between p-4 bg-accent/50 border border-border rounded-lg hover:bg-accent transition-all">
-              <div className="flex-1">
-                <label htmlFor="show_email" className="text-foreground text-sm font-medium">
-                  Show email on profile
-                </label>
-                <p className="text-muted-foreground text-xs mt-1">
-                  When enabled, your email address will be visible to other users on your profile
-                </p>
-              </div>
-              <Switch
-                id="show_email"
-                checked={formData.show_email}
-                onCheckedChange={(checked) => setFormData({ ...formData, show_email: checked })}
-              />
-            </div>
-
-          </div>
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4">
