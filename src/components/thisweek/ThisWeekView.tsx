@@ -65,6 +65,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     weekStart: currentWeekStart,
     isDeletingAll,
     isLoading: weeklyDataLoading,
+    isCached: objectivesCached,
+    isRefetching,
+    lastSyncTime,
+    refetchObjectives,
   } = useWeeklyProgress(weekStart);
 
   // Get all objectives for suggestions
@@ -451,8 +455,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         completedCount={completedCount}
         totalCount={totalCount}
         onNavigateWeek={handleNavigateWeek}
-        isCached={goalsCached || isOffline}
-        lastSync={lastSync}
+        isCached={objectivesCached || goalsCached || isOffline}
+        lastSync={lastSyncTime || lastSync}
+        isRefetching={isRefetching}
+        onRefresh={refetchObjectives}
       />
 
       {/* Habits Due This Week */}

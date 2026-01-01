@@ -28,6 +28,12 @@ export const useWeeklyProgress = (weekStart?: string) => {
     isDeleting: objectives.isDeleting,
     isDeletingAll: objectives.isDeletingAll,
     
+    // Sync status
+    isCached: objectives.isCached,
+    isRefetching: objectives.isRefetching,
+    lastSyncTime: objectives.lastSyncTime,
+    refetchObjectives: objectives.refetch,
+    
     // Progress post
     progressPost: progressPost.progressPost,
     updateProgressNotes: progressPost.updateProgressNotes,
@@ -44,3 +50,4 @@ export const useWeeklyProgress = (weekStart?: string) => {
     isLoading: objectives.isLoading || progressPost.isLoading,
   };
 };
+
