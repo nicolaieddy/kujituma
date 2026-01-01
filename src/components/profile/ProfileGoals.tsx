@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
+import { supabase } from "@/integrations/supabase/client";
 import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2, Users } from "lucide-react";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { toast } from "@/hooks/use-toast";
@@ -49,11 +50,19 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
   useEffect(() => {
     const fetchGoals = async () => {
       try {
-        // Fetch goals based on viewer type
+        // Always fetch goals for the specified userId
+        // Use appropriate visibility filter based on viewer type
         let fetchedGoals: Goal[];
         if (effectiveIsOwner) {
-          // Only fetch current user's goals if this is actually their own profile
-          fetchedGoals = await GoalsService.getGoals();
+          // When viewing own profile, use getGoals which fetches current user's goals
+          // But verify we're actually viewing our own profile
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user?.id === userId) {
+            fetchedGoals = await GoalsService.getGoals();
+          } else {
+            // Fallback: should not happen if viewerType is correctly set
+            fetchedGoals = await GoalsService.getVisibleGoals(userId, true);
+          }
         } else if (viewerType === 'friend') {
           fetchedGoals = await GoalsService.getVisibleGoals(userId, true);
         } else {
