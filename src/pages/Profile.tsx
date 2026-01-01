@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { supabase } from "@/integrations/supabase/client";
+import { accountabilityService } from "@/services/accountabilityService";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { ProfilePublicView } from "@/components/profile/ProfilePublicView";
@@ -35,6 +36,12 @@ interface FriendshipStatus {
   request_id?: string;
 }
 
+interface PartnershipStatus {
+  is_partner: boolean;
+  partnership_id?: string;
+  can_view_partner_goals?: boolean;
+}
+
 const Profile = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
@@ -43,6 +50,7 @@ const Profile = () => {
   const { isOffline } = useOfflineStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>({ is_friend: false });
+  const [partnershipStatus, setPartnershipStatus] = useState<PartnershipStatus>({ is_partner: false });
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
   
@@ -80,8 +88,8 @@ const Profile = () => {
           selectColumns = 'id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, created_at';
         }
 
-        // Fetch profile and friendship status in parallel
-        const [profileResult, friendshipResult] = await Promise.all([
+        // Fetch profile, friendship status, and partnership status in parallel
+        const [profileResult, friendshipResult, partnershipResult] = await Promise.all([
           supabase
             .from('profiles')
             .select(selectColumns)
@@ -122,7 +130,21 @@ const Profile = () => {
 
                 return { is_friend: false };
               })()
-            : Promise.resolve({ is_friend: false })
+            : Promise.resolve({ is_friend: false }),
+          
+          // Check if this user is an accountability partner
+          isAuthenticated && !isOwner
+            ? accountabilityService.getPartnershipDetails(targetUserId).then(partnership => {
+                if (partnership) {
+                  return {
+                    is_partner: true,
+                    partnership_id: partnership.id,
+                    can_view_partner_goals: partnership.can_view_partner_goals,
+                  };
+                }
+                return { is_partner: false };
+              }).catch(() => ({ is_partner: false }))
+            : Promise.resolve({ is_partner: false })
         ]);
 
         const { data: profileData, error: profileError } = profileResult;
@@ -147,8 +169,9 @@ const Profile = () => {
           setProfile(typedProfileData);
         }
 
-        // Set friendship status
+        // Set friendship and partnership status
         setFriendshipStatus(friendshipResult);
+        setPartnershipStatus(partnershipResult);
       } catch (error) {
         console.error('Error:', error);
       } finally {
@@ -231,6 +254,7 @@ const Profile = () => {
               <ProfilePublicView 
                 profile={profile} 
                 friendshipStatus={friendshipStatus}
+                partnershipStatus={partnershipStatus}
                 onFriendshipChange={setFriendshipStatus}
               />
             )}

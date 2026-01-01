@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, UserPlus, UserMinus, UserCheck } from "lucide-react";
+import { User, Calendar, Clock, UserPlus, UserMinus, UserCheck, Users, ArrowRight } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { ProfileStats } from "./ProfileStats";
@@ -37,17 +38,25 @@ interface FriendshipStatus {
   request_id?: string;
 }
 
+interface PartnershipStatus {
+  is_partner: boolean;
+  partnership_id?: string;
+  can_view_partner_goals?: boolean;
+}
+
 interface ProfilePublicViewProps {
   profile: Profile;
   friendshipStatus?: FriendshipStatus;
+  partnershipStatus?: PartnershipStatus;
   onFriendshipChange?: (status: FriendshipStatus) => void;
 }
 
-export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChange }: ProfilePublicViewProps) => {
+export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus, onFriendshipChange }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status } = friendshipStatus || { is_friend: false };
+  const { is_partner, can_view_partner_goals } = partnershipStatus || { is_partner: false };
   const { sendFriendRequest: sendFriendRequestBase, respondToFriendRequest: respondBase, removeFriend: removeFriendBase } = useFriends();
 
   const handleSendFriendRequest = async () => {
@@ -189,6 +198,31 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
         </div>
 
         <CardContent className="p-6 sm:p-8 pt-0">
+
+          {/* Accountability Partner Banner */}
+          {is_partner && !isOwnProfile && (
+            <Link 
+              to={`/partners?partner=${profile.id}`}
+              className="block mb-6"
+            >
+              <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors group">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-full bg-primary/20">
+                    <Users className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-foreground">Accountability Partner</p>
+                    <p className="text-sm text-muted-foreground">
+                      {can_view_partner_goals 
+                        ? "View their goals and progress" 
+                        : "Check in and support each other"}
+                    </p>
+                  </div>
+                </div>
+                <ArrowRight className="h-5 w-5 text-primary group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+          )}
 
           {/* About Me Section */}
           {profile.about_me && (
