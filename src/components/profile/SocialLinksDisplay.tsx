@@ -15,14 +15,34 @@ const getHref = (platformId: string, value: string): string => {
   
   // Handle different types
   if (platform.type === 'email') {
-    return `mailto:${value}`;
+    return `mailto:${encodeURIComponent(value)}`;
   }
-  if (platform.type === 'phone' || platformId === 'whatsapp_url') {
-    // WhatsApp specific
-    if (platformId === 'whatsapp_url') {
-      const cleanNumber = value.replace(/\D/g, '');
-      return `https://wa.me/${cleanNumber}`;
+  
+  // WhatsApp - convert phone number to wa.me link
+  if (platformId === 'whatsapp_url') {
+    const cleanNumber = value.replace(/\D/g, '');
+    return `https://wa.me/${cleanNumber}`;
+  }
+  
+  // Telegram - handle @username format
+  if (platformId === 'telegram_url') {
+    if (value.startsWith('@')) {
+      return `https://t.me/${value.slice(1)}`;
     }
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      return `https://${value}`;
+    }
+    return value;
+  }
+  
+  // Signal - phone number link
+  if (platformId === 'signal_url') {
+    const cleanNumber = value.replace(/\D/g, '');
+    return `https://signal.me/#p/+${cleanNumber}`;
+  }
+  
+  // Phone numbers
+  if (platform.type === 'phone') {
     return `tel:${value}`;
   }
   
