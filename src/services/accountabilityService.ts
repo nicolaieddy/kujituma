@@ -55,6 +55,19 @@ export interface PartnerWeeklyObjective {
   scheduled_time: string | null;
 }
 
+export interface CheckInRecord {
+  id: string;
+  partnership_id: string;
+  initiated_by: string;
+  week_start: string;
+  message: string | null;
+  created_at: string;
+  initiator_profile?: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
 class AccountabilityService {
   async getPartners(): Promise<AccountabilityPartner[]> {
     const { data, error } = await supabase.rpc('get_accountability_partners');
@@ -396,6 +409,32 @@ class AccountabilityService {
     }
 
     return data;
+  }
+  async getCheckInHistory(partnershipId: string): Promise<CheckInRecord[]> {
+    const { data, error } = await supabase
+      .from('accountability_check_ins')
+      .select(`
+        id,
+        partnership_id,
+        initiated_by,
+        week_start,
+        message,
+        created_at,
+        initiator_profile:profiles!accountability_check_ins_initiated_by_fkey (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('partnership_id', partnershipId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error fetching check-in history:', error);
+      return [];
+    }
+
+    return (data || []) as CheckInRecord[];
   }
 }
 
