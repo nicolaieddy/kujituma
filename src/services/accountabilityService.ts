@@ -402,7 +402,7 @@ class AccountabilityService {
       .select('id, user1_id, user2_id, user1_can_view_user2_goals, user2_can_view_user1_goals')
       .or(`and(user1_id.eq.${user.id},user2_id.eq.${partnerId}),and(user1_id.eq.${partnerId},user2_id.eq.${user.id})`)
       .eq('status', 'active')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error fetching partnership details:', error);

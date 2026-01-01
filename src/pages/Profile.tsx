@@ -15,7 +15,6 @@ import { Edit3 } from "lucide-react";
 
 interface Profile {
   id: string;
-  email?: string;
   full_name: string;
   avatar_url?: string;
   cover_photo_url?: string;
@@ -27,7 +26,6 @@ interface Profile {
   twitter_url?: string;
   created_at: string;
   last_active_at?: string;
-  show_email?: boolean;
 }
 
 interface FriendshipStatus {
@@ -81,8 +79,8 @@ const Profile = () => {
           // Owner gets all columns
           selectColumns = '*';
         } else if (isAuthenticated) {
-          // Authenticated users get limited data (respect show_email)
-          selectColumns = 'id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, linkedin_url, instagram_url, tiktok_url, twitter_url, created_at, last_active_at, show_email, email';
+          // Authenticated users get limited data
+          selectColumns = 'id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, linkedin_url, instagram_url, tiktok_url, twitter_url, created_at, last_active_at';
         } else {
           // Anonymous users get minimal data
           selectColumns = 'id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, created_at';
@@ -160,14 +158,7 @@ const Profile = () => {
           return;
         }
 
-        // Filter email based on show_email preference for non-owners
-        const typedProfileData: any = profileData;
-        if (!isOwner && typedProfileData.show_email === false) {
-          const { email, ...dataWithoutEmail } = typedProfileData;
-          setProfile(dataWithoutEmail);
-        } else {
-          setProfile(typedProfileData);
-        }
+        setProfile(profileData as any);
 
         // Set friendship and partnership status
         setFriendshipStatus(friendshipResult);
