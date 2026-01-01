@@ -44,7 +44,6 @@ interface Profile {
   signal_url?: string;
   phone_number?: string;
   show_email?: boolean;
-  commitment_visibility?: 'private' | 'friends' | 'public';
   social_links_order?: string[];
   created_at: string;
   last_active_at?: string;
@@ -89,7 +88,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     cover_photo_url: profile.cover_photo_url || '',
     cover_photo_position: profile.cover_photo_position ?? 50,
     show_email: profile.show_email ?? false,
-    commitment_visibility: profile.commitment_visibility || 'friends' as 'private' | 'friends' | 'public'
   });
 
   // Check if there are unsaved changes
@@ -105,7 +103,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       formData.cover_photo_url !== (profile.cover_photo_url || '') ||
       formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
       formData.show_email !== (profile.show_email ?? false) ||
-      formData.commitment_visibility !== (profile.commitment_visibility || 'friends') ||
       linksChanged ||
       orderChanged
     );
@@ -316,7 +313,6 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           cover_photo_url: formData.cover_photo_url,
           cover_photo_position: formData.cover_photo_position,
           show_email: formData.show_email,
-          commitment_visibility: formData.commitment_visibility,
           // Social links
           linkedin_url: socialLinks.linkedin_url || '',
           instagram_url: socialLinks.instagram_url || '',
