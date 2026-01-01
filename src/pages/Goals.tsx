@@ -1,5 +1,5 @@
-
 import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -103,11 +103,16 @@ const Goals = () => {
   const handleCarryOverAll = () => {
     // Update all previous year goals to current year with new start date
     const today = new Date().toISOString().split('T')[0];
+    const count = previousYearUnfinishedGoals.length;
     previousYearUnfinishedGoals.forEach(goal => {
       updateGoal(goal.id, { 
         status: goal.status === 'not_started' ? 'not_started' : goal.status,
         start_date: today 
       });
+    });
+    toast({
+      title: "Goals Carried Over",
+      description: `${count} goal${count !== 1 ? 's' : ''} carried over to ${new Date().getFullYear()}.`,
     });
   };
 
