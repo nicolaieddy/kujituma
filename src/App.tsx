@@ -35,9 +35,77 @@ const CheckInHistory = lazy(() => import("./pages/CheckInHistory"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
-    <div className="flex flex-col items-center gap-4">
-      <Skeleton className="h-12 w-12 rounded-full" />
-      <Skeleton className="h-4 w-32" />
+    <div className="flex flex-col items-center gap-6">
+      {/* Kilimanjaro Mountain Silhouette */}
+      <div className="relative w-32 h-20">
+        <svg
+          viewBox="0 0 120 60"
+          className="w-full h-full"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          {/* Mountain shadow that moves */}
+          <ellipse
+            cx="60"
+            cy="58"
+            rx="50"
+            ry="4"
+            className="fill-muted animate-pulse"
+          />
+          
+          {/* Main mountain peak (Kibo) */}
+          <path
+            d="M60 8 L95 52 L25 52 Z"
+            className="fill-primary/20"
+          />
+          
+          {/* Second peak (Mawenzi) */}
+          <path
+            d="M85 18 L110 52 L70 52 Z"
+            className="fill-primary/15"
+          />
+          
+          {/* Snow cap on Kibo */}
+          <path
+            d="M60 8 L70 22 L50 22 Z"
+            className="fill-primary/40 animate-pulse"
+            style={{ animationDelay: '0.5s' }}
+          />
+          
+          {/* Climbing path - animated dots going up */}
+          <circle
+            cx="55"
+            cy="45"
+            r="1.5"
+            className="fill-primary animate-bounce"
+            style={{ animationDelay: '0s', animationDuration: '1.5s' }}
+          />
+          <circle
+            cx="58"
+            cy="38"
+            r="1.5"
+            className="fill-primary animate-bounce"
+            style={{ animationDelay: '0.2s', animationDuration: '1.5s' }}
+          />
+          <circle
+            cx="60"
+            cy="30"
+            r="1.5"
+            className="fill-primary animate-bounce"
+            style={{ animationDelay: '0.4s', animationDuration: '1.5s' }}
+          />
+          <circle
+            cx="60"
+            cy="22"
+            r="1.5"
+            className="fill-primary animate-bounce"
+            style={{ animationDelay: '0.6s', animationDuration: '1.5s' }}
+          />
+        </svg>
+      </div>
+      <div className="text-sm text-muted-foreground animate-pulse">
+        Climbing to the summit...
+      </div>
     </div>
   </div>
 );
