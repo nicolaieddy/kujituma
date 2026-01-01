@@ -15,14 +15,28 @@ interface AdminUser {
   posts_count: number;
   role?: string;
   last_active_at?: string;
+  total_time_seconds?: number;
+  days_active?: number;
 }
 
 interface UsersOverviewProps {
   users: AdminUser[];
 }
 
-type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at';
+type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at' | 'total_time_seconds' | 'days_active';
 type SortDirection = 'asc' | 'desc';
+
+const formatDuration = (seconds: number): string => {
+  if (seconds === 0) return '0m';
+  
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+};
 
 const UsersOverview = ({ users }: UsersOverviewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('last_active_at');
@@ -66,6 +80,14 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
         case 'created_at':
           aVal = new Date(a.created_at).getTime();
           bVal = new Date(b.created_at).getTime();
+          break;
+        case 'total_time_seconds':
+          aVal = a.total_time_seconds || 0;
+          bVal = b.total_time_seconds || 0;
+          break;
+        case 'days_active':
+          aVal = a.days_active || 0;
+          bVal = b.days_active || 0;
           break;
       }
 
@@ -117,6 +139,8 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
                   <SortableHeader label="Email" sortKeyName="email" />
                   <SortableHeader label="Role" sortKeyName="role" />
                   <SortableHeader label="Posts" sortKeyName="posts_count" />
+                  <SortableHeader label="Time Spent" sortKeyName="total_time_seconds" />
+                  <SortableHeader label="Days Active" sortKeyName="days_active" />
                   <SortableHeader label="Last Active" sortKeyName="last_active_at" />
                   <SortableHeader label="Joined" sortKeyName="created_at" />
                 </TableRow>
@@ -145,6 +169,14 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
                     </TableCell>
                     <TableCell>
                       <span className="text-foreground">{user.posts_count}</span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-foreground">
+                        {formatDuration(user.total_time_seconds || 0)}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="text-foreground">{user.days_active || 0}</span>
                     </TableCell>
                     <TableCell>
                       <span className="text-muted-foreground text-sm">

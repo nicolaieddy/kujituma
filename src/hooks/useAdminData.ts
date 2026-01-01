@@ -29,6 +29,8 @@ interface AdminUser {
   posts_count: number;
   role?: string;
   last_active_at?: string;
+  total_time_seconds?: number;
+  days_active?: number;
 }
 
 interface MonthlyData {
