@@ -1,4 +1,3 @@
-
 import { useMemo, useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { GoalsService } from "@/services/goalsService";
@@ -7,11 +6,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
 import { offlineSyncService } from "@/services/offlineSyncService";
+import { useRealtimeGoals } from "@/hooks/useRealtimeGoals";
 
 export const useGoals = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCached, setIsCached] = useState(false);
+
+  // Subscribe to real-time goal changes
+  useRealtimeGoals();
 
   const { data: goals = [], isLoading, error } = useQuery({
     queryKey: ['goals', user?.id],

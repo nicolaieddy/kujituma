@@ -3,6 +3,7 @@ import { NavigationMenu } from "./NavigationMenu";
 import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { PendingSyncBadge } from "@/components/pwa/PendingSyncBadge";
 
 import { useNavigate } from "react-router-dom";
 
@@ -29,6 +30,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
         </div>
         
         <div className="flex items-center justify-end gap-3">
+          <PendingSyncBadge />
           <NotificationBell />
           
           {!isMobile ? (

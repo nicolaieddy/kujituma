@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { startOfWeek, format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { useRealtimeHabits } from "@/hooks/useRealtimeHabits";
 
 export const useHabitCompletions = (weekStart?: Date) => {
   const { user } = useAuth();
@@ -10,6 +11,9 @@ export const useHabitCompletions = (weekStart?: Date) => {
   
   const currentWeekStart = weekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekKey = format(currentWeekStart, "yyyy-MM-dd");
+
+  // Subscribe to real-time habit completion changes
+  useRealtimeHabits(weekKey);
 
   const { data: completions = [], isLoading } = useQuery({
     queryKey: ["habit-completions", user?.id, weekKey],
