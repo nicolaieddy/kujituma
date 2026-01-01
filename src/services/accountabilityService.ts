@@ -393,13 +393,14 @@ class AccountabilityService {
     user1_id: string;
     user2_id: string;
     can_view_partner_goals: boolean;
+    last_check_in_at: string | null;
   } | null> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return null;
 
     const { data, error } = await supabase
       .from('accountability_partnerships')
-      .select('id, user1_id, user2_id, user1_can_view_user2_goals, user2_can_view_user1_goals')
+      .select('id, user1_id, user2_id, user1_can_view_user2_goals, user2_can_view_user1_goals, last_check_in_at')
       .or(`and(user1_id.eq.${user.id},user2_id.eq.${partnerId}),and(user1_id.eq.${partnerId},user2_id.eq.${user.id})`)
       .eq('status', 'active')
       .maybeSingle();
@@ -420,6 +421,7 @@ class AccountabilityService {
       user1_id: data.user1_id,
       user2_id: data.user2_id,
       can_view_partner_goals: canViewPartnerGoals,
+      last_check_in_at: data.last_check_in_at,
     };
   }
   async getCheckInHistory(partnershipId: string): Promise<CheckInRecord[]> {
