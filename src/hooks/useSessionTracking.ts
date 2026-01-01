@@ -22,9 +22,11 @@ export function useSessionTracking() {
   const { user } = useAuth();
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
+  const isVisibleRef = useRef(document.visibilityState === 'visible');
 
   const sendHeartbeat = useCallback(async () => {
-    if (!user || !sessionTokenRef.current) return;
+    // Only send heartbeat if page is visible (user is actively viewing)
+    if (!user || !sessionTokenRef.current || !isVisibleRef.current) return;
 
     try {
       await (supabase.rpc as any)('upsert_session_heartbeat', {
@@ -47,45 +49,58 @@ export function useSessionTracking() {
     }
   }, []);
 
+  const startInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
+    intervalRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
+  }, [sendHeartbeat]);
+
+  const stopInterval = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
   useEffect(() => {
     if (!user) {
-      // Clear interval if user logs out
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      stopInterval();
       return;
     }
 
     // Get or create session token
     sessionTokenRef.current = getOrCreateSessionToken();
 
-    // Send initial heartbeat
-    sendHeartbeat();
+    // Only start tracking if page is visible
+    if (document.visibilityState === 'visible') {
+      isVisibleRef.current = true;
+      sendHeartbeat();
+      startInterval();
+    }
 
-    // Set up heartbeat interval
-    intervalRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL);
-
-    // Handle page visibility changes
+    // Handle page visibility changes - only track time when actively viewing
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        // Try to end session when tab becomes hidden
+        isVisibleRef.current = false;
+        stopInterval();
+        // End the current session when going to background
         endSession();
       } else if (document.visibilityState === 'visible') {
-        // Resume session when tab becomes visible
+        isVisibleRef.current = true;
+        // Start a fresh session when returning to foreground
         sessionTokenRef.current = getOrCreateSessionToken();
         sendHeartbeat();
+        startInterval();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      stopInterval();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       endSession();
     };
-  }, [user, sendHeartbeat, endSession]);
+  }, [user, sendHeartbeat, endSession, startInterval, stopInterval]);
 }

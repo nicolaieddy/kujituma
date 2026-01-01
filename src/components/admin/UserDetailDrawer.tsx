@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { User, Clock, Calendar, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, formatDistanceToNow } from "date-fns";
+import { format } from "date-fns";
 
 interface AdminUser {
   id: string;
@@ -91,11 +91,12 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
     .sort(([a], [b]) => b.localeCompare(a))
     .slice(0, 7);
 
-  // Get last 10 heartbeats from all sessions
-  const recentHeartbeats = sessions
-    .filter((s) => s.last_heartbeat_at)
-    .sort((a, b) => new Date(b.last_heartbeat_at).getTime() - new Date(a.last_heartbeat_at).getTime())
-    .slice(0, 10);
+  // Calculate average session duration
+  const totalDuration = sessions.reduce((sum, s) => sum + s.duration_seconds, 0);
+  const avgSessionDuration = sessions.length > 0 ? Math.round(totalDuration / sessions.length) : 0;
+
+  // Count active vs ended sessions
+  const activeSessions = sessions.filter(s => !s.ended_at).length;
 
   if (!user) return null;
 
@@ -126,7 +127,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
             <CardContent className="p-3 text-center">
               <Clock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
               <p className="text-lg font-semibold">{formatDuration(user.total_time_seconds || 0)}</p>
-              <p className="text-xs text-muted-foreground">Total Time</p>
+              <p className="text-xs text-muted-foreground">Active Time</p>
             </CardContent>
           </Card>
           <Card className="border-border">
@@ -149,10 +150,32 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
           <div className="space-y-4">
             <Skeleton className="h-32 w-full" />
             <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-32 w-full" />
           </div>
         ) : (
           <div className="space-y-6">
+            {/* Session Stats */}
+            <Card className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Session Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Avg session length</span>
+                  <span className="font-medium">{formatDuration(avgSessionDuration)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Currently active</span>
+                  <Badge variant={activeSessions > 0 ? "default" : "secondary"}>
+                    {activeSessions > 0 ? "Yes" : "No"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Total sessions</span>
+                  <span className="font-medium">{sessions.length}</span>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Time Spent by Day */}
             <Card className="border-border">
               <CardHeader className="pb-2">
@@ -203,9 +226,11 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
                           {format(new Date(session.started_at), "MMM d, h:mm a")}
                         </span>
                         <span className="text-xs text-muted-foreground">
-                          {session.ended_at ? "Ended" : "Active"}{" "}
-                          {session.ended_at &&
-                            `at ${format(new Date(session.ended_at), "h:mm a")}`}
+                          {session.ended_at ? (
+                            <>Ended at {format(new Date(session.ended_at), "h:mm a")}</>
+                          ) : (
+                            <span className="text-primary">● Currently active</span>
+                          )}
                         </span>
                       </div>
                       <Badge variant={session.ended_at ? "secondary" : "default"}>
@@ -217,33 +242,10 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
               </CardContent>
             </Card>
 
-            {/* Last 10 Heartbeats */}
-            <Card className="border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Last 10 Heartbeats</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {recentHeartbeats.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-4">No heartbeats recorded</p>
-                ) : (
-                  <div className="space-y-1">
-                    {recentHeartbeats.map((session, idx) => (
-                      <div
-                        key={`${session.id}-${idx}`}
-                        className="flex items-center justify-between text-sm py-1"
-                      >
-                        <span className="text-muted-foreground">
-                          {format(new Date(session.last_heartbeat_at), "MMM d, h:mm:ss a")}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(session.last_heartbeat_at), { addSuffix: true })}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Info note */}
+            <p className="text-xs text-muted-foreground text-center">
+              Time is only tracked when the app tab is in foreground (actively viewing).
+            </p>
           </div>
         )}
       </SheetContent>
