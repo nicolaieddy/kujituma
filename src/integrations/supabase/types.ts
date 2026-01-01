@@ -1266,12 +1266,14 @@ export type Database = {
         Returns: {
           avatar_url: string
           created_at: string
+          days_active: number
           email: string
           full_name: string
           id: string
           last_active_at: string
           posts_count: number
           role: string
+          total_time_seconds: number
         }[]
       }
       get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
