@@ -4,17 +4,33 @@ import { HabitStreaksService } from "@/services/habitStreaksService";
 import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { celebrateStreakMilestone, getStreakMilestoneMessage } from "@/utils/confetti";
 import { offlineDataService } from "@/services/offlineDataService";
 import { offlineSyncService } from "@/services/offlineSyncService";
+import { useRealtimeObjectives, useVisibilityRefresh } from "./useRealtimeObjectives";
 
 export const useWeeklyObjectives = (currentWeekStart: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCached, setIsCached] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  
+  // Enable real-time sync for objectives across devices
+  useRealtimeObjectives(currentWeekStart);
+  
+  // Auto-refresh when app becomes visible after being in background
+  useVisibilityRefresh(
+    [['weekly-objectives', user?.id || '', currentWeekStart]],
+    {
+      staleThresholdMs: 30000, // Refresh if hidden for more than 30 seconds
+      onRefresh: () => {
+        console.log('[WeeklyObjectives] Refreshing due to visibility change');
+      }
+    }
+  );
 
-  const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError } = useQuery({
+  const { data: objectives = [], isLoading: objectivesLoading, error: objectivesError, isRefetching } = useQuery({
     queryKey: ['weekly-objectives', user?.id, currentWeekStart],
     queryFn: async () => {
       try {
@@ -23,6 +39,7 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
         offlineDataService.cacheWeeklyObjectives(data, currentWeekStart);
         offlineDataService.updateLastSync();
         setIsCached(false);
+        setLastSyncTime(new Date());
         return data;
       } catch (err) {
         // If offline, try to get cached data
@@ -41,6 +58,11 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     gcTime: 15 * 60 * 1000, // Keep in cache for 15 minutes
     retry: 1,
   });
+
+  // Manual refresh function
+  const refetch = () => {
+    queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+  };
 
   const createObjectiveMutation = useMutation({
     mutationFn: async (data: CreateWeeklyObjectiveData & { week_start: string }) => {
@@ -341,6 +363,9 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     isLoading: objectivesLoading,
     error: objectivesError,
     isCached,
+    isRefetching,
+    lastSyncTime,
+    refetch,
     createObjective,
     updateObjective,
     deleteObjective,
