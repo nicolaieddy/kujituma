@@ -20,7 +20,7 @@ function getOrCreateSessionToken(): string {
 
 export function useSessionTracking() {
   const { user } = useAuth();
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
 
   const sendHeartbeat = useCallback(async () => {
@@ -78,24 +78,13 @@ export function useSessionTracking() {
       }
     };
 
-    // Handle page unload
-    const handleBeforeUnload = () => {
-      if (sessionTokenRef.current) {
-        // Use sendBeacon for reliable delivery during unload
-        const url = `https://yyidkpmrqvgvzbjvtnjy.supabase.co/rest/v1/rpc/end_session`;
-        navigator.sendBeacon(url, JSON.stringify({ _session_token: sessionTokenRef.current }));
-      }
-    };
-
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('beforeunload', handleBeforeUnload);
 
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('beforeunload', handleBeforeUnload);
       endSession();
     };
   }, [user, sendHeartbeat, endSession]);

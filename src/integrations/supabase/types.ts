@@ -995,6 +995,39 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          ended_at: string | null
+          id: string
+          last_heartbeat_at: string
+          session_token: string
+          started_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          session_token: string
+          started_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string | null
+          id?: string
+          last_heartbeat_at?: string
+          session_token?: string
+          started_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_streaks: {
         Row: {
           created_at: string
@@ -1226,6 +1259,7 @@ export type Database = {
         Args: { _user_id: string; _week_start: string }
         Returns: number
       }
+      end_session: { Args: { _session_token: string }; Returns: boolean }
       get_accountability_groups: {
         Args: never
         Returns: {
@@ -1361,6 +1395,10 @@ export type Database = {
         Returns: boolean
       }
       update_user_last_active: { Args: never; Returns: undefined }
+      upsert_session_heartbeat: {
+        Args: { _session_token: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
