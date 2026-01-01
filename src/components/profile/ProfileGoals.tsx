@@ -52,6 +52,7 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
         // Fetch goals based on viewer type
         let fetchedGoals: Goal[];
         if (effectiveIsOwner) {
+          // Only fetch current user's goals if this is actually their own profile
           fetchedGoals = await GoalsService.getGoals();
         } else if (viewerType === 'friend') {
           fetchedGoals = await GoalsService.getVisibleGoals(userId, true);
@@ -66,7 +67,9 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
       }
     };
 
-    fetchGoals();
+    if (userId) {
+      fetchGoals();
+    }
   }, [userId, effectiveIsOwner, viewerType]);
 
   // Update goal visibility
