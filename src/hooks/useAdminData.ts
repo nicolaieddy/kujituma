@@ -130,8 +130,8 @@ export const useAdminData = () => {
     try {
       console.log('Fetching users...');
       
-      const { data: usersData, error: usersError } = await supabase
-        .rpc('get_admin_users_data');
+      // Use type assertion since the function signature was updated
+      const { data: usersData, error: usersError } = await (supabase.rpc as any)('get_admin_users_data');
 
       if (usersError) {
         console.error('Error fetching users:', usersError);
