@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { User, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { User, ArrowUpDown, ArrowUp, ArrowDown, Circle } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import UserDetailDrawer from "./UserDetailDrawer";
+import { useAdminOnlinePresence } from "@/hooks/useOnlinePresence";
 
 interface AdminUser {
   id: string;
@@ -18,13 +19,16 @@ interface AdminUser {
   last_active_at?: string;
   total_time_seconds?: number;
   days_active?: number;
+  total_clicks?: number;
+  total_scrolls?: number;
+  total_keypresses?: number;
 }
 
 interface UsersOverviewProps {
   users: AdminUser[];
 }
 
-type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at' | 'total_time_seconds' | 'days_active';
+type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at' | 'total_time_seconds' | 'days_active' | 'engagement';
 type SortDirection = 'asc' | 'desc';
 
 const formatDuration = (seconds: number): string => {
@@ -39,11 +43,21 @@ const formatDuration = (seconds: number): string => {
   return `${minutes}m`;
 };
 
+const formatNumber = (num: number): string => {
+  if (num >= 1000) {
+    return `${(num / 1000).toFixed(1)}k`;
+  }
+  return num.toString();
+};
+
 const UsersOverview = ({ users }: UsersOverviewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('last_active_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  
+  const { onlineUsers } = useAdminOnlinePresence();
+  const onlineUserIds = new Set(onlineUsers.map(u => u.id));
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
@@ -57,6 +71,10 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
   const handleUserClick = (user: AdminUser) => {
     setSelectedUser(user);
     setDrawerOpen(true);
+  };
+
+  const getEngagementScore = (user: AdminUser) => {
+    return (user.total_clicks || 0) + (user.total_scrolls || 0) + (user.total_keypresses || 0);
   };
 
   const sortedUsers = useMemo(() => {
@@ -97,6 +115,10 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
           aVal = a.days_active || 0;
           bVal = b.days_active || 0;
           break;
+        case 'engagement':
+          aVal = getEngagementScore(a);
+          bVal = getEngagementScore(b);
+          break;
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -131,8 +153,12 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
   return (
     <>
       <Card className="border-border">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-foreground">Users Overview</CardTitle>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Circle className="h-2.5 w-2.5 fill-green-500 text-green-500" />
+            <span>{onlineUsers.length} online now</span>
+          </div>
         </CardHeader>
         <CardContent>
           {users.length === 0 ? (
@@ -145,67 +171,75 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
                 <TableHeader>
                   <TableRow className="border-border">
                     <SortableHeader label="User" sortKeyName="full_name" />
-                    <SortableHeader label="Email" sortKeyName="email" />
                     <SortableHeader label="Role" sortKeyName="role" />
                     <SortableHeader label="Posts" sortKeyName="posts_count" />
-                    <SortableHeader label="Time Spent" sortKeyName="total_time_seconds" />
-                    <SortableHeader label="Days Active" sortKeyName="days_active" />
+                    <SortableHeader label="Time" sortKeyName="total_time_seconds" />
+                    <SortableHeader label="Engagement" sortKeyName="engagement" />
                     <SortableHeader label="Last Active" sortKeyName="last_active_at" />
-                    <SortableHeader label="Joined" sortKeyName="created_at" />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sortedUsers.map((user) => (
-                    <TableRow 
-                      key={user.id} 
-                      className="border-border cursor-pointer hover:bg-accent/50 transition-colors"
-                      onClick={() => handleUserClick(user)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar_url} />
-                            <AvatarFallback className="bg-primary text-primary-foreground">
-                              <User className="h-4 w-4" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-foreground font-medium">{user.full_name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground">{user.email}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.role === 'admin' ? "destructive" : "secondary"}>
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-foreground">{user.posts_count}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-foreground">
-                          {formatDuration(user.total_time_seconds || 0)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-foreground">{user.days_active || 0}</span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground text-sm">
-                          {user.last_active_at
-                            ? formatTimeAgo(new Date(user.last_active_at).getTime())
-                            : 'Never'
-                          }
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-muted-foreground text-sm">
-                          {formatTimeAgo(new Date(user.created_at).getTime())}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {sortedUsers.map((user) => {
+                    const isOnline = onlineUserIds.has(user.id);
+                    const engagement = getEngagementScore(user);
+                    
+                    return (
+                      <TableRow 
+                        key={user.id} 
+                        className="border-border cursor-pointer hover:bg-accent/50 transition-colors"
+                        onClick={() => handleUserClick(user)}
+                      >
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <div className="relative">
+                              <Avatar className="h-8 w-8">
+                                <AvatarImage src={user.avatar_url} />
+                                <AvatarFallback className="bg-primary text-primary-foreground">
+                                  <User className="h-4 w-4" />
+                                </AvatarFallback>
+                              </Avatar>
+                              {isOnline && (
+                                <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 bg-green-500 border-2 border-background rounded-full" />
+                              )}
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-foreground font-medium">{user.full_name}</span>
+                              <span className="text-xs text-muted-foreground">{user.email}</span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={user.role === 'admin' ? "destructive" : "secondary"}>
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-foreground">{user.posts_count}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-foreground">
+                            {formatDuration(user.total_time_seconds || 0)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col text-xs">
+                            <span className="text-foreground font-medium">{formatNumber(engagement)}</span>
+                            <span className="text-muted-foreground">
+                              {formatNumber(user.total_clicks || 0)}c / {formatNumber(user.total_scrolls || 0)}s / {formatNumber(user.total_keypresses || 0)}k
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-muted-foreground text-sm">
+                            {user.last_active_at
+                              ? formatTimeAgo(new Date(user.last_active_at).getTime())
+                              : 'Never'
+                            }
+                          </span>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

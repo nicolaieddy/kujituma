@@ -997,31 +997,40 @@ export type Database = {
       }
       user_sessions: {
         Row: {
+          click_count: number
           created_at: string
           duration_seconds: number
           ended_at: string | null
           id: string
+          keypress_count: number
           last_heartbeat_at: string
+          scroll_count: number
           session_token: string
           started_at: string
           user_id: string
         }
         Insert: {
+          click_count?: number
           created_at?: string
           duration_seconds?: number
           ended_at?: string | null
           id?: string
+          keypress_count?: number
           last_heartbeat_at?: string
+          scroll_count?: number
           session_token: string
           started_at?: string
           user_id: string
         }
         Update: {
+          click_count?: number
           created_at?: string
           duration_seconds?: number
           ended_at?: string | null
           id?: string
+          keypress_count?: number
           last_heartbeat_at?: string
+          scroll_count?: number
           session_token?: string
           started_at?: string
           user_id?: string
@@ -1307,6 +1316,9 @@ export type Database = {
           last_active_at: string
           posts_count: number
           role: string
+          total_clicks: number
+          total_keypresses: number
+          total_scrolls: number
           total_time_seconds: number
         }[]
       }
@@ -1396,7 +1408,12 @@ export type Database = {
       }
       update_user_last_active: { Args: never; Returns: undefined }
       upsert_session_heartbeat: {
-        Args: { _session_token: string }
+        Args: {
+          _clicks?: number
+          _keypresses?: number
+          _scrolls?: number
+          _session_token: string
+        }
         Returns: string
       }
     }

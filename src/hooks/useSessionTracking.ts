@@ -23,14 +23,30 @@ export function useSessionTracking() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sessionTokenRef = useRef<string | null>(null);
   const isVisibleRef = useRef(document.visibilityState === 'visible');
+  
+  // Interaction counters (reset after each heartbeat)
+  const clickCountRef = useRef(0);
+  const scrollCountRef = useRef(0);
+  const keypressCountRef = useRef(0);
 
   const sendHeartbeat = useCallback(async () => {
-    // Only send heartbeat if page is visible (user is actively viewing)
     if (!user || !sessionTokenRef.current || !isVisibleRef.current) return;
+
+    // Capture current counts and reset
+    const clicks = clickCountRef.current;
+    const scrolls = scrollCountRef.current;
+    const keypresses = keypressCountRef.current;
+    
+    clickCountRef.current = 0;
+    scrollCountRef.current = 0;
+    keypressCountRef.current = 0;
 
     try {
       await (supabase.rpc as any)('upsert_session_heartbeat', {
-        _session_token: sessionTokenRef.current
+        _session_token: sessionTokenRef.current,
+        _clicks: clicks,
+        _scrolls: scrolls,
+        _keypresses: keypresses
       });
     } catch (error) {
       console.error('Session heartbeat error:', error);
@@ -72,6 +88,19 @@ export function useSessionTracking() {
     // Get or create session token
     sessionTokenRef.current = getOrCreateSessionToken();
 
+    // Interaction event handlers
+    const handleClick = () => {
+      if (isVisibleRef.current) clickCountRef.current++;
+    };
+    
+    const handleScroll = () => {
+      if (isVisibleRef.current) scrollCountRef.current++;
+    };
+    
+    const handleKeypress = () => {
+      if (isVisibleRef.current) keypressCountRef.current++;
+    };
+
     // Only start tracking if page is visible
     if (document.visibilityState === 'visible') {
       isVisibleRef.current = true;
@@ -79,26 +108,35 @@ export function useSessionTracking() {
       startInterval();
     }
 
-    // Handle page visibility changes - only track time when actively viewing
+    // Handle page visibility changes
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
         isVisibleRef.current = false;
         stopInterval();
-        // End the current session when going to background
         endSession();
       } else if (document.visibilityState === 'visible') {
         isVisibleRef.current = true;
-        // Start a fresh session when returning to foreground
         sessionTokenRef.current = getOrCreateSessionToken();
+        // Reset counters on visibility change
+        clickCountRef.current = 0;
+        scrollCountRef.current = 0;
+        keypressCountRef.current = 0;
         sendHeartbeat();
         startInterval();
       }
     };
 
+    // Add event listeners for interaction tracking
+    document.addEventListener('click', handleClick, { passive: true });
+    document.addEventListener('scroll', handleScroll, { passive: true });
+    document.addEventListener('keydown', handleKeypress, { passive: true });
     document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       stopInterval();
+      document.removeEventListener('click', handleClick);
+      document.removeEventListener('scroll', handleScroll);
+      document.removeEventListener('keydown', handleKeypress);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       endSession();
     };

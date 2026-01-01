@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Clock, Calendar, Activity } from "lucide-react";
+import { User, Clock, Calendar, Activity, MousePointerClick } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 
@@ -24,6 +24,9 @@ interface AdminUser {
   last_active_at?: string;
   total_time_seconds?: number;
   days_active?: number;
+  total_clicks?: number;
+  total_scrolls?: number;
+  total_keypresses?: number;
 }
 
 interface UserSession {
@@ -32,6 +35,9 @@ interface UserSession {
   ended_at: string | null;
   duration_seconds: number;
   last_heartbeat_at: string;
+  click_count: number;
+  scroll_count: number;
+  keypress_count: number;
 }
 
 interface UserDetailDrawerProps {
@@ -65,7 +71,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
     try {
       const { data, error } = await supabase
         .from("user_sessions")
-        .select("id, started_at, ended_at, duration_seconds, last_heartbeat_at")
+        .select("id, started_at, ended_at, duration_seconds, last_heartbeat_at, click_count, scroll_count, keypress_count")
         .eq("user_id", userId)
         .order("started_at", { ascending: false })
         .limit(20);
@@ -122,7 +128,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
         </SheetHeader>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-2 gap-3 mb-6">
           <Card className="border-border">
             <CardContent className="p-3 text-center">
               <Clock className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
@@ -144,7 +150,37 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
               <p className="text-xs text-muted-foreground">Sessions</p>
             </CardContent>
           </Card>
+          <Card className="border-border">
+            <CardContent className="p-3 text-center">
+              <MousePointerClick className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-lg font-semibold">
+                {((user.total_clicks || 0) + (user.total_scrolls || 0) + (user.total_keypresses || 0)).toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground">Interactions</p>
+            </CardContent>
+          </Card>
         </div>
+
+        {/* Engagement Breakdown */}
+        <Card className="border-border mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium">Engagement Breakdown</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Clicks</span>
+              <span className="font-medium">{(user.total_clicks || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Scrolls</span>
+              <span className="font-medium">{(user.total_scrolls || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Key presses</span>
+              <span className="font-medium">{(user.total_keypresses || 0).toLocaleString()}</span>
+            </div>
+          </CardContent>
+        </Card>
 
         {loading ? (
           <div className="space-y-4">
