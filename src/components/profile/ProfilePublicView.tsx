@@ -238,7 +238,11 @@ export const ProfilePublicView = ({ profile, friendshipStatus, onFriendshipChang
       </Card>
 
       {/* Goals Section */}
-      <ProfileGoals userId={profile.id} isOwnProfile={isOwnProfile} />
+      <ProfileGoals 
+        userId={profile.id} 
+        isOwnProfile={isOwnProfile} 
+        viewerType={isOwnProfile ? 'owner' : (is_friend ? 'friend' : 'public')}
+      />
       
       {/* Unfriend Confirmation Dialog */}
       <UnfriendConfirmDialog
