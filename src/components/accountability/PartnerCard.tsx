@@ -113,8 +113,8 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
     <>
       <Card className="border-border hover:border-primary/30 transition-all hover:shadow-md">
         <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-12 w-12 ring-2 ring-primary/20">
+          <div className="flex items-start gap-4">
+            <Avatar className="h-12 w-12 ring-2 ring-primary/20 shrink-0">
               <AvatarImage src={partner.avatar_url || undefined} alt={partner.full_name} />
               <AvatarFallback className="bg-primary/10 text-primary font-semibold">
                 {initials}
@@ -125,28 +125,28 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
               <h3 className="font-semibold text-foreground truncate">
                 {partner.full_name}
               </h3>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-muted-foreground mt-1">
                 <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
+                  <Clock className="h-3 w-3 shrink-0" />
                   {partner.last_check_in_at ? (
-                    <span>Check-in {formatDistanceToNow(new Date(partner.last_check_in_at))} ago</span>
+                    <span className="truncate">Check-in {formatDistanceToNow(new Date(partner.last_check_in_at))} ago</span>
                   ) : (
                     <span>No check-ins yet</span>
                   )}
                 </div>
-                <span className="text-muted-foreground/50">•</span>
+                <span className="hidden sm:inline text-muted-foreground/50">•</span>
                 <div className="flex items-center gap-1">
                   {canViewPartner ? (
-                    <Eye className="h-3 w-3 text-primary" />
+                    <Eye className="h-3 w-3 text-primary shrink-0" />
                   ) : (
-                    <EyeOff className="h-3 w-3" />
+                    <EyeOff className="h-3 w-3 shrink-0" />
                   )}
-                  <span>{canViewPartner ? 'Can view' : "Can't view"}</span>
+                  <span>{canViewPartner ? 'Can view goals' : "Can't view goals"}</span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <Button
                 variant="outline"
                 size="sm"
@@ -176,6 +176,10 @@ export const PartnerCard = ({ partner, onRemove, onCheckIn, onVisibilityChange, 
                   <DropdownMenuItem onClick={() => setShowCheckInDialog(true)}>
                     <MessageSquare className="h-4 w-4 mr-2" />
                     Record Check-in
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate(`/partner/${partner.partner_id}/check-ins`)}>
+                    <Clock className="h-4 w-4 mr-2" />
+                    View Check-in History
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setShowSettingsDialog(true)}>
                     <Settings2 className="h-4 w-4 mr-2" />
