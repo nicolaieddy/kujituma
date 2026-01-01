@@ -16,7 +16,6 @@ import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
   id: string;
-  email?: string;
   full_name: string;
   avatar_url?: string;
   cover_photo_url?: string;
@@ -26,7 +25,6 @@ interface Profile {
   instagram_url?: string;
   tiktok_url?: string;
   twitter_url?: string;
-  show_email?: boolean;
   social_links_order?: string[];
   created_at: string;
   last_active_at?: string;
@@ -114,9 +112,6 @@ export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus
             
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{profile.full_name}</h1>
-              {profile.show_email && profile.email && (
-                <p className="text-muted-foreground">{profile.email}</p>
-              )}
               
               {/* Social links inline */}
               {(() => {
@@ -246,26 +241,6 @@ export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus
                 <Clock className="h-4 w-4 mr-2 text-primary" />
                 <span>Active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
               </div>
-            )}
-            
-            {isOwnProfile && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  const newShowEmail = !profile.show_email;
-                  supabase
-                    .from('profiles')
-                    .update({ show_email: newShowEmail })
-                    .eq('id', profile.id)
-                    .then(() => {
-                      window.location.reload();
-                    });
-                }}
-                className="text-xs h-auto py-1 px-2"
-              >
-                {profile.show_email ? 'Hide Email' : 'Show Email'}
-              </Button>
             )}
           </div>
         </CardContent>
