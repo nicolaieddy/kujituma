@@ -12,13 +12,21 @@ export const NotificationBell = () => {
   const { notifications, unreadCount, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
+  const handleOpenChange = async (open: boolean) => {
+    setIsOpen(open);
+    // Mark all as read when closing the popover if there are unread notifications
+    if (!open && unreadCount > 0) {
+      await markAllAsRead();
+    }
+  };
+
   const handleMarkAllRead = async () => {
     await markAllAsRead();
     toast.success('All notifications marked as read');
   };
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
