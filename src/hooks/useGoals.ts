@@ -297,9 +297,11 @@ export const useGoals = () => {
     }, {} as Record<number, Goal[]>);
 
     // Get previous year goals that need carry-over consideration
+    // Use start_date if available, otherwise fallback to created_at
     const currentYear = new Date().getFullYear();
     const previousUnfinished = goals.filter(goal => {
-      const goalYear = new Date(goal.created_at).getFullYear();
+      const dateToCheck = goal.start_date || goal.created_at;
+      const goalYear = new Date(dateToCheck).getFullYear();
       return goalYear < currentYear && 
              goal.status !== 'completed' && 
              goal.status !== 'deleted' &&
