@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus, Calendar, Clock, ArrowRight } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus, Calendar, Clock, ArrowRight, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
@@ -77,6 +77,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [skipping, setSkipping] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('');
+  const [deleting, setDeleting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
@@ -1021,6 +1024,34 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
             )}
           </div>
 
+          {/* Danger Zone - Account Deletion (only show for existing users, not during initial setup) */}
+          {!isNewUser && (
+            <div className="mt-8 pt-6 border-t border-destructive/30">
+              <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/5">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+                  <div className="flex-1 space-y-3">
+                    <div>
+                      <h3 className="font-semibold text-destructive">Danger Zone</h3>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Permanently delete your account and all associated data. This action cannot be undone.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDeleteDialog(true)}
+                    >
+                      <Trash2 className="h-4 w-4 mr-2" />
+                      Delete My Account
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-4">
@@ -1061,6 +1092,91 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
             >
               Discard Changes
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Account Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+        setShowDeleteDialog(open);
+        if (!open) setDeleteConfirmEmail('');
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete Your Account
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                This will permanently delete your account and all your data, including:
+              </p>
+              <ul className="list-disc list-inside text-sm space-y-1 text-muted-foreground">
+                <li>Your profile and photos</li>
+                <li>All goals, habits, and objectives</li>
+                <li>All posts, comments, and reactions</li>
+                <li>All friendships and partnerships</li>
+                <li>All check-ins and planning sessions</li>
+              </ul>
+              <p className="font-medium text-foreground">
+                This action is permanent and cannot be undone.
+              </p>
+              <div className="pt-2">
+                <Label htmlFor="delete-confirm-email" className="text-foreground">
+                  Type your email <span className="font-mono text-destructive">{user?.email}</span> to confirm:
+                </Label>
+                <Input
+                  id="delete-confirm-email"
+                  type="email"
+                  value={deleteConfirmEmail}
+                  onChange={(e) => setDeleteConfirmEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="mt-2"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <Button
+              variant="destructive"
+              disabled={deleteConfirmEmail !== user?.email || deleting}
+              onClick={async () => {
+                setDeleting(true);
+                try {
+                  const { error } = await supabase.rpc('delete_own_account');
+                  
+                  if (error) {
+                    console.error('Delete account error:', error);
+                    toast({
+                      title: "Deletion failed",
+                      description: error.message || "Failed to delete account. Please try again.",
+                      variant: "destructive",
+                    });
+                    setDeleting(false);
+                    return;
+                  }
+
+                  // Sign out and redirect
+                  await supabase.auth.signOut();
+                  toast({
+                    title: "Account deleted",
+                    description: "Your account and all data have been permanently deleted.",
+                  });
+                  navigate('/');
+                } catch (error) {
+                  console.error('Delete account error:', error);
+                  toast({
+                    title: "Deletion failed",
+                    description: "An unexpected error occurred. Please try again.",
+                    variant: "destructive",
+                  });
+                  setDeleting(false);
+                }
+              }}
+            >
+              {deleting ? 'Deleting...' : 'Permanently Delete Account'}
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
