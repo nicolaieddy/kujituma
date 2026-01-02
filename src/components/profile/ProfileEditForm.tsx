@@ -806,10 +806,18 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 placeholder="Tell us about yourself..."
               />
             </div>
+          </div>
+
+          {/* Private Information Section */}
+          <div className="space-y-4 pt-2 border-t border-border">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="text-sm font-medium">Private Information</span>
+              <span className="text-xs bg-muted px-2 py-0.5 rounded">Only visible to you</span>
+            </div>
 
             <div>
               <Label htmlFor="date_of_birth" className="text-foreground">
-                Date of Birth <span className="text-muted-foreground text-xs">(optional, private)</span>
+                Date of Birth <span className="text-muted-foreground text-xs">(optional)</span>
               </Label>
               <Input
                 id="date_of_birth"
@@ -819,37 +827,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 max={new Date().toISOString().split('T')[0]}
                 className="w-full"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Your date of birth is kept private and never shown to others.
-              </p>
             </div>
 
-            {/* Location Section */}
-            <div className="space-y-3">
+            {/* Location Fields */}
+            <div className="space-y-2">
               <Label className="text-foreground">
-                Location <span className="text-muted-foreground text-xs">(optional, private)</span>
+                Location <span className="text-muted-foreground text-xs">(optional)</span>
               </Label>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Input
-                    id="country"
-                    value={formData.country}
-                    onChange={(e) => handleInputChange('country', e.target.value)}
-                    placeholder="Country"
-                  />
-                </div>
-                <div>
-                  <Input
-                    id="city"
-                    value={formData.city}
-                    onChange={(e) => handleInputChange('city', e.target.value)}
-                    placeholder="City"
-                  />
-                </div>
+                <Input
+                  id="country"
+                  value={formData.country}
+                  onChange={(e) => handleInputChange('country', e.target.value)}
+                  placeholder="Country"
+                />
+                <Input
+                  id="city"
+                  value={formData.city}
+                  onChange={(e) => handleInputChange('city', e.target.value)}
+                  placeholder="City"
+                />
               </div>
-              <p className="text-xs text-muted-foreground">
-                Your location is kept private and never shown to others.
-              </p>
             </div>
           </div>
 
