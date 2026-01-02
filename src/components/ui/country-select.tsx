@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Check, ChevronsUpDown } from "lucide-react";
-import { Country, ICountry } from "country-state-city";
+import { Country } from "country-state-city";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
