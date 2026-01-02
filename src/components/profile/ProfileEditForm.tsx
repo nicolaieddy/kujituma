@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus, Calendar, Clock } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus, Calendar, Clock, ArrowRight } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
 import { ProfileStats } from "./ProfileStats";
@@ -73,7 +74,9 @@ const extractSocialLinks = (profile: Profile): Record<string, string> => {
 export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditFormProps) => {
   const { user, isNewUser, markProfileComplete } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [isRepositioning, setIsRepositioning] = useState(false);
@@ -679,6 +682,48 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                     <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium">3</span>
                     <span><strong className="text-foreground">About me</strong> — Share a bit about yourself</span>
                   </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-primary/10">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    disabled={skipping}
+                    onClick={async () => {
+                      setSkipping(true);
+                      try {
+                        // Mark profile as complete in database
+                        await supabase
+                          .from('profiles')
+                          .update({ is_profile_complete: true })
+                          .eq('id', user?.id);
+                        
+                        // Mark profile as complete in auth context
+                        markProfileComplete();
+                        
+                        toast({
+                          title: "Welcome aboard!",
+                          description: "You can complete your profile anytime from settings.",
+                        });
+                        
+                        // Navigate to main app
+                        navigate('/');
+                      } catch (error) {
+                        console.error('Skip error:', error);
+                        toast({
+                          title: "Something went wrong",
+                          description: "Please try again.",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setSkipping(false);
+                      }
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {skipping ? 'Skipping...' : 'Skip for now'}
+                    <ArrowRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               </div>
             </div>
