@@ -84,6 +84,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [isDraggingCover, setIsDraggingCover] = useState(false);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => extractSocialLinks(profile));
   const [socialLinksOrder, setSocialLinksOrder] = useState<string[]>(() => profile.social_links_order || []);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [formData, setFormData] = useState(() => {
     // Find country code from country name
     const countries = Country.getAllCountries();
@@ -100,6 +101,29 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       city: profile.city || '',
     };
   });
+
+  // Validation function
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+    
+    // Full name is required and must be reasonable length
+    const trimmedName = formData.full_name.trim();
+    if (!trimmedName) {
+      errors.full_name = 'Full name is required';
+    } else if (trimmedName.length < 2) {
+      errors.full_name = 'Name must be at least 2 characters';
+    } else if (trimmedName.length > 100) {
+      errors.full_name = 'Name must be less than 100 characters';
+    }
+    
+    // About me optional but has max length
+    if (formData.about_me && formData.about_me.length > 500) {
+      errors.about_me = 'About me must be less than 500 characters';
+    }
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   // Handle country change - clear city when country changes
   const handleCountryChange = (countryName: string, countryCode: string) => {
@@ -171,6 +195,14 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear validation error for this field when user types
+    if (validationErrors[field]) {
+      setValidationErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
   };
 
   const uploadProfilePhoto = async (file: File) => {
@@ -341,6 +373,16 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
+    // Validate form before submitting
+    if (!validateForm()) {
+      toast({
+        title: "Please fix errors",
+        description: "Some required fields need your attention.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
     try {
@@ -614,11 +656,32 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
         )}
 
         {isNewUser && (
-          <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
-            <h3 className="font-semibold text-foreground mb-1">Welcome to Kujituma!</h3>
-            <p className="text-sm text-muted-foreground">
-              Let's set up your profile. Fill in your details below to get started.
-            </p>
+          <div className="mb-6 p-5 bg-gradient-to-br from-primary/15 via-primary/10 to-accent/10 border border-primary/20 rounded-xl">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                <User className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-foreground text-lg mb-2">Welcome to Kujituma! 🎉</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Let's set up your profile so your friends and accountability partners can recognize you.
+                </p>
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium">1</span>
+                    <span><strong className="text-foreground">Full name</strong> — Required so others can find you</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium">2</span>
+                    <span><strong className="text-foreground">Profile photo</strong> — Helps people recognize you</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-medium">3</span>
+                    <span><strong className="text-foreground">About me</strong> — Share a bit about yourself</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -800,25 +863,45 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           {/* Form Fields */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="full_name" className="text-foreground">Full Name</Label>
+              <Label htmlFor="full_name" className="text-foreground">
+                Full Name <span className="text-destructive">*</span>
+              </Label>
               <Input
                 id="full_name"
                 value={formData.full_name}
                 onChange={(e) => handleInputChange('full_name', e.target.value)}
                 placeholder="Your full name"
                 required
+                maxLength={100}
+                className={validationErrors.full_name ? 'border-destructive focus-visible:ring-destructive' : ''}
               />
+              {validationErrors.full_name && (
+                <p className="text-xs text-destructive mt-1">{validationErrors.full_name}</p>
+              )}
             </div>
 
             <div>
-              <Label htmlFor="about_me" className="text-foreground">About Me</Label>
+              <Label htmlFor="about_me" className="text-foreground">
+                About Me <span className="text-muted-foreground text-xs">(optional)</span>
+              </Label>
               <Textarea
                 id="about_me"
                 value={formData.about_me}
                 onChange={(e) => handleInputChange('about_me', e.target.value)}
-                className="min-h-[100px]"
+                className={`min-h-[100px] ${validationErrors.about_me ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                 placeholder="Tell us about yourself..."
+                maxLength={500}
               />
+              <div className="flex justify-between mt-1">
+                {validationErrors.about_me ? (
+                  <p className="text-xs text-destructive">{validationErrors.about_me}</p>
+                ) : (
+                  <span />
+                )}
+                <span className={`text-xs ${formData.about_me.length > 450 ? 'text-warning' : 'text-muted-foreground'}`}>
+                  {formData.about_me.length}/500
+                </span>
+              </div>
             </div>
           </div>
 
