@@ -4,7 +4,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { RefreshCw, Trash2, Copy, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import {
+  RefreshCw,
+  Trash2,
+  Copy,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Download,
+  ShieldAlert,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -30,6 +39,10 @@ const Debug = () => {
   const [networkFailures, setNetworkFailures] = useState<NetworkFailure[]>([]);
   const [supabaseSession, setSupabaseSession] = useState<any>(null);
   const [copied, setCopied] = useState(false);
+  const [swReg, setSwReg] = useState<ServiceWorkerRegistration | null>(null);
+  const [hasSwController, setHasSwController] = useState(
+    "serviceWorker" in navigator ? !!navigator.serviceWorker.controller : false,
+  );
 
   useEffect(() => {
     const refreshFromStorage = () => {
@@ -72,8 +85,23 @@ const Debug = () => {
       setSupabaseSession(data.session);
     });
 
+    // Service worker status (for publish/update debugging)
+    let onControllerChange: (() => void) | null = null;
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker
+        .getRegistration()
+        .then((reg) => setSwReg(reg ?? null))
+        .catch(() => setSwReg(null));
+
+      onControllerChange = () => setHasSwController(true);
+      navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
+    }
+
     return () => {
       window.removeEventListener("app:networkFailure" as any, onNet);
+      if ("serviceWorker" in navigator && onControllerChange) {
+        navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+      }
     };
   }, []);
 
@@ -99,24 +127,87 @@ const Debug = () => {
     }
   };
 
+  const checkForAppUpdate = async () => {
+    try {
+      // Prefer the helper set by setupPwaUpdates()
+      if (window.__pwaCheckForUpdate) {
+        window.__pwaCheckForUpdate();
+        toast({ title: "Checking", description: "Requested an app update check." });
+        return;
+      }
+
+      if (swReg) {
+        await swReg.update();
+        toast({ title: "Checking", description: "Service worker update check triggered." });
+        return;
+      }
+
+      toast({ title: "Not available", description: "No service worker registration found." });
+    } catch (e: any) {
+      toast({
+        title: "Update check failed",
+        description: e?.message ?? "Could not check for updates.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const applyUpdateNow = () => {
+    if (window.__pwaApplyUpdate) {
+      window.__pwaApplyUpdate();
+      return;
+    }
+    window.location.reload();
+  };
+
+  const unregisterSwAndReload = async () => {
+    if (!swReg) {
+      toast({ title: "Not available", description: "No service worker registration found." });
+      return;
+    }
+    await swReg.unregister();
+    toast({ title: "Unregistered", description: "Service worker removed. Reloading…" });
+    window.location.reload();
+  };
+
+  const clearCachesAndReload = async () => {
+    if (!("caches" in window)) {
+      toast({ title: "Not supported", description: "Cache Storage API not supported." });
+      return;
+    }
+
+    const keys = await caches.keys();
+    await Promise.all(keys.map((k) => caches.delete(k)));
+    toast({ title: "Cleared", description: "Cache storage cleared. Reloading…" });
+    window.location.reload();
+  };
+
   const copyDebugInfo = () => {
     const info = {
       timestamp: new Date().toISOString(),
+      buildId: __BUILD_ID__,
       url: window.location.href,
       userAgent: navigator.userAgent,
       online: navigator.onLine,
+      serviceWorker: {
+        supported: "serviceWorker" in navigator,
+        controller: "serviceWorker" in navigator ? !!navigator.serviceWorker.controller : false,
+        registrationScope: swReg?.scope ?? null,
+      },
       authContext: {
         loading,
         hasUser: !!user,
         userId: user?.id,
         email: user?.email,
       },
-      supabaseSession: supabaseSession ? {
-        hasSession: true,
-        userId: supabaseSession.user?.id,
-        expiresAt: supabaseSession.expires_at,
-        tokenType: supabaseSession.token_type,
-      } : null,
+      supabaseSession: supabaseSession
+        ? {
+            hasSession: true,
+            userId: supabaseSession.user?.id,
+            expiresAt: supabaseSession.expires_at,
+            tokenType: supabaseSession.token_type,
+          }
+        : null,
       lastError,
       networkFailures: networkFailures.slice(0, 5),
     };
@@ -134,10 +225,10 @@ const Debug = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background p-4 sm:p-6">
+    <main className="min-h-screen bg-background p-4 sm:p-6">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <header className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Debug Dashboard</h1>
             <p className="text-sm text-muted-foreground">Diagnostic information for troubleshooting</p>
@@ -146,199 +237,285 @@ const Debug = () => {
             {copied ? <CheckCircle className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             {copied ? "Copied!" : "Copy All"}
           </Button>
-        </div>
+        </header>
 
         {/* Quick Status */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Quick Status</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <StatusBadge ok={navigator.onLine} label={navigator.onLine ? "Online" : "Offline"} />
-            <StatusBadge ok={!loading} label={loading ? "Auth Loading" : "Auth Ready"} />
-            <StatusBadge ok={!!user} label={user ? "Logged In" : "Not Logged In"} />
-            <StatusBadge ok={!!supabaseSession} label={supabaseSession ? "Session Active" : "No Session"} />
-            <StatusBadge ok={!lastError} label={lastError ? "Has Error" : "No Errors"} />
-          </CardContent>
-        </Card>
+        <section aria-label="Quick status">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Quick Status</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <StatusBadge ok={navigator.onLine} label={navigator.onLine ? "Online" : "Offline"} />
+              <StatusBadge ok={!loading} label={loading ? "Auth Loading" : "Auth Ready"} />
+              <StatusBadge ok={!!user} label={user ? "Logged In" : "Not Logged In"} />
+              <StatusBadge ok={!!supabaseSession} label={supabaseSession ? "Session Active" : "No Session"} />
+              <StatusBadge ok={!lastError} label={lastError ? "Has Error" : "No Errors"} />
+              <StatusBadge
+                ok={"serviceWorker" in navigator ? hasSwController : true}
+                label={
+                  "serviceWorker" in navigator
+                    ? hasSwController
+                      ? "SW Controlling"
+                      : "SW Not Controlling"
+                    : "SW Unsupported"
+                }
+              />
+            </CardContent>
+          </Card>
+        </section>
+
+        {/* PWA / Service Worker */}
+        <section aria-label="PWA status">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">PWA / Service Worker</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-muted-foreground">Build ID:</span>
+                <span className="font-mono text-xs break-all">{__BUILD_ID__}</span>
+                <span className="text-muted-foreground">SW Supported:</span>
+                <span className="font-mono">{String("serviceWorker" in navigator)}</span>
+                <span className="text-muted-foreground">SW Controller:</span>
+                <span className="font-mono">{String(hasSwController)}</span>
+                <span className="text-muted-foreground">SW Scope:</span>
+                <span className="font-mono text-xs break-all">{swReg?.scope ?? "null"}</span>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" onClick={checkForAppUpdate} className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Check for update
+                </Button>
+                <Button variant="outline" onClick={applyUpdateNow} className="gap-2">
+                  <RefreshCw className="h-4 w-4" />
+                  Reload latest
+                </Button>
+                <Button variant="outline" onClick={clearCachesAndReload} className="gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  Clear caches & reload
+                </Button>
+                <Button variant="destructive" onClick={unregisterSwAndReload} className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Unregister SW
+                </Button>
+              </div>
+
+              <p className="text-xs text-muted-foreground">
+                Tip: if publish succeeds but the UI doesn’t change, use “Clear caches & reload” once, then
+                rely on the “Update available” toast going forward.
+              </p>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Auth Context */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              Auth Context
-              <Badge variant="outline" className="text-xs">{loading ? "loading" : "ready"}</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <span className="text-muted-foreground">Loading:</span>
-              <span className="font-mono">{String(loading)}</span>
-              <span className="text-muted-foreground">User ID:</span>
-              <span className="font-mono text-xs break-all">{user?.id || "null"}</span>
-              <span className="text-muted-foreground">Email:</span>
-              <span className="font-mono">{user?.email || "null"}</span>
-              <span className="text-muted-foreground">Has Session Object:</span>
-              <span className="font-mono">{String(!!session)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <section aria-label="Auth context">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                Auth Context
+                <Badge variant="outline" className="text-xs">
+                  {loading ? "loading" : "ready"}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-muted-foreground">Loading:</span>
+                <span className="font-mono">{String(loading)}</span>
+                <span className="text-muted-foreground">User ID:</span>
+                <span className="font-mono text-xs break-all">{user?.id || "null"}</span>
+                <span className="text-muted-foreground">Email:</span>
+                <span className="font-mono">{user?.email || "null"}</span>
+                <span className="text-muted-foreground">Has Session Object:</span>
+                <span className="font-mono">{String(!!session)}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Supabase Session */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Supabase Session</CardTitle>
-              <Button size="sm" variant="ghost" onClick={refreshSession} className="gap-1">
-                <RefreshCw className="h-3 w-3" />
-                Refresh
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {supabaseSession ? (
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <span className="text-muted-foreground">User ID:</span>
-                <span className="font-mono text-xs break-all">{supabaseSession.user?.id}</span>
-                <span className="text-muted-foreground">Email:</span>
-                <span className="font-mono">{supabaseSession.user?.email}</span>
-                <span className="text-muted-foreground">Expires At:</span>
-                <span className="font-mono">{new Date(supabaseSession.expires_at * 1000).toLocaleString()}</span>
-                <span className="text-muted-foreground">Token Type:</span>
-                <span className="font-mono">{supabaseSession.token_type}</span>
-                <span className="text-muted-foreground">Provider:</span>
-                <span className="font-mono">{supabaseSession.user?.app_metadata?.provider || "unknown"}</span>
+        <section aria-label="Supabase session">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Supabase Session</CardTitle>
+                <Button size="sm" variant="ghost" onClick={refreshSession} className="gap-1">
+                  <RefreshCw className="h-3 w-3" />
+                  Refresh
+                </Button>
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No active Supabase session.</p>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {supabaseSession ? (
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <span className="text-muted-foreground">User ID:</span>
+                  <span className="font-mono text-xs break-all">{supabaseSession.user?.id}</span>
+                  <span className="text-muted-foreground">Email:</span>
+                  <span className="font-mono">{supabaseSession.user?.email}</span>
+                  <span className="text-muted-foreground">Expires At:</span>
+                  <span className="font-mono">
+                    {new Date(supabaseSession.expires_at * 1000).toLocaleString()}
+                  </span>
+                  <span className="text-muted-foreground">Token Type:</span>
+                  <span className="font-mono">{supabaseSession.token_type}</span>
+                  <span className="text-muted-foreground">Provider:</span>
+                  <span className="font-mono">
+                    {supabaseSession.user?.app_metadata?.provider || "unknown"}
+                  </span>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No active Supabase session.</p>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Last Error */}
-        <Card className={lastError ? "border-destructive/50" : ""}>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                {lastError && <AlertCircle className="h-4 w-4 text-destructive" />}
-                Last Error
-              </CardTitle>
-              {lastError && (
-                <Button size="sm" variant="ghost" onClick={clearLastError} className="gap-1 text-destructive">
-                  <Trash2 className="h-3 w-3" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {lastError ? (
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2 text-sm">
-                  <span className="text-muted-foreground">Time:</span>
-                  <span className="font-mono">{new Date(lastError.time).toLocaleString()}</span>
-                  <span className="text-muted-foreground">Path:</span>
-                  <span className="font-mono">{lastError.path}</span>
-                </div>
-                <Separator />
-                <div className="space-y-2">
-                  <p className="text-sm font-medium">Message:</p>
-                  <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-32">{lastError.message}</pre>
-                </div>
-                {lastError.stack && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Stack:</p>
-                    <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-48">{lastError.stack}</pre>
-                  </div>
+        <section aria-label="Last error">
+          <Card className={lastError ? "border-destructive/50" : ""}>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  {lastError && <AlertCircle className="h-4 w-4 text-destructive" />}
+                  Last Error
+                </CardTitle>
+                {lastError && (
+                  <Button size="sm" variant="ghost" onClick={clearLastError} className="gap-1 text-destructive">
+                    <Trash2 className="h-3 w-3" />
+                    Clear
+                  </Button>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No errors recorded.</p>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {lastError ? (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <span className="text-muted-foreground">Time:</span>
+                    <span className="font-mono">{new Date(lastError.time).toLocaleString()}</span>
+                    <span className="text-muted-foreground">Path:</span>
+                    <span className="font-mono">{lastError.path}</span>
+                  </div>
+                  <Separator />
+                  <div className="space-y-2">
+                    <p className="text-sm font-medium">Message:</p>
+                    <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-32">
+                      {lastError.message}
+                    </pre>
+                  </div>
+                  {lastError.stack && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium">Stack:</p>
+                      <pre className="text-xs bg-muted p-3 rounded overflow-auto max-h-48">
+                        {lastError.stack}
+                      </pre>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No errors recorded.</p>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Network Failures */}
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg">Recent Network Failures</CardTitle>
-              {networkFailures.length > 0 && (
-                <Button size="sm" variant="ghost" onClick={clearNetworkFailures} className="gap-1">
-                  <Trash2 className="h-3 w-3" />
-                  Clear
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            {networkFailures.length > 0 ? (
-              <div className="space-y-2">
-                {networkFailures.slice(0, 10).map((failure, i) => (
-                  <div key={i} className="text-xs bg-muted p-2 rounded space-y-1">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="destructive" className="text-xs">{failure.status}</Badge>
-                      <span className="font-mono">{failure.method}</span>
-                      <span className="text-muted-foreground truncate flex-1">{failure.url}</span>
-                    </div>
-                    <p className="text-muted-foreground">{new Date(failure.time).toLocaleString()}</p>
-                  </div>
-                ))}
+        <section aria-label="Network failures">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Recent Network Failures</CardTitle>
+                {networkFailures.length > 0 && (
+                  <Button size="sm" variant="ghost" onClick={clearNetworkFailures} className="gap-1">
+                    <Trash2 className="h-3 w-3" />
+                    Clear
+                  </Button>
+                )}
               </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No network failures recorded. Note: failures are only tracked if instrumented.</p>
-            )}
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent>
+              {networkFailures.length > 0 ? (
+                <div className="space-y-2">
+                  {networkFailures.slice(0, 10).map((failure, i) => (
+                    <div key={i} className="text-xs bg-muted p-2 rounded space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs">
+                          {failure.status}
+                        </Badge>
+                        <span className="font-mono">{failure.method}</span>
+                        <span className="text-muted-foreground truncate flex-1">{failure.url}</span>
+                      </div>
+                      <p className="text-muted-foreground">{new Date(failure.time).toLocaleString()}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No network failures recorded. Note: failures are only tracked if instrumented.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Environment */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Environment</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <span className="text-muted-foreground">URL:</span>
-              <span className="font-mono text-xs break-all">{window.location.href}</span>
-              <span className="text-muted-foreground">User Agent:</span>
-              <span className="font-mono text-xs break-all">{navigator.userAgent}</span>
-              <span className="text-muted-foreground">Online:</span>
-              <span className="font-mono">{String(navigator.onLine)}</span>
-              <span className="text-muted-foreground">Timestamp:</span>
-              <span className="font-mono">{new Date().toISOString()}</span>
-            </div>
-          </CardContent>
-        </Card>
+        <section aria-label="Environment">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Environment</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                <span className="text-muted-foreground">URL:</span>
+                <span className="font-mono text-xs break-all">{window.location.href}</span>
+                <span className="text-muted-foreground">User Agent:</span>
+                <span className="font-mono text-xs break-all">{navigator.userAgent}</span>
+                <span className="text-muted-foreground">Online:</span>
+                <span className="font-mono">{String(navigator.onLine)}</span>
+                <span className="text-muted-foreground">Timestamp:</span>
+                <span className="font-mono">{new Date().toISOString()}</span>
+                <span className="text-muted-foreground">Build ID:</span>
+                <span className="font-mono text-xs break-all">{__BUILD_ID__}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
 
         {/* Actions */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Actions</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => window.location.reload()}>
-              Reload Page
-            </Button>
-            <Button variant="outline" onClick={() => window.location.href = "/"}>
-              Go to Home
-            </Button>
-            <Button variant="outline" onClick={() => window.location.href = "/auth"}>
-              Go to Auth
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={async () => {
-                await supabase.auth.signOut();
-                window.location.href = "/auth";
-              }}
-            >
-              Force Sign Out
-            </Button>
-          </CardContent>
-        </Card>
+        <section aria-label="Actions">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => window.location.reload()}>
+                Reload Page
+              </Button>
+              <Button variant="outline" onClick={() => (window.location.href = "/")}>
+                Go to Home
+              </Button>
+              <Button variant="outline" onClick={() => (window.location.href = "/auth")}>
+                Go to Auth
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={async () => {
+                  await supabase.auth.signOut();
+                  window.location.href = "/auth";
+                }}
+              >
+                Force Sign Out
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };
 
 export default Debug;
+
