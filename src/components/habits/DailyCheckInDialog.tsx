@@ -23,9 +23,11 @@ import {
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useGoals } from "@/hooks/useGoals";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { useWeeklyObjectives } from "@/hooks/useWeeklyObjectives";
+import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Zap, Target, AlertTriangle, Trophy, Loader2, RefreshCw, Flame, TrendingUp } from "lucide-react";
-import { startOfWeek, isToday } from "date-fns";
+import { Zap, Target, AlertTriangle, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck } from "lucide-react";
+import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
 import { celebrateGoalComplete } from "@/utils/confetti";
@@ -53,22 +55,56 @@ const ENERGY_OPTIONS = [
   { value: 5, emoji: "🔥", label: "Peak" },
 ];
 
+// Get greeting based on time of day
+const getGreeting = (name?: string) => {
+  const hour = new Date().getHours();
+  const firstName = name?.split(' ')[0] || '';
+  
+  if (hour < 12) {
+    return { emoji: "🌅", text: `Good morning${firstName ? `, ${firstName}` : ''}!` };
+  } else if (hour < 17) {
+    return { emoji: "☀️", text: `Good afternoon${firstName ? `, ${firstName}` : ''}!` };
+  } else if (hour < 21) {
+    return { emoji: "🌆", text: `Good evening${firstName ? `, ${firstName}` : ''}!` };
+  } else {
+    return { emoji: "🌙", text: `Good night${firstName ? `, ${firstName}` : ''}!` };
+  }
+};
+
+// Get day name from scheduled_day format
+const getDayName = (date: Date) => {
+  return format(date, 'EEEE').toLowerCase();
+};
+
 export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogProps) => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   const { submitCheckIn, isSubmitting, todayCheckIn, isCached, lastSync } = useDailyCheckIn();
   const { goals } = useGoals();
   
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
+  const { objectives, updateObjective, isUpdating } = useWeeklyObjectives(weekStartStr);
   
   const [moodRating, setMoodRating] = useState<number>(todayCheckIn?.mood_rating || 3);
   const [energyLevel, setEnergyLevel] = useState<number>(todayCheckIn?.energy_level || 3);
   const [focusToday, setFocusToday] = useState(todayCheckIn?.focus_today || "");
-  const [quickWin, setQuickWin] = useState(todayCheckIn?.quick_win || "");
   const [blocker, setBlocker] = useState(todayCheckIn?.blocker || "");
+
+  // Get greeting
+  const greeting = useMemo(() => getGreeting(user?.user_metadata?.full_name), [user]);
 
   // Get today's index in the week (0 = Monday, 6 = Sunday)
   const todayIndex = weekDates.findIndex(d => isToday(d));
+  const todayDayName = getDayName(new Date());
+
+  // Get objectives scheduled for today
+  const todaysObjectives = useMemo(() => {
+    return objectives.filter(obj => 
+      obj.scheduled_day?.toLowerCase() === todayDayName && !obj.is_completed
+    );
+  }, [objectives, todayDayName]);
 
   // Get habits with habit_items that are due today
   const goalsWithHabits = goals.filter(g => 
@@ -117,6 +153,11 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     hapticSelection();
     const today = new Date();
     toggleCompletion(goalId, habitItemId, today);
+  };
+
+  const handleObjectiveToggle = (objectiveId: string, currentCompleted: boolean) => {
+    hapticSelection();
+    updateObjective(objectiveId, { is_completed: !currentCompleted });
   };
 
   const getHabitChecked = (habitItemId: string): boolean => {
@@ -171,7 +212,6 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       mood_rating: moodRating,
       energy_level: energyLevel,
       focus_today: focusToday || undefined,
-      quick_win: quickWin || undefined,
       blocker: blocker || undefined,
     });
     onOpenChange(false);
@@ -264,6 +304,41 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         </div>
       )}
 
+      {/* Today's Scheduled Objectives */}
+      {todaysObjectives.length > 0 && (
+        <div className="space-y-3">
+          <Label className="flex items-center gap-2">
+            <CalendarCheck className="h-4 w-4 text-primary" />
+            Scheduled for Today ({todaysObjectives.length})
+          </Label>
+          <div className="space-y-2 max-h-32 overflow-y-auto rounded-lg border bg-muted/30 p-3">
+            {todaysObjectives.map((objective) => (
+              <div
+                key={objective.id}
+                className="flex items-center gap-3 p-2 rounded-md hover:bg-accent transition-colors"
+              >
+                <Checkbox
+                  checked={objective.is_completed}
+                  disabled={isUpdating}
+                  onCheckedChange={() => handleObjectiveToggle(objective.id, objective.is_completed)}
+                  className="h-5 w-5"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {objective.text}
+                  </p>
+                  {objective.scheduled_time && (
+                    <p className="text-xs text-muted-foreground">
+                      {objective.scheduled_time}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Mood Rating */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
@@ -326,21 +401,6 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         />
       </div>
       
-      {/* Quick Win */}
-      <div className="space-y-2">
-        <Label className="flex items-center gap-2">
-          <Trophy className="h-4 w-4" />
-          One quick win you can accomplish?
-        </Label>
-        <Textarea
-          value={quickWin}
-          onChange={(e) => setQuickWin(e.target.value)}
-          placeholder="e.g., Reply to that important email..."
-          className="resize-none"
-          rows={2}
-        />
-      </div>
-      
       {/* Blocker (Optional) */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2 text-muted-foreground">
@@ -385,8 +445,8 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
           <DrawerHeader className="text-left pb-2">
             <div className="flex items-center justify-between">
               <DrawerTitle className="flex items-center gap-2">
-                <span className="text-2xl">☀️</span>
-                Daily Check-In
+                <span className="text-2xl">{greeting.emoji}</span>
+                {greeting.text}
               </DrawerTitle>
               <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
             </div>
@@ -411,8 +471,8 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-2xl">☀️</span>
-              Daily Check-In
+              <span className="text-2xl">{greeting.emoji}</span>
+              {greeting.text}
             </DialogTitle>
             <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
           </div>
