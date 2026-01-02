@@ -48,6 +48,8 @@ const Rituals = lazy(() => import("./pages/Rituals"));
 const Debug = lazy(() => import("./pages/Debug"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const CheckInHistory = lazy(() => import("./pages/CheckInHistory"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
+const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -185,6 +187,8 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
           <Route path="/debug" element={<Debug />} />
           <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
           <Route path="/partner/:partnerId/check-ins" element={<CheckInHistory />} />
+          <Route path="/privacy" element={<PrivacyPolicy />} />
+          <Route path="/terms" element={<TermsOfService />} />
           <Route path="*" element={<Feed />} />
         </Routes>
       </Suspense>
