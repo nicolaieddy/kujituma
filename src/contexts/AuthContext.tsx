@@ -7,8 +7,10 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
+  isNewUser: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  markProfileComplete: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -25,6 +27,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isNewUser, setIsNewUser] = useState(false);
+
+  // Check if user's profile is complete
+  const checkProfileComplete = useCallback(async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('is_profile_complete')
+        .eq('id', userId)
+        .single();
+      
+      if (error) {
+        console.error('[AuthContext] Error checking profile:', error);
+        return;
+      }
+      
+      setIsNewUser(!data?.is_profile_complete);
+    } catch (error) {
+      console.error('[AuthContext] Error checking profile complete:', error);
+    }
+  }, []);
 
   useEffect(() => {
     console.log('[AuthContext] Initializing auth...');
@@ -36,6 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(session);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Check profile completion after auth state change (defer to avoid deadlock)
+        if (session?.user) {
+          setTimeout(() => {
+            checkProfileComplete(session.user.id);
+          }, 0);
+        } else {
+          setIsNewUser(false);
+        }
       }
     );
 
@@ -48,13 +80,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Check profile completion for initial session
+      if (session?.user) {
+        checkProfileComplete(session.user.id);
+      }
     });
 
     return () => {
       console.log('[AuthContext] Cleaning up subscription');
       subscription.unsubscribe();
     };
-  }, []);
+  }, [checkProfileComplete]);
 
   const signInWithGoogle = useCallback(async () => {
     try {
@@ -87,13 +124,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
+  const markProfileComplete = useCallback(() => {
+    setIsNewUser(false);
+  }, []);
+
   const value = useMemo(() => ({
     user,
     session,
     loading,
+    isNewUser,
     signInWithGoogle,
     signOut,
-  }), [user, session, loading, signInWithGoogle, signOut]);
+    markProfileComplete,
+  }), [user, session, loading, isNewUser, signInWithGoogle, signOut, markProfileComplete]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -798,6 +798,7 @@ export type Database = {
           cover_photo_position: number | null
           cover_photo_url: string | null
           created_at: string
+          date_of_birth: string | null
           email: string
           email_contact: string | null
           full_name: string
@@ -805,6 +806,7 @@ export type Database = {
           google_id: string | null
           id: string
           instagram_url: string | null
+          is_profile_complete: boolean
           last_active_at: string | null
           linkedin_url: string | null
           medium_url: string | null
@@ -827,6 +829,7 @@ export type Database = {
           cover_photo_position?: number | null
           cover_photo_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email: string
           email_contact?: string | null
           full_name: string
@@ -834,6 +837,7 @@ export type Database = {
           google_id?: string | null
           id: string
           instagram_url?: string | null
+          is_profile_complete?: boolean
           last_active_at?: string | null
           linkedin_url?: string | null
           medium_url?: string | null
@@ -856,6 +860,7 @@ export type Database = {
           cover_photo_position?: number | null
           cover_photo_url?: string | null
           created_at?: string
+          date_of_birth?: string | null
           email?: string
           email_contact?: string | null
           full_name?: string
@@ -863,6 +868,7 @@ export type Database = {
           google_id?: string | null
           id?: string
           instagram_url?: string | null
+          is_profile_complete?: boolean
           last_active_at?: string | null
           linkedin_url?: string | null
           medium_url?: string | null
