@@ -49,6 +49,9 @@ export default defineConfig(({ mode }) => ({
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+          // VitePWA/Workbox defaults to 2 MiB precache limit; our Profile chunk exceeds that.
+          // Increase the limit so production builds/publishing don't fail.
+          maximumFileSizeToCacheInBytes: 12 * 1024 * 1024,
           // Skip waiting and claim clients immediately for faster updates
           skipWaiting: true,
           clientsClaim: true,
