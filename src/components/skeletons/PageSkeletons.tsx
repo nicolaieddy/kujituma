@@ -206,6 +206,77 @@ export const FriendsSkeleton = () => {
   );
 };
 
+export const FeedSkeleton = () => {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-lg" />
+          <Skeleton className="h-8 w-32" />
+        </div>
+        <Skeleton className="h-9 w-28 rounded-md" />
+      </div>
+      <Skeleton className="h-4 w-64 -mt-4 ml-12" />
+
+      {/* Feed posts */}
+      <div className="space-y-4">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <FeedPostSkeleton key={i} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const FeedPostSkeleton = () => {
+  return (
+    <Card className="border-border">
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="space-y-1">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+          </div>
+          <Skeleton className="h-8 w-8 rounded" />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Week info */}
+        <Skeleton className="h-5 w-40" />
+        
+        {/* Progress bar */}
+        <div className="space-y-2">
+          <div className="flex justify-between">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-4 w-12" />
+          </div>
+          <Skeleton className="h-2 w-full rounded-full" />
+        </div>
+
+        {/* Objectives */}
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, j) => (
+            <div key={j} className="flex items-center gap-2">
+              <Skeleton className="h-4 w-4 rounded" />
+              <Skeleton className="h-4 flex-1" />
+            </div>
+          ))}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-4 pt-2 border-t border-border">
+          <Skeleton className="h-8 w-16" />
+          <Skeleton className="h-8 w-20" />
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
 export const AnalyticsSkeleton = () => {
   return (
     <div className="space-y-6">
