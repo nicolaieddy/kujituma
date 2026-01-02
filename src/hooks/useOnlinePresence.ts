@@ -74,16 +74,23 @@ export function useOnlinePresence() {
   return { onlineUsers };
 }
 
-// Admin-only hook to track all online users
+// Admin-only hook to track all online users (also tracks admin's own presence)
 export function useAdminOnlinePresence() {
+  const { user } = useAuth();
   const [onlineUsers, setOnlineUsers] = useState<OnlineUser[]>([]);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
+    if (!user) {
+      setOnlineUsers([]);
+      return;
+    }
+
+    // Use the actual user's ID as the presence key so they show as online
     const channel = supabase.channel('online-users', {
       config: {
         presence: {
-          key: 'admin-listener',
+          key: user.id,
         },
       },
     });
@@ -94,7 +101,6 @@ export function useAdminOnlinePresence() {
         const users: OnlineUser[] = [];
         
         Object.keys(state).forEach((key) => {
-          if (key === 'admin-listener') return; // Skip admin listener itself
           const presences = state[key];
           if (presences && presences.length > 0) {
             users.push(presences[0]);
@@ -104,12 +110,18 @@ export function useAdminOnlinePresence() {
         setOnlineUsers(users);
       })
       .subscribe(async (status) => {
-        // Admin needs to track presence too in order to receive sync events
         if (status === 'SUBSCRIBED') {
+          // Get admin's profile and track their presence
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name, avatar_url')
+            .eq('id', user.id)
+            .single();
+
           await channel.track({
-            id: 'admin-listener',
-            full_name: 'Admin',
-            avatar_url: null,
+            id: user.id,
+            full_name: profile?.full_name || 'Unknown',
+            avatar_url: profile?.avatar_url || null,
             online_at: new Date().toISOString(),
           });
         }
@@ -123,7 +135,7 @@ export function useAdminOnlinePresence() {
         channelRef.current = null;
       }
     };
-  }, []);
+  }, [user]);
 
   return { onlineUsers };
 }
