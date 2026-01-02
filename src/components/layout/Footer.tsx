@@ -5,29 +5,25 @@ export const Footer = () => {
     <footer className="border-t border-border bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-foreground">Kujituma</span>
-            <span className="text-sm text-muted-foreground">
-              © {new Date().getFullYear()}
-            </span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-lg font-semibold text-foreground">Kujituma</span>
+              <span className="text-sm text-muted-foreground">© {new Date().getFullYear()}</span>
+            </div>
+            <span className="text-xs font-mono text-muted-foreground">Build {__BUILD_ID__}</span>
           </div>
-          
-          <div className="flex items-center gap-6 text-sm text-muted-foreground">
-            <Link 
-              to="/privacy" 
-              className="hover:text-foreground transition-colors"
-            >
+
+          <nav className="flex items-center gap-6 text-sm text-muted-foreground" aria-label="Legal">
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
               Privacy Policy
             </Link>
-            <Link 
-              to="/terms" 
-              className="hover:text-foreground transition-colors"
-            >
+            <Link to="/terms" className="hover:text-foreground transition-colors">
               Terms of Service
             </Link>
-          </div>
+          </nav>
         </div>
       </div>
     </footer>
   );
 };
+

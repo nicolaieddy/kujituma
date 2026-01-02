@@ -10,9 +10,14 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  // Build/version stamp (injected at build time) for debugging publish/update issues
+  define: {
+    __BUILD_ID__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     mode === 'development' && componentTagger(),
+
     // Avoid stale UI in the dev preview by disabling the PWA/service worker in development.
     mode !== 'development' &&
       VitePWA({
