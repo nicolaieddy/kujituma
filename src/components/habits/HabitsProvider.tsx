@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { HabitsService } from "@/services/habitsService";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { DailyCheckInButton } from "./DailyCheckInButton";
+import { DailyCheckInDialog } from "./DailyCheckInDialog";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useQuarterlyReview } from "@/hooks/useQuarterlyReview";
@@ -14,7 +15,6 @@ import { subDays } from "date-fns";
 import { useNavigate } from "react-router-dom";
 
 // Lazy load dialog components to reduce initial bundle
-const DailyCheckInDialog = lazy(() => import("./DailyCheckInDialog").then(m => ({ default: m.DailyCheckInDialog })));
 const WeeklyPlanningDialog = lazy(() => import("./WeeklyPlanningDialog").then(m => ({ default: m.WeeklyPlanningDialog })));
 const CloseLastWeekPrompt = lazy(() => import("./CloseLastWeekPrompt").then(m => ({ default: m.CloseLastWeekPrompt })));
 const WeeklyPlanningHistory = lazy(() => import("./WeeklyPlanningHistory").then(m => ({ default: m.WeeklyPlanningHistory })));
