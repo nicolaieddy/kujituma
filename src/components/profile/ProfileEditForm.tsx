@@ -28,6 +28,7 @@ interface Profile {
   cover_photo_url?: string;
   cover_photo_position?: number;
   about_me?: string;
+  date_of_birth?: string;
   linkedin_url?: string;
   instagram_url?: string;
   tiktok_url?: string;
@@ -46,6 +47,7 @@ interface Profile {
   social_links_order?: string[];
   created_at: string;
   last_active_at?: string;
+  is_profile_complete?: boolean;
 }
 
 interface ProfileEditFormProps {
@@ -67,7 +69,7 @@ const extractSocialLinks = (profile: Profile): Record<string, string> => {
 };
 
 export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditFormProps) => {
-  const { user } = useAuth();
+  const { user, isNewUser, markProfileComplete } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -86,6 +88,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     avatar_url: profile.avatar_url || '',
     cover_photo_url: profile.cover_photo_url || '',
     cover_photo_position: profile.cover_photo_position ?? 50,
+    date_of_birth: profile.date_of_birth || '',
   });
 
   // Check if there are unsaved changes
@@ -100,6 +103,7 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       formData.avatar_url !== (profile.avatar_url || '') ||
       formData.cover_photo_url !== (profile.cover_photo_url || '') ||
       formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
+      formData.date_of_birth !== (profile.date_of_birth || '') ||
       linksChanged ||
       orderChanged
     );
@@ -309,6 +313,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           avatar_url: formData.avatar_url,
           cover_photo_url: formData.cover_photo_url,
           cover_photo_position: formData.cover_photo_position,
+          date_of_birth: formData.date_of_birth || null,
+          is_profile_complete: true,
           // Social links
           linkedin_url: socialLinks.linkedin_url || '',
           instagram_url: socialLinks.instagram_url || '',
@@ -340,6 +346,11 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           variant: "destructive",
         });
         return;
+      }
+
+      // Mark profile as complete in auth context
+      if (isNewUser) {
+        markProfileComplete();
       }
 
       toast({
@@ -526,7 +537,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   return (
     <Card className="max-w-2xl mx-auto border-border hover:border-primary/20 transition-all shadow-soft">
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-foreground font-heading text-2xl">Edit Profile</CardTitle>
+        <CardTitle className="text-foreground font-heading text-2xl">
+          {isNewUser ? 'Complete Your Profile' : 'Edit Profile'}
+        </CardTitle>
         <Button
           type="button"
           variant="outline"
@@ -538,6 +551,14 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
         </Button>
       </CardHeader>
       <CardContent>
+        {isNewUser && (
+          <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <h3 className="font-semibold text-foreground mb-1">Welcome to Kujituma!</h3>
+            <p className="text-sm text-muted-foreground">
+              Let's set up your profile. Fill in your details below to get started.
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Cover Photo Section */}
           <div className="space-y-2">
@@ -736,6 +757,23 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 className="min-h-[100px]"
                 placeholder="Tell us about yourself..."
               />
+            </div>
+
+            <div>
+              <Label htmlFor="date_of_birth" className="text-foreground">
+                Date of Birth <span className="text-muted-foreground text-xs">(optional, private)</span>
+              </Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                value={formData.date_of_birth}
+                onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                max={new Date().toISOString().split('T')[0]}
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Your date of birth is kept private and never shown to others.
+              </p>
             </div>
           </div>
 

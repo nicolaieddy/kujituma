@@ -13,13 +13,20 @@ const Auth = () => {
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const { isNewUser } = useAuth();
+  
   useEffect(() => {
-    console.log('Auth page mounted, user:', user, 'loading:', loading);
+    console.log('Auth page mounted, user:', user, 'loading:', loading, 'isNewUser:', isNewUser);
     if (user) {
-      console.log('User detected, redirecting to community');
-      navigate('/community');
+      if (isNewUser) {
+        console.log('New user detected, redirecting to profile');
+        navigate('/profile');
+      } else {
+        console.log('User detected, redirecting to community');
+        navigate('/community');
+      }
     }
-  }, [user, navigate]);
+  }, [user, isNewUser, navigate]);
 
   const handleGoogleSignIn = async () => {
     try {
