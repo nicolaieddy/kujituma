@@ -7,17 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus } from "lucide-react";
+import { User, Upload, Save, X, Move, Trash2, RotateCcw, Eye, Edit3, Users, Globe, Plus, ImagePlus, Calendar, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { Switch } from "@/components/ui/switch";
 import { CoverPhotoPositioner } from "./CoverPhotoPositioner";
 import { ProfileStats } from "./ProfileStats";
 import { ProfileGoals } from "./ProfileGoals";
 import { SocialLinkPicker, SOCIAL_PLATFORMS } from "./SocialLinkPicker";
 import { SocialLinksDisplay } from "./SocialLinksDisplay";
-import { Calendar, Clock } from "lucide-react";
+import { CountrySelect } from "@/components/ui/country-select";
 import { formatTimeAgo } from "@/utils/timeUtils";
 
 interface Profile {
@@ -835,11 +833,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 Location <span className="text-muted-foreground text-xs">(optional)</span>
               </Label>
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  id="country"
+                <CountrySelect
                   value={formData.country}
-                  onChange={(e) => handleInputChange('country', e.target.value)}
-                  placeholder="Country"
+                  onChange={(value) => handleInputChange('country', value)}
                 />
                 <Input
                   id="city"
