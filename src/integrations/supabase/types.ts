@@ -795,6 +795,8 @@ export type Database = {
         Row: {
           about_me: string | null
           avatar_url: string | null
+          city: string | null
+          country: string | null
           cover_photo_position: number | null
           cover_photo_url: string | null
           created_at: string
@@ -826,6 +828,8 @@ export type Database = {
         Insert: {
           about_me?: string | null
           avatar_url?: string | null
+          city?: string | null
+          country?: string | null
           cover_photo_position?: number | null
           cover_photo_url?: string | null
           created_at?: string
@@ -857,6 +861,8 @@ export type Database = {
         Update: {
           about_me?: string | null
           avatar_url?: string | null
+          city?: string | null
+          country?: string | null
           cover_photo_position?: number | null
           cover_photo_url?: string | null
           created_at?: string
