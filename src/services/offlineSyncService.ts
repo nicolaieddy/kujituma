@@ -1,5 +1,6 @@
 import { get, set, del } from 'idb-keyval';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface QueuedMutation {
   id: string;
@@ -78,7 +79,6 @@ class OfflineSyncService {
     this.notifyListeners();
     console.log(`Processing ${queue.length} queued mutations...`);
 
-    const { supabase } = await import('@/integrations/supabase/client');
     const failedMutations: QueuedMutation[] = [];
 
     for (const mutation of queue) {
