@@ -63,10 +63,34 @@ export const useNotifications = () => {
     let channel: any;
     
     const setupChannel = async () => {
-      channel = await notificationsService.subscribeToNotifications((newNotification) => {
-        setNotifications(prev => [newNotification, ...prev]);
-        setUnreadCount(prev => prev + 1);
-      });
+      channel = await notificationsService.subscribeToNotifications(
+        // Handle new notifications
+        (newNotification) => {
+          setNotifications(prev => {
+            // Avoid duplicates
+            if (prev.some(n => n.id === newNotification.id)) {
+              return prev;
+            }
+            return [newNotification, ...prev];
+          });
+          setUnreadCount(prev => prev + 1);
+        },
+        // Handle updates (e.g., marked as read on another device)
+        (updatedNotification) => {
+          setNotifications(prev => 
+            prev.map(n => n.id === updatedNotification.id 
+              ? { ...n, is_read: updatedNotification.is_read } 
+              : n
+            )
+          );
+          // Recalculate unread count on update
+          setNotifications(prev => {
+            const newUnreadCount = prev.filter(n => !n.is_read).length;
+            setUnreadCount(newUnreadCount);
+            return prev;
+          });
+        }
+      );
     };
     
     setupChannel();
