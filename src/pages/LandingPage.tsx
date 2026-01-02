@@ -1,5 +1,6 @@
 import { LandingHero } from "@/components/landing/LandingHero";
 import { LandingFeatures } from "@/components/landing/LandingFeatures";
+import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
@@ -11,7 +12,7 @@ const LandingPage = () => {
   };
   
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Navigation - Fixed over hero */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -29,11 +30,13 @@ const LandingPage = () => {
       </nav>
 
       {/* Main Content */}
-      <main>
+      <main className="flex-1">
         <LandingHero />
         <LandingFeatures />
       </main>
 
+      {/* Footer */}
+      <Footer />
     </div>
   );
 };
