@@ -76,12 +76,15 @@ class NotificationsService {
     if (error) throw error;
   }
 
-  async subscribeToNotifications(callback: (notification: Notification) => void) {
+  async subscribeToNotifications(
+    onInsert: (notification: Notification) => void,
+    onUpdate?: (notification: Notification) => void
+  ) {
     const user = await this.getCurrentUser();
     if (!user) return null;
 
     const channel = supabase
-      .channel('notifications')
+      .channel('notifications-realtime')
       .on(
         'postgres_changes',
         {
@@ -90,8 +93,35 @@ class NotificationsService {
           table: 'notifications',
           filter: `user_id=eq.${user.id}`
         },
+        async (payload) => {
+          const newNotification = payload.new as Notification;
+          
+          // Fetch the triggered_by profile
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('id, full_name, avatar_url')
+            .eq('id', newNotification.triggered_by_user_id)
+            .single();
+          
+          onInsert({
+            ...newNotification,
+            type: newNotification.type as Notification['type'],
+            triggered_by: profile || null
+          } as Notification);
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
         (payload) => {
-          callback(payload.new as Notification);
+          if (onUpdate) {
+            onUpdate(payload.new as Notification);
+          }
         }
       )
       .subscribe();
