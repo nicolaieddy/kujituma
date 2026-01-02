@@ -29,6 +29,8 @@ interface Profile {
   cover_photo_position?: number;
   about_me?: string;
   date_of_birth?: string;
+  country?: string;
+  city?: string;
   linkedin_url?: string;
   instagram_url?: string;
   tiktok_url?: string;
@@ -89,6 +91,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
     cover_photo_url: profile.cover_photo_url || '',
     cover_photo_position: profile.cover_photo_position ?? 50,
     date_of_birth: profile.date_of_birth || '',
+    country: profile.country || '',
+    city: profile.city || '',
   });
 
   // Check if there are unsaved changes
@@ -104,10 +108,31 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
       formData.cover_photo_url !== (profile.cover_photo_url || '') ||
       formData.cover_photo_position !== (profile.cover_photo_position ?? 50) ||
       formData.date_of_birth !== (profile.date_of_birth || '') ||
+      formData.country !== (profile.country || '') ||
+      formData.city !== (profile.city || '') ||
       linksChanged ||
       orderChanged
     );
   }, [formData, profile, socialLinks, socialLinksOrder]);
+
+  // Calculate profile completion percentage
+  const profileCompletion = useMemo(() => {
+    const fields = [
+      { name: 'Photo', filled: !!formData.avatar_url },
+      { name: 'Cover', filled: !!formData.cover_photo_url },
+      { name: 'Name', filled: !!formData.full_name },
+      { name: 'About', filled: !!formData.about_me },
+      { name: 'Birthday', filled: !!formData.date_of_birth },
+      { name: 'Location', filled: !!(formData.country || formData.city) },
+      { name: 'Social links', filled: Object.keys(socialLinks).length > 0 },
+    ];
+    
+    const filledCount = fields.filter(f => f.filled).length;
+    const percentage = Math.round((filledCount / fields.length) * 100);
+    const missing = fields.filter(f => !f.filled).map(f => f.name);
+    
+    return { percentage, missing, total: fields.length, filled: filledCount };
+  }, [formData, socialLinks]);
 
   // Warn before browser navigation with unsaved changes
   useEffect(() => {
@@ -314,6 +339,8 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
           cover_photo_url: formData.cover_photo_url,
           cover_photo_position: formData.cover_photo_position,
           date_of_birth: formData.date_of_birth || null,
+          country: formData.country || null,
+          city: formData.city || null,
           is_profile_complete: true,
           // Social links
           linkedin_url: socialLinks.linkedin_url || '',
@@ -551,6 +578,27 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
         </Button>
       </CardHeader>
       <CardContent>
+        {/* Profile Completion Indicator */}
+        {profileCompletion.percentage < 100 && (
+          <div className="mb-6 p-4 bg-accent/50 border border-border rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-foreground">Profile Completion</span>
+              <span className="text-sm font-semibold text-primary">{profileCompletion.percentage}%</span>
+            </div>
+            <div className="h-2 bg-muted rounded-full overflow-hidden mb-2">
+              <div 
+                className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
+                style={{ width: `${profileCompletion.percentage}%` }}
+              />
+            </div>
+            {profileCompletion.missing.length > 0 && (
+              <p className="text-xs text-muted-foreground">
+                Add {profileCompletion.missing.slice(0, 3).join(', ')}{profileCompletion.missing.length > 3 ? ` and ${profileCompletion.missing.length - 3} more` : ''} to complete your profile
+              </p>
+            )}
+          </div>
+        )}
+
         {isNewUser && (
           <div className="mb-6 p-4 bg-primary/10 border border-primary/20 rounded-lg">
             <h3 className="font-semibold text-foreground mb-1">Welcome to Kujituma!</h3>
@@ -773,6 +821,34 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Your date of birth is kept private and never shown to others.
+              </p>
+            </div>
+
+            {/* Location Section */}
+            <div className="space-y-3">
+              <Label className="text-foreground">
+                Location <span className="text-muted-foreground text-xs">(optional, private)</span>
+              </Label>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Input
+                    id="country"
+                    value={formData.country}
+                    onChange={(e) => handleInputChange('country', e.target.value)}
+                    placeholder="Country"
+                  />
+                </div>
+                <div>
+                  <Input
+                    id="city"
+                    value={formData.city}
+                    onChange={(e) => handleInputChange('city', e.target.value)}
+                    placeholder="City"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your location is kept private and never shown to others.
               </p>
             </div>
           </div>
