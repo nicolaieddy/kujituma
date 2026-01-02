@@ -26,6 +26,7 @@ interface AdminUser {
 
 interface UsersOverviewProps {
   users: AdminUser[];
+  onUserDeleted?: (userId: string) => void;
 }
 
 type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at' | 'total_time_seconds' | 'days_active' | 'engagement';
@@ -50,7 +51,7 @@ const formatNumber = (num: number): string => {
   return num.toString();
 };
 
-const UsersOverview = ({ users }: UsersOverviewProps) => {
+const UsersOverview = ({ users, onUserDeleted }: UsersOverviewProps) => {
   const [sortKey, setSortKey] = useState<SortKey>('last_active_at');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -251,6 +252,7 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
         user={selectedUser}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
+        onUserDeleted={onUserDeleted}
       />
     </>
   );
