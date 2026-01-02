@@ -103,7 +103,17 @@ export function useAdminOnlinePresence() {
         
         setOnlineUsers(users);
       })
-      .subscribe();
+      .subscribe(async (status) => {
+        // Admin needs to track presence too in order to receive sync events
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            id: 'admin-listener',
+            full_name: 'Admin',
+            avatar_url: null,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
 
     channelRef.current = channel;
 
