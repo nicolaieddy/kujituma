@@ -16,6 +16,8 @@ import { ProfileGoals } from "./ProfileGoals";
 import { SocialLinkPicker, SOCIAL_PLATFORMS } from "./SocialLinkPicker";
 import { SocialLinksDisplay } from "./SocialLinksDisplay";
 import { CountrySelect } from "@/components/ui/country-select";
+import { CitySelect } from "@/components/ui/city-select";
+import { Country } from "country-state-city";
 import { formatTimeAgo } from "@/utils/timeUtils";
 
 interface Profile {
@@ -82,18 +84,32 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
   const [isDraggingCover, setIsDraggingCover] = useState(false);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>(() => extractSocialLinks(profile));
   const [socialLinksOrder, setSocialLinksOrder] = useState<string[]>(() => profile.social_links_order || []);
-  const [formData, setFormData] = useState({
-    full_name: profile.full_name || '',
-    about_me: profile.about_me || '',
-    avatar_url: profile.avatar_url || '',
-    cover_photo_url: profile.cover_photo_url || '',
-    cover_photo_position: profile.cover_photo_position ?? 50,
-    date_of_birth: profile.date_of_birth || '',
-    country: profile.country || '',
-    city: profile.city || '',
+  const [formData, setFormData] = useState(() => {
+    // Find country code from country name
+    const countries = Country.getAllCountries();
+    const existingCountry = countries.find(c => c.name === profile.country);
+    return {
+      full_name: profile.full_name || '',
+      about_me: profile.about_me || '',
+      avatar_url: profile.avatar_url || '',
+      cover_photo_url: profile.cover_photo_url || '',
+      cover_photo_position: profile.cover_photo_position ?? 50,
+      date_of_birth: profile.date_of_birth || '',
+      country: profile.country || '',
+      countryCode: existingCountry?.isoCode || '',
+      city: profile.city || '',
+    };
   });
 
-  // Check if there are unsaved changes
+  // Handle country change - clear city when country changes
+  const handleCountryChange = (countryName: string, countryCode: string) => {
+    setFormData(prev => ({
+      ...prev,
+      country: countryName,
+      countryCode: countryCode,
+      city: countryName !== prev.country ? '' : prev.city, // Clear city if country changed
+    }));
+  };
   const hasUnsavedChanges = useMemo(() => {
     const originalLinks = extractSocialLinks(profile);
     const linksChanged = JSON.stringify(socialLinks) !== JSON.stringify(originalLinks);
@@ -835,13 +851,12 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
               <div className="grid grid-cols-2 gap-3">
                 <CountrySelect
                   value={formData.country}
-                  onChange={(value) => handleInputChange('country', value)}
+                  onChange={handleCountryChange}
                 />
-                <Input
-                  id="city"
+                <CitySelect
                   value={formData.city}
-                  onChange={(e) => handleInputChange('city', e.target.value)}
-                  placeholder="City"
+                  onChange={(value) => handleInputChange('city', value)}
+                  countryCode={formData.countryCode}
                 />
               </div>
             </div>
