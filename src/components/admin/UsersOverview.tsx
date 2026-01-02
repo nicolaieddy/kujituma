@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { User, ArrowUpDown, ArrowUp, ArrowDown, Circle } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import UserDetailDrawer from "./UserDetailDrawer";
-import { useAdminOnlinePresence } from "@/hooks/useOnlinePresence";
+import { useOnlinePresence } from "@/hooks/useOnlinePresence";
 
 interface AdminUser {
   id: string;
@@ -56,8 +56,8 @@ const UsersOverview = ({ users }: UsersOverviewProps) => {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   
-  const { onlineUsers } = useAdminOnlinePresence();
-  const onlineUserIds = new Set(onlineUsers.map(u => u.id));
+  const { onlineUsers } = useOnlinePresence();
+  const onlineUserIds = new Set(onlineUsers.map((u) => u.id));
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) {
