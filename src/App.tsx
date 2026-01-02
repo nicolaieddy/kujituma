@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { HabitsProvider } from "@/components/habits/HabitsProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
@@ -17,6 +17,22 @@ import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense, useEffect } from "react";
 import { GoalsService } from "@/services/goalsService";
 import { Skeleton } from "@/components/ui/skeleton";
+
+// Wrapper to redirect new users to profile setup
+const RequireProfileComplete = ({ children }: { children: React.ReactNode }) => {
+  const { user, isNewUser, loading } = useAuth();
+  const location = useLocation();
+  
+  // Don't redirect while loading or if not authenticated
+  if (loading || !user) return <>{children}</>;
+  
+  // Redirect new users to profile page (except if already on profile or auth pages)
+  if (isNewUser && !location.pathname.startsWith('/profile') && location.pathname !== '/auth') {
+    return <Navigate to="/profile?setup=true" replace />;
+  }
+  
+  return <>{children}</>;
+};
 
 // Lazy load pages for better performance
 const Feed = lazy(() => import("./pages/Feed"));
@@ -152,25 +168,27 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
   usePrefetchGoals(queryClient);
 
   return (
-    <Suspense fallback={<LoadingSpinner />}>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/community" element={<Feed />} />
-        <Route path="/goals" element={<Goals />} />
-        <Route path="/friends" element={<Friends />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/profile/:userId" element={<Profile />} />
-        <Route path="/rituals" element={<Rituals />} />
-        <Route path="/install" element={<Install />} />
-        <Route path="/debug" element={<Debug />} />
-        <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
-        <Route path="/partner/:partnerId/check-ins" element={<CheckInHistory />} />
-        <Route path="*" element={<Feed />} />
-      </Routes>
-    </Suspense>
+    <RequireProfileComplete>
+      <Suspense fallback={<LoadingSpinner />}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/community" element={<Feed />} />
+          <Route path="/goals" element={<Goals />} />
+          <Route path="/friends" element={<Friends />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/auth" element={<Auth />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="/profile/:userId" element={<Profile />} />
+          <Route path="/rituals" element={<Rituals />} />
+          <Route path="/install" element={<Install />} />
+          <Route path="/debug" element={<Debug />} />
+          <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
+          <Route path="/partner/:partnerId/check-ins" element={<CheckInHistory />} />
+          <Route path="*" element={<Feed />} />
+        </Routes>
+      </Suspense>
+    </RequireProfileComplete>
   );
 };
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -41,15 +41,19 @@ interface PartnershipStatus {
 }
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isNewUser, markProfileComplete } = useAuth();
   const navigate = useNavigate();
   const { userId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAdmin } = useAdminStatus();
   const { isOffline } = useOfflineStatus();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>({ is_friend: false });
   const [partnershipStatus, setPartnershipStatus] = useState<PartnershipStatus>({ is_partner: false });
-  const [isEditing, setIsEditing] = useState(false);
+  
+  // Auto-enter edit mode for new users or when setup=true param is present
+  const isSetupMode = searchParams.get('setup') === 'true';
+  const [isEditing, setIsEditing] = useState(isSetupMode || isNewUser);
   const [loading, setLoading] = useState(true);
   
   // Determine if viewing own profile or someone else's
@@ -179,6 +183,12 @@ const Profile = () => {
   const handleProfileUpdate = (updatedProfile: Profile) => {
     setProfile(updatedProfile);
     setIsEditing(false);
+    
+    // Clear setup param and mark profile complete if this was initial setup
+    if (isSetupMode || isNewUser) {
+      setSearchParams({}, { replace: true });
+      markProfileComplete();
+    }
   };
 
   if (!user && isOwnProfile) {
