@@ -1280,6 +1280,7 @@ export type Database = {
         Args: { _user_id: string; _week_start: string }
         Returns: number
       }
+      delete_user_gdpr: { Args: { target_user_id: string }; Returns: boolean }
       end_session: { Args: { _session_token: string }; Returns: boolean }
       get_accountability_groups: {
         Args: never

@@ -111,7 +111,8 @@ const Admin = () => {
     isAdmin,
     togglePostVisibility,
     deletePost,
-    refreshMonthlyData
+    refreshMonthlyData,
+    handleUserDeleted
   } = useAdminData();
 
   const handleSignOut = async () => {
@@ -197,7 +198,7 @@ const Admin = () => {
                 monthlyData={analytics.monthlyData}
                 onMonthRangeChange={refreshMonthlyData}
               />
-              <UsersOverview users={users} />
+              <UsersOverview users={users} onUserDeleted={handleUserDeleted} />
             </Suspense>
           </TabsContent>
         </Tabs>

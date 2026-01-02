@@ -7,11 +7,25 @@ import {
 } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Clock, Calendar, Activity, MousePointerClick } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { User, Clock, Calendar, Activity, MousePointerClick, Trash2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
+import { useToast } from "@/hooks/use-toast";
 
 interface AdminUser {
   id: string;
@@ -44,6 +58,7 @@ interface UserDetailDrawerProps {
   user: AdminUser | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onUserDeleted?: (userId: string) => void;
 }
 
 const formatDuration = (seconds: number): string => {
@@ -56,9 +71,13 @@ const formatDuration = (seconds: number): string => {
   return `${minutes}m`;
 };
 
-const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) => {
+const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetailDrawerProps) => {
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user && open) {
@@ -86,6 +105,38 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
     }
   };
 
+  const handleDeleteUser = async () => {
+    if (!user || deleteConfirmation !== user.email) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase.rpc('delete_user_gdpr', {
+        target_user_id: user.id
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "User deleted",
+        description: `${user.full_name}'s account and all data have been permanently deleted.`,
+      });
+
+      setShowDeleteDialog(false);
+      setDeleteConfirmation("");
+      onOpenChange(false);
+      onUserDeleted?.(user.id);
+    } catch (error: any) {
+      console.error("Error deleting user:", error);
+      toast({
+        title: "Failed to delete user",
+        description: error.message || "An error occurred while deleting the user.",
+        variant: "destructive",
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   // Calculate time breakdown by day
   const timeByDay = sessions.reduce((acc, session) => {
     const day = format(new Date(session.started_at), "yyyy-MM-dd");
@@ -105,6 +156,8 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
   const activeSessions = sessions.filter(s => !s.ended_at).length;
 
   if (!user) return null;
+
+  const isDeleteEnabled = deleteConfirmation === user.email;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -282,9 +335,90 @@ const UserDetailDrawer = ({ user, open, onOpenChange }: UserDetailDrawerProps) =
             <p className="text-xs text-muted-foreground text-center">
               Time is only tracked when the app tab is in foreground (actively viewing).
             </p>
+
+            {/* GDPR Delete Section */}
+            {user.role !== 'admin' && (
+              <Card className="border-destructive/50 bg-destructive/5">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-destructive flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4" />
+                    Danger Zone
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    Permanently delete this user and all their data. This action cannot be undone and is required for GDPR compliance.
+                  </p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="w-full"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete User & All Data
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
         )}
       </SheetContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
+        setShowDeleteDialog(open);
+        if (!open) setDeleteConfirmation("");
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Delete User Permanently
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  You are about to permanently delete <strong>{user.full_name}</strong> and all their data. This includes:
+                </p>
+                <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
+                  <li>Profile and account information</li>
+                  <li>All goals, objectives, and habits</li>
+                  <li>All posts, comments, and likes</li>
+                  <li>Friendships and partnerships</li>
+                  <li>Check-ins, planning sessions, and reviews</li>
+                  <li>All session and analytics data</li>
+                </ul>
+                <p className="font-medium text-destructive">
+                  This action cannot be undone.
+                </p>
+                <div className="space-y-2">
+                  <Label htmlFor="delete-confirmation" className="text-sm">
+                    Type <strong>{user.email}</strong> to confirm:
+                  </Label>
+                  <Input
+                    id="delete-confirmation"
+                    value={deleteConfirmation}
+                    onChange={(e) => setDeleteConfirmation(e.target.value)}
+                    placeholder="Enter user's email"
+                    className="font-mono"
+                  />
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={!isDeleteEnabled || deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? "Deleting..." : "Delete Permanently"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Sheet>
   );
 };

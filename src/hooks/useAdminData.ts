@@ -300,6 +300,16 @@ export const useAdminData = () => {
     setAnalytics(prev => ({ ...prev, monthlyData }));
   };
 
+  const handleUserDeleted = (userId: string) => {
+    // Remove user from local state
+    setUsers(prevUsers => prevUsers.filter(u => u.id !== userId));
+    // Update analytics
+    setAnalytics(prev => ({
+      ...prev,
+      totalUsers: Math.max(0, prev.totalUsers - 1)
+    }));
+  };
+
   return {
     posts,
     users,
@@ -308,6 +318,7 @@ export const useAdminData = () => {
     isAdmin,
     togglePostVisibility,
     deletePost,
-    refreshMonthlyData
+    refreshMonthlyData,
+    handleUserDeleted
   };
 };
