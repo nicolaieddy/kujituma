@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTosAcceptance } from '@/hooks/useTosAcceptance';
 import { TosAcceptanceModal } from './TosAcceptanceModal';
@@ -10,10 +10,30 @@ interface TosGateProps {
 
 export const TosGate = ({ children }: TosGateProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { hasAcceptedCurrentTos, loading: tosLoading, acceptTos, latestAcceptance } = useTosAcceptance();
+  const { hasAcceptedCurrentTos, loading: tosLoading, acceptTos, latestAcceptance, refetch } = useTosAcceptance();
+  const [pendingSignupTos, setPendingSignupTos] = useState(false);
+
+  // Check if there's a pending ToS acceptance from signup flow
+  useEffect(() => {
+    const tosVersion = sessionStorage.getItem('tos_accepted_during_signup');
+    if (tosVersion) {
+      setPendingSignupTos(true);
+      // Wait a moment for Auth.tsx to record the acceptance, then refetch
+      const timeout = setTimeout(() => {
+        refetch();
+        setPendingSignupTos(false);
+      }, 1500);
+      return () => clearTimeout(timeout);
+    }
+  }, [user, refetch]);
 
   // Don't gate if not authenticated
   if (!user) {
+    return <>{children}</>;
+  }
+
+  // If there's a pending ToS acceptance from signup, skip the modal
+  if (pendingSignupTos) {
     return <>{children}</>;
   }
 
