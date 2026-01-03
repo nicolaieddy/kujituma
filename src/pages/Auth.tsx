@@ -3,15 +3,20 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { supabase } from '@/integrations/supabase/client';
+import { CURRENT_TOS_VERSION } from '@/constants/tosVersion';
 
 const Auth = () => {
   const navigate = useNavigate();
   const { user, signInWithGoogle, loading } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tosAccepted, setTosAccepted] = useState(false);
 
   const { isNewUser } = useAuth();
   
@@ -29,17 +34,51 @@ const Auth = () => {
   }, [user, isNewUser, navigate]);
 
   const handleGoogleSignIn = async () => {
+    if (!tosAccepted) {
+      setError('Please accept the Terms of Service and Privacy Policy to continue');
+      return;
+    }
+    
     try {
       console.log('Starting Google sign in...');
       setSigningIn(true);
       setError(null);
+      
+      // Store in sessionStorage that user accepted ToS during signup
+      // This will be used after OAuth redirect to record acceptance
+      sessionStorage.setItem('tos_accepted_during_signup', CURRENT_TOS_VERSION);
+      
       await signInWithGoogle();
     } catch (error) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred during sign in');
       setSigningIn(false);
+      sessionStorage.removeItem('tos_accepted_during_signup');
     }
   };
+  
+  // Handle ToS acceptance after OAuth redirect
+  useEffect(() => {
+    const recordTosAcceptance = async () => {
+      const tosVersion = sessionStorage.getItem('tos_accepted_during_signup');
+      if (user && tosVersion) {
+        sessionStorage.removeItem('tos_accepted_during_signup');
+        try {
+          await (supabase
+            .from('tos_acceptances' as any)
+            .insert({
+              user_id: user.id,
+              tos_version: tosVersion,
+              user_agent: navigator.userAgent
+            }) as unknown as Promise<{ error: any }>);
+        } catch (error) {
+          console.error('Error recording ToS acceptance:', error);
+        }
+      }
+    };
+    
+    recordTosAcceptance();
+  }, [user]);
 
   if (loading) {
     return (
@@ -76,9 +115,42 @@ const Auth = () => {
             </div>
           )}
           
+          <div className="flex items-start space-x-3 bg-muted/50 rounded-lg p-4">
+            <Checkbox
+              id="accept-tos"
+              checked={tosAccepted}
+              onCheckedChange={(checked) => setTosAccepted(checked === true)}
+              disabled={signingIn}
+              className="mt-0.5"
+            />
+            <Label 
+              htmlFor="accept-tos" 
+              className="text-sm leading-relaxed cursor-pointer"
+            >
+              I agree to the{" "}
+              <a 
+                href="/terms" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground transition-colors font-medium"
+              >
+                Terms of Service
+              </a>{" "}
+              and{" "}
+              <a 
+                href="/privacy" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="underline hover:text-foreground transition-colors font-medium"
+              >
+                Privacy Policy
+              </a>
+            </Label>
+          </div>
+
           <Button
             onClick={handleGoogleSignIn}
-            disabled={signingIn}
+            disabled={signingIn || !tosAccepted}
             className="w-full h-12 flex items-center justify-center space-x-3 text-base"
           >
             {signingIn ? (
@@ -108,16 +180,6 @@ const Auth = () => {
             )}
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground pt-2">
-            By continuing, you agree to our{" "}
-            <a href="/terms" className="underline hover:text-foreground transition-colors">
-              Terms of Service
-            </a>{" "}
-            and{" "}
-            <a href="/privacy" className="underline hover:text-foreground transition-colors">
-              Privacy Policy
-            </a>
-          </p>
         </CardContent>
       </Card>
     </div>

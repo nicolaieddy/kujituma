@@ -1330,6 +1330,8 @@ export type Database = {
           last_active_at: string
           posts_count: number
           role: string
+          tos_accepted_at: string
+          tos_version: string
           total_clicks: number
           total_keypresses: number
           total_scrolls: number

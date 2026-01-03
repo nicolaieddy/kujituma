@@ -22,10 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { User, Clock, Calendar, Activity, MousePointerClick, Trash2, AlertTriangle } from "lucide-react";
+import { User, Clock, Calendar, Activity, MousePointerClick, Trash2, AlertTriangle, FileCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { CURRENT_TOS_VERSION } from "@/constants/tosVersion";
 
 interface AdminUser {
   id: string;
@@ -41,6 +42,8 @@ interface AdminUser {
   total_clicks?: number;
   total_scrolls?: number;
   total_keypresses?: number;
+  tos_accepted_at?: string;
+  tos_version?: string;
 }
 
 interface UserSession {
@@ -232,6 +235,48 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
               <span className="text-muted-foreground">Key presses</span>
               <span className="font-medium">{(user.total_keypresses || 0).toLocaleString()}</span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* ToS Acceptance */}
+        <Card className="border-border mb-6">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <FileCheck className="h-4 w-4" />
+              Terms of Service
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Status</span>
+              {user.tos_accepted_at ? (
+                <Badge variant="default" className="bg-green-600">Accepted</Badge>
+              ) : (
+                <Badge variant="destructive">Not Accepted</Badge>
+              )}
+            </div>
+            {user.tos_accepted_at && (
+              <>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Accepted At</span>
+                  <span className="font-medium">
+                    {format(new Date(user.tos_accepted_at), "MMM d, yyyy h:mm a")}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Version</span>
+                  <span className="font-medium">
+                    v{user.tos_version}
+                    {user.tos_version === CURRENT_TOS_VERSION && (
+                      <span className="text-green-600 ml-1">(current)</span>
+                    )}
+                    {user.tos_version && user.tos_version !== CURRENT_TOS_VERSION && (
+                      <span className="text-amber-600 ml-1">(outdated)</span>
+                    )}
+                  </span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 

@@ -34,6 +34,8 @@ interface AdminUser {
   total_clicks?: number;
   total_scrolls?: number;
   total_keypresses?: number;
+  tos_accepted_at?: string;
+  tos_version?: string;
 }
 
 interface MonthlyData {
