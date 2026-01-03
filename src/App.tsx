@@ -9,6 +9,7 @@ import { HabitsProvider } from "@/components/habits/HabitsProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { RoutableErrorBoundary } from "@/components/errors/RoutableErrorBoundary";
+import { TosGate } from "@/components/auth/TosGate";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
@@ -216,12 +217,14 @@ const App = () => {
         <OfflineIndicator />
         <BrowserRouter>
           <AuthProvider>
-            <HabitsProvider>
-              <RoutableErrorBoundary>
-                <AppContent queryClient={queryClient} />
-              </RoutableErrorBoundary>
-              <InstallPrompt />
-            </HabitsProvider>
+            <TosGate>
+              <HabitsProvider>
+                <RoutableErrorBoundary>
+                  <AppContent queryClient={queryClient} />
+                </RoutableErrorBoundary>
+                <InstallPrompt />
+              </HabitsProvider>
+            </TosGate>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

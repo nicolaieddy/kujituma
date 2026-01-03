@@ -22,6 +22,8 @@ interface AdminUser {
   total_clicks?: number;
   total_scrolls?: number;
   total_keypresses?: number;
+  tos_accepted_at?: string;
+  tos_version?: string;
 }
 
 interface UsersOverviewProps {
@@ -29,7 +31,7 @@ interface UsersOverviewProps {
   onUserDeleted?: (userId: string) => void;
 }
 
-type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at' | 'total_time_seconds' | 'days_active' | 'engagement';
+type SortKey = 'full_name' | 'email' | 'role' | 'posts_count' | 'last_active_at' | 'created_at' | 'total_time_seconds' | 'days_active' | 'engagement' | 'tos_accepted_at';
 type SortDirection = 'asc' | 'desc';
 
 const formatDuration = (seconds: number): string => {
@@ -120,6 +122,10 @@ const UsersOverview = ({ users, onUserDeleted }: UsersOverviewProps) => {
           aVal = getEngagementScore(a);
           bVal = getEngagementScore(b);
           break;
+        case 'tos_accepted_at':
+          aVal = a.tos_accepted_at ? new Date(a.tos_accepted_at).getTime() : 0;
+          bVal = b.tos_accepted_at ? new Date(b.tos_accepted_at).getTime() : 0;
+          break;
       }
 
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -176,6 +182,7 @@ const UsersOverview = ({ users, onUserDeleted }: UsersOverviewProps) => {
                     <SortableHeader label="Posts" sortKeyName="posts_count" />
                     <SortableHeader label="Time" sortKeyName="total_time_seconds" />
                     <SortableHeader label="Engagement" sortKeyName="engagement" />
+                    <SortableHeader label="ToS Accepted" sortKeyName="tos_accepted_at" />
                     <SortableHeader label="Last Active" sortKeyName="last_active_at" />
                   </TableRow>
                 </TableHeader>
@@ -229,6 +236,20 @@ const UsersOverview = ({ users, onUserDeleted }: UsersOverviewProps) => {
                               {formatNumber(user.total_clicks || 0)}c / {formatNumber(user.total_scrolls || 0)}s / {formatNumber(user.total_keypresses || 0)}k
                             </span>
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {user.tos_accepted_at ? (
+                            <div className="flex flex-col text-xs">
+                              <span className="text-foreground">
+                                {new Date(user.tos_accepted_at).toLocaleDateString()}
+                              </span>
+                              <span className="text-muted-foreground">
+                                v{user.tos_version || '?'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-destructive text-sm">Not accepted</span>
+                          )}
                         </TableCell>
                         <TableCell>
                           <span className="text-muted-foreground text-sm">
