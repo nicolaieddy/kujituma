@@ -54,9 +54,11 @@ export const useGoalUpdates = (options: UseGoalUpdatesOptions = {}) => {
     }
   }, [user, feedType, goalId, offset]);
 
+  // Refetch when dependencies change - use a stable key for the effect
   useEffect(() => {
+    setOffset(0);
     fetchUpdates(true);
-  }, [user, feedType, goalId]);
+  }, [user?.id, feedType, goalId]);
 
   const loadMore = useCallback(() => {
     if (!loading && hasMore) {

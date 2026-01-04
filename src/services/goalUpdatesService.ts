@@ -1,6 +1,22 @@
 import { supabase } from '@/integrations/supabase/client';
 import { GoalUpdate, GoalUpdateCheer, GoalUpdateComment, CheerType, ObjectiveSnapshot, UpdateType, MilestoneType } from '@/types/goalUpdates';
 
+interface WeeklyObjective {
+  id: string;
+  text: string;
+  is_completed: boolean;
+  goal_id: string | null;
+}
+
+interface GoalProgressSummary {
+  goal_id: string;
+  goal_title: string;
+  objectives: ObjectiveSnapshot[];
+  completedCount: number;
+  totalCount: number;
+  completionPercent: number;
+}
+
 export const GoalUpdatesService = {
   async getFeedUpdates(options: {
     feedType: 'all' | 'following';
@@ -263,5 +279,147 @@ export const GoalUpdatesService = {
     if (objectives.length === 0) return 0;
     const completed = objectives.filter(o => o.is_completed).length;
     return Math.round((completed / objectives.length) * 100);
+  },
+
+  // Determine milestone type based on completion percentage
+  determineMilestone(currentPercent: number, previousPercent: number): MilestoneType | null {
+    if (currentPercent >= 100 && previousPercent < 100) return 'completed';
+    if (currentPercent >= 75 && previousPercent < 75) return '75_percent';
+    if (currentPercent >= 50 && previousPercent < 50) return '50_percent';
+    if (currentPercent >= 25 && previousPercent < 25) return '25_percent';
+    return null;
+  },
+
+  // Create goal updates from weekly objectives when sharing a week
+  async createGoalUpdatesFromWeeklyShare(params: {
+    userId: string;
+    weekStart: string;
+    objectives: WeeklyObjective[];
+    weeklyReflection?: string;
+  }): Promise<GoalUpdate[]> {
+    const { userId, weekStart, objectives, weeklyReflection } = params;
+    
+    // Group objectives by goal
+    const goalGroups = new Map<string, { objectives: WeeklyObjective[]; goalId: string }>();
+    
+    for (const obj of objectives) {
+      if (obj.goal_id) {
+        const existing = goalGroups.get(obj.goal_id) || { objectives: [], goalId: obj.goal_id };
+        existing.objectives.push(obj);
+        goalGroups.set(obj.goal_id, existing);
+      }
+    }
+
+    if (goalGroups.size === 0) {
+      console.log('[GoalUpdatesService] No objectives linked to goals, skipping goal updates');
+      return [];
+    }
+
+    // Fetch goal titles
+    const goalIds = Array.from(goalGroups.keys());
+    const { data: goals } = await supabase
+      .from('goals')
+      .select('id, title, status')
+      .in('id', goalIds);
+
+    const goalTitles = new Map<string, string>();
+    goals?.forEach(g => goalTitles.set(g.id, g.title));
+
+    // Get previous updates for each goal to calculate milestone progression
+    const { data: previousUpdates } = await supabase
+      .from('goal_updates')
+      .select('goal_id, objectives_snapshot')
+      .in('goal_id', goalIds)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Calculate previous completion percentages
+    const previousProgress = new Map<string, number>();
+    previousUpdates?.forEach(update => {
+      if (!previousProgress.has(update.goal_id)) {
+        const snapshots = (Array.isArray(update.objectives_snapshot) ? update.objectives_snapshot : []) as unknown as ObjectiveSnapshot[];
+        const percent = this.calculateGoalProgress(snapshots);
+        previousProgress.set(update.goal_id, percent);
+      }
+    });
+
+    // Get ALL objectives for each goal to calculate true progress
+    const { data: allGoalObjectives } = await supabase
+      .from('weekly_objectives')
+      .select('id, text, is_completed, goal_id')
+      .in('goal_id', goalIds)
+      .eq('user_id', userId);
+
+    // Calculate total goal progress (all weeks, not just this week)
+    const totalGoalProgress = new Map<string, { completed: number; total: number }>();
+    allGoalObjectives?.forEach(obj => {
+      if (obj.goal_id) {
+        const current = totalGoalProgress.get(obj.goal_id) || { completed: 0, total: 0 };
+        current.total++;
+        if (obj.is_completed) current.completed++;
+        totalGoalProgress.set(obj.goal_id, current);
+      }
+    });
+
+    // Create updates for each goal with progress this week
+    const createdUpdates: GoalUpdate[] = [];
+
+    for (const [goalId, group] of goalGroups) {
+      const thisWeekObjectives: ObjectiveSnapshot[] = group.objectives.map(o => ({
+        id: o.id,
+        text: o.text,
+        is_completed: o.is_completed
+      }));
+
+      const completedThisWeek = thisWeekObjectives.filter(o => o.is_completed).length;
+      const totalThisWeek = thisWeekObjectives.length;
+
+      // Calculate overall goal progress
+      const overallProgress = totalGoalProgress.get(goalId) || { completed: 0, total: 0 };
+      const currentPercent = overallProgress.total > 0 
+        ? Math.round((overallProgress.completed / overallProgress.total) * 100) 
+        : 0;
+      const previousPercent = previousProgress.get(goalId) || 0;
+
+      // Determine milestone
+      const milestone = this.determineMilestone(currentPercent, previousPercent);
+
+      // Determine update type
+      let updateType: UpdateType = 'weekly_progress';
+      if (milestone === 'completed') {
+        updateType = 'completed';
+      } else if (milestone) {
+        updateType = 'milestone';
+      }
+
+      // Create content summary
+      let content = `Completed ${completedThisWeek}/${totalThisWeek} objectives this week.`;
+      if (milestone) {
+        const goalTitle = goalTitles.get(goalId) || 'this goal';
+        if (milestone === 'completed') {
+          content = `🎉 Completed "${goalTitle}"! All objectives done.`;
+        } else {
+          content = `Hit ${milestone.replace('_', ' ')} milestone on "${goalTitle}"!`;
+        }
+      }
+
+      try {
+        const update = await this.createUpdate({
+          goal_id: goalId,
+          user_id: userId,
+          update_type: updateType,
+          content,
+          objectives_snapshot: thisWeekObjectives,
+          milestone_type: milestone || undefined,
+          week_start: weekStart
+        });
+        createdUpdates.push(update);
+        console.log(`[GoalUpdatesService] Created ${updateType} update for goal ${goalId}`, { milestone });
+      } catch (err) {
+        console.error(`[GoalUpdatesService] Failed to create update for goal ${goalId}:`, err);
+      }
+    }
+
+    return createdUpdates;
   }
 };

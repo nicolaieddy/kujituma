@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { GoalUpdatesService } from "@/services/goalUpdatesService";
 import { HabitsService } from "@/services/habitsService";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 import { WeekHeader } from "@/components/thisweek/WeekHeader";
@@ -413,6 +414,20 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           variant: "destructive",
         });
       } else {
+        // Create goal updates for each goal with progress this week
+        try {
+          const goalUpdates = await GoalUpdatesService.createGoalUpdatesFromWeeklyShare({
+            userId: user.id,
+            weekStart: currentWeekStart,
+            objectives: objectives || [],
+            weeklyReflection: weeklyReflection
+          });
+          console.log(`[ThisWeekView] Created ${goalUpdates.length} goal updates`);
+        } catch (goalUpdateError) {
+          console.error('[ThisWeekView] Failed to create goal updates:', goalUpdateError);
+          // Don't fail the share if goal updates fail
+        }
+
         await WeeklyProgressService.completeWeek(currentWeekStart);
         
         toast({
@@ -422,6 +437,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         
         await queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
         await queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
+        await queryClient.invalidateQueries({ queryKey: ['goal-updates'] });
         await queryClient.refetchQueries({ queryKey: ['weekly-progress-post', user.id, currentWeekStart] });
       }
     } catch (error) {
