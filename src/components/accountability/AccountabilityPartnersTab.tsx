@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAccountabilityPartners } from '@/hooks/useAccountabilityPartners';
 import { PartnerCard } from './PartnerCard';
 import { PartnerRequestCard } from './PartnerRequestCard';
 import { InvitePartnerModal } from './InvitePartnerModal';
 import { AcceptPartnerDialog } from './AcceptPartnerDialog';
-import { Users, UserPlus, Inbox, Handshake } from 'lucide-react';
+import { UserPlus, Inbox, Handshake, Info } from 'lucide-react';
 import { AccountabilityPartnerRequest } from '@/services/accountabilityService';
 
 export const AccountabilityPartnersTab = () => {
@@ -74,13 +75,25 @@ export const AccountabilityPartnersTab = () => {
 
   return (
     <div className="space-y-6">
+      {/* Description Card */}
+      <Alert className="border-primary/20 bg-primary/5">
+        <Info className="h-4 w-4" />
+        <AlertDescription className="text-sm">
+          <strong>Accountability Partners</strong> are trusted people who help keep you on track with your goals. 
+          Unlike regular friends, partners can optionally view each other's goals and progress, check in regularly, 
+          and provide mutual support. Great for executive assistants, coaches, or close friends who want to help you succeed.
+        </AlertDescription>
+      </Alert>
+
       {/* Partners Section */}
       <Card className="border-border hover:border-primary/20 transition-colors">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Handshake className="h-5 w-5" />
-            Accountability Partners ({partners.length})
-          </CardTitle>
+          <div>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Handshake className="h-5 w-5" />
+              Your Partners ({partners.length})
+            </CardTitle>
+          </div>
           <Button onClick={() => setInviteModalOpen(true)} size="sm">
             <UserPlus className="h-4 w-4 mr-2" />
             Invite Partner
@@ -90,8 +103,7 @@ export const AccountabilityPartnersTab = () => {
           {partners.length === 0 ? (
             <div className="text-center py-12 space-y-4">
               <div className="relative inline-block">
-                <Handshake className="h-16 w-16 mx-auto text-muted-foreground animate-pulse" />
-                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-primary/10 animate-ping" />
+                <Handshake className="h-16 w-16 mx-auto text-muted-foreground" />
               </div>
               <div>
                 <p className="text-foreground font-medium mb-2">No accountability partners yet</p>
