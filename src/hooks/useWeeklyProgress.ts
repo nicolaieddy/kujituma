@@ -27,6 +27,8 @@ export const useWeeklyProgress = (weekStart?: string) => {
     isUpdating: objectives.isUpdating,
     isDeleting: objectives.isDeleting,
     isDeletingAll: objectives.isDeletingAll,
+    pendingUpdateIds: objectives.pendingUpdateIds,
+    recentlySavedIds: objectives.recentlySavedIds,
     
     // Sync status
     isCached: objectives.isCached,

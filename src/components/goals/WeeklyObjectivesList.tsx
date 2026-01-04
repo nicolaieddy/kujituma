@@ -30,6 +30,8 @@ interface WeeklyObjectivesListProps {
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
   currentWeekStart?: string;
   onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string, scheduledDay: string) => void;
+  pendingUpdateIds?: Set<string>;
+  recentlySavedIds?: Set<string>;
 }
 
 export const WeeklyObjectivesList = ({
@@ -50,6 +52,8 @@ export const WeeklyObjectivesList = ({
   onUpdateObjectiveSchedule,
   currentWeekStart = '',
   onMoveObjectiveToWeek,
+  pendingUpdateIds = new Set(),
+  recentlySavedIds = new Set(),
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
@@ -195,6 +199,8 @@ export const WeeklyObjectivesList = ({
                   editingText={editingText}
                   editingGoalId={editingGoalId}
                   savingObjectiveIds={savingObjectiveIds}
+                  pendingUpdateIds={pendingUpdateIds}
+                  recentlySavedIds={recentlySavedIds}
                   currentWeekStart={currentWeekStart}
                   allObjectives={localObjectives}
                   onToggleObjective={onToggleObjective}

@@ -27,6 +27,8 @@ interface ObjectiveItemProps {
   editingText: string;
   editingGoalId: string | null;
   savingObjectiveIds: Set<string>;
+  pendingUpdateIds?: Set<string>;
+  recentlySavedIds?: Set<string>;
   currentWeekStart: string;
   allObjectives: WeeklyObjective[];
   onToggleObjective: (id: string, isCompleted: boolean) => void;
@@ -53,6 +55,8 @@ export const ObjectiveItem = memo(({
   editingText,
   editingGoalId,
   savingObjectiveIds,
+  pendingUpdateIds = new Set(),
+  recentlySavedIds = new Set(),
   currentWeekStart,
   allObjectives,
   onToggleObjective,
@@ -69,6 +73,8 @@ export const ObjectiveItem = memo(({
   getGoalName,
 }: ObjectiveItemProps) => {
   const goalName = getGoalName(objective.goal_id);
+  const isSaving = savingObjectiveIds.has(objective.id) || pendingUpdateIds.has(objective.id);
+  const justSaved = recentlySavedIds.has(objective.id);
 
   return (
     <SortableObjectiveItem id={objective.id}>
@@ -128,7 +134,8 @@ export const ObjectiveItem = memo(({
               goalName={goalName}
               isWeekCompleted={isWeekCompleted}
               editingGoalId={editingGoalId}
-              savingObjectiveIds={savingObjectiveIds}
+              isSaving={isSaving}
+              justSaved={justSaved}
               currentWeekStart={currentWeekStart}
               allObjectives={allObjectives}
               goals={goals}
@@ -164,7 +171,8 @@ interface ObjectiveContentProps {
   goalName: string | null;
   isWeekCompleted: boolean;
   editingGoalId: string | null;
-  savingObjectiveIds: Set<string>;
+  isSaving: boolean;
+  justSaved: boolean;
   currentWeekStart: string;
   allObjectives: WeeklyObjective[];
   goals: Goal[];
@@ -181,7 +189,8 @@ const ObjectiveContent = ({
   goalName,
   isWeekCompleted,
   editingGoalId,
-  savingObjectiveIds,
+  isSaving,
+  justSaved,
   currentWeekStart,
   allObjectives,
   goals,
@@ -261,10 +270,17 @@ const ObjectiveContent = ({
         </div>
       )}
       
-      {savingObjectiveIds.has(objective.id) && (
+      {isSaving && (
         <div className="flex items-center gap-1 ml-2">
-          <div className="w-3 h-3 border border-border border-t-foreground rounded-full animate-spin"></div>
+          <div className="w-3 h-3 border border-border border-t-primary rounded-full animate-spin"></div>
           <span className="text-xs text-muted-foreground">Saving...</span>
+        </div>
+      )}
+      
+      {!isSaving && justSaved && (
+        <div className="flex items-center gap-1 ml-2">
+          <Check className="h-3 w-3 text-primary" />
+          <span className="text-xs text-primary">Saved</span>
         </div>
       )}
     </div>

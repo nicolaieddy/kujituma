@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
@@ -13,6 +14,34 @@ interface UseObjectiveMutationsProps {
 export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjectiveMutationsProps) => {
   const queryClient = useQueryClient();
   const queryKey = ['weekly-objectives', userId, currentWeekStart];
+  
+  // Track which objective IDs are currently being saved
+  const [pendingUpdateIds, setPendingUpdateIds] = useState<Set<string>>(new Set());
+  const [recentlySavedIds, setRecentlySavedIds] = useState<Set<string>>(new Set());
+  
+  const addPendingId = useCallback((id: string) => {
+    setPendingUpdateIds(prev => new Set(prev).add(id));
+  }, []);
+  
+  const removePendingId = useCallback((id: string) => {
+    setPendingUpdateIds(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+  
+  const markAsSaved = useCallback((id: string) => {
+    setRecentlySavedIds(prev => new Set(prev).add(id));
+    // Clear "Saved" indicator after 1.5 seconds
+    setTimeout(() => {
+      setRecentlySavedIds(prev => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
+      });
+    }, 1500);
+  }, []);
 
   const createMutation = useMutation({
     mutationFn: async (data: CreateWeeklyObjectiveData & { week_start: string }) => {
@@ -66,6 +95,7 @@ export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjective
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) => {
+      addPendingId(id);
       try {
         const result = await WeeklyProgressService.updateWeeklyObjective(id, data);
         return { result, wasOffline: false, id, data };
@@ -95,6 +125,7 @@ export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjective
       return { previousObjectives };
     },
     onError: (error, variables, context) => {
+      removePendingId(variables.id);
       if (context?.previousObjectives) {
         queryClient.setQueryData(queryKey, context.previousObjectives);
       }
@@ -105,7 +136,16 @@ export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjective
         variant: "destructive",
       });
     },
+    onSuccess: (result) => {
+      if (result?.id) {
+        removePendingId(result.id);
+        markAsSaved(result.id);
+      }
+    },
     onSettled: (result) => {
+      if (result?.id) {
+        removePendingId(result.id);
+      }
       if (!result?.wasOffline) {
         queryClient.invalidateQueries({ queryKey });
       }
@@ -222,5 +262,7 @@ export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjective
     updateMutation,
     deleteMutation,
     deleteAllMutation,
+    pendingUpdateIds,
+    recentlySavedIds,
   };
 };

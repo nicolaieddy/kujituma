@@ -58,7 +58,14 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
   });
 
   // Use extracted mutations
-  const { createMutation, updateMutation, deleteMutation, deleteAllMutation } = useObjectiveMutations({
+  const { 
+    createMutation, 
+    updateMutation, 
+    deleteMutation, 
+    deleteAllMutation,
+    pendingUpdateIds,
+    recentlySavedIds,
+  } = useObjectiveMutations({
     userId: user?.id,
     currentWeekStart,
   });
@@ -122,5 +129,7 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
     isDeletingAll: deleteAllMutation.isPending,
+    pendingUpdateIds,
+    recentlySavedIds,
   };
 };

@@ -54,6 +54,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     isRefetching,
     lastSyncTime,
     refetchObjectives,
+    pendingUpdateIds,
+    recentlySavedIds,
   } = useWeeklyProgress(weekStart);
 
   // All objectives for AI suggestions
@@ -216,6 +218,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
             currentWeekStart={currentWeekStart}
             onMoveObjectiveToWeek={handleMoveObjectiveToWeek}
+            pendingUpdateIds={pendingUpdateIds}
+            recentlySavedIds={recentlySavedIds}
           />
         </CardContent>
       </Card>
