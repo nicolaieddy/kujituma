@@ -338,10 +338,12 @@ export const useGoals = () => {
     const previousUnfinished = goals.filter(goal => {
       const dateToCheck = goal.start_date || goal.created_at;
       const goalYear = new Date(dateToCheck).getFullYear();
+      const resolvedYear = goal.carry_over_resolved_year;
       return goalYear < currentYear && 
              goal.status !== 'completed' && 
              goal.status !== 'deleted' &&
-             goal.status !== 'deprioritized';
+             goal.status !== 'deprioritized' &&
+             resolvedYear !== currentYear;
     });
 
     const byStatus = {
