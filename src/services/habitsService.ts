@@ -8,6 +8,7 @@ import {
   CreateQuarterlyReview,
   CreateWeeklyPlanningSession
 } from "@/types/habits";
+import { getLocalDateString } from "@/utils/dateUtils";
 
 export class HabitsService {
   // ============ DAILY CHECK-INS ============
@@ -16,7 +17,7 @@ export class HabitsService {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) return null;
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     
     const { data, error } = await supabase
       .from('daily_check_ins')
@@ -33,7 +34,7 @@ export class HabitsService {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     
     const { data, error } = await supabase
       .from('daily_check_ins')
@@ -106,10 +107,10 @@ export class HabitsService {
     const { data: user } = await supabase.auth.getUser();
     if (!user.user) throw new Error('User not authenticated');
     
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getLocalDateString(yesterday);
     
     // Get current streaks
     let streaks = await this.getStreaks();
