@@ -199,6 +199,25 @@ export const GoalUpdatesService = {
       cheer_type: cheerType,
       message: message || null
     });
+
+    // Get update info for notification
+    const { data: update } = await supabase
+      .from('goal_updates')
+      .select('user_id, goal:goals!inner(title)')
+      .eq('id', updateId)
+      .single();
+
+    if (update && update.user_id !== userId) {
+      // Send notification (don't await - fire and forget)
+      this.notifyCheer({
+        cheererId: userId,
+        updateOwnerId: update.user_id,
+        updateId,
+        goalTitle: (update.goal as any)?.title || 'a goal',
+        cheerType
+      }).catch(err => console.error('[GoalUpdatesService] Failed to send cheer notification:', err));
+    }
+
     return true;
   },
 
@@ -238,6 +257,23 @@ export const GoalUpdatesService = {
     if (error) throw error;
 
     const { data: profile } = await supabase.from('profiles').select('id, full_name, avatar_url').eq('id', userId).single();
+
+    // Get update info for notification
+    const { data: update } = await supabase
+      .from('goal_updates')
+      .select('user_id, goal:goals!inner(title)')
+      .eq('id', updateId)
+      .single();
+
+    if (update && update.user_id !== userId) {
+      // Send notification (don't await - fire and forget)
+      this.notifyComment({
+        commenterId: userId,
+        updateOwnerId: update.user_id,
+        updateId,
+        goalTitle: (update.goal as any)?.title || 'a goal'
+      }).catch(err => console.error('[GoalUpdatesService] Failed to send comment notification:', err));
+    }
 
     return {
       id: data.id,
@@ -415,11 +451,220 @@ export const GoalUpdatesService = {
         });
         createdUpdates.push(update);
         console.log(`[GoalUpdatesService] Created ${updateType} update for goal ${goalId}`, { milestone });
+
+        // Send milestone notifications to followers
+        if (milestone) {
+          const goalTitle = goalTitles.get(goalId) || 'a goal';
+          this.notifyMilestone({
+            userId,
+            goalId,
+            updateId: update.id,
+            goalTitle,
+            milestoneType: milestone
+          }).catch(err => console.error('[GoalUpdatesService] Failed to send milestone notification:', err));
+        }
       } catch (err) {
         console.error(`[GoalUpdatesService] Failed to create update for goal ${goalId}:`, err);
       }
     }
 
     return createdUpdates;
+  },
+
+  // Create an "ask for help" update for a specific goal
+  async createHelpRequest(params: {
+    userId: string;
+    goalId: string;
+    helpMessage: string;
+    weekStart: string;
+  }): Promise<GoalUpdate> {
+    const { userId, goalId, helpMessage, weekStart } = params;
+
+    // Get goal title
+    const { data: goal } = await supabase
+      .from('goals')
+      .select('title')
+      .eq('id', goalId)
+      .single();
+
+    const content = helpMessage;
+
+    const update = await this.createUpdate({
+      goal_id: goalId,
+      user_id: userId,
+      update_type: 'ask_for_help',
+      content,
+      week_start: weekStart
+    });
+
+    // Send notifications to followers and friends
+    await this.notifyHelpRequest(userId, goalId, update.id, goal?.title || 'a goal');
+
+    console.log(`[GoalUpdatesService] Created help request for goal ${goalId}`);
+    return update;
+  },
+
+  // Notify followers and friends about a help request
+  async notifyHelpRequest(userId: string, goalId: string, updateId: string, goalTitle: string): Promise<void> {
+    try {
+      // Get user's friends
+      const { data: friends } = await supabase.rpc('get_user_friends', { _user_id: userId });
+      const friendIds = friends?.map(f => f.friend_id) || [];
+
+      // Get goal followers
+      const { data: followers } = await supabase
+        .from('goal_follows')
+        .select('follower_user_id')
+        .eq('goal_id', goalId);
+      const followerIds = followers?.map(f => f.follower_user_id) || [];
+
+      // Combine unique recipients (friends + followers, excluding self)
+      const recipientIds = [...new Set([...friendIds, ...followerIds])].filter(id => id !== userId);
+
+      if (recipientIds.length === 0) return;
+
+      // Get user's name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+
+      const userName = profile?.full_name || 'Someone';
+
+      // Create notifications for all recipients
+      const notifications = recipientIds.map(recipientId => ({
+        user_id: recipientId,
+        type: 'goal_help_request',
+        message: `${userName} is asking for help on "${goalTitle}"`,
+        triggered_by_user_id: userId,
+        related_post_id: updateId
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+    } catch (err) {
+      console.error('[GoalUpdatesService] Failed to send help request notifications:', err);
+    }
+  },
+
+  // Send notification when someone cheers on an update
+  async notifyCheer(params: {
+    cheererId: string;
+    updateOwnerId: string;
+    updateId: string;
+    goalTitle: string;
+    cheerType: CheerType;
+  }): Promise<void> {
+    const { cheererId, updateOwnerId, updateId, goalTitle, cheerType } = params;
+
+    // Don't notify self
+    if (cheererId === updateOwnerId) return;
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', cheererId)
+        .single();
+
+      const cheererName = profile?.full_name || 'Someone';
+      const actionWord = cheerType === 'celebrate' ? 'celebrated' : 
+                         cheerType === 'encourage' ? 'encouraged' : 
+                         'offered help on';
+
+      await supabase.from('notifications').insert({
+        user_id: updateOwnerId,
+        type: 'goal_update_cheer',
+        message: `${cheererName} ${actionWord} your update on "${goalTitle}"`,
+        triggered_by_user_id: cheererId,
+        related_post_id: updateId
+      });
+    } catch (err) {
+      console.error('[GoalUpdatesService] Failed to send cheer notification:', err);
+    }
+  },
+
+  // Send notification when someone comments on an update
+  async notifyComment(params: {
+    commenterId: string;
+    updateOwnerId: string;
+    updateId: string;
+    goalTitle: string;
+  }): Promise<void> {
+    const { commenterId, updateOwnerId, updateId, goalTitle } = params;
+
+    if (commenterId === updateOwnerId) return;
+
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', commenterId)
+        .single();
+
+      const commenterName = profile?.full_name || 'Someone';
+
+      await supabase.from('notifications').insert({
+        user_id: updateOwnerId,
+        type: 'goal_update_comment',
+        message: `${commenterName} commented on your update for "${goalTitle}"`,
+        triggered_by_user_id: commenterId,
+        related_post_id: updateId
+      });
+    } catch (err) {
+      console.error('[GoalUpdatesService] Failed to send comment notification:', err);
+    }
+  },
+
+  // Notify goal followers about a milestone
+  async notifyMilestone(params: {
+    userId: string;
+    goalId: string;
+    updateId: string;
+    goalTitle: string;
+    milestoneType: MilestoneType;
+  }): Promise<void> {
+    const { userId, goalId, updateId, goalTitle, milestoneType } = params;
+
+    try {
+      // Get goal followers
+      const { data: followers } = await supabase
+        .from('goal_follows')
+        .select('follower_user_id')
+        .eq('goal_id', goalId);
+
+      const followerIds = followers?.map(f => f.follower_user_id).filter(id => id !== userId) || [];
+
+      if (followerIds.length === 0) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', userId)
+        .single();
+
+      const userName = profile?.full_name || 'Someone';
+      
+      let milestoneText = '';
+      switch (milestoneType) {
+        case 'completed': milestoneText = 'completed'; break;
+        case '75_percent': milestoneText = 'hit 75% on'; break;
+        case '50_percent': milestoneText = 'hit 50% on'; break;
+        case '25_percent': milestoneText = 'hit 25% on'; break;
+        case 'started': milestoneText = 'started'; break;
+      }
+
+      const notifications = followerIds.map(followerId => ({
+        user_id: followerId,
+        type: 'goal_milestone',
+        message: `🎉 ${userName} ${milestoneText} "${goalTitle}"!`,
+        triggered_by_user_id: userId,
+        related_post_id: updateId
+      }));
+
+      await supabase.from('notifications').insert(notifications);
+    } catch (err) {
+      console.error('[GoalUpdatesService] Failed to send milestone notifications:', err);
+    }
   }
 };

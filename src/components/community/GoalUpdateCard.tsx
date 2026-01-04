@@ -108,10 +108,13 @@ export const GoalUpdateCard = memo(({
     return update.user_has_cheered && update.user_cheer_type === type;
   };
 
+  const isHelpRequest = update.update_type === 'ask_for_help';
+
   return (
     <Card className={cn(
       "overflow-hidden transition-all",
-      update.milestone_type === 'completed' && "ring-2 ring-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-transparent"
+      update.milestone_type === 'completed' && "ring-2 ring-yellow-500/30 bg-gradient-to-br from-yellow-500/5 to-transparent",
+      isHelpRequest && "ring-2 ring-orange-500/30 bg-gradient-to-br from-orange-500/5 to-transparent"
     )}>
       <CardContent className="pt-5">
         {/* Header */}
@@ -170,7 +173,18 @@ export const GoalUpdateCard = memo(({
 
         {/* Content / Reflection */}
         {update.content && (
-          <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/50">
+          <div className={cn(
+            "mb-4 p-3 rounded-lg border",
+            isHelpRequest 
+              ? "bg-orange-500/10 border-orange-500/30" 
+              : "bg-muted/50 border-border/50"
+          )}>
+            {isHelpRequest && (
+              <div className="flex items-center gap-2 mb-2">
+                <HelpCircle className="h-4 w-4 text-orange-500" />
+                <span className="text-xs font-medium text-orange-600 dark:text-orange-400">Asking for help</span>
+              </div>
+            )}
             <p className="text-sm text-foreground whitespace-pre-wrap">{update.content}</p>
           </div>
         )}
