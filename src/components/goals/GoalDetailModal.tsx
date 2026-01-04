@@ -107,6 +107,11 @@ export const GoalDetailModal = ({
   const [showCustomPicker, setShowCustomPicker] = useState(false);
   const [newObjectiveText, setNewObjectiveText] = useState("");
   const [newObjectiveWeek, setNewObjectiveWeek] = useState<string>(WeeklyProgressService.getWeekStart());
+  
+  // Objective editing state
+  const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
+  const [editingObjectiveText, setEditingObjectiveText] = useState("");
+  const [editingObjectiveWeek, setEditingObjectiveWeek] = useState("");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -213,6 +218,29 @@ export const GoalDetailModal = ({
 
   const handleToggleObjective = (objective: WeeklyObjective) => {
     onUpdateObjective(objective.id, { is_completed: !objective.is_completed });
+  };
+
+  const handleStartEditObjective = (objective: WeeklyObjective) => {
+    setEditingObjectiveId(objective.id);
+    setEditingObjectiveText(objective.text);
+    setEditingObjectiveWeek(objective.week_start);
+  };
+
+  const handleSaveEditObjective = () => {
+    if (!editingObjectiveId || !editingObjectiveText.trim()) return;
+    onUpdateObjective(editingObjectiveId, { 
+      text: editingObjectiveText.trim(),
+      week_start: editingObjectiveWeek
+    });
+    setEditingObjectiveId(null);
+    setEditingObjectiveText("");
+    setEditingObjectiveWeek("");
+  };
+
+  const handleCancelEditObjective = () => {
+    setEditingObjectiveId(null);
+    setEditingObjectiveText("");
+    setEditingObjectiveWeek("");
   };
 
   const isCurrentOrFuture = (weekStart: string) => weekStart >= currentWeekStart;
@@ -327,18 +355,57 @@ export const GoalDetailModal = ({
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {sortedObjectives.map((objective) => {
                     const isCurrent = isCurrentOrFuture(objective.week_start);
+                    const isEditingThis = editingObjectiveId === objective.id;
+                    
+                    if (isEditingThis) {
+                      return (
+                        <div key={objective.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-primary/30">
+                          <Input
+                            value={editingObjectiveText}
+                            onChange={(e) => setEditingObjectiveText(e.target.value)}
+                            className="flex-1 h-8 text-sm"
+                            autoFocus
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') { e.preventDefault(); handleSaveEditObjective(); }
+                              if (e.key === 'Escape') handleCancelEditObjective();
+                            }}
+                          />
+                          <Select value={editingObjectiveWeek} onValueChange={setEditingObjectiveWeek}>
+                            <SelectTrigger className="w-24 h-8">
+                              <SelectValue>W{getWeekNumber(editingObjectiveWeek)}</SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {weekOptions.map((week) => (
+                                <SelectItem key={week} value={week}>
+                                  W{getWeekNumber(week)} • {formatWeekRange(week)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Button size="sm" variant="ghost" onClick={handleSaveEditObjective} className="h-8 px-2">
+                            <CheckCircle className="h-4 w-4 text-primary" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={handleCancelEditObjective} className="h-8 px-2">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      );
+                    }
+                    
                     return (
                       <div
                         key={objective.id}
                         className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg group transition-colors",
-                          isCurrent ? "bg-muted/30" : "bg-muted/10",
+                          "flex items-center gap-3 p-3 rounded-lg group transition-colors cursor-pointer",
+                          isCurrent ? "bg-muted/30 hover:bg-muted/40" : "bg-muted/10 hover:bg-muted/20",
                           objective.is_completed && "opacity-60"
                         )}
+                        onClick={() => handleStartEditObjective(objective)}
                       >
                         <Checkbox
                           checked={objective.is_completed}
                           onCheckedChange={() => handleToggleObjective(objective)}
+                          onClick={(e) => e.stopPropagation()}
                           className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                         />
                         <div className="flex-1 min-w-0">
@@ -356,7 +423,7 @@ export const GoalDetailModal = ({
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => onDeleteObjective(objective.id)}
+                            onClick={(e) => { e.stopPropagation(); onDeleteObjective(objective.id); }}
                             className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 text-destructive hover:bg-destructive/20"
                           >
                             <X className="h-3 w-3" />
