@@ -16,7 +16,7 @@ const Auth = () => {
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tosAccepted, setTosAccepted] = useState(false);
-  const [isReturningUser, setIsReturningUser] = useState(false);
+  const [isNewUserFlow, setIsNewUserFlow] = useState(false);
 
   const { isNewUser } = useAuth();
   
@@ -34,8 +34,8 @@ const Auth = () => {
   }, [user, isNewUser, navigate]);
 
   const handleGoogleSignIn = async () => {
-    // For new users, require ToS acceptance
-    if (!isReturningUser && !tosAccepted) {
+    // For new user sign-up flow, require ToS acceptance
+    if (isNewUserFlow && !tosAccepted) {
       setError('Please accept the Terms of Service and Privacy Policy to continue');
       return;
     }
@@ -45,8 +45,8 @@ const Auth = () => {
       setSigningIn(true);
       setError(null);
       
-      // Only store ToS acceptance for new users
-      if (!isReturningUser) {
+      // Only store ToS acceptance for new users signing up
+      if (isNewUserFlow) {
         sessionStorage.setItem('tos_accepted_during_signup', CURRENT_TOS_VERSION);
       }
       
@@ -117,8 +117,8 @@ const Auth = () => {
             </div>
           )}
           
-          {/* Only show ToS checkbox for new users */}
-          {!isReturningUser && (
+          {/* Only show ToS checkbox for new user sign-up flow */}
+          {isNewUserFlow && (
             <div className="flex items-start space-x-3 bg-muted/50 rounded-lg p-4">
               <Checkbox
                 id="accept-tos"
@@ -155,7 +155,7 @@ const Auth = () => {
 
           <Button
             onClick={handleGoogleSignIn}
-            disabled={signingIn || (!isReturningUser && !tosAccepted)}
+            disabled={signingIn || (isNewUserFlow && !tosAccepted)}
             className="w-full h-12 flex items-center justify-center space-x-3 text-base"
           >
             {signingIn ? (
@@ -185,14 +185,14 @@ const Auth = () => {
             )}
           </Button>
 
-          {/* Toggle for returning users */}
+          {/* Toggle for new users who need to sign up */}
           <div className="text-center">
             <button
               type="button"
-              onClick={() => setIsReturningUser(!isReturningUser)}
+              onClick={() => setIsNewUserFlow(!isNewUserFlow)}
               className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
             >
-              {isReturningUser ? "New user? Accept terms first" : "Already have an account? Sign in directly"}
+              {isNewUserFlow ? "Already have an account? Sign in directly" : "New user? Sign up here"}
             </button>
           </div>
 
