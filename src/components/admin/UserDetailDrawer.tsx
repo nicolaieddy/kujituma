@@ -22,7 +22,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { User, Clock, Calendar, Activity, MousePointerClick, Trash2, AlertTriangle, FileCheck, Sparkles } from "lucide-react";
+import { User, Clock, Calendar, Activity, Target, Trash2, AlertTriangle, FileCheck, Sparkles, Heart, CheckSquare, MessageSquare } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
@@ -86,6 +86,18 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
   const [aiToggling, setAiToggling] = useState(false);
   const [aiUsageCount, setAiUsageCount] = useState(0);
   const [aiUsageThisMonth, setAiUsageThisMonth] = useState(0);
+  const [productMetrics, setProductMetrics] = useState({
+    goalsCreated: 0,
+    goalsCompleted: 0,
+    objectivesCreated: 0,
+    objectivesCompleted: 0,
+    dailyCheckIns: 0,
+    weeklyPlannings: 0,
+    quarterlyReviews: 0,
+    postsShared: 0,
+    likesGiven: 0,
+    commentsGiven: 0,
+  });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -93,6 +105,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
       fetchUserSessions(user.id);
       fetchAIStatus(user.id);
       fetchAIUsage(user.id);
+      fetchProductMetrics(user.id);
     }
   }, [user, open]);
 
@@ -140,6 +153,89 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
       }
     } catch (error) {
       console.error("Error fetching AI usage:", error);
+    }
+  };
+
+  const fetchProductMetrics = async (userId: string) => {
+    try {
+      const [
+        goalsResult,
+        objectivesResult,
+        dailyCheckInsResult,
+        weeklyPlanningsResult,
+        quarterlyReviewsResult,
+        postsResult,
+        likesResult,
+        commentsResult,
+      ] = await Promise.all([
+        // Goals created and completed
+        supabase
+          .from("goals")
+          .select("status", { count: "exact" })
+          .eq("user_id", userId),
+        // Objectives created and completed
+        supabase
+          .from("weekly_objectives")
+          .select("is_completed", { count: "exact" })
+          .eq("user_id", userId),
+        // Daily check-ins
+        supabase
+          .from("daily_check_ins")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId),
+        // Weekly planning sessions completed
+        supabase
+          .from("weekly_planning_sessions")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("is_completed", true),
+        // Quarterly reviews completed
+        supabase
+          .from("quarterly_reviews")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("is_completed", true),
+        // Posts shared
+        supabase
+          .from("posts")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId),
+        // Likes given
+        supabase
+          .from("post_likes")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId),
+        // Comments given
+        supabase
+          .from("comments")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", userId),
+      ]);
+
+      // Calculate goals metrics
+      const goals = goalsResult.data || [];
+      const goalsCreated = goals.length;
+      const goalsCompleted = goals.filter((g: any) => g.status === "completed").length;
+
+      // Calculate objectives metrics
+      const objectives = objectivesResult.data || [];
+      const objectivesCreated = objectives.length;
+      const objectivesCompleted = objectives.filter((o: any) => o.is_completed).length;
+
+      setProductMetrics({
+        goalsCreated,
+        goalsCompleted,
+        objectivesCreated,
+        objectivesCompleted,
+        dailyCheckIns: dailyCheckInsResult.count || 0,
+        weeklyPlannings: weeklyPlanningsResult.count || 0,
+        quarterlyReviews: quarterlyReviewsResult.count || 0,
+        postsShared: postsResult.count || 0,
+        likesGiven: likesResult.count || 0,
+        commentsGiven: commentsResult.count || 0,
+      });
+    } catch (error) {
+      console.error("Error fetching product metrics:", error);
     }
   };
 
@@ -286,32 +382,71 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
           </Card>
           <Card className="border-border">
             <CardContent className="p-3 text-center">
-              <MousePointerClick className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-lg font-semibold">
-                {((user.total_clicks || 0) + (user.total_scrolls || 0) + (user.total_keypresses || 0)).toLocaleString()}
-              </p>
-              <p className="text-xs text-muted-foreground">Interactions</p>
+              <Target className="h-4 w-4 mx-auto mb-1 text-muted-foreground" />
+              <p className="text-lg font-semibold">{productMetrics.goalsCreated}</p>
+              <p className="text-xs text-muted-foreground">Goals</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Engagement Breakdown */}
+        {/* Product Engagement */}
         <Card className="border-border mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Engagement Breakdown</CardTitle>
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <CheckSquare className="h-4 w-4" />
+              Product Engagement
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Clicks</span>
-              <span className="font-medium">{(user.total_clicks || 0).toLocaleString()}</span>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Goals created</span>
+                <span className="font-medium">{productMetrics.goalsCreated}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Goals completed</span>
+                <span className="font-medium text-primary">{productMetrics.goalsCompleted}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Objectives set</span>
+                <span className="font-medium">{productMetrics.objectivesCreated}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Objectives done</span>
+                <span className="font-medium text-primary">{productMetrics.objectivesCompleted}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Scrolls</span>
-              <span className="font-medium">{(user.total_scrolls || 0).toLocaleString()}</span>
+            
+            <div className="border-t pt-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Rituals</p>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Daily check-ins</span>
+                <span className="font-medium">{productMetrics.dailyCheckIns}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Weekly plannings</span>
+                <span className="font-medium">{productMetrics.weeklyPlannings}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Quarterly reviews</span>
+                <span className="font-medium">{productMetrics.quarterlyReviews}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Key presses</span>
-              <span className="font-medium">{(user.total_keypresses || 0).toLocaleString()}</span>
+
+            <div className="border-t pt-3 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">Social</p>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Posts shared</span>
+                <span className="font-medium">{productMetrics.postsShared}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Likes given</span>
+                <span className="font-medium">{productMetrics.likesGiven}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Comments made</span>
+                <span className="font-medium">{productMetrics.commentsGiven}</span>
+              </div>
             </div>
           </CardContent>
         </Card>
