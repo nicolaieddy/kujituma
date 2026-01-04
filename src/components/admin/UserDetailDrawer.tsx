@@ -84,12 +84,15 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
   const [deleting, setDeleting] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiToggling, setAiToggling] = useState(false);
+  const [aiUsageCount, setAiUsageCount] = useState(0);
+  const [aiUsageThisMonth, setAiUsageThisMonth] = useState(0);
   const { toast } = useToast();
 
   useEffect(() => {
     if (user && open) {
       fetchUserSessions(user.id);
       fetchAIStatus(user.id);
+      fetchAIUsage(user.id);
     }
   }, [user, open]);
 
@@ -106,6 +109,37 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
       }
     } catch (error) {
       console.error("Error fetching AI status:", error);
+    }
+  };
+
+  const fetchAIUsage = async (userId: string) => {
+    try {
+      // Get total AI usage count
+      const { count: totalCount, error: totalError } = await supabase
+        .from("ai_usage_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId);
+
+      if (!totalError) {
+        setAiUsageCount(totalCount || 0);
+      }
+
+      // Get this month's usage
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const { count: monthCount, error: monthError } = await supabase
+        .from("ai_usage_logs")
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .gte("created_at", startOfMonth.toISOString());
+
+      if (!monthError) {
+        setAiUsageThisMonth(monthCount || 0);
+      }
+    } catch (error) {
+      console.error("Error fetching AI usage:", error);
     }
   };
 
@@ -332,7 +366,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
               AI Features
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="space-y-0.5">
                 <p className="text-sm font-medium">AI Suggestions</p>
@@ -346,11 +380,21 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
                 disabled={aiToggling}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
-              {aiEnabled 
-                ? "This user can receive AI-generated suggestions." 
-                : "AI features are disabled for this user."}
-            </p>
+            
+            {/* AI Usage Stats */}
+            <div className="pt-2 border-t border-border">
+              <p className="text-xs font-medium text-muted-foreground mb-2">Usage Statistics</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-muted/50 rounded-lg p-2 text-center">
+                  <p className="text-lg font-semibold">{aiUsageThisMonth}</p>
+                  <p className="text-xs text-muted-foreground">This month</p>
+                </div>
+                <div className="bg-muted/50 rounded-lg p-2 text-center">
+                  <p className="text-lg font-semibold">{aiUsageCount}</p>
+                  <p className="text-xs text-muted-foreground">All time</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

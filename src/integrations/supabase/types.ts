@@ -233,6 +233,27 @@ export type Database = {
           },
         ]
       }
+      ai_usage_logs: {
+        Row: {
+          created_at: string
+          id: string
+          request_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       comment_likes: {
         Row: {
           comment_id: string
