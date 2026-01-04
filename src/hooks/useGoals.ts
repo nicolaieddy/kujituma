@@ -123,14 +123,47 @@ export const useGoals = () => {
   const updateGoalMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateGoalData }) =>
       GoalsService.updateGoal(id, data),
+    onMutate: async ({ id, data }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['goals', user?.id] });
+
+      // Snapshot the previous value
+      const previousGoals = queryClient.getQueryData<Goal[]>(['goals', user?.id]);
+
+      // Optimistically update the goal
+      if (previousGoals) {
+        const updatedGoals = previousGoals.map(goal => {
+          if (goal.id === id) {
+            const statusValue = data.status as string | undefined;
+            return {
+              ...goal,
+              ...data,
+              // Handle completed_at for status changes
+              completed_at: statusValue === 'completed' ? new Date().toISOString() : 
+                           (statusValue && statusValue !== 'completed' ? null : goal.completed_at),
+              updated_at: new Date().toISOString(),
+            };
+          }
+          return goal;
+        });
+        queryClient.setQueryData(['goals', user?.id], updatedGoals);
+      }
+
+      return { previousGoals };
+    },
     onSuccess: () => {
+      // Invalidate to ensure sync with server
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast({
         title: "Success",
         description: "Goal updated successfully!",
       });
     },
-    onError: (error) => {
+    onError: (error, _, context) => {
+      // Rollback on error
+      if (context?.previousGoals) {
+        queryClient.setQueryData(['goals', user?.id], context.previousGoals);
+      }
       console.error('Error updating goal:', error);
       toast({
         title: "Error",
