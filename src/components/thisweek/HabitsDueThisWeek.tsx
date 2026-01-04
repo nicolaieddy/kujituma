@@ -8,8 +8,10 @@ import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal, HabitItem } from "@/types/goals";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, eachDayOfInterval, endOfWeek, isToday, isBefore } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { celebrateGoalComplete } from "@/utils/confetti";
+import { hapticSuccess } from "@/utils/haptic";
 
 interface HabitsDueThisWeekProps {
   habits: HabitStats[];
@@ -52,17 +54,31 @@ export const HabitsDueThisWeek = ({
   // Count habit items completions
   let habitItemsCompletedToday = 0;
   let habitItemsTotal = 0;
+  const todayIndex = weekDates.findIndex(d => isToday(d));
+  
   goalsWithHabitItems.forEach(h => {
     habitItemsTotal += h.goal.habit_items.length;
     h.goal.habit_items.forEach(item => {
       const status = getCompletionStatus(item.id);
       // Count today's completion
-      const todayIndex = weekDates.findIndex(d => isToday(d));
       if (todayIndex >= 0 && status[todayIndex]) {
         habitItemsCompletedToday++;
       }
     });
   });
+
+  // Track if all habits for today are complete and celebrate
+  const allTodayHabitsComplete = habitItemsTotal > 0 && habitItemsCompletedToday === habitItemsTotal;
+  const prevAllCompleteRef = useRef(allTodayHabitsComplete);
+  
+  useEffect(() => {
+    // Only celebrate when transitioning from incomplete to complete
+    if (allTodayHabitsComplete && !prevAllCompleteRef.current) {
+      celebrateGoalComplete();
+      hapticSuccess();
+    }
+    prevAllCompleteRef.current = allTodayHabitsComplete;
+  }, [allTodayHabitsComplete]);
 
   const toggleGoalExpanded = (goalId: string) => {
     const newExpanded = new Set(expandedGoals);
