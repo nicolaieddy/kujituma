@@ -41,6 +41,36 @@ class FriendsService {
     return input.replace(/[%_\\]/g, '\\$&');
   }
 
+  // Cancel a sent friend request (delete it)
+  async cancelFriendRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { data: currentUser } = await supabase.auth.getUser();
+      if (!currentUser.user) {
+        return { success: false, error: 'Not authenticated' };
+      }
+
+      // Only allow deleting requests the current user sent
+      const { error } = await supabase
+        .from('friend_requests')
+        .delete()
+        .eq('id', requestId)
+        .eq('sender_id', currentUser.user.id)
+        .eq('status', 'pending');
+
+      if (error) {
+        throw error;
+      }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error('Error canceling friend request:', error);
+      return {
+        success: false,
+        error: error.message || 'Failed to cancel friend request'
+      };
+    }
+  }
+
   // Send a friend request
   async sendFriendRequest(receiverId: string): Promise<{ success: boolean; error?: string }> {
     try {

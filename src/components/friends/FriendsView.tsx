@@ -33,6 +33,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   const { 
     sendFriendRequest, 
     respondToFriendRequest, 
+    cancelFriendRequest,
     removeFriend 
   } = useFriends();
 
@@ -95,7 +96,7 @@ export const FriendsView = ({ view, friends, friendRequests, loading }: FriendsV
   };
 
   const handleCancelRequest = async (requestId: string) => {
-    await respondToFriendRequest(requestId, 'rejected');
+    await cancelFriendRequest(requestId);
   };
 
   const handleSendRequest = async (userId: string) => {

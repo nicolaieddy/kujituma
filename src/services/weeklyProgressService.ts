@@ -288,12 +288,30 @@ export class WeeklyProgressService {
     return todayLocal >= startLocal && todayLocal <= endLocal;
   }
 
+  /**
+   * Get ISO week number for a given week start date.
+   * Uses ISO 8601 standard where Week 1 is the week containing the first Thursday of the year.
+   */
   static getWeekNumber(weekStart: string): number {
     const [year, month, day] = weekStart.split('-').map(Number);
-    const start = new Date(year, month - 1, day);
-    const startOfYear = new Date(start.getFullYear(), 0, 1);
-    const days = Math.floor((start.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-    return Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    const date = new Date(year, month - 1, day);
+    
+    // Set to Thursday of the current week (ISO weeks are defined by their Thursday)
+    const thursday = new Date(date.getTime());
+    thursday.setDate(date.getDate() + (4 - (date.getDay() || 7)));
+    
+    // Get the first Thursday of the year
+    const yearStart = new Date(thursday.getFullYear(), 0, 1);
+    const firstThursday = new Date(yearStart.getTime());
+    // Find first Thursday of the year
+    const dayOfWeek = yearStart.getDay();
+    const daysToThursday = dayOfWeek <= 4 ? 4 - dayOfWeek : 11 - dayOfWeek;
+    firstThursday.setDate(yearStart.getDate() + daysToThursday);
+    
+    // Calculate week number
+    const weekNumber = Math.floor((thursday.getTime() - firstThursday.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1;
+    
+    return weekNumber;
   }
 
   static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {

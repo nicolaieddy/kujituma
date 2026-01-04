@@ -87,6 +87,27 @@ export const useFriends = () => {
     return result;
   }, [toast, fetchData]);
 
+  const cancelFriendRequest = useCallback(async (requestId: string) => {
+    const result = await friendsService.cancelFriendRequest(requestId);
+    
+    if (result.success) {
+      toast({
+        title: "Friend request canceled",
+        description: "Your friend request has been canceled.",
+      });
+      // Refresh data
+      fetchData();
+    } else {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to cancel friend request.",
+        variant: "destructive",
+      });
+    }
+    
+    return result;
+  }, [toast, fetchData]);
+
   const removeFriend = useCallback(async (friendId: string) => {
     const result = await friendsService.removeFriend(friendId);
     
@@ -115,6 +136,7 @@ export const useFriends = () => {
     error,
     sendFriendRequest,
     respondToFriendRequest,
+    cancelFriendRequest,
     removeFriend,
     refetch: fetchData
   };
