@@ -38,8 +38,12 @@ export const useRealtimeObjectives = (weekStart: string) => {
           });
         }
       )
-      .subscribe((status) => {
-        console.log('[Realtime] Subscription status:', status);
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Objectives subscription active');
+        } else if (status === 'CHANNEL_ERROR' && err) {
+          console.warn('[Realtime] Objectives channel error:', err.message);
+        }
       });
 
     channelRef.current = channel;

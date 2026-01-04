@@ -79,8 +79,12 @@ export const useRealtimeHabits = (weekKey?: string) => {
           );
         }
       )
-      .subscribe((status) => {
-        console.log('[Realtime] Habit completions subscription status:', status);
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Habit completions subscription active');
+        } else if (status === 'CHANNEL_ERROR' && err) {
+          console.warn('[Realtime] Habit completions channel error:', err.message);
+        }
       });
 
     channelRef.current = channel;
