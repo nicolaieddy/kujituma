@@ -1417,6 +1417,7 @@ export type Database = {
           friend_id: string
           full_name: string
           last_active_at: string
+          mutual_friends_count: number
         }[]
       }
       has_role: {

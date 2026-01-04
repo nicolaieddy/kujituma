@@ -90,11 +90,17 @@ export const FriendCard = ({
                       <h4 className="font-medium text-foreground hover:text-primary transition-colors truncate">
                         {friend.full_name}
                       </h4>
-                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <Users className="h-3 w-3" />
                           {friend.friend_count ?? 0} friends
                         </span>
+                        {(friend.mutual_friends_count ?? 0) > 0 && (
+                          <span className="flex items-center gap-1 text-primary">
+                            <Users className="h-3 w-3" />
+                            {friend.mutual_friends_count} mutual
+                          </span>
+                        )}
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           <span className={recentlyActive ? "text-green-600 dark:text-green-400" : ""}>
