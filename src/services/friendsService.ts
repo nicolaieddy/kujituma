@@ -22,6 +22,8 @@ export interface Friend {
   full_name: string;
   avatar_url?: string;
   created_at: string;
+  last_active_at?: string;
+  friend_count?: number;
 }
 
 export interface UserProfile {

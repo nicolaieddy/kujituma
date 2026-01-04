@@ -1413,8 +1413,10 @@ export type Database = {
           avatar_url: string
           created_at: string
           email: string
+          friend_count: number
           friend_id: string
           full_name: string
+          last_active_at: string
         }[]
       }
       has_role: {
