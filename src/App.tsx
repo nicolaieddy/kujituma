@@ -19,7 +19,7 @@ import { lazy, Suspense, useEffect } from "react";
 import { GoalsService } from "@/services/goalsService";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Wrapper to redirect new users to profile setup
+// Wrapper to redirect new users to onboarding wizard
 const RequireProfileComplete = ({ children }: { children: React.ReactNode }) => {
   const { user, isNewUser, loading } = useAuth();
   const location = useLocation();
@@ -27,9 +27,12 @@ const RequireProfileComplete = ({ children }: { children: React.ReactNode }) => 
   // Don't redirect while loading or if not authenticated
   if (loading || !user) return <>{children}</>;
   
-  // Redirect new users to profile page (except if already on profile or auth pages)
-  if (isNewUser && !location.pathname.startsWith('/profile') && location.pathname !== '/auth') {
-    return <Navigate to="/profile?setup=true" replace />;
+  // Redirect new users to onboarding (except if already on onboarding, profile, or auth pages)
+  if (isNewUser && 
+      !location.pathname.startsWith('/onboarding') && 
+      !location.pathname.startsWith('/profile') && 
+      location.pathname !== '/auth') {
+    return <Navigate to="/onboarding" replace />;
   }
   
   return <>{children}</>;
@@ -51,6 +54,7 @@ const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const CheckInHistory = lazy(() => import("./pages/CheckInHistory"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -190,6 +194,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
           <Route path="/partner/:partnerId/check-ins" element={<CheckInHistory />} />
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="*" element={<Feed />} />
         </Routes>
       </Suspense>
