@@ -392,4 +392,25 @@ export class WeeklyProgressService {
     if (error) throw error;
     return (objectives || []) as WeeklyObjective[];
   }
+
+  /**
+   * Fetch ALL objectives for a specific goal (no date limit)
+   */
+  static async getObjectivesForGoal(goalId: string): Promise<WeeklyObjective[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data: objectives, error } = await supabase
+      .from('weekly_objectives')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('goal_id', goalId)
+      .order('week_start', { ascending: false })
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return (objectives || []) as WeeklyObjective[];
+  }
 }
