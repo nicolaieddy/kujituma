@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,6 +20,47 @@ interface SuggestionsData {
   recentPatterns?: string;
 }
 
+// Log AI usage to the database
+async function logAIUsage(userId: string, requestType: string) {
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase environment variables for logging");
+      return;
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    
+    const { error } = await supabase
+      .from("ai_usage_logs")
+      .insert({ user_id: userId, request_type: requestType });
+    
+    if (error) {
+      console.error("Failed to log AI usage:", error);
+    }
+  } catch (err) {
+    console.error("Error logging AI usage:", err);
+  }
+}
+
+// Extract user ID from JWT token
+function getUserIdFromToken(authHeader: string | null): string | null {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return null;
+  }
+  
+  try {
+    const token = authHeader.split(" ")[1];
+    const payload = token.split(".")[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded.sub || null;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,6 +74,10 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
+
+    // Extract user ID from authorization header
+    const authHeader = req.headers.get("authorization");
+    const userId = getUserIdFromToken(authHeader);
 
     let prompt = "";
     let systemPrompt = "";
@@ -126,7 +172,7 @@ Return ONLY valid JSON, no other text.`;
       });
     }
 
-    console.log(`Processing ${type} request`);
+    console.log(`Processing ${type} request for user ${userId || 'unknown'}`);
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -162,6 +208,11 @@ Return ONLY valid JSON, no other text.`;
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Log successful AI usage
+    if (userId) {
+      await logAIUsage(userId, type);
     }
 
     const data = await response.json();
