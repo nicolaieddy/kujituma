@@ -18,7 +18,7 @@ export const useRealtimeHabits = (weekKey?: string) => {
 
     console.log('[Realtime] Setting up subscription for habit_completions');
 
-    // Create a channel for habit completions changes
+    // Create a channel for habit completions (no server filter to avoid mismatch errors)
     const channel = supabase
       .channel(`habit-completions-${user.id}`)
       .on(
@@ -27,24 +27,23 @@ export const useRealtimeHabits = (weekKey?: string) => {
           event: 'INSERT',
           schema: 'public',
           table: 'habit_completions',
-          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[Realtime] Habit completion INSERT:', payload.new);
-          const newCompletion = payload.new as HabitCompletion;
+          const newCompletion = payload.new as HabitCompletion & { user_id: string };
+          // Client-side filter
+          if (newCompletion.user_id !== user.id) return;
           
-          // Directly update the cache instead of invalidating
+          console.log('[Realtime] Habit completion INSERT');
+          
           queryClient.setQueryData<HabitCompletion[]>(
             ['habit-completions', user.id, weekKey],
             (old) => {
               if (!old) return old;
-              // Check if we already have this (possibly from optimistic update)
               const exists = old.some(
                 c => c.habit_item_id === newCompletion.habit_item_id && 
                      c.completion_date === newCompletion.completion_date
               );
               if (exists) {
-                // Replace temp entry with real one
                 return old.map(c => 
                   (c.habit_item_id === newCompletion.habit_item_id && 
                    c.completion_date === newCompletion.completion_date)
@@ -63,13 +62,14 @@ export const useRealtimeHabits = (weekKey?: string) => {
           event: 'DELETE',
           schema: 'public',
           table: 'habit_completions',
-          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[Realtime] Habit completion DELETE:', payload.old);
-          const deleted = payload.old as HabitCompletion;
+          const deleted = payload.old as HabitCompletion & { user_id: string };
+          // Client-side filter
+          if (deleted.user_id !== user.id) return;
           
-          // Remove from cache
+          console.log('[Realtime] Habit completion DELETE');
+          
           queryClient.setQueryData<HabitCompletion[]>(
             ['habit-completions', user.id, weekKey],
             (old) => {

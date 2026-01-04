@@ -17,19 +17,22 @@ export const useRealtimeGoals = () => {
 
     console.log('[Realtime] Setting up subscription for goals');
 
-    // Create a channel for goals changes
+    // Create a channel for goals changes (no server filter to avoid mismatch errors)
     const channel = supabase
       .channel(`goals-${user.id}`)
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'goals',
-          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[Realtime] Goal change:', payload.eventType, payload);
+          // Client-side filter to only handle changes for this user
+          const record = (payload.new || payload.old) as { user_id?: string } | undefined;
+          if (record?.user_id !== user.id) return;
+          
+          console.log('[Realtime] Goal change:', payload.eventType);
           
           // Invalidate goals queries to refetch fresh data
           queryClient.invalidateQueries({ 
