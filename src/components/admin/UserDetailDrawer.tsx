@@ -22,11 +22,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { User, Clock, Calendar, Activity, MousePointerClick, Trash2, AlertTriangle, FileCheck } from "lucide-react";
+import { User, Clock, Calendar, Activity, MousePointerClick, Trash2, AlertTriangle, FileCheck, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { CURRENT_TOS_VERSION } from "@/constants/tosVersion";
+import { Switch } from "@/components/ui/switch";
+import { toggleUserAIFeatures } from "@/hooks/useAIFeatures";
 
 interface AdminUser {
   id: string;
@@ -80,13 +82,55 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiToggling, setAiToggling] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     if (user && open) {
       fetchUserSessions(user.id);
+      fetchAIStatus(user.id);
     }
   }, [user, open]);
+
+  const fetchAIStatus = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("ai_features_enabled")
+        .eq("id", userId)
+        .single();
+
+      if (!error && data) {
+        setAiEnabled(data.ai_features_enabled ?? false);
+      }
+    } catch (error) {
+      console.error("Error fetching AI status:", error);
+    }
+  };
+
+  const handleToggleAI = async () => {
+    if (!user) return;
+    
+    setAiToggling(true);
+    try {
+      await toggleUserAIFeatures(user.id, !aiEnabled);
+      setAiEnabled(!aiEnabled);
+      toast({
+        title: aiEnabled ? "AI Features Disabled" : "AI Features Enabled",
+        description: `AI features have been ${aiEnabled ? "disabled" : "enabled"} for ${user.full_name}.`,
+      });
+    } catch (error) {
+      console.error("Error toggling AI features:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update AI features.",
+        variant: "destructive",
+      });
+    } finally {
+      setAiToggling(false);
+    }
+  };
 
   const fetchUserSessions = async (userId: string) => {
     setLoading(true);
@@ -277,6 +321,36 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
                 </div>
               </>
             )}
+          </CardContent>
+        </Card>
+
+        {/* AI Features */}
+        <Card className="border-border">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              AI Features
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium">AI Suggestions</p>
+                <p className="text-xs text-muted-foreground">
+                  Enable AI-powered objective suggestions
+                </p>
+              </div>
+              <Switch
+                checked={aiEnabled}
+                onCheckedChange={handleToggleAI}
+                disabled={aiToggling}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {aiEnabled 
+                ? "This user can receive AI-generated suggestions." 
+                : "AI features are disabled for this user."}
+            </p>
           </CardContent>
         </Card>
 
