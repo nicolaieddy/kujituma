@@ -1,23 +1,28 @@
-import { useEffect, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef, useCallback } from 'react';
+import { useQueryClient, useIsMutating } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Hook to subscribe to real-time changes for weekly objectives.
  * This ensures that changes made on one device instantly appear on others.
+ * Skips invalidation during active mutations to prevent race conditions.
  */
 export const useRealtimeObjectives = (weekStart: string) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  
+  // Track if mutations are in progress to avoid redundant refetches
+  const isMutating = useIsMutating({ mutationKey: ['weekly-objectives'] });
+  const isMutatingRef = useRef(isMutating);
+  isMutatingRef.current = isMutating;
 
   useEffect(() => {
     if (!user?.id || !weekStart) return;
 
     console.log('[Realtime] Setting up subscription for weekly_objectives');
 
-    // Subscribe to all changes on the table and filter client-side
     const channel = supabase
       .channel(`weekly-objectives-${user.id}-${weekStart}`)
       .on(
@@ -31,7 +36,13 @@ export const useRealtimeObjectives = (weekStart: string) => {
           const record = (payload.new || payload.old) as { user_id?: string } | undefined;
           if (record?.user_id !== user.id) return;
           
-          console.log('[Realtime] Objectives change:', payload.eventType);
+          // Skip if we're the ones making the change (mutation in progress)
+          if (isMutatingRef.current > 0) {
+            console.log('[Realtime] Skipping invalidation - mutation in progress');
+            return;
+          }
+          
+          console.log('[Realtime] Objectives change from another source:', payload.eventType);
           queryClient.invalidateQueries({ 
             queryKey: ['weekly-objectives', user.id, weekStart] 
           });

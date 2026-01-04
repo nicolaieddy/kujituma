@@ -71,28 +71,31 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     createMutation.mutate({ ...data, week_start: currentWeekStart });
   };
 
-  const updateObjective = async (id: string, data: UpdateWeeklyObjectiveData) => {
-    // Check for streak milestone before completing
-    if (data.is_completed === true) {
-      try {
-        const milestoneCheck = await HabitStreaksService.checkStreakMilestone(id);
-        if (milestoneCheck?.isMilestone) {
-          setTimeout(() => {
-            celebrateStreakMilestone(milestoneCheck.newStreak);
-            const message = getStreakMilestoneMessage(milestoneCheck.newStreak);
-            if (message) {
-              toast({
-                title: "Streak Milestone!",
-                description: message,
-              });
-            }
-          }, 300);
-        }
-      } catch (error) {
-        console.error('Error checking streak milestone:', error);
-      }
-    }
+  const updateObjective = (id: string, data: UpdateWeeklyObjectiveData) => {
+    // Trigger mutation immediately for responsive UI
     updateMutation.mutate({ id, data });
+    
+    // Check for streak milestone asynchronously after completing
+    if (data.is_completed === true) {
+      HabitStreaksService.checkStreakMilestone(id)
+        .then((milestoneCheck) => {
+          if (milestoneCheck?.isMilestone) {
+            setTimeout(() => {
+              celebrateStreakMilestone(milestoneCheck.newStreak);
+              const message = getStreakMilestoneMessage(milestoneCheck.newStreak);
+              if (message) {
+                toast({
+                  title: "Streak Milestone!",
+                  description: message,
+                });
+              }
+            }, 300);
+          }
+        })
+        .catch((error) => {
+          console.error('Error checking streak milestone:', error);
+        });
+    }
   };
 
   const deleteObjective = (id: string) => {
