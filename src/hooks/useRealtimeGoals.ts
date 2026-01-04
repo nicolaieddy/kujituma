@@ -43,8 +43,12 @@ export const useRealtimeGoals = () => {
           });
         }
       )
-      .subscribe((status) => {
-        console.log('[Realtime] Goals subscription status:', status);
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Goals subscription active');
+        } else if (status === 'CHANNEL_ERROR' && err) {
+          console.warn('[Realtime] Goals channel error:', err.message);
+        }
       });
 
     channelRef.current = channel;

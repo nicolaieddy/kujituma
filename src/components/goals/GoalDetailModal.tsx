@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Goal, GoalStatus } from "@/types/goals";
@@ -59,6 +59,7 @@ export const GoalDetailModal = ({
                   <Badge className={`${config.color} text-sm`}>{config.label}</Badge>
                 </div>
                 <DialogTitle className="text-2xl text-foreground">{goal.title}</DialogTitle>
+                <DialogDescription className="sr-only">Goal details and actions</DialogDescription>
                 {goal.description && <p className="text-muted-foreground mt-2">{goal.description}</p>}
               </div>
               <div className="flex gap-2">
