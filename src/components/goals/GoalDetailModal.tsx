@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Goal, GoalStatus, HabitItem, CustomSchedule } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, Target, X, GripVertical } from "lucide-react";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, Target, X, GripVertical, ChevronDown, History, CalendarClock } from "lucide-react";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
@@ -138,15 +139,24 @@ export const GoalDetailModal = ({
   const relatedObjectives = weeklyObjectives.filter(obj => obj.goal_id === goal.id);
   const habitItems = goal.habit_items || [];
   
-  // Sort objectives: current/future weeks first, then by week descending
   const currentWeekStart = WeeklyProgressService.getWeekStart();
-  const sortedObjectives = [...relatedObjectives].sort((a, b) => {
-    const aIsCurrent = a.week_start >= currentWeekStart;
-    const bIsCurrent = b.week_start >= currentWeekStart;
-    if (aIsCurrent && !bIsCurrent) return -1;
-    if (!aIsCurrent && bIsCurrent) return 1;
-    return new Date(b.week_start).getTime() - new Date(a.week_start).getTime();
-  });
+  
+  // Group objectives: current week, planned (future), and past
+  const currentWeekObjectives = relatedObjectives
+    .filter(obj => obj.week_start === currentWeekStart)
+    .sort((a, b) => a.text.localeCompare(b.text));
+  
+  const plannedObjectives = relatedObjectives
+    .filter(obj => obj.week_start > currentWeekStart)
+    .sort((a, b) => new Date(a.week_start).getTime() - new Date(b.week_start).getTime());
+  
+  const pastObjectives = relatedObjectives
+    .filter(obj => obj.week_start < currentWeekStart)
+    .sort((a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime());
+
+  // Collapsible state
+  const [isPastOpen, setIsPastOpen] = useState(false);
+  const [isPlannedOpen, setIsPlannedOpen] = useState(false);
 
   // Week options
   const generateWeekOptions = () => {
@@ -286,6 +296,86 @@ export const GoalDetailModal = ({
   };
 
   const isCurrentOrFuture = (weekStart: string) => weekStart >= currentWeekStart;
+
+  // Render a single objective item
+  const renderObjectiveItem = (objective: WeeklyObjective, isCurrent: boolean) => {
+    const isEditingThis = editingObjectiveId === objective.id;
+    
+    if (isEditingThis) {
+      return (
+        <div key={objective.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-primary/30">
+          <Input
+            value={editingObjectiveText}
+            onChange={(e) => setEditingObjectiveText(e.target.value)}
+            className="flex-1 h-8 text-sm"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') { e.preventDefault(); handleSaveEditObjective(); }
+              if (e.key === 'Escape') handleCancelEditObjective();
+            }}
+          />
+          <Select value={editingObjectiveWeek} onValueChange={setEditingObjectiveWeek}>
+            <SelectTrigger className="w-24 h-8">
+              <SelectValue>W{getWeekNumber(editingObjectiveWeek)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {weekOptions.map((week) => (
+                <SelectItem key={week} value={week}>
+                  W{getWeekNumber(week)} • {formatWeekRange(week)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="ghost" onClick={handleSaveEditObjective} className="h-8 px-2">
+            <CheckCircle className="h-4 w-4 text-primary" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={handleCancelEditObjective} className="h-8 px-2">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      );
+    }
+    
+    return (
+      <div
+        key={objective.id}
+        className={cn(
+          "flex items-center gap-3 p-3 rounded-lg group transition-colors cursor-pointer",
+          isCurrent ? "bg-muted/30 hover:bg-muted/40" : "bg-muted/10 hover:bg-muted/20",
+          objective.is_completed && "opacity-60"
+        )}
+        onClick={() => handleStartEditObjective(objective)}
+      >
+        <Checkbox
+          checked={objective.is_completed}
+          onCheckedChange={() => handleToggleObjective(objective)}
+          onClick={(e) => e.stopPropagation()}
+          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+        />
+        <div className="flex-1 min-w-0">
+          <p className={cn("text-sm", objective.is_completed && "line-through text-muted-foreground")}>
+            {objective.text}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Badge variant={isCurrent ? "outline" : "secondary"} className="text-xs">
+            W{getWeekNumber(objective.week_start)}
+          </Badge>
+          {objective.is_completed && (
+            <CheckCircle className="h-4 w-4 text-primary" />
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => { e.stopPropagation(); onDeleteObjective(objective.id); }}
+            className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 text-destructive hover:bg-destructive/20"
+          >
+            <X className="h-3 w-3" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -439,92 +529,46 @@ export const GoalDetailModal = ({
                 <span className="text-xs text-muted-foreground ml-auto">One-time tasks</span>
               </div>
 
-              {sortedObjectives.length > 0 && (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {sortedObjectives.map((objective) => {
-                    const isCurrent = isCurrentOrFuture(objective.week_start);
-                    const isEditingThis = editingObjectiveId === objective.id;
-                    
-                    if (isEditingThis) {
-                      return (
-                        <div key={objective.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-primary/30">
-                          <Input
-                            value={editingObjectiveText}
-                            onChange={(e) => setEditingObjectiveText(e.target.value)}
-                            className="flex-1 h-8 text-sm"
-                            autoFocus
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter') { e.preventDefault(); handleSaveEditObjective(); }
-                              if (e.key === 'Escape') handleCancelEditObjective();
-                            }}
-                          />
-                          <Select value={editingObjectiveWeek} onValueChange={setEditingObjectiveWeek}>
-                            <SelectTrigger className="w-24 h-8">
-                              <SelectValue>W{getWeekNumber(editingObjectiveWeek)}</SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {weekOptions.map((week) => (
-                                <SelectItem key={week} value={week}>
-                                  W{getWeekNumber(week)} • {formatWeekRange(week)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <Button size="sm" variant="ghost" onClick={handleSaveEditObjective} className="h-8 px-2">
-                            <CheckCircle className="h-4 w-4 text-primary" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={handleCancelEditObjective} className="h-8 px-2">
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      );
-                    }
-                    
-                    return (
-                      <div
-                        key={objective.id}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-lg group transition-colors cursor-pointer",
-                          isCurrent ? "bg-muted/30 hover:bg-muted/40" : "bg-muted/10 hover:bg-muted/20",
-                          objective.is_completed && "opacity-60"
-                        )}
-                        onClick={() => handleStartEditObjective(objective)}
-                      >
-                        <Checkbox
-                          checked={objective.is_completed}
-                          onCheckedChange={() => handleToggleObjective(objective)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className={cn("text-sm", objective.is_completed && "line-through text-muted-foreground")}>
-                            {objective.text}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <Badge variant={isCurrent ? "outline" : "secondary"} className="text-xs">
-                            W{getWeekNumber(objective.week_start)}
-                          </Badge>
-                          {objective.is_completed && (
-                            <CheckCircle className="h-4 w-4 text-primary" />
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => { e.stopPropagation(); onDeleteObjective(objective.id); }}
-                            className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 text-destructive hover:bg-destructive/20"
-                          >
-                            <X className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  })}
+              {/* Current Week Objectives */}
+              {currentWeekObjectives.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">This Week</p>
+                  {currentWeekObjectives.map((objective) => renderObjectiveItem(objective, true))}
                 </div>
               )}
 
-              {sortedObjectives.length === 0 && (
+              {relatedObjectives.length === 0 && (
                 <p className="text-sm text-muted-foreground py-2">No objectives yet. Add tasks scheduled for specific weeks.</p>
+              )}
+
+              {/* Planned (Future) Objectives - Collapsible */}
+              {plannedObjectives.length > 0 && (
+                <Collapsible open={isPlannedOpen} onOpenChange={setIsPlannedOpen}>
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 hover:bg-muted/30 rounded-lg px-2 transition-colors">
+                    <CalendarClock className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">Planned</span>
+                    <Badge variant="secondary" className="text-xs ml-1">{plannedObjectives.length}</Badge>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform", isPlannedOpen && "rotate-180")} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    {plannedObjectives.map((objective) => renderObjectiveItem(objective, true))}
+                  </CollapsibleContent>
+                </Collapsible>
+              )}
+
+              {/* Past Objectives - Collapsible */}
+              {pastObjectives.length > 0 && (
+                <Collapsible open={isPastOpen} onOpenChange={setIsPastOpen}>
+                  <CollapsibleTrigger className="flex items-center gap-2 w-full py-2 hover:bg-muted/30 rounded-lg px-2 transition-colors">
+                    <History className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-xs font-medium text-muted-foreground">Past</span>
+                    <Badge variant="secondary" className="text-xs ml-1">{pastObjectives.length}</Badge>
+                    <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground ml-auto transition-transform", isPastOpen && "rotate-180")} />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    {pastObjectives.map((objective) => renderObjectiveItem(objective, false))}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
               {/* Add objective inline */}
