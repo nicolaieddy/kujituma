@@ -84,39 +84,13 @@ export default defineConfig(({ mode }) => ({
                 }
               }
             },
-            {
-              // Cache Supabase API GET responses with StaleWhileRevalidate for instant loading
-              urlPattern: ({ request, url }) => 
-                url.href.includes('.supabase.co/rest/v1/') && request.method === 'GET',
-              handler: 'StaleWhileRevalidate',
-              options: {
-                cacheName: 'supabase-api-cache',
-                expiration: {
-                  maxEntries: 200,
-                  maxAgeSeconds: 60 * 60 * 24 * 7 // 1 week
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                },
-                plugins: [
-                  {
-                    // Add cache timestamp header
-                    cacheWillUpdate: async ({ response }) => {
-                      if (response && response.status === 200) {
-                        const headers = new Headers(response.headers);
-                        headers.set('x-sw-cache-timestamp', Date.now().toString());
-                        return new Response(response.body, {
-                          status: response.status,
-                          statusText: response.statusText,
-                          headers
-                        });
-                      }
-                      return response;
-                    }
-                  }
-                ]
-              }
-            },
+            // NOTE: Do NOT cache Supabase REST GET requests in the service worker.
+            // These responses are user-specific and change frequently (e.g., objectives toggles).
+            // Caching them can cause stale UI after a refetch and risks cross-user data leakage
+            // on shared devices because Workbox cache keys are URL-based.
+            //
+            // Offline support is handled explicitly via IndexedDB in offlineDataService.
+
             {
               // NetworkFirst for mutations/auth endpoints
               urlPattern: ({ url }) => 
