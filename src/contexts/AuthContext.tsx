@@ -91,13 +91,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // THEN get initial session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (error) {
         console.error('[AuthContext] Error getting session:', error);
         // Clear any invalid session state on error
-        if (error.message?.includes('invalid') || error.message?.includes('expired')) {
-          console.log('[AuthContext] Invalid/expired session, signing out');
-          supabase.auth.signOut().catch(console.error);
+        if (error.message?.includes('invalid') || error.message?.includes('expired') || error.message?.includes('signature')) {
+          console.log('[AuthContext] Invalid/expired/corrupt session, clearing local storage and signing out');
+          // Clear all Supabase auth data from localStorage to prevent redirect loops
+          Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('sb-') || key.includes('supabase')) {
+              localStorage.removeItem(key);
+            }
+          });
+          try {
+            await supabase.auth.signOut({ scope: 'local' });
+          } catch (signOutError) {
+            console.error('[AuthContext] Error during signOut cleanup:', signOutError);
+          }
         }
         setSession(null);
         setUser(null);
