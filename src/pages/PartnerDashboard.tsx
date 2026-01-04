@@ -455,11 +455,21 @@ const PartnerDashboard = () => {
                           ) : (
                             <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                           )}
-                          <span className={`text-sm ${objective.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                            {objective.text}
-                          </span>
+                          <div className="flex-1 min-w-0">
+                            <span className={`text-sm ${objective.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                              {objective.text}
+                            </span>
+                            {objective.goal?.title && (
+                              <div className="flex items-center gap-1 mt-0.5">
+                                <Target className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {objective.goal.title}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                           {objective.scheduled_day && (
-                            <Badge variant="secondary" className="ml-auto text-xs">
+                            <Badge variant="secondary" className="text-xs flex-shrink-0">
                               {objective.scheduled_day}
                             </Badge>
                           )}
