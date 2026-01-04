@@ -9,7 +9,7 @@ import { Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const NotificationBell = () => {
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const handleOpenChange = async (open: boolean) => {
@@ -74,6 +74,7 @@ export const NotificationBell = () => {
                   key={notification.id}
                   notification={notification}
                   onMarkRead={() => setIsOpen(false)}
+                  onMarkAsRead={markAsRead}
                 />
               ))}
             </div>
