@@ -17,7 +17,7 @@ export const useRealtimeObjectives = (weekStart: string) => {
 
     console.log('[Realtime] Setting up subscription for weekly_objectives');
 
-    // Create a channel for weekly objectives changes
+    // Create a channel for weekly objectives changes (no filter to avoid server/client mismatch)
     const channel = supabase
       .channel(`weekly-objectives-${user.id}-${weekStart}`)
       .on(
@@ -26,10 +26,13 @@ export const useRealtimeObjectives = (weekStart: string) => {
           event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
           schema: 'public',
           table: 'weekly_objectives',
-          filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[Realtime] Received change:', payload.eventType, payload);
+          // Filter client-side to only handle changes for this user
+          const record = (payload.new || payload.old) as { user_id?: string } | undefined;
+          if (record?.user_id !== user.id) return;
+          
+          console.log('[Realtime] Received change:', payload.eventType);
           
           // Invalidate the query to refetch fresh data
           // This triggers a refetch which will update the UI
