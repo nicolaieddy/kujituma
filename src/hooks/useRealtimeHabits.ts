@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { HabitCompletion } from '@/types/goals';
 
 /**
  * Hook to subscribe to real-time changes for habit completions.
@@ -23,25 +24,59 @@ export const useRealtimeHabits = (weekKey?: string) => {
       .on(
         'postgres_changes',
         {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+          event: 'INSERT',
           schema: 'public',
           table: 'habit_completions',
           filter: `user_id=eq.${user.id}`,
         },
         (payload) => {
-          console.log('[Realtime] Habit completion change:', payload.eventType, payload);
+          console.log('[Realtime] Habit completion INSERT:', payload.new);
+          const newCompletion = payload.new as HabitCompletion;
           
-          // Invalidate habit completions queries to refetch fresh data
-          queryClient.invalidateQueries({ 
-            queryKey: ['habit-completions', user.id],
-            exact: false 
-          });
+          // Directly update the cache instead of invalidating
+          queryClient.setQueryData<HabitCompletion[]>(
+            ['habit-completions', user.id, weekKey],
+            (old) => {
+              if (!old) return old;
+              // Check if we already have this (possibly from optimistic update)
+              const exists = old.some(
+                c => c.habit_item_id === newCompletion.habit_item_id && 
+                     c.completion_date === newCompletion.completion_date
+              );
+              if (exists) {
+                // Replace temp entry with real one
+                return old.map(c => 
+                  (c.habit_item_id === newCompletion.habit_item_id && 
+                   c.completion_date === newCompletion.completion_date)
+                    ? newCompletion
+                    : c
+                );
+              }
+              return [...old, newCompletion];
+            }
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'habit_completions',
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('[Realtime] Habit completion DELETE:', payload.old);
+          const deleted = payload.old as HabitCompletion;
           
-          // Also invalidate habit stats if they exist
-          queryClient.invalidateQueries({ 
-            queryKey: ['habit-stats'],
-            exact: false 
-          });
+          // Remove from cache
+          queryClient.setQueryData<HabitCompletion[]>(
+            ['habit-completions', user.id, weekKey],
+            (old) => {
+              if (!old) return old;
+              return old.filter(c => c.id !== deleted.id);
+            }
+          );
         }
       )
       .subscribe((status) => {
@@ -57,5 +92,5 @@ export const useRealtimeHabits = (weekKey?: string) => {
         channelRef.current = null;
       }
     };
-  }, [user?.id, queryClient]);
+  }, [user?.id, weekKey, queryClient]);
 };

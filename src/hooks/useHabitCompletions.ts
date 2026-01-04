@@ -4,6 +4,7 @@ import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { startOfWeek, format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { useRealtimeHabits } from "@/hooks/useRealtimeHabits";
+import { HabitCompletion } from "@/types/goals";
 
 export const useHabitCompletions = (weekStart?: Date) => {
   const { user } = useAuth();
@@ -37,11 +38,11 @@ export const useHabitCompletions = (weekStart?: Date) => {
       await queryClient.cancelQueries({ queryKey: ["habit-completions", user?.id, weekKey] });
       
       // Snapshot the previous value
-      const previousCompletions = queryClient.getQueryData(["habit-completions", user?.id, weekKey]);
+      const previousCompletions = queryClient.getQueryData<HabitCompletion[]>(["habit-completions", user?.id, weekKey]);
       
       // Optimistically update
       const dateStr = format(date, "yyyy-MM-dd");
-      queryClient.setQueryData(["habit-completions", user?.id, weekKey], (old: any[] | undefined) => {
+      queryClient.setQueryData<HabitCompletion[]>(["habit-completions", user?.id, weekKey], (old) => {
         if (!old) return old;
         
         const existingIndex = old.findIndex(
@@ -58,7 +59,7 @@ export const useHabitCompletions = (weekStart?: Date) => {
             goal_id: goalId,
             habit_item_id: habitItemId,
             completion_date: dateStr,
-            user_id: user?.id,
+            user_id: user?.id || '',
             created_at: new Date().toISOString()
           }];
         }
@@ -78,10 +79,44 @@ export const useHabitCompletions = (weekStart?: Date) => {
         variant: "destructive",
       });
     },
-    onSettled: () => {
-      // Refetch to ensure sync with server
-      queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
+    onSuccess: (isCompleted, { goalId, habitItemId, date }) => {
+      // After successful mutation, update cache with the correct state
+      // This ensures the server's response is reflected accurately
+      const dateStr = format(date, "yyyy-MM-dd");
+      
+      queryClient.setQueryData<HabitCompletion[]>(["habit-completions", user?.id, weekKey], (old) => {
+        if (!old) return old;
+        
+        const existingIndex = old.findIndex(
+          c => c.habit_item_id === habitItemId && c.completion_date === dateStr
+        );
+        
+        if (isCompleted) {
+          // Should be completed - if not in list, add it
+          if (existingIndex < 0) {
+            return [...old, {
+              id: `confirmed-${Date.now()}`,
+              goal_id: goalId,
+              habit_item_id: habitItemId,
+              completion_date: dateStr,
+              user_id: user?.id || '',
+              created_at: new Date().toISOString()
+            }];
+          }
+          // Already exists, update it to remove temp id
+          return old.map((c, i) => 
+            i === existingIndex ? { ...c, id: c.id.startsWith('temp-') ? `confirmed-${Date.now()}` : c.id } : c
+          );
+        } else {
+          // Should not be completed - remove if exists
+          if (existingIndex >= 0) {
+            return old.filter((_, i) => i !== existingIndex);
+          }
+        }
+        return old;
+      });
     },
+    // Note: No onSettled invalidation - we rely on onSuccess + realtime for sync
   });
 
   const toggleCompletion = (
