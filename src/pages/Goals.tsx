@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
-import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
+
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { OrganizedGoalsView } from "@/components/goals/OrganizedGoalsView";
@@ -51,10 +51,6 @@ const Goals = () => {
   );
   const [activeTab, setActiveTab] = useState("weekly");
 
-  // Only load these when actually needed
-  const { objectives, createObjective, updateObjective, deleteObjective } = useAllWeeklyObjectives({
-    enabled: activeTab === "longterm" && showDetailModal,
-  });
 
 
   const handleSignOut = async () => {
@@ -133,17 +129,6 @@ const Goals = () => {
     setSelectedGoal(null);
   };
 
-  const handleCreateObjective = (goalId: string, text: string) => {
-    createObjective(goalId, text);
-  };
-
-  const handleUpdateObjective = (id: string, updates: any) => {
-    updateObjective(id, updates);
-  };
-
-  const handleDeleteObjective = (id: string) => {
-    deleteObjective(id);
-  };
 
   const handleModalEditGoal = (updatedGoal: Goal) => {
     updateGoal(updatedGoal.id, updatedGoal);
@@ -302,10 +287,6 @@ const Goals = () => {
                 onEdit={handleModalEditGoal}
                 onDelete={deleteGoal}
                 onStatusChange={handleStatusChange}
-                weeklyObjectives={objectives}
-                onCreateObjective={handleCreateObjective}
-                onUpdateObjective={handleUpdateObjective}
-                onDeleteObjective={handleDeleteObjective}
               />
             </TabsContent>
           </Tabs>

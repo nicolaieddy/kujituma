@@ -3,7 +3,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Goal, GoalStatus } from "@/types/goals";
-import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
@@ -16,10 +15,6 @@ interface GoalDetailModalProps {
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: GoalStatus) => void;
-  weeklyObjectives: WeeklyObjective[];
-  onCreateObjective: (goalId: string, text: string, weekStart?: string) => void;
-  onUpdateObjective: (id: string, updates: any) => void;
-  onDeleteObjective: (id: string) => void;
 }
 
 const STATUS_CONFIG = {
@@ -36,10 +31,6 @@ export const GoalDetailModal = ({
   onEdit,
   onDelete,
   onStatusChange,
-  weeklyObjectives,
-  onCreateObjective,
-  onUpdateObjective,
-  onDeleteObjective,
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -109,10 +100,7 @@ export const GoalDetailModal = ({
             
             <GoalDetailObjectivesSection
               goalId={goal.id}
-              weeklyObjectives={weeklyObjectives}
-              onCreateObjective={onCreateObjective}
-              onUpdateObjective={onUpdateObjective}
-              onDeleteObjective={onDeleteObjective}
+              goalStartDate={goal.start_date}
             />
           </div>
         )}

@@ -1,50 +1,51 @@
-import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { GoalsService } from "@/services/goalsService";
 import { WeeklyObjective, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-export const useGoalObjectives = (goalId?: string) => {
+export const useGoalObjectives = (goalId?: string, goalStartDate?: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Get all weekly objectives (for the current user)
-  const { data: allObjectives = [], isLoading } = useQuery({
-    queryKey: ['weekly-objectives', user?.id],
+  // Fetch ALL objectives for this specific goal (no date limit)
+  const { data: goalObjectives = [], isLoading } = useQuery({
+    queryKey: ['goal-objectives', goalId],
     queryFn: async () => {
-      // We need to fetch objectives for multiple weeks
-      // For now, let's get the current week and a few weeks back
-      const weeks = [];
-      const currentDate = new Date();
-      
-      // Get current week and previous 12 weeks
-      for (let i = 0; i < 13; i++) {
-        const date = new Date(currentDate);
-        date.setDate(date.getDate() - (i * 7));
-        weeks.push(WeeklyProgressService.getWeekStart(date));
-      }
-
-      const allWeekObjectives = await Promise.all(
-        weeks.map(week => 
-          WeeklyProgressService.getWeeklyObjectives(week).catch(() => [])
-        )
-      );
-
-      return allWeekObjectives.flat();
+      if (!goalId) return [];
+      return WeeklyProgressService.getObjectivesForGoal(goalId);
     },
-    enabled: !!user,
+    enabled: !!user && !!goalId,
   });
 
-  // Filter objectives by goal if goalId is provided
-  const goalObjectives = goalId 
-    ? allObjectives.filter(obj => obj.goal_id === goalId)
-    : allObjectives;
+  // Find the earliest objective date
+  const earliestObjectiveDate = goalObjectives.length > 0
+    ? goalObjectives.reduce((earliest, obj) => 
+        obj.week_start < earliest ? obj.week_start : earliest, 
+        goalObjectives[0].week_start
+      )
+    : null;
+
+  // Check if we need to auto-expand the goal's start date
+  const needsStartDateExpansion = goalStartDate && earliestObjectiveDate 
+    ? earliestObjectiveDate < goalStartDate 
+    : false;
 
   const createObjectiveMutation = useMutation({
-    mutationFn: (data: CreateWeeklyObjectiveData) =>
-      WeeklyProgressService.createWeeklyObjective(data),
+    mutationFn: async (data: CreateWeeklyObjectiveData) => {
+      const objective = await WeeklyProgressService.createWeeklyObjective(data);
+      
+      // Auto-expand goal start_date if the new objective is earlier
+      if (data.goal_id && goalStartDate && data.week_start < goalStartDate) {
+        await GoalsService.updateGoal(data.goal_id, { start_date: data.week_start });
+        queryClient.invalidateQueries({ queryKey: ['goals'] });
+      }
+      
+      return objective;
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goal-objectives', goalId] });
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
       toast({
         title: "Success",
@@ -62,9 +63,19 @@ export const useGoalObjectives = (goalId?: string) => {
   });
 
   const updateObjectiveMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) =>
-      WeeklyProgressService.updateWeeklyObjective(id, data),
+    mutationFn: async ({ id, data }: { id: string; data: UpdateWeeklyObjectiveData }) => {
+      const objective = await WeeklyProgressService.updateWeeklyObjective(id, data);
+      
+      // Auto-expand goal start_date if moving objective to an earlier week
+      if (goalId && goalStartDate && data.week_start && data.week_start < goalStartDate) {
+        await GoalsService.updateGoal(goalId, { start_date: data.week_start });
+        queryClient.invalidateQueries({ queryKey: ['goals'] });
+      }
+      
+      return objective;
+    },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goal-objectives', goalId] });
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
       toast({
         title: "Success",
@@ -84,6 +95,7 @@ export const useGoalObjectives = (goalId?: string) => {
   const deleteObjectiveMutation = useMutation({
     mutationFn: WeeklyProgressService.deleteWeeklyObjective,
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['goal-objectives', goalId] });
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
       toast({
         title: "Success",
@@ -117,9 +129,20 @@ export const useGoalObjectives = (goalId?: string) => {
     deleteObjectiveMutation.mutate(id);
   };
 
+  // Auto-expand goal start date if needed
+  const expandGoalStartDate = async () => {
+    if (goalId && earliestObjectiveDate && needsStartDateExpansion) {
+      await GoalsService.updateGoal(goalId, { start_date: earliestObjectiveDate });
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      toast({
+        title: "Goal updated",
+        description: "Start date adjusted to include all objectives.",
+      });
+    }
+  };
+
   return {
     objectives: goalObjectives,
-    allObjectives,
     isLoading,
     createObjective,
     updateObjective,
@@ -127,5 +150,8 @@ export const useGoalObjectives = (goalId?: string) => {
     isCreating: createObjectiveMutation.isPending,
     isUpdating: updateObjectiveMutation.isPending,
     isDeleting: deleteObjectiveMutation.isPending,
+    earliestObjectiveDate,
+    needsStartDateExpansion,
+    expandGoalStartDate,
   };
 };
