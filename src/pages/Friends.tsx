@@ -11,7 +11,7 @@ import { AccountabilityPartnersTab } from "@/components/accountability/Accountab
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Users, UserPlus, Inbox, Handshake } from "lucide-react";
+import { Users, Handshake } from "lucide-react";
 import { FriendsSkeleton } from "@/components/skeletons/PageSkeletons";
 
 const Friends = () => {
@@ -29,7 +29,7 @@ const Friends = () => {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['friends', 'requests', 'discover', 'partners'].includes(tab)) {
+    if (tab && ['friends', 'partners'].includes(tab)) {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -55,6 +55,8 @@ const Friends = () => {
       console.error('Error signing out:', error);
     }
   };
+
+  const pendingRequestsCount = friendRequests.received.length + friendRequests.sent.length;
 
   if (authLoading) {
     return (
@@ -108,43 +110,29 @@ const Friends = () => {
 
         <div className="max-w-4xl mx-auto">
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-6">
-              <TabsTrigger value="friends" className="flex items-center gap-1 text-xs sm:text-sm">
+            <TabsList className="grid w-full grid-cols-2 mb-6">
+              <TabsTrigger value="friends" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Friends</span>
-                {friends.length > 0 && (
+                <span>Friends</span>
+                {(friends.length > 0 || pendingRequestsCount > 0) && (
                   <Badge variant="secondary" className="ml-1 text-xs">
-                    {friends.length}
+                    {friends.length}{pendingRequestsCount > 0 ? ` · ${pendingRequestsCount}` : ''}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="partners" className="flex items-center gap-1 text-xs sm:text-sm">
+              <TabsTrigger value="partners" className="flex items-center gap-2">
                 <Handshake className="h-4 w-4" />
-                <span className="hidden sm:inline">Partners</span>
+                <span>Accountability Partners</span>
                 {partners.length > 0 && (
                   <Badge variant="secondary" className="ml-1 text-xs">
                     {partners.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="requests" className="flex items-center gap-1 text-xs sm:text-sm">
-                <Inbox className="h-4 w-4" />
-                <span className="hidden sm:inline">Requests</span>
-                {(friendRequests.received.length + friendRequests.sent.length) > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {friendRequests.received.length + friendRequests.sent.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="discover" className="flex items-center gap-1 text-xs sm:text-sm">
-                <UserPlus className="h-4 w-4" />
-                <span className="hidden sm:inline">Discover</span>
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="friends">
               <FriendsView 
-                view="friends" 
                 friends={friends}
                 friendRequests={friendRequests}
                 loading={loading}
@@ -153,24 +141,6 @@ const Friends = () => {
 
             <TabsContent value="partners">
               <AccountabilityPartnersTab />
-            </TabsContent>
-
-            <TabsContent value="requests">
-              <FriendsView 
-                view="requests" 
-                friends={friends}
-                friendRequests={friendRequests}
-                loading={loading}
-              />
-            </TabsContent>
-
-            <TabsContent value="discover">
-              <FriendsView 
-                view="discover" 
-                friends={friends}
-                friendRequests={friendRequests}
-                loading={loading}
-              />
             </TabsContent>
           </Tabs>
         </div>
