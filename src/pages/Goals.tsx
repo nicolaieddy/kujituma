@@ -97,18 +97,22 @@ const Goals = () => {
   };
 
   const handleCarryOverAll = () => {
-    // Update all previous year goals to current year with new start date
+    // Mark previous-year goals as "resolved" for the current year so we don't prompt again
+    const currentYear = new Date().getFullYear();
     const today = new Date().toISOString().split('T')[0];
     const count = previousYearUnfinishedGoals.length;
+
     previousYearUnfinishedGoals.forEach(goal => {
-      updateGoal(goal.id, { 
-        status: goal.status === 'not_started' ? 'not_started' : goal.status,
-        start_date: today 
+      updateGoal(goal.id, {
+        carry_over_resolved_year: currentYear,
+        // Only set start_date if it was never set (avoid rewriting historical dates)
+        ...(goal.start_date ? {} : { start_date: today }),
       });
     });
+
     toast({
       title: "Goals Carried Over",
-      description: `${count} goal${count !== 1 ? 's' : ''} carried over to ${new Date().getFullYear()}.`,
+      description: `${count} goal${count !== 1 ? 's' : ''} carried over to ${currentYear}.`,
     });
   };
 

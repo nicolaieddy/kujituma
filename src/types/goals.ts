@@ -35,6 +35,7 @@ export interface Goal {
   is_paused: boolean;
   paused_at: string | null;
   habit_items: HabitItem[];
+  carry_over_resolved_year?: number | null;
 }
 
 export type GoalTimeframe = '1 Month' | '3 Months' | 'Quarter' | '6 Months' | 'End of Year' | 'Custom Date';
@@ -84,6 +85,7 @@ export interface UpdateGoalData {
   is_paused?: boolean;
   paused_at?: string | null;
   habit_items?: HabitItem[];
+  carry_over_resolved_year?: number | null;
 }
 
 export interface HabitCompletion {

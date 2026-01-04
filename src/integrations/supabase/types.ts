@@ -623,6 +623,7 @@ export type Database = {
       }
       goals: {
         Row: {
+          carry_over_resolved_year: number | null
           category: string | null
           completed_at: string | null
           created_at: string
@@ -647,6 +648,7 @@ export type Database = {
           visibility: string
         }
         Insert: {
+          carry_over_resolved_year?: number | null
           category?: string | null
           completed_at?: string | null
           created_at?: string
@@ -671,6 +673,7 @@ export type Database = {
           visibility?: string
         }
         Update: {
+          carry_over_resolved_year?: number | null
           category?: string | null
           completed_at?: string | null
           created_at?: string
