@@ -127,6 +127,10 @@ export const GoalDetailModal = ({
   const [editingHabitText, setEditingHabitText] = useState("");
   const [editingHabitFrequency, setEditingHabitFrequency] = useState<HabitFrequency>("weekly");
 
+  // Collapsible state - must be before any early returns
+  const [isPastOpen, setIsPastOpen] = useState(false);
+  const [isPlannedOpen, setIsPlannedOpen] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
@@ -153,10 +157,6 @@ export const GoalDetailModal = ({
   const pastObjectives = relatedObjectives
     .filter(obj => obj.week_start < currentWeekStart)
     .sort((a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime());
-
-  // Collapsible state
-  const [isPastOpen, setIsPastOpen] = useState(false);
-  const [isPlannedOpen, setIsPlannedOpen] = useState(false);
 
   // Week options
   const generateWeekOptions = () => {
