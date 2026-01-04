@@ -38,6 +38,8 @@ interface PartnershipStatus {
   is_partner: boolean;
   partnership_id?: string;
   can_view_partner_goals?: boolean;
+  request_status?: 'sent' | 'received';
+  request_id?: string;
 }
 
 const Profile = () => {
@@ -134,9 +136,11 @@ const Profile = () => {
               })()
             : Promise.resolve({ is_friend: false }),
           
-          // Check if this user is an accountability partner
+          // Check if this user is an accountability partner or has pending request
           isAuthenticated && !isOwner
-            ? accountabilityService.getPartnershipDetails(targetUserId).then(partnership => {
+            ? (async () => {
+                // First check for partnership
+                const partnership = await accountabilityService.getPartnershipDetails(targetUserId).catch(() => null);
                 if (partnership) {
                   return {
                     is_partner: true,
@@ -144,8 +148,21 @@ const Profile = () => {
                     can_view_partner_goals: partnership.can_view_partner_goals,
                   };
                 }
+                
+                // Check for pending partner requests
+                const requests = await accountabilityService.getPartnerRequests().catch(() => ({ sent: [], received: [] }));
+                const sentRequest = requests.sent.find(r => r.receiver_id === targetUserId);
+                const receivedRequest = requests.received.find(r => r.sender_id === targetUserId);
+                
+                if (sentRequest) {
+                  return { is_partner: false, request_status: 'sent' as const, request_id: sentRequest.id };
+                }
+                if (receivedRequest) {
+                  return { is_partner: false, request_status: 'received' as const, request_id: receivedRequest.id };
+                }
+                
                 return { is_partner: false };
-              }).catch(() => ({ is_partner: false }))
+              })()
             : Promise.resolve({ is_partner: false })
         ]);
 
@@ -257,6 +274,7 @@ const Profile = () => {
                 friendshipStatus={friendshipStatus}
                 partnershipStatus={partnershipStatus}
                 onFriendshipChange={setFriendshipStatus}
+                onPartnershipChange={setPartnershipStatus}
               />
             )}
           </>
