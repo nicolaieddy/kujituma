@@ -439,6 +439,35 @@ export type Database = {
         }
         Relationships: []
       }
+      goal_follows: {
+        Row: {
+          created_at: string
+          follower_user_id: string
+          goal_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          follower_user_id: string
+          goal_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          follower_user_id?: string
+          goal_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_follows_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       goal_status_history: {
         Row: {
           changed_at: string
@@ -477,6 +506,117 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_update_cheers: {
+        Row: {
+          cheer_type: string
+          created_at: string
+          id: string
+          message: string | null
+          update_id: string
+          user_id: string
+        }
+        Insert: {
+          cheer_type?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          update_id: string
+          user_id: string
+        }
+        Update: {
+          cheer_type?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          update_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_update_cheers_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "goal_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_update_comments: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          update_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          update_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          update_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_update_comments_update_id_fkey"
+            columns: ["update_id"]
+            isOneToOne: false
+            referencedRelation: "goal_updates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_updates: {
+        Row: {
+          content: string | null
+          created_at: string
+          goal_id: string
+          id: string
+          milestone_type: string | null
+          objectives_snapshot: Json | null
+          update_type: string
+          user_id: string
+          week_start: string | null
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          goal_id: string
+          id?: string
+          milestone_type?: string | null
+          objectives_snapshot?: Json | null
+          update_type: string
+          user_id: string
+          week_start?: string | null
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          goal_id?: string
+          id?: string
+          milestone_type?: string | null
+          objectives_snapshot?: Json | null
+          update_type?: string
+          user_id?: string
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_updates_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
             referencedColumns: ["id"]
           },
         ]
