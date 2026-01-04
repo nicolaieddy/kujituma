@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CreateDailyCheckIn } from "@/types/habits";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
-import { offlineSyncService } from "@/services/offlineSyncService";
+import { isNetworkError, queueOfflineMutation } from "@/utils/offlineUtils";
 
 export const useDailyCheckIn = () => {
   const { user } = useAuth();
@@ -76,26 +76,12 @@ export const useDailyCheckIn = () => {
         const result = await HabitsService.createOrUpdateCheckIn(data);
         return { result, wasOffline: false };
       } catch (error) {
-        // Check if it's a network error (offline)
-        const isNetworkError = !navigator.onLine || 
-          (error instanceof Error && (
-            error.message.includes('fetch') ||
-            error.message.includes('network') ||
-            error.message.includes('Failed to fetch') ||
-            error.name === 'TypeError'
-          ));
-        
-        if (isNetworkError) {
+        if (isNetworkError(error)) {
           console.log('Network error detected, queuing for offline sync');
-          // Queue the mutation for later sync
-          await offlineSyncService.queueMutation({
-            type: 'create',
-            table: 'daily_check_ins',
-            data: {
-              ...data,
-              user_id: user?.id,
-              check_in_date: today,
-            },
+          await queueOfflineMutation('create', 'daily_check_ins', {
+            ...data,
+            user_id: user?.id,
+            check_in_date: today,
           });
           
           // Optimistically cache the check-in

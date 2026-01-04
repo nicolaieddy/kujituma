@@ -1,14 +1,8 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { GoalUpdatesService } from "@/services/goalUpdatesService";
-import { HabitsService } from "@/services/habitsService";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
@@ -17,15 +11,19 @@ import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { HabitStreaksSummary } from "@/components/thisweek/HabitStreaksSummary";
-
 import { useHabitStats } from "@/hooks/useHabitStats";
-import { HabitStats } from "@/services/habitStreaksService";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
-import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
-import { useAIFeatures } from "@/hooks/useAIFeatures";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { HabitsService } from "@/services/habitsService";
+
+// Extracted hooks for better code organization
+import { useWeeklyShare } from "@/hooks/useWeeklyShare";
+import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
+import { useIncompleteReflections } from "@/hooks/useIncompleteReflections";
+import { useAISuggestions } from "@/hooks/useAISuggestions";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -35,25 +33,8 @@ interface ThisWeekViewProps {
 export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) => {
   const { user } = useAuth();
   const { goals, isCached: goalsCached } = useGoals();
-  const { habitStats, refetch: refetchHabits } = useHabitStats();
+  const { habitStats } = useHabitStats();
   const { lastSync, isOffline } = useOfflineStatus();
-  const { aiEnabled } = useAIFeatures();
-  const queryClient = useQueryClient();
-  const [isSharing, setIsSharing] = useState(false);
-  const [isCreating, setIsCreating] = useState(false);
-  const [showShareConfirmation, setShowShareConfirmation] = useState(false);
-  const [hasFetchedSuggestions, setHasFetchedSuggestions] = useState(false);
-  
-  // Track mounted state to prevent state updates after unmount
-  const mountedRef = useRef(true);
-
-  // Reset mounted ref on mount/unmount
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
   
   const {
     objectives,
@@ -75,82 +56,82 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     refetchObjectives,
   } = useWeeklyProgress(weekStart);
 
-  // Get all objectives for suggestions
+  // All objectives for AI suggestions
   const { objectives: allObjectives } = useAllWeeklyObjectives();
   
-  // AI Suggestions
-  const { suggestions, isSuggestionsLoading, generateSuggestions, clearSuggestions, cleanup: cleanupInsights } = useWeeklyInsights();
-
-  // Cleanup insights on unmount
-  useEffect(() => {
-    return () => {
-      cleanupInsights();
-    };
-  }, [cleanupInsights]);
-
-  // Generate suggestions when on current week with few objectives
+  // Week status
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   const isWeekCompleted = progressPost?.is_completed || false;
-  
-  useEffect(() => {
-    // Don't run if already fetched or component unmounted
-    if (hasFetchedSuggestions || !mountedRef.current) return;
-    
-    // Check conditions - including AI enabled check
-    if (
-      !aiEnabled ||
-      !isCurrentWeek || 
-      isWeekCompleted || 
-      weeklyDataLoading ||
-      !goals || 
-      goals.length === 0 ||
-      (objectives?.length || 0) >= 3
-    ) {
-      return;
-    }
+  const isEndOfWeek = HabitsService.isEndOfWeek();
+  const isReadOnly = isWeekCompleted;
 
-    // Set fetched immediately to prevent re-runs
-    setHasFetchedSuggestions(true);
-    
-    // Get incomplete objectives from previous weeks
-    const incompleteFromPast = (allObjectives || [])
-      .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
-      .map(o => ({ text: o.text, weekStart: o.week_start }));
-    
-    // Get completed objectives for context
-    const completedRecently = (allObjectives || [])
-      .filter(o => o.is_completed)
-      .slice(0, 10)
-      .map(o => ({ text: o.text }));
-    
-    generateSuggestions({
-      incompleteObjectives: incompleteFromPast,
-      completedObjectives: completedRecently,
-      goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
-        .map(g => ({ title: g.title, description: g.description || undefined })),
-    }).catch(err => {
-      // Only log if still mounted
-      if (mountedRef.current) {
-        console.error('[ThisWeekView] Failed to generate suggestions:', err);
-      }
-    });
-  }, [aiEnabled, isCurrentWeek, isWeekCompleted, hasFetchedSuggestions, weeklyDataLoading, goals, objectives, allObjectives, currentWeekStart, generateSuggestions]);
+  // Incomplete reflections handling
+  const { incompleteReflections, handleUpdateIncompleteReflection } = useIncompleteReflections(
+    progressPost,
+    currentWeekStart
+  );
 
-  // Reset when week changes
-  useEffect(() => {
-    if (mountedRef.current) {
-      setHasFetchedSuggestions(false);
-    }
-    clearSuggestions();
-  }, [currentWeekStart, clearSuggestions]);
+  // AI Suggestions
+  const { 
+    aiEnabled, 
+    suggestions, 
+    isSuggestionsLoading, 
+    handleRefreshSuggestions 
+  } = useAISuggestions({
+    isCurrentWeek,
+    isWeekCompleted,
+    weeklyDataLoading,
+    goals,
+    objectives,
+    allObjectives,
+    currentWeekStart,
+  });
 
-  // Simple week navigation (no blocking needed - auto-save handles data)
+  // Objective handlers
+  const {
+    isCreating,
+    handleUpdateObjectiveGoal,
+    handleAddObjective,
+    handleToggleObjective,
+    handleUpdateObjectiveText,
+    handleDeleteObjective,
+    handleReorderObjective,
+    handleUpdateObjectiveSchedule,
+    handleMoveObjectiveToWeek,
+  } = useObjectiveHandlers({
+    currentWeekStart,
+    objectives,
+    progressPost,
+    createObjective,
+    updateObjective,
+    deleteObjective,
+    incompleteReflections,
+  });
+
+  // Share functionality
+  const {
+    isSharing,
+    showShareConfirmation,
+    setShowShareConfirmation,
+    handleRequestShare,
+    handleConfirmShare,
+    handleViewInCommunity,
+  } = useWeeklyShare({
+    userId: user?.id,
+    currentWeekStart,
+    objectives,
+    progressNotes: progressPost?.notes || '',
+    incompleteReflections,
+  });
+
+  // Navigation
   const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
     if (onNavigateWeek) {
       onNavigateWeek(direction);
     }
   }, [onNavigateWeek]);
 
+  // Add suggestion handler
   const handleAddSuggestion = async (text: string) => {
     try {
       await createObjective({
@@ -163,328 +144,18 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
-  const handleRefreshSuggestions = () => {
-    try {
-      const incompleteFromPast = (allObjectives || [])
-        .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
-        .map(o => ({ text: o.text, weekStart: o.week_start }));
-      
-      const completedRecently = (allObjectives || [])
-        .filter(o => o.is_completed)
-        .slice(0, 10)
-        .map(o => ({ text: o.text }));
-      
-      generateSuggestions({
-        incompleteObjectives: incompleteFromPast,
-        completedObjectives: completedRecently,
-        goals: (goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started')
-          .map(g => ({ title: g.title, description: g.description || undefined })),
-      }).catch(err => console.error('[ThisWeekView] Failed to refresh suggestions:', err));
-    } catch (err) {
-      console.error('[ThisWeekView] Error refreshing suggestions:', err);
-    }
-  };
-
-  const handleUpdateObjectiveGoal = (id: string, goalId: string | null) => {
-    updateObjective(id, { goal_id: goalId });
-  };
-
-  const handleAddObjective = useCallback(async (text: string, goalId?: string) => {
-    setIsCreating(true);
-    try {
-      await createObjective({
-        text,
-        week_start: currentWeekStart,
-        goal_id: goalId || null,
-      });
-    } finally {
-      setIsCreating(false);
-    }
-  }, [createObjective, currentWeekStart]);
-
-  const handleToggleObjective = (id: string, isCompleted: boolean) => {
-    updateObjective(id, { is_completed: !isCompleted });
-  };
-
-  const handleUpdateObjectiveText = (id: string, text: string) => {
-    updateObjective(id, { text });
-  };
-
-  const handleDeleteObjective = (id: string) => {
-    deleteObjective(id);
-  };
-
-  const handleReorderObjective = async (objectiveId: string, newOrderIndex: number) => {
-    try {
-      await updateObjective(objectiveId, { order_index: newOrderIndex });
-    } catch (error) {
-      console.error('Error reordering objective:', error);
-    }
-  };
-
-  const handleUpdateObjectiveSchedule = (id: string, day: string | null, time: string | null) => {
-    updateObjective(id, { scheduled_day: day, scheduled_time: time });
-  };
-
-  const handleMoveObjectiveToWeek = async (objectiveId: string, newWeekStart: string, scheduledDay: string) => {
-    try {
-      // Find the objective to get its text for the reflection
-      const objective = objectives?.find(obj => obj.id === objectiveId);
-      
-      // First, create a copy of the objective in the new week
-      if (objective) {
-        await WeeklyProgressService.createWeeklyObjective({
-          text: objective.text,
-          goal_id: objective.goal_id || undefined,
-          week_start: newWeekStart,
-          scheduled_day: scheduledDay,
-          scheduled_time: objective.scheduled_time,
-        });
-      }
-      
-      // Then mark the original as "moved" by storing in incomplete reflections
-      const movedReflection = `[MOVED] Rescheduled to week of ${newWeekStart}`;
-      await WeeklyProgressService.upsertWeeklyProgressPostWithReflections(
-        currentWeekStart,
-        progressPost?.notes || '',
-        { ...incompleteReflections, [objectiveId]: movedReflection }
-      );
-      
-      // Delete the original objective from the current week
-      await deleteObjective(objectiveId);
-      
-      // Invalidate queries
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
-      queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
-      
-      toast({
-        title: "Objective rescheduled",
-        description: "The objective has been moved to a different week and marked as rescheduled.",
-      });
-    } catch (error) {
-      console.error('Error moving objective to week:', error);
-      toast({
-        title: "Error",
-        description: "Failed to move objective. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // State for incomplete reflections - safely parse from progressPost
-  const safeIncompleteReflections = (): Record<string, string> => {
-    try {
-      const raw = progressPost?.incomplete_reflections;
-      if (!raw) return {};
-      if (typeof raw === 'object' && raw !== null && !Array.isArray(raw)) {
-        return raw as Record<string, string>;
-      }
-      return {};
-    } catch {
-      return {};
-    }
-  };
-  
-  const [incompleteReflections, setIncompleteReflections] = useState<Record<string, string>>(
-    safeIncompleteReflections
-  );
-
-  // Sync state when progressPost changes
-  useEffect(() => {
-    setIncompleteReflections(safeIncompleteReflections());
-  }, [progressPost?.incomplete_reflections]);
-
-  const handleUpdateIncompleteReflection = useCallback((objectiveId: string, reflection: string) => {
-    setIncompleteReflections(prev => ({
-      ...prev,
-      [objectiveId]: reflection
-    }));
-    // Auto-save the reflections
-    WeeklyProgressService.upsertWeeklyProgressPostWithReflections(
-      currentWeekStart,
-      progressPost?.notes || '',
-      { ...incompleteReflections, [objectiveId]: reflection }
-    ).catch(err => console.error('[ThisWeekView] Failed to save reflections:', err));
-  }, [currentWeekStart, progressPost?.notes, incompleteReflections]);
-
-  const isEndOfWeek = HabitsService.isEndOfWeek();
-
-  const handleViewInCommunity = () => {
-    if (feedPost) {
-      window.open(`/community?post=${feedPost.id}`, '_blank');
-    } else {
-      window.open('/community', '_blank');
-    }
-  };
-
-  const handleRequestShare = () => {
-    setShowShareConfirmation(true);
-  };
-
-  const handleConfirmShare = async (helpRequest?: { goalId: string; message: string }) => {
-    if (!user) return;
-    
-    setShowShareConfirmation(false);
-    setIsSharing(true);
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single();
-
-      const latestProgressPost = await WeeklyProgressService.getWeeklyProgressPost(currentWeekStart);
-
-      const completedObjectives = objectives?.filter(obj => obj.is_completed) || [];
-      const pendingObjectives = objectives?.filter(obj => !obj.is_completed) || [];
-      
-      let accomplishments = '';
-      
-      if (completedObjectives.length > 0 || pendingObjectives.length > 0) {
-        accomplishments += '🎯 This Week\'s Progress:\n\n';
-        
-        if (completedObjectives.length > 0) {
-          accomplishments += 'Completed Objectives:\n';
-          accomplishments += completedObjectives.map(obj => `• ${obj.text}`).join('\n');
-          accomplishments += '\n\n';
-        }
-        
-        if (pendingObjectives.length > 0) {
-          accomplishments += 'Incomplete Objectives:\n';
-          accomplishments += pendingObjectives.map(obj => `• ${obj.text}`).join('\n');
-          accomplishments += '\n\n';
-          
-          // Safely get incomplete reflections
-          let reflectionsObj: Record<string, string> = {};
-          try {
-            const raw = latestProgressPost?.incomplete_reflections;
-            if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
-              reflectionsObj = raw as Record<string, string>;
-            }
-          } catch {
-            reflectionsObj = {};
-          }
-          
-          const reflectionEntries = Object.entries(reflectionsObj)
-            .filter(([_, reflection]) => reflection && typeof reflection === 'string' && reflection.trim())
-            .map(([_, reflection]) => reflection);
-          
-          if (reflectionEntries.length > 0) {
-            accomplishments += 'Reflections on Incomplete Objectives:\n';
-            accomplishments += reflectionEntries.join('\n');
-            accomplishments += '\n\n';
-          }
-        }
-      }
-      
-      const weeklyReflection = latestProgressPost?.notes?.trim() || '';
-      
-      if (!accomplishments.trim()) {
-        accomplishments = 'Focused on personal growth this week.';
-      }
-
-      const weekEnd = new Date(currentWeekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
-
-      const completedCount = completedObjectives.length;
-      const totalCount = objectives?.length || 0;
-      const completionPercentage = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-
-      const { error } = await supabase
-        .from('posts')
-        .insert({
-          user_id: user.id,
-          name: profile?.full_name || 'Anonymous',
-          accomplishments: accomplishments,
-          priorities: '',
-          help: '',
-          reflection: weeklyReflection,
-          week_start: currentWeekStart,
-          week_end: weekEnd.toISOString().split('T')[0],
-          objectives_completed: completedCount,
-          total_objectives: totalCount,
-          completion_percentage: completionPercentage,
-        });
-
-      if (error) {
-        console.error('Error sharing week:', error);
-        toast({
-          title: "Error",
-          description: "Failed to share your week. Please try again.",
-          variant: "destructive",
-        });
-      } else {
-        // Create goal updates for each goal with progress this week
-        try {
-          const goalUpdates = await GoalUpdatesService.createGoalUpdatesFromWeeklyShare({
-            userId: user.id,
-            weekStart: currentWeekStart,
-            objectives: objectives || [],
-            weeklyReflection: weeklyReflection
-          });
-          console.log(`[ThisWeekView] Created ${goalUpdates.length} goal updates`);
-        } catch (goalUpdateError) {
-          console.error('[ThisWeekView] Failed to create goal updates:', goalUpdateError);
-          // Don't fail the share if goal updates fail
-        }
-
-        // Create help request if user asked for help
-        if (helpRequest) {
-          try {
-            await GoalUpdatesService.createHelpRequest({
-              userId: user.id,
-              goalId: helpRequest.goalId,
-              helpMessage: helpRequest.message,
-              weekStart: currentWeekStart
-            });
-            console.log(`[ThisWeekView] Created help request for goal ${helpRequest.goalId}`);
-          } catch (helpError) {
-            console.error('[ThisWeekView] Failed to create help request:', helpError);
-          }
-        }
-
-        await WeeklyProgressService.completeWeek(currentWeekStart);
-        
-        toast({
-          title: "Success",
-          description: helpRequest 
-            ? "Your weekly progress has been shared and help request sent to friends!"
-            : "Your weekly progress has been shared with the community! This week is now locked.",
-        });
-        
-        await queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
-        await queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
-        await queryClient.invalidateQueries({ queryKey: ['goal-updates'] });
-        await queryClient.refetchQueries({ queryKey: ['weekly-progress-post', user.id, currentWeekStart] });
-      }
-    } catch (error) {
-      console.error('Error sharing week:', error);
-      toast({
-        title: "Error",
-        description: "Failed to share your week. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSharing(false);
-    }
-  };
-
+  // Computed values
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
   const hasShared = !!feedPost;
-  
-  // Enforce immutability: once a week is completed (shared), it becomes read-only
-  const isReadOnly = isWeekCompleted;
 
-
-  // Show loading skeleton while data is being fetched
+  // Loading state
   if (weeklyDataLoading) {
     return <ThisWeekSkeleton />;
   }
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Week Header */}
       <WeekHeader
         weekNumber={weekNumber}
         weekRange={weekRange}
@@ -498,7 +169,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
-      {/* Habit Streaks Summary */}
       {isCurrentWeek && habitStats.length > 0 && (
         <HabitStreaksSummary 
           habitStats={habitStats} 
@@ -508,7 +178,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      {/* Habits Due This Week */}
       {isCurrentWeek && habitStats.length > 0 && (
         <HabitsDueThisWeek
           habits={habitStats}
@@ -517,7 +186,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      {/* AI Suggestions - Show when AI is enabled and on current week with few objectives */}
       {aiEnabled && isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
         <AISuggestionsCard
           suggestions={suggestions}
@@ -527,7 +195,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      {/* Weekly Objectives */}
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="text-foreground">This Week's Focus</CardTitle>
@@ -549,12 +216,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
             currentWeekStart={currentWeekStart}
             onMoveObjectiveToWeek={handleMoveObjectiveToWeek}
-            
           />
         </CardContent>
       </Card>
 
-      {/* End of Week Reflection - show on Fri/Sat if there are incomplete objectives */}
       {isEndOfWeek && isCurrentWeek && !isReadOnly && objectives && objectives.some(obj => !obj.is_completed) && (
         <EndOfWeekReflection
           objectives={objectives}
@@ -564,7 +229,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      {/* Weekly Reflection */}
       <WeeklyReflectionCard
         initialNotes={progressPost?.notes || ""}
         onUpdateNotes={updateProgressNotes}
@@ -572,7 +236,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         weekStart={currentWeekStart}
       />
 
-      {/* Share Week */}
       <ShareWeekCard
         hasShared={hasShared}
         isCurrentWeek={isCurrentWeek}
@@ -581,11 +244,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         objectives={objectives || []}
         reflectionValue={progressPost?.notes || ""}
         onShareWeek={handleRequestShare}
-        onViewInCommunity={handleViewInCommunity}
+        onViewInCommunity={() => handleViewInCommunity(feedPost?.id)}
         isWeekCompleted={isWeekCompleted}
       />
 
-      {/* Confirmation Dialog */}
       <ShareConfirmationDialog
         isOpen={showShareConfirmation}
         onClose={() => setShowShareConfirmation(false)}
@@ -593,7 +255,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         isSharing={isSharing}
         goals={(goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started').map(g => ({ id: g.id, title: g.title }))}
       />
-
     </div>
   );
 };

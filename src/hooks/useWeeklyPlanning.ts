@@ -5,7 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { CreateWeeklyPlanningSession } from "@/types/habits";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
-import { offlineSyncService } from "@/services/offlineSyncService";
+import { isNetworkError, queueOfflineMutation } from "@/utils/offlineUtils";
 
 export const useWeeklyPlanning = (weekStart: string) => {
   const { user } = useAuth();
@@ -49,24 +49,12 @@ export const useWeeklyPlanning = (weekStart: string) => {
         const result = await HabitsService.createOrUpdatePlanningSession(data);
         return { result, wasOffline: false };
       } catch (error) {
-        const isNetworkError = !navigator.onLine || 
-          (error instanceof Error && (
-            error.message.includes('fetch') ||
-            error.message.includes('network') ||
-            error.message.includes('Failed to fetch') ||
-            error.name === 'TypeError'
-          ));
-        
-        if (isNetworkError) {
+        if (isNetworkError(error)) {
           console.log('Network error detected, queuing for offline sync');
-          await offlineSyncService.queueMutation({
-            type: 'create',
-            table: 'weekly_planning_sessions',
-            data: {
-              ...data,
-              user_id: user?.id,
-              week_start: weekStart,
-            },
+          await queueOfflineMutation('create', 'weekly_planning_sessions', {
+            ...data,
+            user_id: user?.id,
+            week_start: weekStart,
           });
           const optimisticSession = {
             ...data,
@@ -111,23 +99,11 @@ export const useWeeklyPlanning = (weekStart: string) => {
         const result = await HabitsService.completePlanningSession(weekStart);
         return { result, wasOffline: false };
       } catch (error) {
-        const isNetworkError = !navigator.onLine || 
-          (error instanceof Error && (
-            error.message.includes('fetch') ||
-            error.message.includes('network') ||
-            error.message.includes('Failed to fetch') ||
-            error.name === 'TypeError'
-          ));
-        
-        if (isNetworkError) {
+        if (isNetworkError(error)) {
           console.log('Network error detected, queuing completion for offline sync');
-          await offlineSyncService.queueMutation({
-            type: 'update',
-            table: 'weekly_planning_sessions',
-            data: {
-              id: planningSession?.id,
-              updates: { is_completed: true, completed_at: new Date().toISOString() },
-            },
+          await queueOfflineMutation('update', 'weekly_planning_sessions', {
+            id: planningSession?.id,
+            updates: { is_completed: true, completed_at: new Date().toISOString() },
           });
           const updatedSession = {
             ...planningSession,
