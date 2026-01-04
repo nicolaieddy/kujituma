@@ -3,29 +3,27 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { formatTimeAgo } from '@/utils/timeUtils';
 import { Notification } from '@/types/notifications';
-import { useNotifications } from '@/hooks/useNotifications';
 import { useFriends } from '@/hooks/useFriends';
 
 import { useNavigate } from 'react-router-dom';
 import { User, UserCheck, UserMinus, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 interface NotificationItemProps {
   notification: Notification;
   onMarkRead: () => void;
+  onMarkAsRead: (notificationId: string) => Promise<void>;
 }
 
-export const NotificationItem = ({ notification, onMarkRead }: NotificationItemProps) => {
-  const { markAsRead } = useNotifications();
+export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: NotificationItemProps) => {
   const { respondToFriendRequest } = useFriends();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleClick = async () => {
     if (!notification.is_read) {
-      await markAsRead(notification.id);
+      await onMarkAsRead(notification.id);
     }
-    
+
     // Navigate based on notification type
     if (notification.type === 'friend_request') {
       navigate('/friends?tab=requests');
@@ -36,7 +34,7 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
       // Navigate to feed with the specific post highlighted
       navigate(`/feed?post=${notification.related_post_id}`);
     }
-    
+
     onMarkRead();
   };
 
@@ -50,7 +48,7 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
     try {
       await respondToFriendRequest(notification.related_request_id, response);
       // Mark notification as read after responding
-      await markAsRead(notification.id);
+      await onMarkAsRead(notification.id);
       onMarkRead();
     } catch (error) {
       console.error('Error responding to friend request:', error);
@@ -58,7 +56,6 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
       setIsProcessing(false);
     }
   };
-
 
   const getNotificationIcon = () => {
     switch (notification.type) {
@@ -98,14 +95,12 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
         <div className="flex-1 min-w-0">
           <div className="flex items-center space-x-2">
             <span className="text-lg">{getNotificationIcon()}</span>
-            <p className="text-sm text-foreground break-words">
-              {notification.message}
-            </p>
+            <p className="text-sm text-foreground break-words">{notification.message}</p>
           </div>
           <p className="text-xs text-muted-foreground mt-1">
             {formatTimeAgo(new Date(notification.created_at).getTime())}
           </p>
-          
+
           {/* Friend Request Action Buttons */}
           {isFriendRequest && notification.related_request_id && (
             <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
@@ -138,8 +133,8 @@ export const NotificationItem = ({ notification, onMarkRead }: NotificationItemP
               </Button>
             </div>
           )}
-          
         </div>
+
         {!notification.is_read && (
           <div className="w-2 h-2 bg-primary rounded-full flex-shrink-0 mt-2" />
         )}
