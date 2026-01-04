@@ -1,20 +1,39 @@
 import { useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
-import { FeedView } from "@/components/feed/FeedView";
-import { FeedSkeletonList } from "@/components/feed/FeedPostSkeleton";
-import { Users, UserPlus } from "lucide-react";
+import { CommunityFeed } from "@/components/community/CommunityFeed";
+import { Target, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+
+const FeedSkeleton = () => (
+  <div className="space-y-4">
+    {[1, 2, 3].map((i) => (
+      <div key={i} className="rounded-lg border border-border p-5 space-y-4">
+        <div className="flex items-center gap-3">
+          <Skeleton className="h-10 w-10 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-2 w-full" />
+        <Skeleton className="h-16 w-full" />
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
 
 const Feed = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
-  
-  const highlightedPostId = searchParams.get('post');
 
   const handleSignOut = async () => {
     try {
@@ -24,11 +43,8 @@ const Feed = () => {
     }
   };
 
-  // Redirect to auth if not logged in (avoid navigate during render)
   useEffect(() => {
-    console.log('[Feed] Auth check - loading:', authLoading, 'user:', user?.email);
     if (!authLoading && !user) {
-      console.log('[Feed] No user, redirecting to /auth');
       navigate('/auth');
     }
   }, [authLoading, user, navigate]);
@@ -37,8 +53,8 @@ const Feed = () => {
     return (
       <div className="min-h-screen min-h-[100dvh] bg-background">
         <DashboardHeader isAdmin={false} onSignOut={() => {}} />
-        <main className="container max-w-3xl mx-auto px-4 py-6">
-          <FeedSkeletonList count={3} />
+        <main className="container max-w-2xl mx-auto px-4 py-6">
+          <FeedSkeleton />
         </main>
       </div>
     );
@@ -55,13 +71,13 @@ const Feed = () => {
         onSignOut={handleSignOut}
       />
 
-      <main className="container max-w-3xl mx-auto px-4 py-6 sm:py-8">
-        {/* Clean Header */}
+      <main className="container max-w-2xl mx-auto px-4 py-6 sm:py-8">
+        {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
-                <Users className="h-5 w-5 text-primary" />
+                <Target className="h-5 w-5 text-primary" />
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Community</h1>
             </div>
@@ -76,12 +92,12 @@ const Feed = () => {
             </Button>
           </div>
           <p className="text-muted-foreground text-sm sm:text-base pl-12">
-            See how everyone is progressing on their weekly journeys.
+            Follow your friends' goal journeys and cheer them on.
           </p>
         </div>
 
-        {/* Feed Content */}
-        <FeedView feedType="all" highlightedPostId={highlightedPostId} />
+        {/* Community Feed */}
+        <CommunityFeed />
       </main>
     </div>
   );
