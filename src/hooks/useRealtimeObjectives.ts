@@ -15,10 +15,43 @@ export const useRealtimeObjectives = (weekStart: string) => {
   useEffect(() => {
     if (!user?.id || !weekStart) return;
 
-    // Skip realtime subscription - table not configured for realtime
-    // Data is refreshed via visibility refresh and manual invalidation
-    console.log('[Realtime] Objectives subscription disabled (using visibility refresh instead)');
-  }, [user?.id, weekStart]);
+    console.log('[Realtime] Setting up subscription for weekly_objectives');
+
+    // Subscribe to all changes on the table and filter client-side
+    const channel = supabase
+      .channel(`weekly-objectives-${user.id}-${weekStart}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'weekly_objectives',
+        },
+        (payload) => {
+          const record = (payload.new || payload.old) as { user_id?: string } | undefined;
+          if (record?.user_id !== user.id) return;
+          
+          console.log('[Realtime] Objectives change:', payload.eventType);
+          queryClient.invalidateQueries({ 
+            queryKey: ['weekly-objectives', user.id, weekStart] 
+          });
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Objectives subscription active');
+        }
+      });
+
+    channelRef.current = channel;
+
+    return () => {
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+    };
+  }, [user?.id, weekStart, queryClient]);
 };
 
 /**
