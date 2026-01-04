@@ -23,12 +23,20 @@ const EmptyState = ({ type }: { type: 'all' | 'following' }) => (
     <h3 className="font-medium text-foreground mb-2">
       {type === 'following' ? 'No goals followed yet' : 'No updates yet'}
     </h3>
-    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+    <p className="text-sm text-muted-foreground max-w-sm mx-auto mb-4">
       {type === 'following' 
         ? "Follow your friends' goals to see their progress here and cheer them on!"
         : "When your friends share their goal progress, it will appear here."
       }
     </p>
+    {type === 'all' && (
+      <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 max-w-sm mx-auto">
+        <p className="text-sm text-foreground font-medium mb-1">Be the first to share!</p>
+        <p className="text-xs text-muted-foreground">
+          Click the "Share Update" button above to post about your goal progress and inspire others.
+        </p>
+      </div>
+    )}
   </div>
 );
 
