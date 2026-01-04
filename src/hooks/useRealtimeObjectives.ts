@@ -15,50 +15,10 @@ export const useRealtimeObjectives = (weekStart: string) => {
   useEffect(() => {
     if (!user?.id || !weekStart) return;
 
-    console.log('[Realtime] Setting up subscription for weekly_objectives');
-
-    // Create a channel for weekly objectives changes (no filter to avoid server/client mismatch)
-    const channel = supabase
-      .channel(`weekly-objectives-${user.id}-${weekStart}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
-          schema: 'public',
-          table: 'weekly_objectives',
-        },
-        (payload) => {
-          // Filter client-side to only handle changes for this user
-          const record = (payload.new || payload.old) as { user_id?: string } | undefined;
-          if (record?.user_id !== user.id) return;
-          
-          console.log('[Realtime] Received change:', payload.eventType);
-          
-          // Invalidate the query to refetch fresh data
-          // This triggers a refetch which will update the UI
-          queryClient.invalidateQueries({ 
-            queryKey: ['weekly-objectives', user.id, weekStart] 
-          });
-        }
-      )
-      .subscribe((status, err) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('[Realtime] Objectives subscription active');
-        } else if (status === 'CHANNEL_ERROR' && err) {
-          console.warn('[Realtime] Objectives channel error:', err.message);
-        }
-      });
-
-    channelRef.current = channel;
-
-    return () => {
-      console.log('[Realtime] Cleaning up subscription');
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
-    };
-  }, [user?.id, weekStart, queryClient]);
+    // Skip realtime subscription - table not configured for realtime
+    // Data is refreshed via visibility refresh and manual invalidation
+    console.log('[Realtime] Objectives subscription disabled (using visibility refresh instead)');
+  }, [user?.id, weekStart]);
 };
 
 /**
