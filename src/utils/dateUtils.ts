@@ -1,3 +1,14 @@
+/**
+ * Get a date in YYYY-MM-DD format using local timezone.
+ * This is crucial for features like daily check-ins where "today"
+ * should match the user's local day, not UTC.
+ */
+export const getLocalDateString = (date: Date = new Date()): string => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 export const getDateFromPeriod = (period: string) => {
   if (period === "all") return null;

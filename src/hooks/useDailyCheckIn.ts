@@ -6,6 +6,7 @@ import { CreateDailyCheckIn } from "@/types/habits";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
 import { isNetworkError, queueOfflineMutation } from "@/utils/offlineUtils";
+import { getLocalDateString } from "@/utils/dateUtils";
 
 export const useDailyCheckIn = () => {
   const { user } = useAuth();
@@ -13,8 +14,8 @@ export const useDailyCheckIn = () => {
   const [isCached, setIsCached] = useState(false);
   const [lastSync, setLastSync] = useState<Date | null>(null);
 
-  // Get today's date for caching
-  const today = new Date().toISOString().split('T')[0];
+  // Get today's date in local timezone for caching
+  const today = getLocalDateString();
 
   const { data: todayCheckIn, isLoading } = useQuery({
     queryKey: ['daily-check-in', user?.id],
