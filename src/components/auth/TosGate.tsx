@@ -50,16 +50,17 @@ export const TosGate = ({ children }: TosGateProps) => {
     );
   }
 
-  // Show ToS acceptance modal if user hasn't accepted current version
-  if (hasAcceptedCurrentTos === false) {
-    const isNewUser = !latestAcceptance;
+  // Only show ToS modal if user has previously accepted a DIFFERENT version (ToS was updated)
+  // New users should accept during signup, not via this gate
+  if (hasAcceptedCurrentTos === false && latestAcceptance) {
+    // User has a previous acceptance but it's an old version - show update modal
     return (
       <>
         {children}
         <TosAcceptanceModal 
           open={true} 
           onAccept={acceptTos}
-          isNewUser={isNewUser}
+          isNewUser={false}
         />
       </>
     );
