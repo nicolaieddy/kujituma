@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ const Auth = () => {
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tosAccepted, setTosAccepted] = useState(false);
+  const [isReturningUser, setIsReturningUser] = useState(false);
 
   const { isNewUser } = useAuth();
   
@@ -34,7 +34,8 @@ const Auth = () => {
   }, [user, isNewUser, navigate]);
 
   const handleGoogleSignIn = async () => {
-    if (!tosAccepted) {
+    // For new users, require ToS acceptance
+    if (!isReturningUser && !tosAccepted) {
       setError('Please accept the Terms of Service and Privacy Policy to continue');
       return;
     }
@@ -44,9 +45,10 @@ const Auth = () => {
       setSigningIn(true);
       setError(null);
       
-      // Store in sessionStorage that user accepted ToS during signup
-      // This will be used after OAuth redirect to record acceptance
-      sessionStorage.setItem('tos_accepted_during_signup', CURRENT_TOS_VERSION);
+      // Only store ToS acceptance for new users
+      if (!isReturningUser) {
+        sessionStorage.setItem('tos_accepted_during_signup', CURRENT_TOS_VERSION);
+      }
       
       await signInWithGoogle();
     } catch (error) {
@@ -115,42 +117,45 @@ const Auth = () => {
             </div>
           )}
           
-          <div className="flex items-start space-x-3 bg-muted/50 rounded-lg p-4">
-            <Checkbox
-              id="accept-tos"
-              checked={tosAccepted}
-              onCheckedChange={(checked) => setTosAccepted(checked === true)}
-              disabled={signingIn}
-              className="mt-0.5"
-            />
-            <Label 
-              htmlFor="accept-tos" 
-              className="text-sm leading-relaxed cursor-pointer"
-            >
-              I agree to the{" "}
-              <a 
-                href="/terms" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors font-medium"
+          {/* Only show ToS checkbox for new users */}
+          {!isReturningUser && (
+            <div className="flex items-start space-x-3 bg-muted/50 rounded-lg p-4">
+              <Checkbox
+                id="accept-tos"
+                checked={tosAccepted}
+                onCheckedChange={(checked) => setTosAccepted(checked === true)}
+                disabled={signingIn}
+                className="mt-0.5"
+              />
+              <Label 
+                htmlFor="accept-tos" 
+                className="text-sm leading-relaxed cursor-pointer"
               >
-                Terms of Service
-              </a>{" "}
-              and{" "}
-              <a 
-                href="/privacy" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="underline hover:text-foreground transition-colors font-medium"
-              >
-                Privacy Policy
-              </a>
-            </Label>
-          </div>
+                I agree to the{" "}
+                <a 
+                  href="/terms" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors font-medium"
+                >
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a 
+                  href="/privacy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="underline hover:text-foreground transition-colors font-medium"
+                >
+                  Privacy Policy
+                </a>
+              </Label>
+            </div>
+          )}
 
           <Button
             onClick={handleGoogleSignIn}
-            disabled={signingIn || !tosAccepted}
+            disabled={signingIn || (!isReturningUser && !tosAccepted)}
             className="w-full h-12 flex items-center justify-center space-x-3 text-base"
           >
             {signingIn ? (
@@ -179,6 +184,17 @@ const Auth = () => {
               </>
             )}
           </Button>
+
+          {/* Toggle for returning users */}
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setIsReturningUser(!isReturningUser)}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+            >
+              {isReturningUser ? "New user? Accept terms first" : "Already have an account? Sign in directly"}
+            </button>
+          </div>
 
         </CardContent>
       </Card>
