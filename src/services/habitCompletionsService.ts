@@ -60,16 +60,35 @@ export class HabitCompletionsService {
     if (checkError) throw checkError;
 
     if (existing) {
-      // Delete the completion
+      // Delete the completion - use a more robust approach
       const { error: deleteError } = await supabase
         .from("habit_completions")
         .delete()
-        .eq("id", existing.id);
+        .eq("user_id", user.user.id)
+        .eq("goal_id", goalId)
+        .eq("habit_item_id", habitItemId)
+        .eq("completion_date", dateStr);
 
-      if (deleteError) throw deleteError;
+      if (deleteError) {
+        // If delete fails, it might already be deleted - verify
+        const { data: stillExists } = await supabase
+          .from("habit_completions")
+          .select("id")
+          .eq("user_id", user.user.id)
+          .eq("goal_id", goalId)
+          .eq("habit_item_id", habitItemId)
+          .eq("completion_date", dateStr)
+          .maybeSingle();
+        
+        // If it doesn't exist anymore, treat as successful delete
+        if (!stillExists) {
+          return false;
+        }
+        throw deleteError;
+      }
       return false;
     } else {
-      // Create the completion
+      // Create the completion - handle unique constraint violation
       const { error: insertError } = await supabase
         .from("habit_completions")
         .insert({
@@ -79,7 +98,13 @@ export class HabitCompletionsService {
           completion_date: dateStr,
         });
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        // If insert fails due to unique constraint, it already exists - that's fine
+        if (insertError.code === '23505') {
+          return true; // Already completed
+        }
+        throw insertError;
+      }
       return true;
     }
   }
