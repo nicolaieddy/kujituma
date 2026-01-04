@@ -197,7 +197,7 @@ export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus
           {/* Accountability Partner Banner */}
           {is_partner && !isOwnProfile && (
             <Link 
-              to={`/partners?partner=${profile.id}`}
+              to={`/partner/${profile.id}`}
               className="block mb-6"
             >
               <div className="flex items-center justify-between p-4 rounded-lg bg-primary/10 border border-primary/20 hover:bg-primary/15 transition-colors group">
