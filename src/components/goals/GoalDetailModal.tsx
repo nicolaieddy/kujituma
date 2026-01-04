@@ -7,16 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Goal, GoalStatus, HabitItem, CustomSchedule } from "@/types/goals";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { GoalForm } from "./GoalForm";
-import { GoalObjectivesList } from "./GoalObjectivesList";
-import { HabitCompletionTimeline } from "./HabitCompletionTimeline";
-import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, ArrowRight, X, Pencil, GripVertical } from "lucide-react";
-import { Link } from "react-router-dom";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { Edit, CheckCircle, Play, Clock, Trash2, Plus, RefreshCw, Target, CheckCircle2 } from "lucide-react";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { cn } from "@/lib/utils";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { SortableHabitRow } from "./SortableHabitRow";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
@@ -90,8 +87,11 @@ export const GoalDetailModal = ({
   const [editingHabitFrequency, setEditingHabitFrequency] = useState<HabitFrequency>("weekly");
   const [editingHabitCustomSchedule, setEditingHabitCustomSchedule] = useState<CustomSchedule | undefined>();
   const [showEditCustomPicker, setShowEditCustomPicker] = useState(false);
+  
+  // Objectives state
+  const [newObjectiveText, setNewObjectiveText] = useState("");
+  const [newObjectiveWeek, setNewObjectiveWeek] = useState<string>(WeeklyProgressService.getWeekStart());
 
-  // Hooks must be called unconditionally before any early returns
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 8 },
@@ -107,6 +107,37 @@ export const GoalDetailModal = ({
   const IconComponent = config.icon;
   const relatedObjectives = weeklyObjectives.filter(obj => obj.goal_id === goal.id);
   const habitItems = goal.habit_items || [];
+  const hasNoContent = habitItems.length === 0 && relatedObjectives.length === 0;
+
+  // Week options for objectives
+  const generateWeekOptions = () => {
+    const weeks = [];
+    const currentDate = new Date();
+    for (let i = 4; i >= 1; i--) {
+      const date = new Date(currentDate);
+      date.setDate(date.getDate() - (i * 7));
+      weeks.push(WeeklyProgressService.getWeekStart(date));
+    }
+    for (let i = 0; i <= 8; i++) {
+      const date = new Date(currentDate);
+      date.setDate(date.getDate() + (i * 7));
+      weeks.push(WeeklyProgressService.getWeekStart(date));
+    }
+    return weeks;
+  };
+
+  const weekOptions = generateWeekOptions();
+  
+  const getWeekNumber = (weekStart: string) => {
+    const startDate = new Date(weekStart);
+    const startOfYear = new Date(startDate.getFullYear(), 0, 1);
+    const pastDaysOfYear = (startDate.getTime() - startOfYear.getTime()) / 86400000;
+    return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
+  };
+
+  const formatWeekRange = (weekStart: string) => {
+    return WeeklyProgressService.formatWeekRange(weekStart);
+  };
 
   const handleStatusChange = (newStatus: GoalStatus) => {
     if (newStatus !== goal.status) {
@@ -114,18 +145,14 @@ export const GoalDetailModal = ({
     }
   };
 
-  const handleEdit = () => {
-    setIsEditing(true);
-  };
+  const handleEdit = () => setIsEditing(true);
 
   const handleSave = (data: any) => {
     onEdit({ ...goal, ...data });
     setIsEditing(false);
   };
 
-  const handleCancel = () => {
-    setIsEditing(false);
-  };
+  const handleCancel = () => setIsEditing(false);
 
   const handleClose = () => {
     setIsEditing(false);
@@ -134,9 +161,11 @@ export const GoalDetailModal = ({
     setNewHabitFrequency("weekly");
     setNewHabitCustomSchedule(undefined);
     setEditingHabitId(null);
+    setNewObjectiveText("");
     onClose();
   };
 
+  // Habit handlers
   const handleAddHabit = () => {
     if (!newHabitText.trim()) return;
     const newHabit: HabitItem = {
@@ -145,8 +174,7 @@ export const GoalDetailModal = ({
       frequency: newHabitFrequency,
       ...(newHabitFrequency === 'custom' && newHabitCustomSchedule && { customSchedule: newHabitCustomSchedule }),
     };
-    const updatedHabits = [...habitItems, newHabit];
-    onEdit({ ...goal, habit_items: updatedHabits });
+    onEdit({ ...goal, habit_items: [...habitItems, newHabit] });
     setNewHabitText("");
     setNewHabitFrequency("weekly");
     setNewHabitCustomSchedule(undefined);
@@ -154,8 +182,7 @@ export const GoalDetailModal = ({
   };
 
   const handleRemoveHabit = (habitId: string) => {
-    const updatedHabits = habitItems.filter(h => h.id !== habitId);
-    onEdit({ ...goal, habit_items: updatedHabits });
+    onEdit({ ...goal, habit_items: habitItems.filter(h => h.id !== habitId) });
   };
 
   const handleStartEditHabit = (habit: HabitItem) => {
@@ -169,12 +196,7 @@ export const GoalDetailModal = ({
     if (!editingHabitId || !editingHabitText.trim()) return;
     const updatedHabits = habitItems.map(h => 
       h.id === editingHabitId 
-        ? { 
-            ...h, 
-            text: editingHabitText.trim(), 
-            frequency: editingHabitFrequency,
-            customSchedule: editingHabitFrequency === 'custom' ? editingHabitCustomSchedule : undefined
-          }
+        ? { ...h, text: editingHabitText.trim(), frequency: editingHabitFrequency, customSchedule: editingHabitFrequency === 'custom' ? editingHabitCustomSchedule : undefined }
         : h
     );
     onEdit({ ...goal, habit_items: updatedHabits });
@@ -198,32 +220,38 @@ export const GoalDetailModal = ({
 
   const handleNewFrequencyChange = (value: HabitFrequency) => {
     setNewHabitFrequency(value);
-    if (value === 'custom') {
-      setShowCustomPicker(true);
-    }
+    if (value === 'custom') setShowCustomPicker(true);
   };
 
   const handleEditFrequencyChange = (value: HabitFrequency) => {
     setEditingHabitFrequency(value);
-    if (value === 'custom') {
-      setShowEditCustomPicker(true);
-    }
+    if (value === 'custom') setShowEditCustomPicker(true);
   };
 
   const handleHabitDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-    
     if (over && active.id !== over.id) {
       const oldIndex = habitItems.findIndex(item => item.id === active.id);
       const newIndex = habitItems.findIndex(item => item.id === over.id);
-      const reorderedHabits = arrayMove(habitItems, oldIndex, newIndex);
-      onEdit({ ...goal, habit_items: reorderedHabits });
+      onEdit({ ...goal, habit_items: arrayMove(habitItems, oldIndex, newIndex) });
     }
+  };
+
+  // Objective handlers
+  const handleCreateObjective = () => {
+    if (!newObjectiveText.trim()) return;
+    onCreateObjective(goal.id, newObjectiveText.trim(), newObjectiveWeek);
+    setNewObjectiveText("");
+    setNewObjectiveWeek(WeeklyProgressService.getWeekStart());
+  };
+
+  const handleToggleObjective = (objective: WeeklyObjective) => {
+    onUpdateObjective(objective.id, { is_completed: !objective.is_completed });
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
         <DialogHeader>
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -243,40 +271,23 @@ export const GoalDetailModal = ({
             <div className="flex gap-2">
               {!isEditing && (
                 <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleEdit}
-                  >
+                  <Button variant="ghost" size="sm" onClick={handleEdit}>
                     <Edit className="h-4 w-4 mr-2" />
                     Edit
                   </Button>
                   {goal.status === 'not_started' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleStatusChange('in_progress')}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleStatusChange('in_progress')}>
                       <Play className="h-4 w-4 mr-2" />
                       Start
                     </Button>
                   )}
                   {goal.status === 'in_progress' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleStatusChange('completed')}
-                    >
+                    <Button variant="ghost" size="sm" onClick={() => handleStatusChange('completed')}>
                       <CheckCircle className="h-4 w-4 mr-2" />
                       Complete
                     </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onDelete(goal.id)}
-                    className="text-destructive hover:bg-destructive/20"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => onDelete(goal.id)} className="text-destructive hover:bg-destructive/20">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </>
@@ -287,53 +298,49 @@ export const GoalDetailModal = ({
 
         {isEditing ? (
           <div className="mt-6">
-            <GoalForm
-              key={`edit-${goal.id}`}
-              onSubmit={handleSave}
-              onCancel={handleCancel}
-              initialData={goal}
-            />
+            <GoalForm key={`edit-${goal.id}`} onSubmit={handleSave} onCancel={handleCancel} initialData={goal} />
           </div>
         ) : (
-          <div className="mt-6 space-y-6">
-
-            {/* Habits Section - always visible with add capability */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <RefreshCw className="h-5 w-5 text-primary" />
-                  <h3 className="font-semibold text-foreground">Habits</h3>
-                  {habitItems.length > 0 && (
-                    <Badge variant="secondary" className="text-xs">
-                      {habitItems.length}
-                    </Badge>
-                  )}
+          <div className="mt-6 space-y-8">
+            
+            {/* Empty state explainer */}
+            {hasNoContent && (
+              <div className="rounded-lg border-2 border-dashed border-border/50 p-6 text-center">
+                <p className="text-muted-foreground mb-2">
+                  Track progress on this goal in two ways:
+                </p>
+                <div className="flex justify-center gap-8 mt-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <RefreshCw className="h-4 w-4 text-primary" />
+                    <span><strong>Habits</strong> – recurring behaviors</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Target className="h-4 w-4 text-primary" />
+                    <span><strong>Objectives</strong> – one-time tasks</span>
+                  </div>
                 </div>
+              </div>
+            )}
+
+            {/* HABITS SECTION */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <RefreshCw className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Habits</h3>
                 {habitItems.length > 0 && (
-                  <Link 
-                    to="/analytics"
-                    className="text-xs text-primary hover:text-primary/80 flex items-center gap-1 transition-colors"
-                  >
-                    View Analytics
-                    <ArrowRight className="h-3 w-3" />
-                  </Link>
+                  <span className="text-xs text-muted-foreground">({habitItems.length})</span>
                 )}
               </div>
-              <p className="text-muted-foreground text-xs">
-                Recurring behaviors tied to this goal - drag to reorder
-              </p>
+              
+              {habitItems.length === 0 && !isAddingHabit && (
+                <p className="text-sm text-muted-foreground">
+                  Add recurring behaviors you want to do regularly for this goal.
+                </p>
+              )}
 
-              {/* Saved habits list with drag and drop */}
               {habitItems.length > 0 && (
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleHabitDragEnd}
-                >
-                  <SortableContext
-                    items={habitItems.map(h => h.id)}
-                    strategy={verticalListSortingStrategy}
-                  >
+                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleHabitDragEnd}>
+                  <SortableContext items={habitItems.map(h => h.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2">
                       {habitItems.map((habit) => (
                         <SortableHabitRow
@@ -356,30 +363,20 @@ export const GoalDetailModal = ({
                 </DndContext>
               )}
 
-              {/* Add new habit */}
               {isAddingHabit ? (
                 <div className="p-4 rounded-lg bg-muted/30 border border-border/50 space-y-3">
                   <Input
                     value={newHabitText}
                     onChange={(e) => setNewHabitText(e.target.value)}
                     placeholder="What habit do you want to build?"
-                    className="flex-1"
                     autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddHabit();
-                      } else if (e.key === 'Escape') {
-                        setIsAddingHabit(false);
-                        setNewHabitText("");
-                      }
+                      if (e.key === 'Enter') { e.preventDefault(); handleAddHabit(); }
+                      else if (e.key === 'Escape') { setIsAddingHabit(false); setNewHabitText(""); }
                     }}
                   />
                   <div className="flex items-center gap-2">
-                    <Select
-                      value={newHabitFrequency}
-                      onValueChange={(value: HabitFrequency) => handleNewFrequencyChange(value)}
-                    >
+                    <Select value={newHabitFrequency} onValueChange={handleNewFrequencyChange}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Frequency" />
                       </SelectTrigger>
@@ -393,22 +390,10 @@ export const GoalDetailModal = ({
                         <SelectItem value="custom">Custom...</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button 
-                      size="sm" 
-                      onClick={handleAddHabit}
-                      disabled={!newHabitText.trim()}
-                      className="gradient-primary"
-                    >
-                      Add Habit
+                    <Button size="sm" onClick={handleAddHabit} disabled={!newHabitText.trim()} className="gradient-primary">
+                      Add
                     </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost"
-                      onClick={() => {
-                        setIsAddingHabit(false);
-                        setNewHabitText("");
-                      }}
-                    >
+                    <Button size="sm" variant="ghost" onClick={() => { setIsAddingHabit(false); setNewHabitText(""); }}>
                       Cancel
                     </Button>
                   </div>
@@ -416,62 +401,116 @@ export const GoalDetailModal = ({
               ) : (
                 <Button
                   variant="ghost"
-                  className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground border border-dashed border-border/50"
+                  size="sm"
+                  className="text-muted-foreground hover:text-foreground"
                   onClick={() => setIsAddingHabit(true)}
                 >
-                  <Plus className="h-4 w-4" />
-                  Add a habit to track
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add habit
                 </Button>
               )}
-            </div>
+            </section>
 
-            {/* Habit Completion Timeline - only show if habits exist */}
-            {habitItems.length > 0 && (
-              <HabitCompletionTimeline 
-                goal={goal} 
-                objectives={relatedObjectives} 
-              />
-            )}
-            
-            {/* Objectives Section - one-time tasks */}
-            <GoalObjectivesList
-              goal={goal}
-              objectives={relatedObjectives}
-              onCreateObjective={onCreateObjective}
-              onUpdateObjective={onUpdateObjective}
-              onDeleteObjective={onDeleteObjective}
-            />
+            {/* OBJECTIVES SECTION */}
+            <section className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-5 w-5 text-primary" />
+                <h3 className="font-semibold text-foreground">Objectives</h3>
+                {relatedObjectives.length > 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    ({relatedObjectives.filter(o => o.is_completed).length}/{relatedObjectives.length} done)
+                  </span>
+                )}
+              </div>
+              
+              {relatedObjectives.length === 0 && (
+                <p className="text-sm text-muted-foreground">
+                  Add one-time tasks scheduled for specific weeks.
+                </p>
+              )}
+
+              {/* Existing objectives list */}
+              {relatedObjectives.length > 0 && (
+                <div className="space-y-2">
+                  {relatedObjectives.sort((a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime()).map((objective) => (
+                    <div
+                      key={objective.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors group"
+                    >
+                      <Checkbox
+                        checked={objective.is_completed}
+                        onCheckedChange={() => handleToggleObjective(objective)}
+                        className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-sm ${objective.is_completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                          {objective.text}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Week {getWeekNumber(objective.week_start)} • {formatWeekRange(objective.week_start)}
+                        </p>
+                      </div>
+                      {objective.is_completed && (
+                        <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onDeleteObjective(objective.id)}
+                        className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 text-destructive hover:bg-destructive/20"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add new objective */}
+              <div className="flex items-center gap-2">
+                <Input
+                  value={newObjectiveText}
+                  onChange={(e) => setNewObjectiveText(e.target.value)}
+                  placeholder="Add an objective..."
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleCreateObjective(); }
+                  }}
+                />
+                <Select value={newObjectiveWeek} onValueChange={setNewObjectiveWeek}>
+                  <SelectTrigger className="w-44">
+                    <SelectValue>
+                      <span className="text-xs">W{getWeekNumber(newObjectiveWeek)}</span>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {weekOptions.map((week) => (
+                      <SelectItem key={week} value={week}>
+                        Week {getWeekNumber(week)} • {formatWeekRange(week)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button size="sm" onClick={handleCreateObjective} disabled={!newObjectiveText.trim()} className="gradient-primary">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </section>
           </div>
         )}
       </DialogContent>
 
-      {/* Custom Recurrence Picker for new habit */}
       <CustomRecurrencePicker
         isOpen={showCustomPicker}
-        onClose={() => {
-          setShowCustomPicker(false);
-          if (!newHabitCustomSchedule) {
-            setNewHabitFrequency("weekly");
-          }
-        }}
-        onSave={(schedule) => {
-          setNewHabitCustomSchedule(schedule);
-        }}
+        onClose={() => { setShowCustomPicker(false); if (!newHabitCustomSchedule) setNewHabitFrequency("weekly"); }}
+        onSave={(schedule) => setNewHabitCustomSchedule(schedule)}
         initialSchedule={newHabitCustomSchedule}
       />
 
-      {/* Custom Recurrence Picker for editing habit */}
       <CustomRecurrencePicker
         isOpen={showEditCustomPicker}
-        onClose={() => {
-          setShowEditCustomPicker(false);
-          if (!editingHabitCustomSchedule) {
-            setEditingHabitFrequency("weekly");
-          }
-        }}
-        onSave={(schedule) => {
-          setEditingHabitCustomSchedule(schedule);
-        }}
+        onClose={() => { setShowEditCustomPicker(false); if (!editingHabitCustomSchedule) setEditingHabitFrequency("weekly"); }}
+        onSave={(schedule) => setEditingHabitCustomSchedule(schedule)}
         initialSchedule={editingHabitCustomSchedule}
       />
     </Dialog>
