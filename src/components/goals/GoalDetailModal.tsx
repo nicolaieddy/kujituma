@@ -53,11 +53,13 @@ const STATUS_CONFIG = {
 const SortableHabit = ({ 
   habit, 
   onRemove, 
-  getFrequencyLabel 
+  getFrequencyLabel,
+  onEdit
 }: { 
   habit: HabitItem; 
   onRemove: (id: string) => void;
   getFrequencyLabel: (h: HabitItem) => string;
+  onEdit: (habit: HabitItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -67,11 +69,17 @@ const SortableHabit = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        "flex items-center gap-3 p-3 rounded-lg bg-muted/30 group",
+        "flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/40 group cursor-pointer transition-colors",
         isDragging && "opacity-50"
       )}
+      onClick={() => onEdit(habit)}
     >
-      <button {...attributes} {...listeners} className="cursor-grab text-muted-foreground hover:text-foreground">
+      <button 
+        {...attributes} 
+        {...listeners} 
+        className="cursor-grab text-muted-foreground hover:text-foreground"
+        onClick={(e) => e.stopPropagation()}
+      >
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="flex-1 text-sm">{habit.text}</span>
@@ -79,7 +87,7 @@ const SortableHabit = ({
       <Button
         variant="ghost"
         size="sm"
-        onClick={() => onRemove(habit.id)}
+        onClick={(e) => { e.stopPropagation(); onRemove(habit.id); }}
         className="opacity-0 group-hover:opacity-100 h-7 w-7 p-0 text-destructive hover:bg-destructive/20"
       >
         <X className="h-3 w-3" />
@@ -112,6 +120,11 @@ export const GoalDetailModal = ({
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingObjectiveText, setEditingObjectiveText] = useState("");
   const [editingObjectiveWeek, setEditingObjectiveWeek] = useState("");
+  
+  // Habit editing state
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
+  const [editingHabitText, setEditingHabitText] = useState("");
+  const [editingHabitFrequency, setEditingHabitFrequency] = useState<HabitFrequency>("weekly");
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -189,6 +202,31 @@ export const GoalDetailModal = ({
     onEdit({ ...goal, habit_items: habitItems.filter(h => h.id !== habitId) });
   };
 
+  const handleStartEditHabit = (habit: HabitItem) => {
+    setEditingHabitId(habit.id);
+    setEditingHabitText(habit.text);
+    setEditingHabitFrequency(habit.frequency as HabitFrequency);
+  };
+
+  const handleSaveEditHabit = () => {
+    if (!editingHabitId || !editingHabitText.trim()) return;
+    const updatedHabits = habitItems.map(h => 
+      h.id === editingHabitId 
+        ? { ...h, text: editingHabitText.trim(), frequency: editingHabitFrequency }
+        : h
+    );
+    onEdit({ ...goal, habit_items: updatedHabits });
+    setEditingHabitId(null);
+    setEditingHabitText("");
+    setEditingHabitFrequency("weekly");
+  };
+
+  const handleCancelEditHabit = () => {
+    setEditingHabitId(null);
+    setEditingHabitText("");
+    setEditingHabitFrequency("weekly");
+  };
+
   const getHabitFrequencyLabel = (habit: HabitItem): string => {
     if (habit.frequency === 'custom' && habit.customSchedule) return formatCustomSchedule(habit.customSchedule);
     return frequencyLabels[habit.frequency] || habit.frequency;
@@ -197,6 +235,10 @@ export const GoalDetailModal = ({
   const handleFrequencyChange = (value: HabitFrequency) => {
     setNewHabitFrequency(value);
     if (value === 'custom') setShowCustomPicker(true);
+  };
+
+  const handleEditHabitFrequencyChange = (value: HabitFrequency) => {
+    setEditingHabitFrequency(value);
   };
 
   const handleHabitDragEnd = (event: DragEndEvent) => {
@@ -302,9 +344,55 @@ export const GoalDetailModal = ({
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleHabitDragEnd}>
                   <SortableContext items={habitItems.map(h => h.id)} strategy={verticalListSortingStrategy}>
                     <div className="space-y-2">
-                      {habitItems.map((habit) => (
-                        <SortableHabit key={habit.id} habit={habit} onRemove={handleRemoveHabit} getFrequencyLabel={getHabitFrequencyLabel} />
-                      ))}
+                      {habitItems.map((habit) => {
+                        const isEditingThis = editingHabitId === habit.id;
+                        
+                        if (isEditingThis) {
+                          return (
+                            <div key={habit.id} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50 border border-primary/30">
+                              <Input
+                                value={editingHabitText}
+                                onChange={(e) => setEditingHabitText(e.target.value)}
+                                className="flex-1 h-8 text-sm"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') { e.preventDefault(); handleSaveEditHabit(); }
+                                  if (e.key === 'Escape') handleCancelEditHabit();
+                                }}
+                              />
+                              <Select value={editingHabitFrequency} onValueChange={handleEditHabitFrequencyChange}>
+                                <SelectTrigger className="w-24 h-8">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background border border-border z-[200]">
+                                  <SelectItem value="daily">Daily</SelectItem>
+                                  <SelectItem value="weekdays">Weekdays</SelectItem>
+                                  <SelectItem value="weekly">Weekly</SelectItem>
+                                  <SelectItem value="biweekly">Bi-weekly</SelectItem>
+                                  <SelectItem value="monthly">Monthly</SelectItem>
+                                  <SelectItem value="quarterly">Quarterly</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Button size="sm" variant="ghost" onClick={handleSaveEditHabit} className="h-8 px-2">
+                                <CheckCircle className="h-4 w-4 text-primary" />
+                              </Button>
+                              <Button size="sm" variant="ghost" onClick={handleCancelEditHabit} className="h-8 px-2">
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          );
+                        }
+                        
+                        return (
+                          <SortableHabit 
+                            key={habit.id} 
+                            habit={habit} 
+                            onRemove={handleRemoveHabit} 
+                            getFrequencyLabel={getHabitFrequencyLabel}
+                            onEdit={handleStartEditHabit}
+                          />
+                        );
+                      })}
                     </div>
                   </SortableContext>
                 </DndContext>
