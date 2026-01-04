@@ -84,17 +84,18 @@ class NotificationsService {
     if (!user) return null;
 
     const channel = supabase
-      .channel('notifications-realtime')
+      .channel(`notifications-realtime-${user.id}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`
         },
         async (payload) => {
-          const newNotification = payload.new as Notification;
+          const newNotification = payload.new as Notification & { user_id: string };
+          // Client-side filter to only handle notifications for this user
+          if (newNotification.user_id !== user.id) return;
           
           // Fetch the triggered_by profile
           const { data: profile } = await supabase
@@ -116,15 +117,21 @@ class NotificationsService {
           event: 'UPDATE',
           schema: 'public',
           table: 'notifications',
-          filter: `user_id=eq.${user.id}`
         },
         (payload) => {
+          const updated = payload.new as Notification & { user_id: string };
+          if (updated.user_id !== user.id) return;
+          
           if (onUpdate) {
-            onUpdate(payload.new as Notification);
+            onUpdate(updated as Notification);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('[Realtime] Notifications subscription active');
+        }
+      });
 
     return channel;
   }
