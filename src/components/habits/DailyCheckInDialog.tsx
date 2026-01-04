@@ -126,6 +126,9 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     return streaks;
   }, [completions]);
 
+  // Get today's day of week as number (0 = Sunday, 1 = Monday, etc.)
+  const todayDayOfWeek = new Date().getDay();
+
   // Flatten all habit items with their goal info, filtering by frequency
   const habitItemsDueToday = goalsWithHabits.flatMap(goal => {
     const items = goal.habit_items as HabitItem[];
@@ -133,10 +136,46 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       .filter(item => {
         // Check if habit is due today based on frequency
         if (item.frequency === 'daily') return true;
-        if (item.frequency === 'weekdays' && todayIndex >= 0 && todayIndex <= 4) return true;
-        // Weekly habits show all week
-        if (item.frequency === 'weekly') return true;
-        return true; // Default show
+        
+        // Weekdays = Monday-Friday (todayIndex 0-4 in our week array, or day 1-5)
+        if (item.frequency === 'weekdays') {
+          return todayIndex >= 0 && todayIndex <= 4;
+        }
+        
+        // Weekly habits - check customSchedule.daysOfWeek, otherwise default to Monday
+        if (item.frequency === 'weekly') {
+          if (item.customSchedule?.daysOfWeek && item.customSchedule.daysOfWeek.length > 0) {
+            return item.customSchedule.daysOfWeek.includes(todayDayOfWeek);
+          }
+          // Default weekly to Monday (1)
+          return todayDayOfWeek === 1;
+        }
+        
+        // Biweekly - simplified: check if it's the right day
+        if (item.frequency === 'biweekly') {
+          if (item.customSchedule?.daysOfWeek && item.customSchedule.daysOfWeek.length > 0) {
+            return item.customSchedule.daysOfWeek.includes(todayDayOfWeek);
+          }
+          return todayDayOfWeek === 1; // Default to Monday
+        }
+        
+        // Monthly / quarterly - check day of week if specified
+        if (item.frequency === 'monthly' || item.frequency === 'monthly_last_week' || item.frequency === 'quarterly') {
+          // These are less frequent, show if today matches specified day
+          if (item.customSchedule?.daysOfWeek && item.customSchedule.daysOfWeek.length > 0) {
+            return item.customSchedule.daysOfWeek.includes(todayDayOfWeek);
+          }
+          // For monthly/quarterly without specific days, don't show in daily check-in
+          return false;
+        }
+        
+        // Custom frequency - check customSchedule.daysOfWeek
+        if (item.frequency === 'custom' && item.customSchedule?.daysOfWeek) {
+          return item.customSchedule.daysOfWeek.includes(todayDayOfWeek);
+        }
+        
+        // Unknown frequency - don't show
+        return false;
       })
       .map(item => ({
         ...item,
