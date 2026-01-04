@@ -1,10 +1,11 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { CommunityFeed } from "@/components/community/CommunityFeed";
-import { Target, UserPlus } from "lucide-react";
+import { CreateGoalUpdateModal } from "@/components/community/CreateGoalUpdateModal";
+import { Target, UserPlus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -34,6 +35,7 @@ const Feed = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, signOut } = useAuth();
   const { isAdmin } = useAdminStatus();
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -81,15 +83,26 @@ const Feed = () => {
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Community</h1>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => navigate('/friends')}
-              className="gap-2"
-            >
-              <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">Find Friends</span>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setShowCreateModal(true)}
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Share Update</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/friends')}
+                className="gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Find Friends</span>
+              </Button>
+            </div>
           </div>
           <p className="text-muted-foreground text-sm sm:text-base pl-12">
             Follow your friends' goal journeys and cheer them on.
@@ -99,6 +112,12 @@ const Feed = () => {
         {/* Community Feed */}
         <CommunityFeed />
       </main>
+
+      {/* Create Goal Update Modal */}
+      <CreateGoalUpdateModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+      />
     </div>
   );
 };
