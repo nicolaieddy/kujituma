@@ -53,6 +53,9 @@ export interface PartnerWeeklyObjective {
   goal_id: string | null;
   scheduled_day: string | null;
   scheduled_time: string | null;
+  goal?: {
+    title: string;
+  } | null;
 }
 
 export interface CheckInRecord {
@@ -269,7 +272,7 @@ class AccountabilityService {
 
     const { data, error } = await supabase
       .from('weekly_objectives')
-      .select('id, text, is_completed, week_start, goal_id, scheduled_day, scheduled_time')
+      .select('id, text, is_completed, week_start, goal_id, scheduled_day, scheduled_time, goal:goals(title)')
       .eq('user_id', partnerId)
       .eq('week_start', weekStart)
       .order('order_index', { ascending: true });
