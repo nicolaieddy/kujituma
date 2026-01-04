@@ -321,7 +321,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     setShowShareConfirmation(true);
   };
 
-  const handleConfirmShare = async () => {
+  const handleConfirmShare = async (helpRequest?: { goalId: string; message: string }) => {
     if (!user) return;
     
     setShowShareConfirmation(false);
@@ -428,11 +428,28 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           // Don't fail the share if goal updates fail
         }
 
+        // Create help request if user asked for help
+        if (helpRequest) {
+          try {
+            await GoalUpdatesService.createHelpRequest({
+              userId: user.id,
+              goalId: helpRequest.goalId,
+              helpMessage: helpRequest.message,
+              weekStart: currentWeekStart
+            });
+            console.log(`[ThisWeekView] Created help request for goal ${helpRequest.goalId}`);
+          } catch (helpError) {
+            console.error('[ThisWeekView] Failed to create help request:', helpError);
+          }
+        }
+
         await WeeklyProgressService.completeWeek(currentWeekStart);
         
         toast({
           title: "Success",
-          description: "Your weekly progress has been shared with the community! This week is now locked.",
+          description: helpRequest 
+            ? "Your weekly progress has been shared and help request sent to friends!"
+            : "Your weekly progress has been shared with the community! This week is now locked.",
         });
         
         await queryClient.invalidateQueries({ queryKey: ['week-feed-post'] });
@@ -574,6 +591,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onClose={() => setShowShareConfirmation(false)}
         onConfirm={handleConfirmShare}
         isSharing={isSharing}
+        goals={(goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started').map(g => ({ id: g.id, title: g.title }))}
       />
 
     </div>
