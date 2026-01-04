@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User, Calendar, Clock, UserPlus, UserMinus, UserCheck, Users, ArrowRight } from "lucide-react";
+import { User, Calendar, Clock, UserPlus, UserMinus, UserCheck, Users, ArrowRight, Handshake, Loader2 } from "lucide-react";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { ProfileGoals } from "./ProfileGoals";
 import { ProfileStats } from "./ProfileStats";
@@ -12,6 +12,7 @@ import { SocialLinksDisplay } from "./SocialLinksDisplay";
 import { SOCIAL_PLATFORMS } from "./SocialLinkPicker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useFriends } from "@/hooks/useFriends";
+import { useAccountabilityPartners } from "@/hooks/useAccountabilityPartners";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Profile {
@@ -40,6 +41,8 @@ interface PartnershipStatus {
   is_partner: boolean;
   partnership_id?: string;
   can_view_partner_goals?: boolean;
+  request_status?: 'sent' | 'received';
+  request_id?: string;
 }
 
 interface ProfilePublicViewProps {
@@ -47,15 +50,18 @@ interface ProfilePublicViewProps {
   friendshipStatus?: FriendshipStatus;
   partnershipStatus?: PartnershipStatus;
   onFriendshipChange?: (status: FriendshipStatus) => void;
+  onPartnershipChange?: (status: PartnershipStatus) => void;
 }
 
-export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus, onFriendshipChange }: ProfilePublicViewProps) => {
+export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus, onFriendshipChange, onPartnershipChange }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
+  const [sendingPartnerRequest, setSendingPartnerRequest] = useState(false);
   const isOwnProfile = user?.id === profile.id;
   const { is_friend, friend_request_status } = friendshipStatus || { is_friend: false };
-  const { is_partner, can_view_partner_goals } = partnershipStatus || { is_partner: false };
+  const { is_partner, can_view_partner_goals, request_status: partner_request_status } = partnershipStatus || { is_partner: false };
   const { sendFriendRequest: sendFriendRequestBase, respondToFriendRequest: respondBase, removeFriend: removeFriendBase } = useFriends();
+  const { sendPartnerRequest } = useAccountabilityPartners();
 
   const handleSendFriendRequest = async () => {
     await sendFriendRequestBase(profile.id);
@@ -75,6 +81,16 @@ export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus
     setShowUnfriendDialog(false);
     await removeFriendBase(profile.id);
     onFriendshipChange?.({ is_friend: false });
+  };
+
+  const handleSendPartnerRequest = async () => {
+    setSendingPartnerRequest(true);
+    try {
+      await sendPartnerRequest(profile.id, '', { senderCanViewReceiverGoals: true, receiverCanViewSenderGoals: true });
+      onPartnershipChange?.({ is_partner: false, request_status: 'sent' });
+    } finally {
+      setSendingPartnerRequest(false);
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -217,6 +233,47 @@ export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus
                 <ArrowRight className="h-5 w-5 text-primary group-hover:translate-x-1 transition-transform" />
               </div>
             </Link>
+          )}
+
+          {/* Request Accountability Partner - show for friends who aren't already partners */}
+          {is_friend && !is_partner && !isOwnProfile && !partner_request_status && (
+            <div className="mb-6">
+              <Button
+                variant="outline"
+                className="w-full justify-start gap-3 p-4 h-auto border-dashed border-primary/30 hover:bg-primary/5"
+                onClick={handleSendPartnerRequest}
+                disabled={sendingPartnerRequest}
+              >
+                {sendingPartnerRequest ? (
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                ) : (
+                  <Handshake className="h-5 w-5 text-primary" />
+                )}
+                <div className="text-left">
+                  <p className="font-medium text-foreground">Request Accountability Partnership</p>
+                  <p className="text-sm text-muted-foreground font-normal">
+                    Support each other's goals and track progress together
+                  </p>
+                </div>
+              </Button>
+            </div>
+          )}
+
+          {/* Partner Request Pending */}
+          {!is_partner && partner_request_status === 'sent' && !isOwnProfile && (
+            <div className="mb-6 p-4 rounded-lg bg-muted/50 border border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-muted">
+                  <Handshake className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Partner Request Sent</p>
+                  <p className="text-sm text-muted-foreground">
+                    Waiting for {profile.full_name.split(' ')[0]} to accept your request
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* About Me Section */}

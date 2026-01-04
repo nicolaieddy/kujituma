@@ -21,7 +21,7 @@ const Friends = () => {
   const { isOffline } = useOfflineStatus();
   const { isAdmin } = useAdminStatus();
   const { friends, friendRequests, loading } = useFriends();
-  const { partners } = useAccountabilityPartners();
+  const { partners, partnerRequests } = useAccountabilityPartners();
   
   const [activeTab, setActiveTab] = useState(() => {
     return searchParams.get('tab') || 'friends';
@@ -56,7 +56,8 @@ const Friends = () => {
     }
   };
 
-  const pendingRequestsCount = friendRequests.received.length + friendRequests.sent.length;
+  const pendingFriendRequestsCount = friendRequests.received.length;
+  const pendingPartnerRequestsCount = partnerRequests.received.length;
 
   if (authLoading) {
     return (
@@ -114,18 +115,24 @@ const Friends = () => {
               <TabsTrigger value="friends" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 <span>Friends</span>
-                {(friends.length > 0 || pendingRequestsCount > 0) && (
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {friends.length}{pendingRequestsCount > 0 ? ` · ${pendingRequestsCount}` : ''}
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {friends.length}
+                </Badge>
+                {pendingFriendRequestsCount > 0 && (
+                  <Badge variant="destructive" className="ml-1 text-xs animate-pulse">
+                    {pendingFriendRequestsCount}
                   </Badge>
                 )}
               </TabsTrigger>
               <TabsTrigger value="partners" className="flex items-center gap-2">
                 <Handshake className="h-4 w-4" />
                 <span>Accountability Partners</span>
-                {partners.length > 0 && (
-                  <Badge variant="secondary" className="ml-1 text-xs">
-                    {partners.length}
+                <Badge variant="secondary" className="ml-1 text-xs">
+                  {partners.length}
+                </Badge>
+                {pendingPartnerRequestsCount > 0 && (
+                  <Badge variant="destructive" className="ml-1 text-xs animate-pulse">
+                    {pendingPartnerRequestsCount}
                   </Badge>
                 )}
               </TabsTrigger>
