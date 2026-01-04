@@ -23,6 +23,7 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
+import { useAIFeatures } from "@/hooks/useAIFeatures";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -34,6 +35,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const { goals, isCached: goalsCached } = useGoals();
   const { habitStats, refetch: refetchHabits } = useHabitStats();
   const { lastSync, isOffline } = useOfflineStatus();
+  const { aiEnabled } = useAIFeatures();
   const queryClient = useQueryClient();
   const [isSharing, setIsSharing] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -92,8 +94,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     // Don't run if already fetched or component unmounted
     if (hasFetchedSuggestions || !mountedRef.current) return;
     
-    // Check conditions
+    // Check conditions - including AI enabled check
     if (
+      !aiEnabled ||
       !isCurrentWeek || 
       isWeekCompleted || 
       weeklyDataLoading ||
@@ -129,7 +132,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         console.error('[ThisWeekView] Failed to generate suggestions:', err);
       }
     });
-  }, [isCurrentWeek, isWeekCompleted, hasFetchedSuggestions, weeklyDataLoading, goals, objectives, allObjectives, currentWeekStart, generateSuggestions]);
+  }, [aiEnabled, isCurrentWeek, isWeekCompleted, hasFetchedSuggestions, weeklyDataLoading, goals, objectives, allObjectives, currentWeekStart, generateSuggestions]);
 
   // Reset when week changes
   useEffect(() => {
@@ -470,8 +473,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      {/* AI Suggestions - Show when on current week with few objectives */}
-      {isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
+      {/* AI Suggestions - Show when AI is enabled and on current week with few objectives */}
+      {aiEnabled && isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
         <AISuggestionsCard
           suggestions={suggestions}
           isLoading={isSuggestionsLoading}

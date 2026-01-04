@@ -794,6 +794,7 @@ export type Database = {
       profiles: {
         Row: {
           about_me: string | null
+          ai_features_enabled: boolean
           avatar_url: string | null
           city: string | null
           country: string | null
@@ -827,6 +828,7 @@ export type Database = {
         }
         Insert: {
           about_me?: string | null
+          ai_features_enabled?: boolean
           avatar_url?: string | null
           city?: string | null
           country?: string | null
@@ -860,6 +862,7 @@ export type Database = {
         }
         Update: {
           about_me?: string | null
+          ai_features_enabled?: boolean
           avatar_url?: string | null
           city?: string | null
           country?: string | null
