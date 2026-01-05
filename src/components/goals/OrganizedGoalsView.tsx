@@ -483,6 +483,7 @@ export const OrganizedGoalsView = ({
                       onDeprioritize={onDeprioritize}
                       onReprioritize={onReprioritize}
                       onPauseToggle={onPauseToggle}
+                      onVisibilityChange={onVisibilityChange}
                       isDeprioritized
                     />
                   ))}
