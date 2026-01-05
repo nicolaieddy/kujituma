@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Goal, GoalStatus } from "@/types/goals";
+import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
