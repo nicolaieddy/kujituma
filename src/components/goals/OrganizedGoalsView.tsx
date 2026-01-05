@@ -356,6 +356,7 @@ export const OrganizedGoalsView = ({
                               onDeprioritize={onDeprioritize}
                               onReprioritize={onReprioritize}
                               onPauseToggle={onPauseToggle}
+                              onVisibilityChange={onVisibilityChange}
                               currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
                             />
                           ))
