@@ -36,6 +36,7 @@ interface GoalCardProps {
   onDeprioritize?: (id: string) => void;
   onReprioritize?: (id: string) => void;
   onPauseToggle?: (id: string, isPaused: boolean) => void;
+  onVisibilityChange?: (id: string, visibility: GoalVisibility) => void;
   isDeprioritized?: boolean;
   currentStreak?: number;
 }
