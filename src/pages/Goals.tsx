@@ -92,6 +92,19 @@ const Goals = () => {
     updateGoal(id, { status });
   };
 
+  const handleVisibilityChange = (id: string, visibility: any) => {
+    updateGoal(id, { visibility });
+    const visibilityLabels: Record<string, string> = {
+      public: 'public (visible to everyone)',
+      friends: 'friends only',
+      private: 'private (only you)'
+    };
+    toast({
+      title: "Visibility updated",
+      description: `Goal is now ${visibilityLabels[visibility]}.`,
+    });
+  };
+
   const handleGoalReorder = (reorderedGoals: { id: string; order_index: number }[]) => {
     reorderGoals(reorderedGoals);
   };
@@ -274,6 +287,7 @@ const Goals = () => {
                       onDeprioritize={deprioritizeGoal}
                       onReprioritize={reprioritizeGoal}
                       onPauseToggle={togglePauseGoal}
+                      onVisibilityChange={handleVisibilityChange}
                       onCarryOverAll={handleCarryOverAll}
                       onDeprioritizeAll={handleDeprioritizeAll}
                       onReorder={handleGoalReorder}

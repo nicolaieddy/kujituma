@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Goal, GoalStatus } from "@/types/goals";
+import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
@@ -36,6 +36,7 @@ interface GoalCardProps {
   onDeprioritize?: (id: string) => void;
   onReprioritize?: (id: string) => void;
   onPauseToggle?: (id: string, isPaused: boolean) => void;
+  onVisibilityChange?: (id: string, visibility: GoalVisibility) => void;
   isDeprioritized?: boolean;
   currentStreak?: number;
 }
@@ -72,6 +73,7 @@ export const GoalCard = ({
   onDeprioritize,
   onReprioritize,
   onPauseToggle,
+  onVisibilityChange,
   isDeprioritized = false,
   currentStreak = 0
 }: GoalCardProps) => {
@@ -213,24 +215,52 @@ export const GoalCard = ({
                 <Badge className={`${config.color} text-xs`}>
                   {config.label}
                 </Badge>
-                {/* Visibility indicator */}
+                {/* Visibility toggle dropdown */}
                 {goal.visibility && (
-                  <Badge 
-                    variant="outline" 
-                    className={cn(
-                      "text-xs gap-1",
-                      goal.visibility === 'public' 
-                        ? "border-green-500/30 text-green-600 bg-green-500/5"
-                        : goal.visibility === 'friends'
-                          ? "border-blue-500/30 text-blue-600 bg-blue-500/5"
-                          : "border-muted-foreground/30 text-muted-foreground bg-muted/50"
-                    )}
-                  >
-                    {goal.visibility === 'public' && <Eye className="h-3 w-3" />}
-                    {goal.visibility === 'friends' && <Users className="h-3 w-3" />}
-                    {goal.visibility === 'private' && <EyeOff className="h-3 w-3" />}
-                    {goal.visibility === 'public' ? 'Public' : goal.visibility === 'friends' ? 'Friends' : 'Private'}
-                  </Badge>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Badge 
+                        variant="outline" 
+                        className={cn(
+                          "text-xs gap-1 cursor-pointer hover:opacity-80 transition-opacity",
+                          goal.visibility === 'public' 
+                            ? "border-green-500/30 text-green-600 bg-green-500/5 hover:bg-green-500/10"
+                            : goal.visibility === 'friends'
+                              ? "border-blue-500/30 text-blue-600 bg-blue-500/5 hover:bg-blue-500/10"
+                              : "border-muted-foreground/30 text-muted-foreground bg-muted/50 hover:bg-muted"
+                        )}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {goal.visibility === 'public' && <Eye className="h-3 w-3" />}
+                        {goal.visibility === 'friends' && <Users className="h-3 w-3" />}
+                        {goal.visibility === 'private' && <EyeOff className="h-3 w-3" />}
+                        {goal.visibility === 'public' ? 'Public' : goal.visibility === 'friends' ? 'Friends' : 'Private'}
+                      </Badge>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuItem 
+                        onClick={() => onVisibilityChange?.(goal.id, 'public')}
+                        className={cn(goal.visibility === 'public' && "bg-accent")}
+                      >
+                        <Eye className="h-4 w-4 mr-2 text-green-600" />
+                        Public
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onVisibilityChange?.(goal.id, 'friends')}
+                        className={cn(goal.visibility === 'friends' && "bg-accent")}
+                      >
+                        <Users className="h-4 w-4 mr-2 text-blue-600" />
+                        Friends Only
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => onVisibilityChange?.(goal.id, 'private')}
+                        className={cn(goal.visibility === 'private' && "bg-accent")}
+                      >
+                        <EyeOff className="h-4 w-4 mr-2 text-muted-foreground" />
+                        Private
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 )}
                 {/* Show Habit badge only for goals with habit_items */}
                 {goal.habit_items && goal.habit_items.length > 0 && (
