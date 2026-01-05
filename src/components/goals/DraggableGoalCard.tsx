@@ -85,6 +85,7 @@ export const DraggableGoalCard = ({
           onDeprioritize={onDeprioritize}
           onReprioritize={onReprioritize}
           onPauseToggle={onPauseToggle}
+          onVisibilityChange={onVisibilityChange}
           isDeprioritized={isDeprioritized}
           currentStreak={currentStreak}
         />
