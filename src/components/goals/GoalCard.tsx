@@ -219,23 +219,28 @@ export const GoalCard = ({
                 {goal.visibility && (
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-xs gap-1 cursor-pointer hover:opacity-80 transition-opacity",
-                          goal.visibility === 'public' 
-                            ? "border-green-500/30 text-green-600 bg-green-500/5 hover:bg-green-500/10"
-                            : goal.visibility === 'friends'
-                              ? "border-blue-500/30 text-blue-600 bg-blue-500/5 hover:bg-blue-500/10"
-                              : "border-muted-foreground/30 text-muted-foreground bg-muted/50 hover:bg-muted"
-                        )}
+                      <button 
+                        type="button"
                         onClick={(e) => e.stopPropagation()}
+                        className="focus:outline-none"
                       >
-                        {goal.visibility === 'public' && <Eye className="h-3 w-3" />}
-                        {goal.visibility === 'friends' && <Users className="h-3 w-3" />}
-                        {goal.visibility === 'private' && <EyeOff className="h-3 w-3" />}
-                        {goal.visibility === 'public' ? 'Public' : goal.visibility === 'friends' ? 'Friends' : 'Private'}
-                      </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "text-xs gap-1 cursor-pointer hover:opacity-80 transition-opacity",
+                            goal.visibility === 'public' 
+                              ? "border-green-500/30 text-green-600 bg-green-500/5 hover:bg-green-500/10"
+                              : goal.visibility === 'friends'
+                                ? "border-blue-500/30 text-blue-600 bg-blue-500/5 hover:bg-blue-500/10"
+                                : "border-muted-foreground/30 text-muted-foreground bg-muted/50 hover:bg-muted"
+                          )}
+                        >
+                          {goal.visibility === 'public' && <Eye className="h-3 w-3" />}
+                          {goal.visibility === 'friends' && <Users className="h-3 w-3" />}
+                          {goal.visibility === 'private' && <EyeOff className="h-3 w-3" />}
+                          {goal.visibility === 'public' ? 'Public' : goal.visibility === 'friends' ? 'Friends' : 'Private'}
+                        </Badge>
+                      </button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenuItem 
