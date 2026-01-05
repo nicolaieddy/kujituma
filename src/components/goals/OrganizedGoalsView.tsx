@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Goal, GoalStatus } from "@/types/goals";
+import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { GoalCard } from "./GoalCard";
 import { DraggableGoalCard } from "./DraggableGoalCard";
 import { DroppableColumn } from "./DroppableColumn";
@@ -26,6 +26,7 @@ interface OrganizedGoalsViewProps {
   onDeprioritize: (id: string) => void;
   onReprioritize: (id: string) => void;
   onPauseToggle?: (id: string, isPaused: boolean) => void;
+  onVisibilityChange?: (id: string, visibility: GoalVisibility) => void;
   onCarryOverAll: () => void;
   onDeprioritizeAll: () => void;
   onReorder?: (reorderedGoals: { id: string; order_index: number }[]) => void;

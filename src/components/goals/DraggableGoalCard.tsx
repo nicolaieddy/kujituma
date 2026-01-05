@@ -1,7 +1,7 @@
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GoalCard } from "./GoalCard";
-import { Goal, GoalStatus } from "@/types/goals";
+import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { GripVertical } from "lucide-react";
 
 interface DraggableGoalCardProps {
@@ -13,6 +13,7 @@ interface DraggableGoalCardProps {
   onDeprioritize?: (id: string) => void;
   onReprioritize?: (id: string) => void;
   onPauseToggle?: (id: string, isPaused: boolean) => void;
+  onVisibilityChange?: (id: string, visibility: GoalVisibility) => void;
   isDeprioritized?: boolean;
   currentStreak?: number;
 }
@@ -26,6 +27,7 @@ export const DraggableGoalCard = ({
   onDeprioritize,
   onReprioritize,
   onPauseToggle,
+  onVisibilityChange,
   isDeprioritized,
   currentStreak
 }: DraggableGoalCardProps) => {
