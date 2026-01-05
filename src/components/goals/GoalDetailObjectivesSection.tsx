@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -26,9 +26,8 @@ export const GoalDetailObjectivesSection = ({
     createObjective,
     updateObjective,
     deleteObjective,
+    isCreating,
     earliestObjectiveDate,
-    needsStartDateExpansion,
-    expandGoalStartDate,
   } = useGoalObjectives(goalId, goalStartDate);
 
   const [newObjectiveText, setNewObjectiveText] = useState("");
@@ -42,13 +41,6 @@ export const GoalDetailObjectivesSection = ({
   // Collapsible state
   const [isPastOpen, setIsPastOpen] = useState(false);
   const [isPlannedOpen, setIsPlannedOpen] = useState(false);
-
-  // Auto-expand goal start date on mount if needed
-  useEffect(() => {
-    if (needsStartDateExpansion) {
-      expandGoalStartDate();
-    }
-  }, [needsStartDateExpansion, expandGoalStartDate]);
 
   const currentWeekStart = WeeklyProgressService.getWeekStart();
   
@@ -102,10 +94,10 @@ export const GoalDetailObjectivesSection = ({
   const formatWeekRange = (weekStart: string) => WeeklyProgressService.formatWeekRange(weekStart);
 
   const handleAddObjective = () => {
-    if (!newObjectiveText.trim()) return;
+    if (!newObjectiveText.trim() || isCreating) return;
     createObjective(goalId, newObjectiveText.trim(), newObjectiveWeek);
     setNewObjectiveText("");
-    setNewObjectiveWeek(WeeklyProgressService.getWeekStart());
+    // Keep the week selection as-is for faster consecutive adds
   };
 
   const handleToggleObjective = (id: string, isCompleted: boolean) => {
@@ -330,7 +322,12 @@ export const GoalDetailObjectivesSection = ({
             ))}
           </SelectContent>
         </Select>
-        <Button size="sm" onClick={handleAddObjective} disabled={!newObjectiveText.trim()} className="h-9 px-3">
+        <Button 
+          size="sm" 
+          onClick={handleAddObjective} 
+          disabled={!newObjectiveText.trim() || isCreating} 
+          className="h-9 px-3"
+        >
           <Plus className="h-4 w-4" />
         </Button>
       </div>
