@@ -10,7 +10,6 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
-import { HabitStreaksSummary } from "@/components/thisweek/HabitStreaksSummary";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -171,14 +170,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
-      {isCurrentWeek && habitStats.length > 0 && (
-        <HabitStreaksSummary 
-          habitStats={habitStats} 
-          averageCompletionRate={Math.round(
-            habitStats.reduce((sum, h) => sum + h.completionRate, 0) / habitStats.length
-          )} 
-        />
-      )}
 
       {isCurrentWeek && habitStats.length > 0 && (
         <HabitsDueThisWeek
