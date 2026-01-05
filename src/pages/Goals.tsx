@@ -287,6 +287,7 @@ const Goals = () => {
                       onDeprioritize={deprioritizeGoal}
                       onReprioritize={reprioritizeGoal}
                       onPauseToggle={togglePauseGoal}
+                      onVisibilityChange={handleVisibilityChange}
                       onCarryOverAll={handleCarryOverAll}
                       onDeprioritizeAll={handleDeprioritizeAll}
                       onReorder={handleGoalReorder}
