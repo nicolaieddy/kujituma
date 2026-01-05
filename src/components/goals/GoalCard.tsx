@@ -73,6 +73,7 @@ export const GoalCard = ({
   onDeprioritize,
   onReprioritize,
   onPauseToggle,
+  onVisibilityChange,
   isDeprioritized = false,
   currentStreak = 0
 }: GoalCardProps) => {
