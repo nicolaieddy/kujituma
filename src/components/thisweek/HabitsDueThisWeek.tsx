@@ -108,6 +108,11 @@ export const HabitsDueThisWeek = ({
     return Object.values(status).filter(Boolean).length;
   };
 
+  // Determine if this habit needs daily checkboxes or just a single weekly checkbox
+  const isDailyTracking = (frequency: string): boolean => {
+    return frequency === 'daily' || frequency === 'weekdays';
+  };
+
   const getDaysToShow = (frequency: string): number[] => {
     switch (frequency) {
       case 'daily':
@@ -115,8 +120,23 @@ export const HabitsDueThisWeek = ({
       case 'weekdays':
         return [0, 1, 2, 3, 4]; // Mon-Fri
       default:
-        return [0, 1, 2, 3, 4, 5, 6]; // Show all by default
+        return [0, 1, 2, 3, 4, 5, 6]; // Show all by default (but will use single checkbox UI)
     }
+  };
+
+  // Check if a weekly habit is completed (has at least one completion this week)
+  const isWeeklyHabitCompleted = (habitItemId: string): boolean => {
+    const status = getCompletionStatus(habitItemId);
+    return Object.values(status).some(Boolean);
+  };
+
+  // Toggle weekly habit - use today's date or first available date
+  const handleWeeklyToggle = (goalId: string, habitItemId: string) => {
+    const todayIndex = weekDates.findIndex(d => isToday(d));
+    const dateIndex = todayIndex >= 0 ? todayIndex : 0;
+    const date = weekDates[dateIndex];
+    if (!date) return;
+    toggleCompletion(goalId, habitItemId, date);
   };
 
   return (
@@ -201,58 +221,98 @@ export const HabitsDueThisWeek = ({
                     const completionStatus = getCompletionStatus(item.id);
                     const daysToShow = getDaysToShow(item.frequency);
                     const completedDays = getHabitItemCompletionCount(item);
+                    const showDailyCheckboxes = isDailyTracking(item.frequency);
+                    const isWeeklyCompleted = isWeeklyHabitCompleted(item.id);
+                    
+                    // Frequency label for weekly habits
+                    const frequencyLabel = item.frequency === 'weekly' ? 'Weekly' 
+                      : item.frequency === 'biweekly' ? 'Biweekly'
+                      : item.frequency === 'monthly' ? 'Monthly'
+                      : item.frequency === 'monthly_last_week' ? 'Monthly (last week)'
+                      : item.frequency === 'quarterly' ? 'Quarterly'
+                      : item.frequency;
                     
                     return (
                       <div key={item.id} className="space-y-1.5">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium truncate flex-1">{item.text}</p>
-                          <Badge variant="secondary" className="text-xs ml-2">
-                            {completedDays}/{daysToShow.length}
-                          </Badge>
+                          {showDailyCheckboxes ? (
+                            <Badge variant="secondary" className="text-xs ml-2">
+                              {completedDays}/{daysToShow.length}
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-xs ml-2 capitalize">
+                              {frequencyLabel}
+                            </Badge>
+                          )}
                         </div>
                         
-                        {/* Day checkboxes */}
-                        <div className="flex items-center gap-1">
-                          {DAY_LABELS.map((label, index) => {
-                            const isActiveDay = daysToShow.includes(index);
-                            const isChecked = completionStatus[index] || false;
-                            const date = weekDates[index];
-                            const isPast = date && isBefore(date, new Date()) && !isToday(date);
-                            const isTodayDate = date && isToday(date);
-                            
-                            return (
-                              <div
-                                key={index}
-                                className={cn(
-                                  "flex flex-col items-center gap-0.5",
-                                  !isActiveDay && "opacity-30"
-                                )}
-                              >
-                                <span className={cn(
-                                  "text-[10px] font-medium",
-                                  isTodayDate ? "text-primary" : "text-muted-foreground"
-                                )}>
-                                  {label}
-                                </span>
-                                <Checkbox
-                                  checked={isChecked}
-                                  disabled={!isActiveDay || isToggling}
-                                  onCheckedChange={() => {
-                                    if (isActiveDay) {
-                                      handleDayToggle(habit.goal.id, item.id, index);
-                                    }
-                                  }}
+                        {showDailyCheckboxes ? (
+                          /* Day checkboxes for daily/weekday habits */
+                          <div className="flex items-center gap-1">
+                            {DAY_LABELS.map((label, index) => {
+                              const isActiveDay = daysToShow.includes(index);
+                              const isChecked = completionStatus[index] || false;
+                              const date = weekDates[index];
+                              const isPast = date && isBefore(date, new Date()) && !isToday(date);
+                              const isTodayDate = date && isToday(date);
+                              
+                              return (
+                                <div
+                                  key={index}
                                   className={cn(
-                                    "h-6 w-6 rounded",
-                                    isTodayDate && "ring-2 ring-primary ring-offset-1",
-                                    isChecked && "bg-success border-success",
-                                    !isActiveDay && "cursor-not-allowed"
+                                    "flex flex-col items-center gap-0.5",
+                                    !isActiveDay && "opacity-30"
                                   )}
-                                />
-                              </div>
-                            );
-                          })}
-                        </div>
+                                >
+                                  <span className={cn(
+                                    "text-[10px] font-medium",
+                                    isTodayDate ? "text-primary" : "text-muted-foreground"
+                                  )}>
+                                    {label}
+                                  </span>
+                                  <Checkbox
+                                    checked={isChecked}
+                                    disabled={!isActiveDay || isToggling}
+                                    onCheckedChange={() => {
+                                      if (isActiveDay) {
+                                        handleDayToggle(habit.goal.id, item.id, index);
+                                      }
+                                    }}
+                                    className={cn(
+                                      "h-6 w-6 rounded",
+                                      isTodayDate && "ring-2 ring-primary ring-offset-1",
+                                      isChecked && "bg-success border-success",
+                                      !isActiveDay && "cursor-not-allowed"
+                                    )}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          /* Single "Done this week" checkbox for weekly/less frequent habits */
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={isWeeklyCompleted}
+                              disabled={isToggling}
+                              onCheckedChange={() => handleWeeklyToggle(habit.goal.id, item.id)}
+                              className={cn(
+                                "h-5 w-5 rounded",
+                                isWeeklyCompleted && "bg-success border-success"
+                              )}
+                            />
+                            <span className={cn(
+                              "text-sm",
+                              isWeeklyCompleted ? "text-success line-through" : "text-muted-foreground"
+                            )}>
+                              {isWeeklyCompleted ? "Completed this week" : "Mark as done"}
+                            </span>
+                            {isWeeklyCompleted && (
+                              <Check className="h-4 w-4 text-success" />
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
