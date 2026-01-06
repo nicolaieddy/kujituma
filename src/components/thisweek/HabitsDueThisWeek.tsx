@@ -139,6 +139,13 @@ export const HabitsDueThisWeek = ({
     toggleCompletion(goalId, habitItemId, date);
   };
 
+  // Calculate aggregate streak info
+  const totalCurrentStreak = habits.reduce((sum, h) => sum + h.currentStreak, 0);
+  const bestStreak = habits.reduce((max, h) => Math.max(max, h.longestStreak), 0);
+  const avgCompletionRate = habits.length > 0 
+    ? Math.round(habits.reduce((sum, h) => sum + h.completionRate, 0) / habits.length) 
+    : 0;
+
   return (
     <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-2 sm:pb-3">
@@ -148,14 +155,16 @@ export const HabitsDueThisWeek = ({
             Habits This Week
           </CardTitle>
           <div className="flex items-center gap-2">
+            {/* Streak summary */}
+            {totalCurrentStreak > 0 && (
+              <div className="flex items-center gap-1 text-orange-500">
+                <Flame className="h-4 w-4" />
+                <span className="text-xs font-semibold">{totalCurrentStreak} week streak</span>
+              </div>
+            )}
             {habitItemsTotal > 0 && (
               <Badge variant="outline" className="text-xs">
                 {habitItemsCompletedToday}/{habitItemsTotal} today
-              </Badge>
-            )}
-            {totalLegacyCount > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {legacyCompletedCount}/{totalLegacyCount} weekly
               </Badge>
             )}
           </div>
@@ -197,21 +206,30 @@ export const HabitsDueThisWeek = ({
                   <p className="text-sm font-medium truncate">{habit.goal.title}</p>
                   <p className="text-xs text-muted-foreground">
                     {habitItems.length} habit{habitItems.length > 1 ? 's' : ''}
+                    {habit.completionRate > 0 && ` · ${habit.completionRate}% rate`}
                   </p>
                 </div>
 
-                {habit.currentStreak > 0 && (
-                  <div className="flex items-center gap-1 flex-shrink-0">
-                    <Flame className={cn(
-                      "h-4 w-4",
-                      habit.currentStreak >= 12 ? "text-orange-500" :
-                      habit.currentStreak >= 8 ? "text-yellow-500" :
-                      habit.currentStreak >= 4 ? "text-green-500" :
-                      "text-emerald-400"
-                    )} />
-                    <span className="text-xs font-medium">{habit.currentStreak}</span>
-                  </div>
-                )}
+                {/* Streak info */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  {habit.currentStreak > 0 && (
+                    <div className="flex items-center gap-1" title={`Current: ${habit.currentStreak} weeks, Best: ${habit.longestStreak} weeks`}>
+                      <Flame className={cn(
+                        "h-4 w-4",
+                        habit.currentStreak >= 12 ? "text-orange-500" :
+                        habit.currentStreak >= 8 ? "text-yellow-500" :
+                        habit.currentStreak >= 4 ? "text-green-500" :
+                        "text-emerald-400"
+                      )} />
+                      <span className="text-xs font-medium">{habit.currentStreak}w</span>
+                    </div>
+                  )}
+                  {habit.longestStreak > habit.currentStreak && (
+                    <span className="text-[10px] text-muted-foreground">
+                      best: {habit.longestStreak}w
+                    </span>
+                  )}
+                </div>
               </div>
 
               {/* Expanded Habit Items */}
@@ -232,19 +250,31 @@ export const HabitsDueThisWeek = ({
                       : item.frequency === 'quarterly' ? 'Quarterly'
                       : item.frequency;
                     
+                    // Calculate per-item streak based on this week's completions
+                    const itemCompletedDays = completedDays;
+                    
                     return (
                       <div key={item.id} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-medium truncate flex-1">{item.text}</p>
-                          {showDailyCheckboxes ? (
-                            <Badge variant="secondary" className="text-xs ml-2">
-                              {completedDays}/{daysToShow.length}
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-xs ml-2 capitalize">
-                              {frequencyLabel}
-                            </Badge>
-                          )}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {/* Per-item streak indicator */}
+                            {showDailyCheckboxes && itemCompletedDays > 0 && (
+                              <div className="flex items-center gap-0.5 text-orange-500">
+                                <Flame className="h-3 w-3" />
+                                <span className="text-xs font-medium">{itemCompletedDays}</span>
+                              </div>
+                            )}
+                            {showDailyCheckboxes ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {completedDays}/{daysToShow.length}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {frequencyLabel}
+                              </Badge>
+                            )}
+                          </div>
                         </div>
                         
                         {showDailyCheckboxes ? (
