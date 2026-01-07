@@ -69,6 +69,15 @@ export interface CheckInRecord {
     full_name: string;
     avatar_url: string | null;
   };
+  reactions?: CheckInReaction[];
+}
+
+export interface CheckInReaction {
+  id: string;
+  check_in_id: string;
+  user_id: string;
+  reaction: string;
+  created_at: string;
 }
 
 class AccountabilityService {
@@ -306,7 +315,7 @@ class AccountabilityService {
     return data;
   }
 
-  async recordCheckIn(partnershipId: string, message?: string): Promise<{ success: boolean; error?: string }> {
+  async recordCheckIn(partnershipId: string, message?: string): Promise<{ success: boolean; error?: string; checkInId?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
@@ -318,14 +327,16 @@ class AccountabilityService {
       const weekStart = new Date(now.setDate(diff));
       weekStart.setHours(0, 0, 0, 0);
 
-      const { error } = await supabase
+      const { data: checkIn, error } = await supabase
         .from('accountability_check_ins')
         .insert({
           partnership_id: partnershipId,
           initiated_by: user.id,
           week_start: weekStart.toISOString().split('T')[0],
           message: message || null,
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) {
         return { success: false, error: error.message };
@@ -337,7 +348,36 @@ class AccountabilityService {
         .update({ last_check_in_at: new Date().toISOString() })
         .eq('id', partnershipId);
 
-      return { success: true };
+      // Get the partner's user ID and current user's name to send notification
+      const { data: partnership } = await supabase
+        .from('accountability_partnerships')
+        .select('user1_id, user2_id')
+        .eq('id', partnershipId)
+        .single();
+
+      if (partnership) {
+        const partnerId = partnership.user1_id === user.id ? partnership.user2_id : partnership.user1_id;
+        
+        // Get current user's name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        const userName = profile?.full_name || 'Your accountability partner';
+
+        // Create notification for the partner
+        await supabase.rpc('create_notification', {
+          _user_id: partnerId,
+          _type: 'accountability_check_in',
+          _message: `${userName} recorded a check-in${message ? ': "' + message.slice(0, 50) + (message.length > 50 ? '...' : '') + '"' : ''}`,
+          _triggered_by_user_id: user.id,
+          _related_request_id: partnershipId,
+        });
+      }
+
+      return { success: true, checkInId: checkIn?.id };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }
@@ -452,6 +492,119 @@ class AccountabilityService {
     }
 
     return (data || []) as CheckInRecord[];
+  }
+
+  async getWeekCheckIns(partnershipId: string, weekStart: string): Promise<CheckInRecord[]> {
+    const { data, error } = await supabase
+      .from('accountability_check_ins')
+      .select(`
+        id,
+        partnership_id,
+        initiated_by,
+        week_start,
+        message,
+        created_at,
+        initiator_profile:profiles!accountability_check_ins_initiated_by_fkey (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq('partnership_id', partnershipId)
+      .eq('week_start', weekStart)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching week check-ins:', error);
+      return [];
+    }
+
+    // Fetch reactions for all check-ins
+    const checkInIds = data?.map(c => c.id) || [];
+    let reactions: CheckInReaction[] = [];
+    
+    if (checkInIds.length > 0) {
+      const { data: reactionsData } = await supabase
+        .from('check_in_reactions')
+        .select('*')
+        .in('check_in_id', checkInIds);
+      reactions = (reactionsData || []) as CheckInReaction[];
+    }
+
+    return (data || []).map(checkIn => ({
+      ...checkIn,
+      reactions: reactions.filter(r => r.check_in_id === checkIn.id),
+    })) as CheckInRecord[];
+  }
+
+  async addReactionToCheckIn(checkInId: string, reaction: string): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('check_in_reactions')
+        .insert({
+          check_in_id: checkInId,
+          user_id: user.id,
+          reaction,
+        });
+
+      if (error) {
+        // If it's a unique constraint violation, the user already reacted
+        if (error.code === '23505') {
+          return { success: false, error: 'Already reacted' };
+        }
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  async removeReactionFromCheckIn(checkInId: string, reaction: string): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('check_in_reactions')
+        .delete()
+        .eq('check_in_id', checkInId)
+        .eq('user_id', user.id)
+        .eq('reaction', reaction);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  async toggleReaction(checkInId: string, reaction: string): Promise<{ success: boolean; added: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, added: false, error: 'Not authenticated' };
+
+    // Check if reaction exists
+    const { data: existing } = await supabase
+      .from('check_in_reactions')
+      .select('id')
+      .eq('check_in_id', checkInId)
+      .eq('user_id', user.id)
+      .eq('reaction', reaction)
+      .maybeSingle();
+
+    if (existing) {
+      const result = await this.removeReactionFromCheckIn(checkInId, reaction);
+      return { ...result, added: false };
+    } else {
+      const result = await this.addReactionToCheckIn(checkInId, reaction);
+      return { ...result, added: true };
+    }
   }
 }
 

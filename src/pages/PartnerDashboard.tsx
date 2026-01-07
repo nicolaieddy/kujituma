@@ -12,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
+import { WeekCheckInsSection } from '@/components/accountability/WeekCheckInsSection';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -481,6 +482,17 @@ const PartnerDashboard = () => {
                   {weeklyObjectives.length === 0 && (
                     <div className="text-center py-6 text-muted-foreground text-sm">
                       No objectives set for this week.
+                    </div>
+                  )}
+
+                  {/* Check-ins for this week */}
+                  {partnershipDetails && user && (
+                    <div className="mt-6 pt-6 border-t border-border">
+                      <WeekCheckInsSection
+                        partnershipId={partnershipDetails.id}
+                        weekStart={getWeekStartString(selectedWeekStart)}
+                        currentUserId={user.id}
+                      />
                     </div>
                   )}
                 </>
