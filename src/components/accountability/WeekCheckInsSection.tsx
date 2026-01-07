@@ -90,11 +90,7 @@ export const WeekCheckInsSection = ({
           ? 'You' 
           : checkIn.initiator_profile?.full_name || 'Partner';
         
-        // Group reactions by emoji
-        const reactionCounts = (checkIn.reactions || []).reduce((acc, r) => {
-          acc[r.reaction] = (acc[r.reaction] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>);
+        // Get set of reactions by current user for quick lookup
 
         const userReactions = new Set(
           (checkIn.reactions || [])
@@ -135,8 +131,16 @@ export const WeekCheckInsSection = ({
                   {/* Reactions */}
                   <div className="flex items-center gap-1 mt-2 flex-wrap">
                     {REACTIONS.map((emoji) => {
-                      const count = reactionCounts[emoji] || 0;
+                      const emojiReactions = (checkIn.reactions || []).filter(r => r.reaction === emoji);
+                      const count = emojiReactions.length;
                       const hasReacted = userReactions.has(emoji);
+                      const reactorNames = emojiReactions.map(r => 
+                        r.user_id === user?.id ? 'You' : (r.reactor_name || 'Unknown')
+                      );
+                      
+                      const tooltipText = count > 0 
+                        ? reactorNames.join(', ')
+                        : 'Add reaction';
                       
                       return (
                         <Tooltip key={emoji}>
@@ -151,8 +155,8 @@ export const WeekCheckInsSection = ({
                               {count > 0 && <span className="text-[10px] ml-0.5">{count}</span>}
                             </Button>
                           </TooltipTrigger>
-                          <TooltipContent side="top" className="text-xs">
-                            {hasReacted ? 'Remove reaction' : 'Add reaction'}
+                          <TooltipContent side="top" className="text-xs max-w-[200px]">
+                            {tooltipText}
                           </TooltipContent>
                         </Tooltip>
                       );

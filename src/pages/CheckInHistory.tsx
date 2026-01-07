@@ -217,8 +217,16 @@ const CheckInHistory = () => {
                       {/* Reactions */}
                       <div className="flex items-center gap-1 mt-3 flex-wrap">
                         {REACTIONS.map((emoji) => {
-                          const count = (checkIn.reactions || []).filter(r => r.reaction === emoji).length;
-                          const hasReacted = (checkIn.reactions || []).some(r => r.reaction === emoji && r.user_id === user?.id);
+                          const emojiReactions = (checkIn.reactions || []).filter(r => r.reaction === emoji);
+                          const count = emojiReactions.length;
+                          const hasReacted = emojiReactions.some(r => r.user_id === user?.id);
+                          const reactorNames = emojiReactions.map(r => 
+                            r.user_id === user?.id ? 'You' : (r.reactor_name || 'Unknown')
+                          );
+                          
+                          const tooltipText = count > 0 
+                            ? reactorNames.join(', ')
+                            : 'Add reaction';
                           
                           return (
                             <Tooltip key={emoji}>
@@ -233,8 +241,8 @@ const CheckInHistory = () => {
                                   {count > 0 && <span className="text-xs">{count}</span>}
                                 </Button>
                               </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs">
-                                {hasReacted ? 'Remove reaction' : 'Add reaction'}
+                              <TooltipContent side="top" className="text-xs max-w-[200px]">
+                                {tooltipText}
                               </TooltipContent>
                             </Tooltip>
                           );
