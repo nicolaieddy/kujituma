@@ -6,7 +6,7 @@ import { Notification } from '@/types/notifications';
 import { useFriends } from '@/hooks/useFriends';
 
 import { useNavigate } from 'react-router-dom';
-import { User, UserCheck, UserMinus, Loader2 } from 'lucide-react';
+import { User, UserCheck, UserMinus, Loader2, CheckCircle } from 'lucide-react';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -18,6 +18,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
   const { respondToFriendRequest } = useFriends();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isHandled, setIsHandled] = useState(false);
 
   const handleClick = async () => {
     if (!notification.is_read) {
@@ -29,6 +30,10 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
       navigate('/friends?tab=requests');
     } else if (notification.type === 'friend_request_accepted') {
       // Navigate to the user's profile
+      navigate(`/profile/${notification.triggered_by_user_id}`);
+    } else if (notification.type === 'accountability_partner_request') {
+      navigate('/friends?tab=accountability');
+    } else if (notification.type === 'accountability_partner_accepted') {
       navigate(`/profile/${notification.triggered_by_user_id}`);
     } else if (notification.related_post_id) {
       // Navigate to feed with the specific post highlighted
@@ -46,12 +51,16 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
 
     setIsProcessing(true);
     try {
-      await respondToFriendRequest(notification.related_request_id, response);
+      const result = await respondToFriendRequest(notification.related_request_id, response);
+      // Mark as handled regardless of success (it might already be handled)
+      setIsHandled(true);
       // Mark notification as read after responding
       await onMarkAsRead(notification.id);
       onMarkRead();
     } catch (error) {
       console.error('Error responding to friend request:', error);
+      // If error occurs, the request was likely already handled
+      setIsHandled(true);
     } finally {
       setIsProcessing(false);
     }
@@ -71,12 +80,17 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
         return '👋';
       case 'friend_request_accepted':
         return '🤝';
+      case 'accountability_partner_request':
+        return '🎯';
+      case 'accountability_partner_accepted':
+        return '🤝';
       default:
         return '🔔';
     }
   };
 
   const isFriendRequest = notification.type === 'friend_request';
+  const showFriendRequestActions = isFriendRequest && notification.related_request_id && !isHandled;
 
   return (
     <div
@@ -102,7 +116,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
           </p>
 
           {/* Friend Request Action Buttons */}
-          {isFriendRequest && notification.related_request_id && (
+          {showFriendRequestActions && (
             <div className="flex gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
               <Button
                 size="sm"
@@ -131,6 +145,14 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
                 )}
                 Decline
               </Button>
+            </div>
+          )}
+
+          {/* Show handled state for friend requests */}
+          {isFriendRequest && isHandled && (
+            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+              <CheckCircle className="h-3 w-3" />
+              <span>Already responded</span>
             </div>
           )}
         </div>
