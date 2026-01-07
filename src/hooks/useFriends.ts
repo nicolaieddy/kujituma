@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { friendsService, Friend, FriendRequest } from '@/services/friendsService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useFriends = () => {
   const { user } = useAuth();
@@ -39,6 +40,57 @@ export const useFriends = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Real-time subscription for friend requests
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('friend-requests-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests',
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch when we receive a new request or status changes
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friend_requests',
+          filter: `sender_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch when our sent requests change
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'friends',
+        },
+        () => {
+          // Refetch when friendships change
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchData]);
 
   const sendFriendRequest = useCallback(async (userId: string) => {
     const result = await friendsService.sendFriendRequest(userId);

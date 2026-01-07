@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   accountabilityService, 
   AccountabilityPartner, 
@@ -43,6 +44,57 @@ export const useAccountabilityPartners = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Real-time subscription for accountability partner requests
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('partner-requests-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accountability_partner_requests',
+          filter: `receiver_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch when we receive a new request or status changes
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accountability_partner_requests',
+          filter: `sender_id=eq.${user.id}`,
+        },
+        () => {
+          // Refetch when our sent requests change
+          fetchData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accountability_partnerships',
+        },
+        () => {
+          // Refetch when partnerships change
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchData]);
 
   const sendPartnerRequest = useCallback(async (
     userId: string, 
