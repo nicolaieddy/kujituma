@@ -2,7 +2,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { RefreshCw, Flame, Check, ChevronRight, ChevronDown } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal, HabitItem } from "@/types/goals";
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { format, startOfWeek, eachDayOfInterval, endOfWeek, isToday, isBefore } from "date-fns";
 import { useState, useEffect, useRef } from "react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { useDailyStreaks } from "@/hooks/useDailyStreaks";
 import { celebrateGoalComplete } from "@/utils/confetti";
 import { hapticSuccess } from "@/utils/haptic";
 
@@ -30,6 +32,7 @@ export const HabitsDueThisWeek = ({
 }: HabitsDueThisWeekProps) => {
   const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
+  const { streaks: dailyStreaks, getHabitStreak, totalCurrentStreak, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
   if (habits.length === 0) return null;
@@ -139,14 +142,14 @@ export const HabitsDueThisWeek = ({
     toggleCompletion(goalId, habitItemId, date);
   };
 
-  // Calculate aggregate streak info
-  const totalCurrentStreak = habits.reduce((sum, h) => sum + h.currentStreak, 0);
-  const bestStreak = habits.reduce((max, h) => Math.max(max, h.longestStreak), 0);
+  // Calculate aggregate streak info using daily streaks
+  const bestDailyStreak = dailyStreaks.reduce((max, s) => Math.max(max, s.longestStreak), 0);
   const avgCompletionRate = habits.length > 0 
     ? Math.round(habits.reduce((sum, h) => sum + h.completionRate, 0) / habits.length) 
     : 0;
 
   return (
+    <TooltipProvider>
     <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-2 sm:pb-3">
         <div className="flex items-center justify-between">
@@ -155,12 +158,33 @@ export const HabitsDueThisWeek = ({
             Habits This Week
           </CardTitle>
           <div className="flex items-center gap-2">
-            {/* Streak summary */}
+            {/* Daily streak summary */}
             {totalCurrentStreak > 0 && (
-              <div className="flex items-center gap-1 text-orange-500">
-                <Flame className="h-4 w-4" />
-                <span className="text-xs font-semibold">{totalCurrentStreak} week streak</span>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1 text-orange-500 cursor-help">
+                    <Flame className="h-4 w-4" />
+                    <span className="text-xs font-semibold">{totalCurrentStreak}d</span>
+                    {atRiskStreaks > 0 && (
+                      <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                    )}
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs">
+                  <p className="font-medium">Daily Streak: {totalCurrentStreak} days</p>
+                  {atRiskStreaks > 0 && (
+                    <p className="text-yellow-500 text-xs mt-1">
+                      {atRiskStreaks} habit{atRiskStreaks > 1 ? 's' : ''} at risk (no freezes left)
+                    </p>
+                  )}
+                  {totalFreezesRemaining > 0 && (
+                    <p className="text-muted-foreground text-xs mt-1">
+                      <Snowflake className="h-3 w-3 inline mr-1" />
+                      {totalFreezesRemaining} freeze{totalFreezesRemaining > 1 ? 's' : ''} remaining this week
+                    </p>
+                  )}
+                </TooltipContent>
+              </Tooltip>
             )}
             {habitItemsTotal > 0 && (
               <Badge variant="outline" className="text-xs">
@@ -210,26 +234,37 @@ export const HabitsDueThisWeek = ({
                   </p>
                 </div>
 
-                {/* Streak info */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {habit.currentStreak > 0 && (
-                    <div className="flex items-center gap-1" title={`Current: ${habit.currentStreak} weeks, Best: ${habit.longestStreak} weeks`}>
-                      <Flame className={cn(
-                        "h-4 w-4",
-                        habit.currentStreak >= 12 ? "text-orange-500" :
-                        habit.currentStreak >= 8 ? "text-yellow-500" :
-                        habit.currentStreak >= 4 ? "text-green-500" :
-                        "text-emerald-400"
-                      )} />
-                      <span className="text-xs font-medium">{habit.currentStreak}w</span>
-                    </div>
-                  )}
-                  {habit.longestStreak > habit.currentStreak && (
-                    <span className="text-[10px] text-muted-foreground">
-                      best: {habit.longestStreak}w
-                    </span>
-                  )}
-                </div>
+                {/* Streak info - aggregate daily streaks for this goal */}
+                {(() => {
+                  const goalHabitStreaks = habitItems
+                    .map(item => getHabitStreak(item.id))
+                    .filter(Boolean);
+                  const totalGoalStreak = goalHabitStreaks.reduce((sum, s) => sum + (s?.currentStreak || 0), 0);
+                  const maxGoalStreak = goalHabitStreaks.reduce((max, s) => Math.max(max, s?.longestStreak || 0), 0);
+                  const hasAtRisk = goalHabitStreaks.some(s => s?.streakStatus === 'at_risk');
+                  
+                  return totalGoalStreak > 0 ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className={cn(
+                          "flex items-center gap-1 cursor-help flex-shrink-0",
+                          hasAtRisk ? "text-yellow-500" : "text-orange-500"
+                        )}>
+                          <Flame className="h-4 w-4" />
+                          <span className="text-xs font-medium">{totalGoalStreak}d</span>
+                          {hasAtRisk && <AlertTriangle className="h-3 w-3" />}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        <p className="font-medium">{totalGoalStreak} day streak (total)</p>
+                        <p className="text-xs text-muted-foreground">Best: {maxGoalStreak} days</p>
+                        {hasAtRisk && (
+                          <p className="text-xs text-yellow-500 mt-1">Some habits at risk!</p>
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : null;
+                })()}
               </div>
 
               {/* Expanded Habit Items */}
@@ -242,6 +277,9 @@ export const HabitsDueThisWeek = ({
                     const showDailyCheckboxes = isDailyTracking(item.frequency);
                     const isWeeklyCompleted = isWeeklyHabitCompleted(item.id);
                     
+                    // Get daily streak for this habit item
+                    const habitStreak = getHabitStreak(item.id);
+                    
                     // Frequency label for weekly habits
                     const frequencyLabel = item.frequency === 'weekly' ? 'Weekly' 
                       : item.frequency === 'biweekly' ? 'Biweekly'
@@ -250,19 +288,49 @@ export const HabitsDueThisWeek = ({
                       : item.frequency === 'quarterly' ? 'Quarterly'
                       : item.frequency;
                     
-                    // Calculate per-item streak based on this week's completions
-                    const itemCompletedDays = completedDays;
-                    
                     return (
                       <div key={item.id} className="space-y-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-sm font-medium truncate flex-1">{item.text}</p>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            {/* Per-item streak indicator */}
-                            {showDailyCheckboxes && itemCompletedDays > 0 && (
-                              <div className="flex items-center gap-0.5 text-orange-500">
+                            {/* Per-item daily streak with freeze status */}
+                            {showDailyCheckboxes && habitStreak && habitStreak.currentStreak > 0 && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className={cn(
+                                    "flex items-center gap-0.5 cursor-help",
+                                    habitStreak.streakStatus === 'at_risk' ? "text-yellow-500" : "text-orange-500"
+                                  )}>
+                                    <Flame className="h-3 w-3" />
+                                    <span className="text-xs font-medium">{habitStreak.currentStreak}d</span>
+                                    {habitStreak.freezesRemaining > 0 && (
+                                      <Snowflake className="h-3 w-3 text-blue-400" />
+                                    )}
+                                    {habitStreak.streakStatus === 'at_risk' && (
+                                      <AlertTriangle className="h-3 w-3" />
+                                    )}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left">
+                                  <p className="font-medium">{habitStreak.currentStreak} day streak</p>
+                                  <p className="text-xs text-muted-foreground">Best: {habitStreak.longestStreak} days</p>
+                                  {habitStreak.freezesRemaining > 0 ? (
+                                    <p className="text-xs text-blue-400 flex items-center gap-1 mt-1">
+                                      <Snowflake className="h-3 w-3" />
+                                      {habitStreak.freezesRemaining} freeze left this week
+                                    </p>
+                                  ) : (
+                                    <p className="text-xs text-yellow-500 mt-1">
+                                      No freezes left - don't miss!
+                                    </p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {showDailyCheckboxes && (!habitStreak || habitStreak.currentStreak === 0) && completedDays > 0 && (
+                              <div className="flex items-center gap-0.5 text-muted-foreground">
                                 <Flame className="h-3 w-3" />
-                                <span className="text-xs font-medium">{itemCompletedDays}</span>
+                                <span className="text-xs">{completedDays}</span>
                               </div>
                             )}
                             {showDailyCheckboxes ? (
@@ -438,5 +506,6 @@ export const HabitsDueThisWeek = ({
         ))}
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };
