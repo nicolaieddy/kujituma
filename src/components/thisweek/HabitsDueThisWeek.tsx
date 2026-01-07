@@ -32,7 +32,7 @@ export const HabitsDueThisWeek = ({
 }: HabitsDueThisWeekProps) => {
   const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
-  const { streaks: dailyStreaks, getHabitStreak, totalCurrentStreak, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
+  const { streaks: dailyStreaks, getHabitStreak, activeStreaks, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
   if (habits.length === 0) return null;
@@ -158,23 +158,26 @@ export const HabitsDueThisWeek = ({
             Habits This Week
           </CardTitle>
           <div className="flex items-center gap-2">
-            {/* Daily streak summary */}
-            {totalCurrentStreak > 0 && (
+            {/* Daily streak summary - show count of active streaks */}
+            {activeStreaks > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-orange-500 cursor-help">
                     <Flame className="h-4 w-4" />
-                    <span className="text-xs font-semibold">{totalCurrentStreak}d</span>
+                    <span className="text-xs font-semibold">{activeStreaks} active</span>
                     {atRiskStreaks > 0 && (
                       <AlertTriangle className="h-3 w-3 text-yellow-500" />
                     )}
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
-                  <p className="font-medium">Daily Streak: {totalCurrentStreak} days</p>
+                  <p className="font-medium">{activeStreaks} habit{activeStreaks > 1 ? 's' : ''} with active streaks</p>
+                  {bestDailyStreak > 0 && (
+                    <p className="text-xs text-muted-foreground">Best streak: {bestDailyStreak} days</p>
+                  )}
                   {atRiskStreaks > 0 && (
                     <p className="text-yellow-500 text-xs mt-1">
-                      {atRiskStreaks} habit{atRiskStreaks > 1 ? 's' : ''} at risk (no freezes left)
+                      {atRiskStreaks} at risk (no freezes left)
                     </p>
                   )}
                   {totalFreezesRemaining > 0 && (
