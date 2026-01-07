@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
+import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
@@ -25,23 +26,48 @@ export const WeekCheckInsSection = ({
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const fetchCheckIns = async () => {
+    const data = await accountabilityService.getWeekCheckIns(partnershipId, weekStart);
+    setCheckIns(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchCheckIns = async () => {
-      setLoading(true);
-      const data = await accountabilityService.getWeekCheckIns(partnershipId, weekStart);
-      setCheckIns(data);
-      setLoading(false);
-    };
+    setLoading(true);
     fetchCheckIns();
   }, [partnershipId, weekStart]);
 
+  // Real-time subscription for reactions
+  useEffect(() => {
+    const checkInIds = checkIns.map(c => c.id);
+    if (checkInIds.length === 0) return;
+
+    const channel = supabase
+      .channel(`check-in-reactions-${partnershipId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'check_in_reactions',
+        },
+        (payload) => {
+          const checkInId = (payload.new as any)?.check_in_id || (payload.old as any)?.check_in_id;
+          if (checkInIds.includes(checkInId)) {
+            fetchCheckIns();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [checkIns.map(c => c.id).join(','), partnershipId]);
+
   const handleToggleReaction = async (checkInId: string, reaction: string) => {
-    const result = await accountabilityService.toggleReaction(checkInId, reaction);
-    if (result.success) {
-      // Refresh check-ins
-      const data = await accountabilityService.getWeekCheckIns(partnershipId, weekStart);
-      setCheckIns(data);
-    }
+    await accountabilityService.toggleReaction(checkInId, reaction);
+    // Real-time will handle the update, but we can optimistically refresh too
   };
 
   const getInitials = (name: string) =>

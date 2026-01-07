@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -68,15 +69,42 @@ const CheckInHistory = () => {
     fetchData();
   }, [partnerId, user, navigate]);
 
+  // Real-time subscription for reactions
+  useEffect(() => {
+    if (!partnershipId || checkIns.length === 0) return;
+
+    const checkInIds = checkIns.map(c => c.id);
+    
+    const channel = supabase
+      .channel(`check-in-history-reactions-${partnershipId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'check_in_reactions',
+        },
+        async (payload) => {
+          const checkInId = (payload.new as any)?.check_in_id || (payload.old as any)?.check_in_id;
+          if (checkInIds.includes(checkInId)) {
+            const history = await accountabilityService.getCheckInHistory(partnershipId);
+            setCheckIns(history);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [partnershipId, checkIns.map(c => c.id).join(',')]);
+
   const getInitials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
 
   const handleToggleReaction = async (checkInId: string, reaction: string) => {
-    const result = await accountabilityService.toggleReaction(checkInId, reaction);
-    if (result.success && partnershipId) {
-      const history = await accountabilityService.getCheckInHistory(partnershipId);
-      setCheckIns(history);
-    }
+    await accountabilityService.toggleReaction(checkInId, reaction);
+    // Real-time will handle the update
   };
 
   if (loading) {
