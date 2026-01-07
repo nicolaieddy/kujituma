@@ -7,7 +7,7 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { AnalyticsSkeleton } from "@/components/skeletons/PageSkeletons";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Analytics = () => {
   const navigate = useNavigate();
@@ -38,16 +38,9 @@ const Analytics = () => {
       <div className="min-h-screen bg-background">
         <DashboardHeader isAdmin={false} onSignOut={() => {}} />
         <div className="container mx-auto px-4 py-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-heading">
-              Analytics Dashboard
-            </h1>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Track your progress, completion rates, and streaks to stay motivated.
-            </p>
-          </div>
-          <div className="max-w-6xl mx-auto">
-            <AnalyticsSkeleton />
+          <div className="mb-6">
+            <Skeleton className="h-8 w-48 mb-2" />
+            <Skeleton className="h-4 w-64" />
           </div>
         </div>
       </div>
@@ -78,16 +71,16 @@ const Analytics = () => {
       />
 
       <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
-        <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
-          <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground mb-4 font-heading`}>
-            Analytics Dashboard
+        <div className="mb-6">
+          <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-foreground font-heading`}>
+            Analytics
           </h1>
-          <p className={`text-muted-foreground ${isMobile ? 'text-sm px-2' : 'text-base sm:text-lg'} max-w-2xl mx-auto leading-relaxed`}>
-            Track your progress, completion rates, and streaks to stay motivated.
+          <p className="text-muted-foreground text-sm mt-1">
+            Track your progress and streaks
           </p>
         </div>
 
-        <div className={`${isMobile ? 'max-w-full' : 'max-w-6xl'} mx-auto`}>
+        <div className="max-w-5xl">
           <AnalyticsDashboard />
         </div>
       </div>
