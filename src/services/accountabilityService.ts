@@ -78,6 +78,7 @@ export interface CheckInReaction {
   user_id: string;
   reaction: string;
   created_at: string;
+  reactor_name?: string;
 }
 
 class AccountabilityService {
@@ -525,9 +526,25 @@ class AccountabilityService {
     if (checkInIds.length > 0) {
       const { data: reactionsData } = await supabase
         .from('check_in_reactions')
-        .select('*')
+        .select(`
+          id,
+          check_in_id,
+          user_id,
+          reaction,
+          created_at,
+          reactor:profiles!check_in_reactions_user_id_fkey (
+            full_name
+          )
+        `)
         .in('check_in_id', checkInIds);
-      reactions = (reactionsData || []) as CheckInReaction[];
+      reactions = (reactionsData || []).map(r => ({
+        id: r.id,
+        check_in_id: r.check_in_id,
+        user_id: r.user_id,
+        reaction: r.reaction,
+        created_at: r.created_at,
+        reactor_name: (r.reactor as any)?.full_name || 'Unknown',
+      })) as CheckInReaction[];
     }
 
     return (data || []).map(checkIn => ({
