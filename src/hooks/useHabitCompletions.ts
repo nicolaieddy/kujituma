@@ -115,6 +115,9 @@ export const useHabitCompletions = (weekStart?: Date) => {
         }
         return old;
       });
+      
+      // Invalidate daily streaks so they recalculate
+      queryClient.invalidateQueries({ queryKey: ["daily-streaks", user?.id] });
     },
     // Note: No onSettled invalidation - we rely on onSuccess + realtime for sync
   });
