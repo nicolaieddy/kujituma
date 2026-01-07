@@ -254,6 +254,38 @@ export type Database = {
         }
         Relationships: []
       }
+      check_in_reactions: {
+        Row: {
+          check_in_id: string
+          created_at: string
+          id: string
+          reaction: string
+          user_id: string
+        }
+        Insert: {
+          check_in_id: string
+          created_at?: string
+          id?: string
+          reaction: string
+          user_id: string
+        }
+        Update: {
+          check_in_id?: string
+          created_at?: string
+          id?: string
+          reaction?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "check_in_reactions_check_in_id_fkey"
+            columns: ["check_in_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_check_ins"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comment_likes: {
         Row: {
           comment_id: string

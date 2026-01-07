@@ -2,18 +2,22 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, MessageSquare, Calendar, Clock } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+
+const REACTIONS = ['👍', '❤️', '🔥', '👏', '💪'];
 
 const CheckInHistory = () => {
   const { partnerId } = useParams<{ partnerId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
+  const [partnershipId, setPartnershipId] = useState<string | null>(null);
   const [partnerProfile, setPartnerProfile] = useState<{
     full_name: string;
     avatar_url: string | null;
@@ -39,6 +43,8 @@ const CheckInHistory = () => {
           setError('Partnership not found');
           return;
         }
+        
+        setPartnershipId(partnership.id);
 
         // Get partner profile
         const profile = await accountabilityService.getPartnerProfile(partnerId);
@@ -64,6 +70,14 @@ const CheckInHistory = () => {
 
   const getInitials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+
+  const handleToggleReaction = async (checkInId: string, reaction: string) => {
+    const result = await accountabilityService.toggleReaction(checkInId, reaction);
+    if (result.success && partnershipId) {
+      const history = await accountabilityService.getCheckInHistory(partnershipId);
+      setCheckIns(history);
+    }
+  };
 
   if (loading) {
     return (
@@ -171,6 +185,33 @@ const CheckInHistory = () => {
                           "{checkIn.message}"
                         </p>
                       )}
+
+                      {/* Reactions */}
+                      <div className="flex items-center gap-1 mt-3 flex-wrap">
+                        {REACTIONS.map((emoji) => {
+                          const count = (checkIn.reactions || []).filter(r => r.reaction === emoji).length;
+                          const hasReacted = (checkIn.reactions || []).some(r => r.reaction === emoji && r.user_id === user?.id);
+                          
+                          return (
+                            <Tooltip key={emoji}>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant={hasReacted ? "secondary" : "ghost"}
+                                  size="sm"
+                                  className={`h-7 px-2 text-sm gap-1 ${count > 0 ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}
+                                  onClick={() => handleToggleReaction(checkIn.id, emoji)}
+                                >
+                                  <span>{emoji}</span>
+                                  {count > 0 && <span className="text-xs">{count}</span>}
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs">
+                                {hasReacted ? 'Remove reaction' : 'Add reaction'}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </CardContent>
