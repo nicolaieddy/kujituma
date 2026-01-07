@@ -557,6 +557,32 @@ class AccountabilityService {
         return { success: false, error: error.message };
       }
 
+      // Send notification to the check-in author (if not reacting to own check-in)
+      const { data: checkIn } = await supabase
+        .from('accountability_check_ins')
+        .select('initiated_by, partnership_id')
+        .eq('id', checkInId)
+        .single();
+
+      if (checkIn && checkIn.initiated_by !== user.id) {
+        // Get reactor's name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        const reactorName = profile?.full_name || 'Someone';
+
+        await supabase.rpc('create_notification', {
+          _user_id: checkIn.initiated_by,
+          _type: 'accountability_check_in',
+          _message: `${reactorName} reacted ${reaction} to your check-in`,
+          _triggered_by_user_id: user.id,
+          _related_request_id: checkIn.partnership_id,
+        });
+      }
+
       return { success: true };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
