@@ -3,7 +3,7 @@ import { useStreaks } from "@/hooks/useStreaks";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 export const StreakIndicator = () => {
-  const { currentDailyStreak, currentWeeklyStreak, currentQuarterlyStreak, isLoading } = useStreaks();
+  const { currentDailyStreak, currentWeeklyStreak, currentQuarterlyStreak, longestDailyStreak, longestWeeklyStreak, longestQuarterlyStreak, isLoading } = useStreaks();
 
   if (isLoading) return null;
 
@@ -35,10 +35,16 @@ export const StreakIndicator = () => {
         </div>
       </TooltipTrigger>
       <TooltipContent>
-        <div className="text-sm">
-          {currentDailyStreak > 0 && <p>🔥 {currentDailyStreak} day streak</p>}
-          {currentWeeklyStreak > 0 && <p>🌟 {currentWeeklyStreak} week streak</p>}
-          {currentQuarterlyStreak > 0 && <p>⭐ {currentQuarterlyStreak} quarter streak</p>}
+        <div className="text-sm space-y-1">
+          {currentDailyStreak > 0 && (
+            <p>🔥 {currentDailyStreak} day streak <span className="text-muted-foreground">(best: {longestDailyStreak})</span></p>
+          )}
+          {currentWeeklyStreak > 0 && (
+            <p>🌟 {currentWeeklyStreak} week streak <span className="text-muted-foreground">(best: {longestWeeklyStreak})</span></p>
+          )}
+          {currentQuarterlyStreak > 0 && (
+            <p>⭐ {currentQuarterlyStreak} quarter streak <span className="text-muted-foreground">(best: {longestQuarterlyStreak})</span></p>
+          )}
         </div>
       </TooltipContent>
     </Tooltip>
