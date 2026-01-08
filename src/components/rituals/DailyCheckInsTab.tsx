@@ -5,7 +5,7 @@ import { Progress } from "@/components/ui/progress";
 import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
-import { CheckInHeatmap } from "./CheckInHeatmap";
+
 import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle, ChevronRight } from "lucide-react";
@@ -91,15 +91,7 @@ export const DailyCheckInsTab = () => {
         </CardContent>
       </Card>
 
-      {/* Activity Heatmap */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Check-in Activity</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CheckInHeatmap checkIns={checkIns} weeks={12} />
-        </CardContent>
-      </Card>
+      {/* Activity heatmap is now shown above the tabs in Analytics */}
 
       {/* Analytics Summary */}
       {analytics && checkIns.length > 0 && (
