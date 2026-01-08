@@ -32,7 +32,7 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut }: UserDropdownMenuProps) 
         </DropdownMenuItem>
         
         <DropdownMenuItem 
-          onClick={() => navigate('/rituals')}
+          onClick={() => navigate('/analytics?tab=daily')}
           className="cursor-pointer"
         >
           <Sparkles className="h-4 w-4 mr-2" />
