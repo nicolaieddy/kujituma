@@ -49,7 +49,7 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
 import LandingPage from "./pages/LandingPage";
 const Install = lazy(() => import("./pages/Install"));
-const Rituals = lazy(() => import("./pages/Rituals"));
+// Rituals content is now integrated into Analytics page
 const Debug = lazy(() => import("./pages/Debug"));
 const PartnerDashboard = lazy(() => import("./pages/PartnerDashboard"));
 const CheckInHistory = lazy(() => import("./pages/CheckInHistory"));
@@ -190,7 +190,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:userId" element={<Profile />} />
-          <Route path="/rituals" element={<Rituals />} />
+          {/* Rituals is now part of Analytics page */}
           <Route path="/install" element={<Install />} />
           <Route path="/debug" element={<Debug />} />
           <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
