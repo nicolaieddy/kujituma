@@ -4,6 +4,7 @@ import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { PendingSyncBadge } from "@/components/pwa/PendingSyncBadge";
+import { StreakIndicator } from "./StreakIndicator";
 
 import { useNavigate } from "react-router-dom";
 
@@ -30,6 +31,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
         </div>
         
         <div className="flex items-center justify-end gap-3">
+          <StreakIndicator />
           <PendingSyncBadge />
           <NotificationBell />
           
