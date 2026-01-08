@@ -79,26 +79,14 @@ export const celebrateWeekComplete = () => {
 
 // Streak milestone celebrations with increasing intensity
 export const celebrateStreakMilestone = (streak: number) => {
-  const milestoneConfig: Record<number, { particleCount: number; spread: number; colors: string[] }> = {
-    4: {
-      particleCount: 80,
-      spread: 60,
-      colors: ['#22c55e', '#4ade80', '#86efac'] // Green for 4 weeks
-    },
-    8: {
-      particleCount: 120,
-      spread: 80,
-      colors: ['#eab308', '#facc15', '#fde047'] // Yellow/Gold for 8 weeks
-    },
-    12: {
-      particleCount: 200,
-      spread: 100,
-      colors: ['#f97316', '#fb923c', '#fdba74'] // Orange/Fire for 12 weeks
-    }
+  // Get config based on streak tier
+  const getConfig = (s: number) => {
+    if (s >= 12) return { particleCount: 200, spread: 100, colors: ['#f97316', '#fb923c', '#fdba74'] };
+    if (s >= 8) return { particleCount: 120, spread: 80, colors: ['#eab308', '#facc15', '#fde047'] };
+    return { particleCount: 80, spread: 60, colors: ['#22c55e', '#4ade80', '#86efac'] };
   };
 
-  const config = milestoneConfig[streak];
-  if (!config) return;
+  const config = getConfig(streak);
 
   // Initial burst
   confetti({
@@ -160,15 +148,22 @@ export const celebrateStreakMilestone = (streak: number) => {
 
 // Check if a streak is a milestone
 export const isStreakMilestone = (streak: number): boolean => {
-  return streak === 4 || streak === 8 || streak === 12;
+  return streak === 4 || streak === 8 || streak === 12 || 
+         (streak > 12 && streak % 4 === 0);
 };
 
 // Get milestone message
-export const getStreakMilestoneMessage = (streak: number): string | null => {
-  const messages: Record<number, string> = {
-    4: "🔥 4 Week Streak! You're building momentum!",
-    8: "⭐ 8 Week Streak! Incredible consistency!",
-    12: "🏆 12 Week Streak! You're unstoppable!"
+export const getStreakMilestoneMessage = (streak: number, type: 'daily' | 'weekly' | 'quarterly' = 'weekly'): string | null => {
+  const typeLabels = {
+    daily: 'Day',
+    weekly: 'Week',
+    quarterly: 'Quarter',
   };
-  return messages[streak] || null;
+
+  if (streak === 4) return `🔥 4 ${typeLabels[type]} Streak! You're building momentum!`;
+  if (streak === 8) return `⭐ 8 ${typeLabels[type]} Streak! Incredible consistency!`;
+  if (streak === 12) return `🏆 12 ${typeLabels[type]} Streak! You're unstoppable!`;
+  if (streak > 12 && streak % 4 === 0) return `🌟 ${streak} ${typeLabels[type]} Streak! Legendary!`;
+  
+  return null;
 };

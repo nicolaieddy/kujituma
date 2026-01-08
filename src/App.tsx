@@ -14,6 +14,7 @@ import { TosGate } from "@/components/auth/TosGate";
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
 import { useOnlinePresence } from "@/hooks/useOnlinePresence";
+import { useStreakCelebration } from "@/hooks/useStreakCelebration";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense, useEffect } from "react";
 import { GoalsService } from "@/services/goalsService";
@@ -173,6 +174,8 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
   useOnlinePresence();
   // Prefetch goals data when user is authenticated
   usePrefetchGoals(queryClient);
+  // Monitor streaks and celebrate milestones
+  useStreakCelebration();
 
   return (
     <RequireProfileComplete>
