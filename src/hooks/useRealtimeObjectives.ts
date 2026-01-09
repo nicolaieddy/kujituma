@@ -79,6 +79,14 @@ export const useVisibilityRefresh = (
   const queryClient = useQueryClient();
   const lastVisibleRef = useRef<number>(Date.now());
   const staleThreshold = options?.staleThresholdMs ?? 30000; // 30 seconds default
+  
+  // Store queryKeys and onRefresh in refs to avoid effect re-runs on every render
+  const queryKeysRef = useRef(queryKeys);
+  const onRefreshRef = useRef(options?.onRefresh);
+  
+  // Update refs when values change
+  queryKeysRef.current = queryKeys;
+  onRefreshRef.current = options?.onRefresh;
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -88,12 +96,12 @@ export const useVisibilityRefresh = (
         if (timeSinceLastVisible > staleThreshold) {
           console.log('[Visibility] App became visible after', Math.round(timeSinceLastVisible / 1000), 'seconds, refreshing data');
           
-          // Invalidate all specified queries
-          queryKeys.forEach(queryKey => {
+          // Invalidate all specified queries using refs to get current values
+          queryKeysRef.current.forEach(queryKey => {
             queryClient.invalidateQueries({ queryKey });
           });
           
-          options?.onRefresh?.();
+          onRefreshRef.current?.();
         }
       } else {
         // Leaving visibility - record the time
@@ -106,7 +114,7 @@ export const useVisibilityRefresh = (
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [queryClient, queryKeys, staleThreshold, options]);
+  }, [queryClient, staleThreshold]); // Removed queryKeys and options from deps
 
   return {
     lastVisible: lastVisibleRef.current,
