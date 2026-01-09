@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, lazy, Suspense, useCallback, useMemo } from "react";
+import { useState, useEffect, ReactNode, lazy, Suspense, useCallback, useMemo, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { HabitsService } from "@/services/habitsService";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
@@ -53,6 +53,12 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
     [goals, objectives]
   );
   
+  // Use refs for values that shouldn't trigger effect re-runs
+  const hasUserActivityRef = useRef(hasUserActivity);
+  const isLastWeekClosedRef = useRef(isLastWeekClosed);
+  hasUserActivityRef.current = hasUserActivity;
+  isLastWeekClosedRef.current = isLastWeekClosed;
+  
   useEffect(() => {
     if (!user) return;
     
@@ -60,8 +66,8 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
     if (HabitsService.isSunday() && !hasCompletedPlanning) {
       const dismissed = sessionStorage.getItem(`planning-dismissed-${weekStart}`);
       if (!dismissed) {
-        // Check if last week needs to be closed first
-        if (!isLastWeekClosed && hasUserActivity) {
+        // Check if last week needs to be closed first (use ref to avoid re-running effect)
+        if (!isLastWeekClosedRef.current && hasUserActivityRef.current) {
           setTimeout(() => setShowCloseLastWeekPrompt(true), 2000);
         } else {
           setTimeout(() => setShowPlanningDialog(true), 2000);
@@ -74,13 +80,13 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
     // - User has activity
     // - It's end of quarter
     // - Review not completed
-    if (!isReviewLoading && isEndOfQuarter && !hasCompletedReview && hasUserActivity) {
+    if (!isReviewLoading && isEndOfQuarter && !hasCompletedReview && hasUserActivityRef.current) {
       const dismissed = sessionStorage.getItem(`quarterly-dismissed-${weekStart}`);
       if (!dismissed) {
         setTimeout(() => setShowQuarterlyDialog(true), 3000);
       }
     }
-  }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter, hasUserActivity, isReviewLoading, isLastWeekClosed]);
+  }, [user, weekStart, hasCompletedPlanning, hasCompletedReview, isEndOfQuarter, isReviewLoading]);
   
   const handleClosePlanning = useCallback((open: boolean) => {
     if (!open) {
