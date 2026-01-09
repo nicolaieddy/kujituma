@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -28,9 +28,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [isNewUser, setIsNewUser] = useState(false);
+  
+  // Track if initial auth has been processed to prevent duplicate profile checks
+  const hasCheckedProfile = useRef<string | null>(null);
 
-  // Check if user's profile is complete
+  // Check if user's profile is complete - stable function, no deps needed
   const checkProfileComplete = useCallback(async (userId: string) => {
+    // Prevent duplicate checks for the same user
+    if (hasCheckedProfile.current === userId) {
+      return;
+    }
+    hasCheckedProfile.current = userId;
+    
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -63,6 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           setUser(null);
           setIsNewUser(false);
+          hasCheckedProfile.current = null;
           setLoading(false);
           return;
         }
@@ -71,6 +81,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
           setUser(null);
           setIsNewUser(false);
+          hasCheckedProfile.current = null;
           setLoading(false);
           return;
         }
@@ -86,6 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }, 0);
         } else {
           setIsNewUser(false);
+          hasCheckedProfile.current = null;
         }
       }
     );
