@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,6 +41,10 @@ export const useAccountabilityPartners = () => {
     }
   }, [user]);
 
+  // Store fetchData in a ref to avoid re-subscribing on every render
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -61,7 +65,7 @@ export const useAccountabilityPartners = () => {
         },
         () => {
           // Refetch when we receive a new request or status changes
-          fetchData();
+          fetchDataRef.current();
         }
       )
       .on(
@@ -74,7 +78,7 @@ export const useAccountabilityPartners = () => {
         },
         () => {
           // Refetch when our sent requests change
-          fetchData();
+          fetchDataRef.current();
         }
       )
       .on(
@@ -86,7 +90,7 @@ export const useAccountabilityPartners = () => {
         },
         () => {
           // Refetch when partnerships change
-          fetchData();
+          fetchDataRef.current();
         }
       )
       .subscribe();
@@ -94,7 +98,7 @@ export const useAccountabilityPartners = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, fetchData]);
+  }, [user]); // Removed fetchData from deps - using ref instead
 
   const sendPartnerRequest = useCallback(async (
     userId: string, 
