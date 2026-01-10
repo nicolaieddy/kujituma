@@ -4,12 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Goal, HabitItem, CustomSchedule } from "@/types/goals";
-import { RefreshCw, CheckCircle, Plus, X, GripVertical } from "lucide-react";
+import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap } from "lucide-react";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { useActivityMappings } from "@/hooks/useActivityMappings";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
@@ -34,12 +36,14 @@ const SortableHabit = ({
   habit, 
   onRemove, 
   getFrequencyLabel,
-  onEdit
+  onEdit,
+  stravaMapping
 }: { 
   habit: HabitItem; 
   onRemove: (id: string) => void;
   getFrequencyLabel: (h: HabitItem) => string;
   onEdit: (habit: HabitItem) => void;
+  stravaMapping: { strava_activity_type: string } | undefined;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -63,6 +67,23 @@ const SortableHabit = ({
         <GripVertical className="h-4 w-4" />
       </button>
       <span className="flex-1 text-sm">{habit.text}</span>
+      
+      {stravaMapping && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                <Zap className="h-3 w-3" />
+                <span className="text-xs font-medium">Strava</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Auto-tracked from Strava ({stravaMapping.strava_activity_type})</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+      
       <Badge variant="outline" className="text-xs shrink-0">{getFrequencyLabel(habit)}</Badge>
       <Button
         variant="ghost"
@@ -77,6 +98,7 @@ const SortableHabit = ({
 };
 
 export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectionProps) => {
+  const { getMappingForHabitItem } = useActivityMappings();
   const [newHabitText, setNewHabitText] = useState("");
   const [newHabitFrequency, setNewHabitFrequency] = useState<HabitFrequency>("weekly");
   const [newHabitCustomSchedule, setNewHabitCustomSchedule] = useState<CustomSchedule | undefined>();
@@ -219,6 +241,7 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
                       onRemove={handleRemoveHabit} 
                       getFrequencyLabel={getHabitFrequencyLabel}
                       onEdit={handleStartEditHabit}
+                      stravaMapping={getMappingForHabitItem(habit.id)}
                     />
                   );
                 })}

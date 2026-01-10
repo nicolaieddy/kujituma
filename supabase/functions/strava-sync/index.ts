@@ -133,27 +133,27 @@ serve(async (req) => {
       throw new Error(`Failed to fetch mappings: ${mappingsError.message}`);
     }
 
-    // Get already synced activity IDs
+    console.log(`Found ${mappings?.length || 0} activity mappings`);
+
+    // Get already synced activities
     const { data: existingSynced } = await supabase
       .from("synced_activities")
-      .select("strava_activity_id")
+      .select("*")
       .eq("user_id", user.id);
 
-    const syncedIds = new Set((existingSynced || []).map(a => a.strava_activity_id));
+    const syncedMap = new Map((existingSynced || []).map(a => [a.strava_activity_id, a]));
 
-    // Process new activities
+    // Process activities
     const results = {
       synced: 0,
       matched: 0,
       skipped: 0,
+      rematched: 0,
     };
 
     for (const activity of activities) {
-      if (syncedIds.has(activity.id)) {
-        results.skipped++;
-        continue;
-      }
-
+      const existingSync = syncedMap.get(activity.id);
+      
       // Find matching mapping
       const mapping = mappings?.find(m => 
         m.strava_activity_type === activity.type || 
@@ -162,8 +162,63 @@ serve(async (req) => {
 
       const durationMinutes = Math.round(activity.moving_time / 60);
       const meetsMinDuration = !mapping || durationMinutes >= (mapping.min_duration_minutes || 0);
+      const shouldMatch = mapping && meetsMinDuration;
 
-      // Store synced activity
+      // If already synced, check if we need to re-match with new mappings
+      if (existingSync) {
+        // If previously unmatched but now has a matching mapping, update it
+        if (!existingSync.matched_habit_item_id && shouldMatch) {
+          console.log(`Re-matching activity ${activity.id} (${activity.type}) to habit ${mapping.habit_item_id}`);
+          
+          // Update the synced activity
+          await supabase
+            .from("synced_activities")
+            .update({
+              matched_habit_item_id: mapping.habit_item_id,
+              matched_goal_id: mapping.goal_id,
+            })
+            .eq("id", existingSync.id);
+
+          // Create habit completion
+          const completionDate = activity.start_date_local.split("T")[0];
+          
+          const { data: existingCompletion } = await supabase
+            .from("habit_completions")
+            .select("id")
+            .eq("user_id", user.id)
+            .eq("goal_id", mapping.goal_id)
+            .eq("habit_item_id", mapping.habit_item_id)
+            .eq("completion_date", completionDate)
+            .single();
+
+          if (!existingCompletion) {
+            const { error: completionError } = await supabase
+              .from("habit_completions")
+              .insert({
+                user_id: user.id,
+                goal_id: mapping.goal_id,
+                habit_item_id: mapping.habit_item_id,
+                completion_date: completionDate,
+              });
+
+            if (!completionError) {
+              results.rematched++;
+              
+              await supabase
+                .from("synced_activities")
+                .update({ habit_completion_created: true })
+                .eq("id", existingSync.id);
+            }
+          } else {
+            results.rematched++;
+          }
+        } else {
+          results.skipped++;
+        }
+        continue;
+      }
+
+      // New activity - sync it
       const syncedActivity = {
         user_id: user.id,
         strava_activity_id: activity.id,
@@ -172,8 +227,8 @@ serve(async (req) => {
         start_date: activity.start_date,
         duration_seconds: activity.moving_time,
         distance_meters: activity.distance,
-        matched_habit_item_id: mapping && meetsMinDuration ? mapping.habit_item_id : null,
-        matched_goal_id: mapping && meetsMinDuration ? mapping.goal_id : null,
+        matched_habit_item_id: shouldMatch ? mapping.habit_item_id : null,
+        matched_goal_id: shouldMatch ? mapping.goal_id : null,
         habit_completion_created: false,
       };
 
@@ -189,7 +244,7 @@ serve(async (req) => {
       results.synced++;
 
       // Create habit completion if we have a match
-      if (mapping && meetsMinDuration) {
+      if (shouldMatch) {
         const completionDate = activity.start_date_local.split("T")[0];
         
         // Check if completion already exists
@@ -226,6 +281,8 @@ serve(async (req) => {
         }
       }
     }
+
+    console.log("Sync results:", results);
 
     return new Response(JSON.stringify({ 
       success: true,
