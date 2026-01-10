@@ -5,6 +5,8 @@ import { Goal } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { Calendar, Tag, StickyNote, Target, RefreshCw, Flame, TrendingUp } from "lucide-react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { useSyncedActivities } from "@/hooks/useSyncedActivities";
+import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
 import { startOfWeek, isToday, isBefore, subWeeks, format, eachDayOfInterval, endOfWeek } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
@@ -85,6 +87,7 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
   const { user } = useAuth();
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const { toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
+  const { isStravaCompletion } = useSyncedActivities(currentWeekStart);
 
   const habitItems = goal.habit_items || [];
   const hasHabits = habitItems.length > 0;
@@ -296,6 +299,9 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
                         const isTodayDate = date && isToday(date);
                         const isPast = date && isBefore(date, new Date()) && !isTodayDate;
                         
+                        // Check if this completion came from Strava
+                        const stravaActivity = date ? isStravaCompletion(habit.id, date) : null;
+                        
                         return (
                           <div
                             key={index}
@@ -310,22 +316,35 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
                             )}>
                               {label}
                             </span>
-                            <Checkbox
-                              checked={isChecked}
-                              disabled={!isActiveDay || isToggling}
-                              onCheckedChange={() => {
-                                if (isActiveDay) {
-                                  handleDayToggle(habit.id, index);
-                                }
-                              }}
-                              className={cn(
-                                "h-7 w-7 rounded border-white/40",
-                                isTodayDate && "ring-2 ring-emerald-400/50 ring-offset-1 ring-offset-transparent",
-                                isChecked && "bg-emerald-500 border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
-                                !isActiveDay && "cursor-not-allowed",
-                                isPast && !isChecked && "border-white/20"
+                            <div className="relative">
+                              <Checkbox
+                                checked={isChecked}
+                                disabled={!isActiveDay || isToggling}
+                                onCheckedChange={() => {
+                                  if (isActiveDay) {
+                                    handleDayToggle(habit.id, index);
+                                  }
+                                }}
+                                className={cn(
+                                  "h-7 w-7 rounded border-white/40",
+                                  isTodayDate && "ring-2 ring-emerald-400/50 ring-offset-1 ring-offset-transparent",
+                                  isChecked && "bg-emerald-500 border-emerald-500 data-[state=checked]:bg-emerald-500 data-[state=checked]:border-emerald-500",
+                                  !isActiveDay && "cursor-not-allowed",
+                                  isPast && !isChecked && "border-white/20"
+                                )}
+                              />
+                              {/* Strava badge overlay */}
+                              {stravaActivity && isChecked && (
+                                <div className="absolute -top-1 -right-1">
+                                  <StravaActivityBadge
+                                    activityName={stravaActivity.activity_name}
+                                    activityType={stravaActivity.activity_type}
+                                    durationSeconds={stravaActivity.duration_seconds}
+                                    distanceMeters={stravaActivity.distance_meters}
+                                  />
+                                </div>
                               )}
-                            />
+                            </div>
                           </div>
                         );
                       })}
