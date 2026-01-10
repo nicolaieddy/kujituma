@@ -1,9 +1,8 @@
-import { Database, Wifi } from 'lucide-react';
+import { Database } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 
@@ -34,30 +33,29 @@ export const CachedDataIndicator = ({
     return `${diffDays} days ago`;
   };
 
+  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div 
-            className={cn(
-              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
-              "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-              className
-            )}
-          >
-            <Database className="h-3 w-3" />
-            <span>Cached</span>
-          </div>
-        </TooltipTrigger>
-        <TooltipContent side="bottom">
-          <div className="text-xs">
-            <p className="font-medium">Viewing offline data</p>
-            <p className="text-muted-foreground">
-              Last synced: {formatLastSync()}
-            </p>
-          </div>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <div 
+          className={cn(
+            "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium",
+            "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+            className
+          )}
+        >
+          <Database className="h-3 w-3" />
+          <span>Cached</span>
+        </div>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        <div className="text-xs">
+          <p className="font-medium">Viewing offline data</p>
+          <p className="text-muted-foreground">
+            Last synced: {formatLastSync()}
+          </p>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 };
