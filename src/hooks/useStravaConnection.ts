@@ -3,7 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://oyvgkposjvcvpuakrzhl.supabase.co";
+const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 
 interface StravaConnection {
   strava_athlete_id: number;
