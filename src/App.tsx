@@ -56,6 +56,7 @@ const CheckInHistory = lazy(() => import("./pages/CheckInHistory"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
+const StravaCallback = lazy(() => import("./pages/StravaCallback"));
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -198,6 +199,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          <Route path="/strava-callback" element={<StravaCallback />} />
           <Route path="*" element={<Feed />} />
         </Routes>
       </Suspense>
