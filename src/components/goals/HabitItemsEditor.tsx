@@ -3,13 +3,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, Trash2, GripVertical } from "lucide-react";
-import { HabitItem, RecurrenceFrequency } from "@/types/goals";
+import { Plus, Trash2, GripVertical, Settings2 } from "lucide-react";
+import { HabitItem, RecurrenceFrequency, CustomSchedule } from "@/types/goals";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 
 interface HabitItemsEditorProps {
   habitItems: HabitItem[];
@@ -17,13 +18,23 @@ interface HabitItemsEditorProps {
   defaultFrequency?: RecurrenceFrequency;
 }
 
-const FREQUENCY_OPTIONS: { value: RecurrenceFrequency; label: string }[] = [
+const FREQUENCY_OPTIONS: { value: RecurrenceFrequency | 'custom'; label: string }[] = [
   { value: 'daily', label: 'Daily' },
   { value: 'weekdays', label: 'Weekdays' },
   { value: 'weekly', label: 'Weekly' },
   { value: 'biweekly', label: 'Biweekly' },
   { value: 'monthly', label: 'Monthly' },
+  { value: 'custom', label: 'Custom...' },
 ];
+
+// Get display label for a habit item's frequency
+const getFrequencyDisplay = (item: HabitItem): string => {
+  if (item.frequency === 'custom' && item.customSchedule) {
+    return formatCustomSchedule(item.customSchedule);
+  }
+  const option = FREQUENCY_OPTIONS.find(o => o.value === item.frequency);
+  return option?.label || item.frequency;
+};
 
 // Sortable habit item component
 interface SortableHabitItemProps {
@@ -31,9 +42,10 @@ interface SortableHabitItemProps {
   isMobile: boolean;
   onUpdate: (id: string, updates: Partial<HabitItem>) => void;
   onRemove: (id: string) => void;
+  onOpenCustomPicker: (item: HabitItem) => void;
 }
 
-const SortableHabitItem = ({ item, isMobile, onUpdate, onRemove }: SortableHabitItemProps) => {
+const SortableHabitItem = ({ item, isMobile, onUpdate, onRemove, onOpenCustomPicker }: SortableHabitItemProps) => {
   const {
     attributes,
     listeners,
@@ -46,6 +58,15 @@ const SortableHabitItem = ({ item, isMobile, onUpdate, onRemove }: SortableHabit
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  const handleFrequencyChange = (value: RecurrenceFrequency | 'custom') => {
+    if (value === 'custom') {
+      onOpenCustomPicker(item);
+    } else {
+      // Clear custom schedule when switching to a preset frequency
+      onUpdate(item.id, { frequency: value, customSchedule: undefined });
+    }
   };
 
   return (
@@ -73,23 +94,39 @@ const SortableHabitItem = ({ item, isMobile, onUpdate, onRemove }: SortableHabit
         placeholder="Habit text..."
       />
       
-      <Select
-        value={item.frequency}
-        onValueChange={(value: RecurrenceFrequency) => 
-          onUpdate(item.id, { frequency: value })
-        }
-      >
-        <SelectTrigger className={`w-28 ${isMobile ? 'h-10' : 'h-9'} text-sm`}>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent className="z-[300]">
-          {FREQUENCY_OPTIONS.map((option) => (
-            <SelectItem key={option.value} value={option.value}>
-              {option.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <div className="flex items-center gap-1">
+        <Select
+          value={item.frequency}
+          onValueChange={handleFrequencyChange}
+        >
+          <SelectTrigger className={`${item.frequency === 'custom' ? 'w-32' : 'w-28'} ${isMobile ? 'h-10' : 'h-9'} text-sm`}>
+            <SelectValue>
+              {getFrequencyDisplay(item)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="z-[300]">
+            {FREQUENCY_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Edit custom schedule button */}
+        {item.frequency === 'custom' && item.customSchedule && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            onClick={() => onOpenCustomPicker(item)}
+            title="Edit custom schedule"
+          >
+            <Settings2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
       
       <Button
         type="button"
@@ -111,6 +148,8 @@ export const HabitItemsEditor = ({
 }: HabitItemsEditorProps) => {
   const isMobile = useIsMobile();
   const [newItemText, setNewItemText] = useState("");
+  const [customPickerOpen, setCustomPickerOpen] = useState(false);
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -146,6 +185,21 @@ export const HabitItemsEditor = ({
     ));
   };
 
+  const handleOpenCustomPicker = (item: HabitItem) => {
+    setEditingHabitId(item.id);
+    setCustomPickerOpen(true);
+  };
+
+  const handleSaveCustomSchedule = (schedule: CustomSchedule) => {
+    if (editingHabitId) {
+      updateHabitItem(editingHabitId, { 
+        frequency: 'custom', 
+        customSchedule: schedule 
+      });
+    }
+    setEditingHabitId(null);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
@@ -155,6 +209,9 @@ export const HabitItemsEditor = ({
       onChange(arrayMove(habitItems, oldIndex, newIndex));
     }
   };
+
+  // Get the current editing habit's custom schedule for the picker
+  const editingHabit = editingHabitId ? habitItems.find(h => h.id === editingHabitId) : null;
 
   return (
     <div className="space-y-3">
@@ -182,6 +239,7 @@ export const HabitItemsEditor = ({
                   isMobile={isMobile}
                   onUpdate={updateHabitItem}
                   onRemove={removeHabitItem}
+                  onOpenCustomPicker={handleOpenCustomPicker}
                 />
               ))}
             </div>
@@ -220,6 +278,17 @@ export const HabitItemsEditor = ({
           No habits added yet. Add habits to track recurring behaviors.
         </p>
       )}
+
+      {/* Custom Recurrence Picker Dialog */}
+      <CustomRecurrencePicker
+        isOpen={customPickerOpen}
+        onClose={() => {
+          setCustomPickerOpen(false);
+          setEditingHabitId(null);
+        }}
+        onSave={handleSaveCustomSchedule}
+        initialSchedule={editingHabit?.customSchedule}
+      />
     </div>
   );
 };
