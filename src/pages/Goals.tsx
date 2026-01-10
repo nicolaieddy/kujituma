@@ -148,6 +148,8 @@ const Goals = () => {
 
 
   const handleModalEditGoal = (updatedGoal: Goal) => {
+    // Update the selectedGoal state immediately so the modal shows the updated data
+    setSelectedGoal(updatedGoal);
     updateGoal(updatedGoal.id, updatedGoal);
   };
 
