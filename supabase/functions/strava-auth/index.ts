@@ -22,33 +22,22 @@ serve(async (req) => {
   const action = url.searchParams.get("action");
 
   try {
-    // Get authorization token from request
     const authHeader = req.headers.get("authorization");
-    
+
+    // === AUTHORIZE: Generate Strava OAuth URL ===
     if (action === "authorize") {
-      // Generate authorization URL for Strava OAuth
       if (!STRAVA_CLIENT_ID) {
         throw new Error("STRAVA_CLIENT_ID not configured");
       }
 
-      // Get the redirect URI from query params or use default.
-      // Strava is strict and validates redirect_uri against the app's "Authorization Callback Domain".
-      // Strava also tends to normalize callback domains to `www`, so we canonicalize for kujituma.com.
-      const requestedRedirectUri = url.searchParams.get("redirect_uri") || `${url.origin}/strava-auth?action=callback`;
-      let redirectUri = requestedRedirectUri;
-
-      try {
-        const parsed = new URL(requestedRedirectUri);
-        if (parsed.hostname === "kujituma.com" || parsed.hostname === "www.kujituma.com") {
-          redirectUri = "https://www.kujituma.com/strava-callback";
-        }
-      } catch {
-        // If an invalid URL is provided, fall back to the default.
-        redirectUri = `${url.origin}/strava-auth?action=callback`;
+      const redirectUri = url.searchParams.get("redirect_uri");
+      if (!redirectUri) {
+        throw new Error("redirect_uri is required");
       }
-      // Store state for CSRF protection
+
+      // Generate state for CSRF (though we rely on auth token for security)
       const state = crypto.randomUUID();
-      
+
       const authUrl = new URL("https://www.strava.com/oauth/authorize");
       authUrl.searchParams.set("client_id", STRAVA_CLIENT_ID);
       authUrl.searchParams.set("response_type", "code");
@@ -57,22 +46,14 @@ serve(async (req) => {
       authUrl.searchParams.set("scope", "read,activity:read_all");
       authUrl.searchParams.set("state", state);
 
-      return new Response(JSON.stringify({ 
-        url: authUrl.toString(),
-        state 
-      }), {
+      return new Response(JSON.stringify({ url: authUrl.toString(), state }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // === CALLBACK: Exchange code for tokens ===
     if (action === "callback") {
-      // Exchange authorization code for tokens
       const code = url.searchParams.get("code");
-      const error = url.searchParams.get("error");
-
-      if (error) {
-        throw new Error(`Strava authorization failed: ${error}`);
-      }
 
       if (!code) {
         throw new Error("No authorization code provided");
@@ -82,7 +63,21 @@ serve(async (req) => {
         throw new Error("Strava credentials not configured");
       }
 
-      // Exchange code for tokens
+      if (!authHeader) {
+        throw new Error("Authorization required");
+      }
+
+      // Get the authenticated user
+      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User not authenticated");
+      }
+
+      // Exchange code for tokens with Strava
       const tokenResponse = await fetch("https://www.strava.com/oauth/token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -96,29 +91,15 @@ serve(async (req) => {
 
       if (!tokenResponse.ok) {
         const errorText = await tokenResponse.text();
-        throw new Error(`Failed to exchange code: ${errorText}`);
+        console.error("Strava token exchange failed:", errorText);
+        throw new Error("Failed to exchange authorization code");
       }
 
       const tokenData = await tokenResponse.json();
-      
-      // Get user from authorization header
-      if (!authHeader) {
-        throw new Error("No authorization header provided");
-      }
 
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-        global: { headers: { Authorization: authHeader } },
-      });
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error("User not authenticated");
-      }
-
-      // Use service role to upsert connection (to handle encrypted tokens)
+      // Use service role to store connection
       const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-      // Store or update connection
       const { error: upsertError } = await adminClient
         .from("strava_connections")
         .upsert({
@@ -136,24 +117,26 @@ serve(async (req) => {
         });
 
       if (upsertError) {
-        throw new Error(`Failed to save connection: ${upsertError.message}`);
+        console.error("Failed to save connection:", upsertError);
+        throw new Error("Failed to save Strava connection");
       }
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         success: true,
         athlete: {
           id: tokenData.athlete.id,
           firstname: tokenData.athlete.firstname,
           lastname: tokenData.athlete.lastname,
-        }
+        },
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
+    // === DISCONNECT: Remove Strava connection ===
     if (action === "disconnect") {
       if (!authHeader) {
-        throw new Error("No authorization header provided");
+        throw new Error("Authorization required");
       }
 
       const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
@@ -165,7 +148,6 @@ serve(async (req) => {
         throw new Error("User not authenticated");
       }
 
-      // Delete connection
       const { error: deleteError } = await supabase
         .from("strava_connections")
         .delete()
@@ -180,9 +162,10 @@ serve(async (req) => {
       });
     }
 
+    // === STATUS: Check connection status ===
     if (action === "status") {
       if (!authHeader) {
-        throw new Error("No authorization header provided");
+        throw new Error("Authorization required");
       }
 
       const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
@@ -204,9 +187,9 @@ serve(async (req) => {
         throw new Error(`Failed to fetch status: ${fetchError.message}`);
       }
 
-      return new Response(JSON.stringify({ 
+      return new Response(JSON.stringify({
         connected: !!connection,
-        connection: connection || null
+        connection: connection || null,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

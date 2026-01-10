@@ -5,21 +5,6 @@ import { toast } from "sonner";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 
-// Strava is strict about redirect_uri matching the "Authorization Callback Domain".
-// Strava tends to normalize callback domains to `www`, so we force a canonical callback
-// when running on kujituma.com to avoid "redirect_uri invalid".
-const STRAVA_CANONICAL_ORIGIN = "https://www.kujituma.com";
-
-const getStravaRedirectUri = () => {
-  const hostname = window.location.hostname;
-
-  if (hostname === "kujituma.com" || hostname === "www.kujituma.com") {
-    return `${STRAVA_CANONICAL_ORIGIN}/strava-callback`;
-  }
-
-  return `${window.location.origin}/strava-callback`;
-};
-
 interface StravaConnection {
   strava_athlete_id: number;
   athlete_firstname: string | null;
@@ -51,15 +36,6 @@ export function useStravaConnection() {
     }
 
     try {
-      const { data, error } = await supabase.functions.invoke("strava-auth", {
-        body: null,
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        method: "GET",
-      });
-
-      // Parse URL params to call with action=status
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/strava-auth?action=status`,
         {
@@ -93,8 +69,11 @@ export function useStravaConnection() {
     }
 
     try {
+      // Use current origin for redirect - Strava will redirect back here
+      const redirectUri = `${window.location.origin}/strava-callback`;
+      
       const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/strava-auth?action=authorize&redirect_uri=${encodeURIComponent(getStravaRedirectUri())}`,
+        `${SUPABASE_URL}/functions/v1/strava-auth?action=authorize&redirect_uri=${encodeURIComponent(redirectUri)}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
@@ -107,12 +86,9 @@ export function useStravaConnection() {
         throw new Error("Failed to get authorization URL");
       }
 
-      const { url, state } = await response.json();
+      const { url } = await response.json();
       
-      // Store state for CSRF verification
-      sessionStorage.setItem("strava_oauth_state", state);
-      
-      // Redirect to Strava
+      // Redirect to Strava - no state verification needed, we rely on auth token
       window.location.href = url;
     } catch (error) {
       console.error("Failed to initiate Strava connection:", error);
@@ -120,24 +96,13 @@ export function useStravaConnection() {
     }
   }, [session]);
 
-  const completeConnect = useCallback(async (code: string, state: string) => {
+  const completeConnect = useCallback(async (code: string) => {
     if (!session) {
       throw new Error("Not authenticated");
     }
 
-    // Verify state if we have it stored (may not exist if domain changed between
-    // initiating OAuth and receiving callback, e.g. www vs non-www).
-    // Auth token already provides security, so missing state is acceptable.
-    const storedState = sessionStorage.getItem("strava_oauth_state");
-    if (storedState) {
-      if (storedState !== state) {
-        throw new Error("Invalid state parameter");
-      }
-      sessionStorage.removeItem("strava_oauth_state");
-    }
-
     const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/strava-auth?action=callback&code=${code}`,
+      `${SUPABASE_URL}/functions/v1/strava-auth?action=callback&code=${encodeURIComponent(code)}`,
       {
         headers: {
           Authorization: `Bearer ${session.access_token}`,

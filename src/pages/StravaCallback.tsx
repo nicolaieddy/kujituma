@@ -6,11 +6,6 @@ import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-const buildAuthReturnTo = () => {
-  const returnTo = `${window.location.pathname}${window.location.search}`;
-  return `/auth?returnTo=${encodeURIComponent(returnTo)}`;
-};
-
 export default function StravaCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -18,41 +13,49 @@ export default function StravaCallback() {
   const { completeConnect, syncActivities } = useStravaConnection();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
+  const [hasProcessed, setHasProcessed] = useState(false);
 
   useEffect(() => {
+    // Wait for auth to load
     if (authLoading) return;
+    
+    // Prevent double-processing
+    if (hasProcessed) return;
 
     const code = searchParams.get("code");
-    const state = searchParams.get("state");
     const errorParam = searchParams.get("error");
 
+    // Handle Strava errors
     if (errorParam) {
       setStatus("error");
       setError("Authorization was denied or cancelled");
+      setHasProcessed(true);
       return;
     }
 
+    // No code means invalid callback
     if (!code) {
       setStatus("error");
       setError("No authorization code received");
+      setHasProcessed(true);
       return;
     }
 
-    // The Strava callback may land on a different subdomain (www vs non-www).
-    // Supabase sessions are stored per-domain, so we may need the user to sign in
-    // again on this domain to complete the connection.
+    // If no session, user needs to log in first
+    // This can happen if cookies aren't shared across domains
     if (!session) {
       setStatus("error");
-      setError("Please sign in to finish connecting Strava");
-
-      // Redirect to auth with returnTo so we come back to this exact callback URL.
-      navigate(buildAuthReturnTo(), { replace: true });
+      setError("Please log in and try connecting Strava again from your profile settings");
+      setHasProcessed(true);
       return;
     }
 
+    // Process the callback
     const handleCallback = async () => {
+      setHasProcessed(true);
+      
       try {
-        await completeConnect(code, state || "");
+        await completeConnect(code);
         setStatus("success");
 
         // Sync activities after successful connection
@@ -70,7 +73,7 @@ export default function StravaCallback() {
     };
 
     handleCallback();
-  }, [searchParams, completeConnect, syncActivities, navigate, session, authLoading]);
+  }, [searchParams, completeConnect, syncActivities, navigate, session, authLoading, hasProcessed]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
