@@ -5,6 +5,21 @@ import { toast } from "sonner";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 
+// Strava is strict about redirect_uri matching the "Authorization Callback Domain".
+// Strava tends to normalize callback domains to `www`, so we force a canonical callback
+// when running on kujituma.com to avoid "redirect_uri invalid".
+const STRAVA_CANONICAL_ORIGIN = "https://www.kujituma.com";
+
+const getStravaRedirectUri = () => {
+  const hostname = window.location.hostname;
+
+  if (hostname === "kujituma.com" || hostname === "www.kujituma.com") {
+    return `${STRAVA_CANONICAL_ORIGIN}/strava-callback`;
+  }
+
+  return `${window.location.origin}/strava-callback`;
+};
+
 interface StravaConnection {
   strava_athlete_id: number;
   athlete_firstname: string | null;
@@ -79,7 +94,7 @@ export function useStravaConnection() {
 
     try {
       const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/strava-auth?action=authorize&redirect_uri=${encodeURIComponent(window.location.origin + "/strava-callback")}`,
+        `${SUPABASE_URL}/functions/v1/strava-auth?action=authorize&redirect_uri=${encodeURIComponent(getStravaRedirectUri())}`,
         {
           headers: {
             Authorization: `Bearer ${session.access_token}`,
