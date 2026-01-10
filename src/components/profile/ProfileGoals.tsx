@@ -8,7 +8,7 @@ import { GoalsService } from "@/services/goalsService";
 import { supabase } from "@/integrations/supabase/client";
 import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2, Users, Trophy, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { motion, AnimatePresence } from "framer-motion";
+// Removed framer-motion AnimatePresence to prevent "Maximum call stack size exceeded" on iOS Safari
 
 interface ProfileGoalsProps {
   userId: string;
@@ -363,13 +363,11 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
             className="w-full flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <motion.div
-                initial={false}
-                animate={{ rotate: previousYearsOpen ? 90 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </motion.div>
+              <ChevronRight 
+                className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${
+                  previousYearsOpen ? 'rotate-90' : ''
+                }`} 
+              />
               <Trophy className="h-4 w-4 text-green-600" />
               <span className="font-medium text-foreground">Previous Years</span>
             </div>
@@ -378,27 +376,23 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
             </Badge>
           </button>
           
-          <AnimatePresence initial={false}>
-            {previousYearsOpen && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3, ease: "easeInOut" }}
-              >
-                <div className="p-4 pt-0 space-y-4">
-                  {previousYears.map((year) => (
-                    <div key={year}>
-                      <h4 className="text-sm font-semibold text-muted-foreground mb-3">{year}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {previousYearsGoals[year].map(renderGoalCard)}
-                      </div>
-                    </div>
-                  ))}
+          {/* Use CSS transitions instead of framer-motion to avoid stack overflow on iOS */}
+          <div 
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${
+              previousYearsOpen ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
+            }`}
+          >
+            <div className="p-4 pt-0 space-y-4">
+              {previousYears.map((year) => (
+                <div key={year}>
+                  <h4 className="text-sm font-semibold text-muted-foreground mb-3">{year}</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {previousYearsGoals[year].map(renderGoalCard)}
+                  </div>
                 </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
