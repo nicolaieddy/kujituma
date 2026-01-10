@@ -51,9 +51,11 @@ interface ProfilePublicViewProps {
   partnershipStatus?: PartnershipStatus;
   onFriendshipChange?: (status: FriendshipStatus) => void;
   onPartnershipChange?: (status: PartnershipStatus) => void;
+  /** Debug-only: renders a minimal profile view to isolate iOS issues */
+  safeMode?: boolean;
 }
 
-export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus, onFriendshipChange, onPartnershipChange }: ProfilePublicViewProps) => {
+const ProfilePublicViewFull = ({ profile, friendshipStatus, partnershipStatus, onFriendshipChange, onPartnershipChange }: ProfilePublicViewProps) => {
   const { user } = useAuth();
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [sendingPartnerRequest, setSendingPartnerRequest] = useState(false);
@@ -319,4 +321,82 @@ export const ProfilePublicView = ({ profile, friendshipStatus, partnershipStatus
       />
     </div>
   );
+};
+
+const ProfilePublicViewSafe = ({ profile }: { profile: Profile }) => {
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-4">
+      <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+        Safe mode is enabled: goals, social links, stats, and action buttons are temporarily disabled to isolate the iOS crash.
+      </div>
+
+      <Card className="glass-card shadow-elegant overflow-hidden">
+        <div
+          className="h-32 sm:h-40 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 relative"
+          style={profile.cover_photo_url ? {
+            backgroundImage: `url(${profile.cover_photo_url})`,
+            backgroundSize: 'cover',
+            backgroundPosition: `center ${profile.cover_photo_position ?? 50}%`,
+          } : undefined}
+        >
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+        </div>
+
+        <div className="px-6 sm:px-8 pb-6 -mt-16 relative z-10">
+          <div className="flex flex-col sm:flex-row items-center gap-6">
+            <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+              <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
+              <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
+                <User className="h-12 w-12" />
+              </AvatarFallback>
+            </Avatar>
+
+            <div className="flex-1 text-center sm:text-left">
+              <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{profile.full_name}</h1>
+            </div>
+          </div>
+        </div>
+
+        <CardContent className="p-6 sm:p-8 pt-0">
+          {profile.about_me && (
+            <div className="mb-6">
+              <h2 className="text-lg font-semibold text-foreground mb-2">About</h2>
+              <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">{profile.about_me}</p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-2 text-primary" />
+              <span>Joined {formatDate(profile.created_at)}</span>
+            </div>
+
+            {profile.last_active_at && (
+              <div className="flex items-center">
+                <Clock className="h-4 w-4 mr-2 text-primary" />
+                <span>Active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export const ProfilePublicView = (props: ProfilePublicViewProps) => {
+  if (props.safeMode) {
+    return <ProfilePublicViewSafe profile={props.profile} />;
+  }
+
+  // Avoid passing debug-only props down
+  const { safeMode: _safeMode, ...rest } = props as any;
+  return <ProfilePublicViewFull {...(rest as ProfilePublicViewProps)} />;
 };
