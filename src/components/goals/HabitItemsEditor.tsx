@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { useActivityMappings, STRAVA_ACTIVITY_TYPES, ActivityMapping } from "@/hooks/useActivityMappings";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface HabitItemsEditorProps {
@@ -271,46 +271,44 @@ const SortableHabitItem = ({
         </Button>
       </div>
 
-      {/* Strava connection row */}
+      {/* Strava connection row - Removed nested TooltipProvider */}
       {goalId && isStravaConnected && (
-        <TooltipProvider>
-          <div className="flex items-center gap-2 pl-7">
-            {stravaMapping ? (
-              <button
-                type="button"
-                onClick={() => onOpenStravaPicker(item)}
-                className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-[#FC4C02]/10 text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors"
-              >
-                <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
-                  <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-                </svg>
-                <span>
-                  {STRAVA_ACTIVITY_TYPES.find(t => t.value === stravaMapping.strava_activity_type)?.label || stravaMapping.strava_activity_type}
-                  {stravaMapping.min_duration_minutes > 0 && ` (${stravaMapping.min_duration_minutes}+ min)`}
-                </span>
-                <Settings2 className="h-3 w-3" />
-              </button>
-            ) : (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    onClick={() => onOpenStravaPicker(item)}
-                    className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-[#FC4C02]/50 hover:text-[#FC4C02] transition-colors"
-                  >
-                    <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
-                      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-                    </svg>
-                    <span>Connect to Strava</span>
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p>Auto-track this habit from Strava activities</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
-          </div>
-        </TooltipProvider>
+        <div className="flex items-center gap-2 pl-7">
+          {stravaMapping ? (
+            <button
+              type="button"
+              onClick={() => onOpenStravaPicker(item)}
+              className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full bg-[#FC4C02]/10 text-[#FC4C02] hover:bg-[#FC4C02]/20 transition-colors"
+            >
+              <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
+                <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+              </svg>
+              <span>
+                {STRAVA_ACTIVITY_TYPES.find(t => t.value === stravaMapping.strava_activity_type)?.label || stravaMapping.strava_activity_type}
+                {stravaMapping.min_duration_minutes > 0 && ` (${stravaMapping.min_duration_minutes}+ min)`}
+              </span>
+              <Settings2 className="h-3 w-3" />
+            </button>
+          ) : (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  onClick={() => onOpenStravaPicker(item)}
+                  className="flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border border-dashed border-muted-foreground/30 text-muted-foreground hover:border-[#FC4C02]/50 hover:text-[#FC4C02] transition-colors"
+                >
+                  <svg viewBox="0 0 24 24" className="h-3 w-3" fill="currentColor">
+                    <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                  </svg>
+                  <span>Connect to Strava</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                <p>Auto-track this habit from Strava activities</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
       )}
     </div>
   );

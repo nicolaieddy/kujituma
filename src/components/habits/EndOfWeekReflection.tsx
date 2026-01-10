@@ -5,7 +5,6 @@ import { Sparkles, HelpCircle, Lock, ChevronDown } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
@@ -70,16 +69,15 @@ export const EndOfWeekReflection = ({
               <CardTitle className="text-lg flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-amber-500" />
                 Incomplete Objectives Review
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger onClick={(e) => e.stopPropagation()}>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                    </TooltipTrigger>
-                    <TooltipContent className="max-w-xs">
-                      <p>Understanding why objectives weren't completed helps you plan better next week.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                {/* Removed nested TooltipProvider - using App-level provider */}
+                <Tooltip>
+                  <TooltipTrigger onClick={(e) => e.stopPropagation()}>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    <p>Understanding why objectives weren't completed helps you plan better next week.</p>
+                  </TooltipContent>
+                </Tooltip>
               </CardTitle>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium px-2 py-1 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300 flex items-center gap-1">

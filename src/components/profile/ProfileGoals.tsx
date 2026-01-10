@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
 import { supabase } from "@/integrations/supabase/client";
@@ -287,28 +287,27 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5" />
               Goals
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
-                  </TooltipTrigger>
-                  <TooltipContent side="right" className="max-w-xs">
-                    <p className="font-medium mb-1">Goal Visibility</p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      <strong>Public</strong> - Visible to anyone who views your profile.
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      <strong>Friends</strong> - Visible only to your friends.
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      <strong>Private</strong> - Only visible to you.
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Use the dropdown on each goal to change visibility, or edit from the Goals page.
-                    </p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              {/* Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <HelpCircle className="h-4 w-4 text-muted-foreground cursor-help" />
+                </TooltipTrigger>
+                <TooltipContent side="right" className="max-w-xs">
+                  <p className="font-medium mb-1">Goal Visibility</p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <strong>Public</strong> - Visible to anyone who views your profile.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <strong>Friends</strong> - Visible only to your friends.
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    <strong>Private</strong> - Only visible to you.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Use the dropdown on each goal to change visibility, or edit from the Goals page.
+                  </p>
+                </TooltipContent>
+              </Tooltip>
             </div>
             {!showPrivateGoals && hiddenGoalsCount > 0 && (
               <div className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">

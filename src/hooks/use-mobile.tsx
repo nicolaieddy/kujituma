@@ -17,16 +17,30 @@ const getInitialTablet = () => {
 export function useIsMobile() {
   // Initialize with actual value to prevent hydration mismatch and re-render loops
   const [isMobile, setIsMobile] = React.useState<boolean>(getInitialMobile)
+  // Track if mounted to avoid state updates on unmounted component
+  const mountedRef = React.useRef(true)
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
+    mountedRef.current = true
+    
+    const handleResize = () => {
+      if (!mountedRef.current) return
+      const newValue = window.innerWidth < MOBILE_BREAKPOINT
+      // Only update if value actually changed to prevent re-render loops
+      setIsMobile(prev => prev !== newValue ? newValue : prev)
     }
-    mql.addEventListener("change", onChange)
-    // Sync state in case it changed between render and effect
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+    
+    // Use resize event instead of matchMedia for better iOS Safari compatibility
+    window.addEventListener("resize", handleResize, { passive: true })
+    
+    // Initial sync - only if value differs
+    const currentValue = window.innerWidth < MOBILE_BREAKPOINT
+    setIsMobile(prev => prev !== currentValue ? currentValue : prev)
+    
+    return () => {
+      mountedRef.current = false
+      window.removeEventListener("resize", handleResize)
+    }
   }, [])
 
   return isMobile
@@ -35,16 +49,30 @@ export function useIsMobile() {
 export function useIsTablet() {
   // Initialize with actual value to prevent hydration mismatch and re-render loops
   const [isTablet, setIsTablet] = React.useState<boolean>(getInitialTablet)
+  // Track if mounted to avoid state updates on unmounted component
+  const mountedRef = React.useRef(true)
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${TABLET_BREAKPOINT - 1}px)`)
-    const onChange = () => {
-      setIsTablet(window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT)
+    mountedRef.current = true
+    
+    const handleResize = () => {
+      if (!mountedRef.current) return
+      const newValue = window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT
+      // Only update if value actually changed to prevent re-render loops
+      setIsTablet(prev => prev !== newValue ? newValue : prev)
     }
-    mql.addEventListener("change", onChange)
-    // Sync state in case it changed between render and effect
-    setIsTablet(window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT)
-    return () => mql.removeEventListener("change", onChange)
+    
+    // Use resize event instead of matchMedia for better iOS Safari compatibility
+    window.addEventListener("resize", handleResize, { passive: true })
+    
+    // Initial sync - only if value differs
+    const currentValue = window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT
+    setIsTablet(prev => prev !== currentValue ? currentValue : prev)
+    
+    return () => {
+      mountedRef.current = false
+      window.removeEventListener("resize", handleResize)
+    }
   }, [])
 
   return isTablet
@@ -54,9 +82,9 @@ export function useDeviceType() {
   const isMobile = useIsMobile()
   const isTablet = useIsTablet()
   
-  return {
+  return React.useMemo(() => ({
     isMobile,
     isTablet,
     isDesktop: !isMobile && !isTablet
-  }
+  }), [isMobile, isTablet])
 }

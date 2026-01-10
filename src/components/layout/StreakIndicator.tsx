@@ -10,6 +10,7 @@ export const StreakIndicator = () => {
   const hasStreaks = currentDailyStreak > 0 || currentWeeklyStreak > 0 || currentQuarterlyStreak > 0;
   if (!hasStreaks) return null;
 
+  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
     <Tooltip>
       <TooltipTrigger asChild>

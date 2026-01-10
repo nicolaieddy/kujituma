@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { SocialIcon, SOCIAL_PLATFORMS } from "./SocialLinkPicker";
 
 interface SocialLinksDisplayProps {
@@ -82,27 +82,26 @@ export const SocialLinksDisplay = ({ socialLinks, linkOrder = [], size = 'md' }:
   const iconSize = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
   const buttonSize = size === 'sm' ? 'h-8 w-8' : 'h-9 w-9';
   
+  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
-    <TooltipProvider>
-      <div className="flex flex-wrap gap-1">
-        {orderedPlatforms.map((platformId) => (
-          <Tooltip key={platformId}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`${buttonSize} hover:bg-accent`}
-                onClick={() => window.open(getHref(platformId, socialLinks[platformId]), '_blank', 'noopener,noreferrer')}
-              >
-                <SocialIcon platformId={platformId} className={iconSize} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>{getPlatformName(platformId)}</p>
-            </TooltipContent>
-          </Tooltip>
-        ))}
-      </div>
-    </TooltipProvider>
+    <div className="flex flex-wrap gap-1">
+      {orderedPlatforms.map((platformId) => (
+        <Tooltip key={platformId}>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`${buttonSize} hover:bg-accent`}
+              onClick={() => window.open(getHref(platformId, socialLinks[platformId]), '_blank', 'noopener,noreferrer')}
+            >
+              <SocialIcon platformId={platformId} className={iconSize} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{getPlatformName(platformId)}</p>
+          </TooltipContent>
+        </Tooltip>
+      ))}
+    </div>
   );
 };
