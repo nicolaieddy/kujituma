@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { useAuth } from "@/contexts/AuthContext";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface GoalDetailOverviewProps {
   goal: Goal;
@@ -48,38 +48,37 @@ const MiniHistoryChart = ({
   const maxRate = Math.max(...data.map(d => d.rate), 100);
 
   return (
-    <TooltipProvider delayDuration={100}>
-      <div className="flex items-end gap-0.5 h-8">
-        {data.map((week, index) => {
-          const height = week.expected > 0 ? (week.rate / maxRate) * 100 : 0;
-          const isCurrentWeek = index === data.length - 1;
-          
-          return (
-            <Tooltip key={week.weekStart}>
-              <TooltipTrigger asChild>
-                <div
-                  className={cn(
-                    "w-3 rounded-sm transition-all cursor-pointer hover:opacity-80",
-                    week.rate >= 80 ? "bg-emerald-500" :
-                    week.rate >= 50 ? "bg-yellow-500" :
-                    week.rate > 0 ? "bg-orange-400" :
-                    "bg-white/20",
-                    isCurrentWeek && "ring-1 ring-white/40"
-                  )}
-                  style={{ height: `${Math.max(height, 8)}%` }}
-                />
-              </TooltipTrigger>
-              <TooltipContent side="top" className="text-xs">
-                <p className="font-medium">Week of {format(new Date(week.weekStart), 'MMM d')}</p>
-                <p className="text-muted-foreground">
-                  {week.completed}/{week.expected} ({week.rate}%)
-                </p>
-              </TooltipContent>
-            </Tooltip>
-          );
-        })}
-      </div>
-    </TooltipProvider>
+    // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
+    <div className="flex items-end gap-0.5 h-8">
+      {data.map((week, index) => {
+        const height = week.expected > 0 ? (week.rate / maxRate) * 100 : 0;
+        const isCurrentWeek = index === data.length - 1;
+        
+        return (
+          <Tooltip key={week.weekStart}>
+            <TooltipTrigger asChild>
+              <div
+                className={cn(
+                  "w-3 rounded-sm transition-all cursor-pointer hover:opacity-80",
+                  week.rate >= 80 ? "bg-emerald-500" :
+                  week.rate >= 50 ? "bg-yellow-500" :
+                  week.rate > 0 ? "bg-orange-400" :
+                  "bg-white/20",
+                  isCurrentWeek && "ring-1 ring-white/40"
+                )}
+                style={{ height: `${Math.max(height, 8)}%` }}
+              />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="text-xs">
+              <p className="font-medium">Week of {format(new Date(week.weekStart), 'MMM d')}</p>
+              <p className="text-muted-foreground">
+                {week.completed}/{week.expected} ({week.rate}%)
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
+    </div>
   );
 };
 
