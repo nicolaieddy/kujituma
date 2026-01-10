@@ -8,10 +8,12 @@ import { accountabilityService } from "@/services/accountabilityService";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { ProfilePublicView } from "@/components/profile/ProfilePublicView";
+import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Button } from "@/components/ui/button";
-import { Edit3 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Edit3, User, Zap } from "lucide-react";
 
 interface Profile {
   id: string;
@@ -57,6 +59,9 @@ const Profile = () => {
   const isSetupMode = searchParams.get('setup') === 'true';
   const [isEditing, setIsEditing] = useState(isSetupMode || isNewUser);
   const [loading, setLoading] = useState(true);
+  
+  // Get active tab from URL or default to 'profile'
+  const activeTab = searchParams.get('tab') || 'profile';
   
   // Determine if viewing own profile or someone else's
   const isOwnProfile = !userId || userId === user?.id;
@@ -248,26 +253,61 @@ const Profile = () => {
       <div className="container mx-auto px-4 py-8">
         {profile && (
           <>
-            {isOwnProfile && !isEditing && (
-              <div className="max-w-4xl mx-auto mb-4 flex justify-end">
-                <Button
-                  onClick={() => setIsEditing(true)}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  <Edit3 className="h-4 w-4" />
-                  Edit Profile
-                </Button>
-              </div>
-            )}
-
-            {isOwnProfile && isEditing ? (
-              <ProfileEditForm
-                profile={profile}
-                onUpdate={handleProfileUpdate}
-                onCancel={() => setIsEditing(false)}
-              />
+            {isOwnProfile ? (
+              <>
+                {isEditing ? (
+                  <ProfileEditForm
+                    profile={profile}
+                    onUpdate={handleProfileUpdate}
+                    onCancel={() => setIsEditing(false)}
+                  />
+                ) : (
+                  <Tabs 
+                    value={activeTab} 
+                    onValueChange={(value) => setSearchParams({ tab: value })}
+                    className="max-w-4xl mx-auto"
+                  >
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                      <TabsList>
+                        <TabsTrigger value="profile" className="gap-2">
+                          <User className="h-4 w-4" />
+                          Profile
+                        </TabsTrigger>
+                        <TabsTrigger value="integrations" className="gap-2">
+                          <Zap className="h-4 w-4" />
+                          Integrations
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      {activeTab === 'profile' && (
+                        <Button
+                          onClick={() => setIsEditing(true)}
+                          variant="outline"
+                          size="sm"
+                          className="flex items-center gap-2"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Edit Profile
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <TabsContent value="profile" className="mt-0">
+                      <ProfilePublicView 
+                        profile={profile} 
+                        friendshipStatus={friendshipStatus}
+                        partnershipStatus={partnershipStatus}
+                        onFriendshipChange={setFriendshipStatus}
+                        onPartnershipChange={setPartnershipStatus}
+                      />
+                    </TabsContent>
+                    
+                    <TabsContent value="integrations" className="mt-0">
+                      <IntegrationsSection />
+                    </TabsContent>
+                  </Tabs>
+                )}
+              </>
             ) : (
               <ProfilePublicView 
                 profile={profile} 
