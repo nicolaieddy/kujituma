@@ -1234,6 +1234,7 @@ export type Database = {
           created_at: string | null
           expires_at: string
           id: string
+          last_synced_at: string | null
           refresh_token: string
           scope: string | null
           strava_athlete_id: number
@@ -1247,6 +1248,7 @@ export type Database = {
           created_at?: string | null
           expires_at: string
           id?: string
+          last_synced_at?: string | null
           refresh_token: string
           scope?: string | null
           strava_athlete_id: number
@@ -1260,6 +1262,7 @@ export type Database = {
           created_at?: string | null
           expires_at?: string
           id?: string
+          last_synced_at?: string | null
           refresh_token?: string
           scope?: string | null
           strava_athlete_id?: number

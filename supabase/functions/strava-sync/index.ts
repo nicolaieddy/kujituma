@@ -296,6 +296,12 @@ serve(async (req) => {
       }
     }
 
+    // Update last_synced_at timestamp
+    await adminClient
+      .from("strava_connections")
+      .update({ last_synced_at: new Date().toISOString() })
+      .eq("user_id", user.id);
+
     console.log("Sync results:", results);
 
     return new Response(JSON.stringify({ 

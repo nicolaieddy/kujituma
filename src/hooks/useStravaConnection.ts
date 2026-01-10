@@ -10,6 +10,7 @@ interface StravaConnection {
   athlete_lastname: string | null;
   created_at: string;
   updated_at: string;
+  last_synced_at: string | null;
 }
 
 interface SyncResult {
@@ -148,8 +149,12 @@ export function useStravaConnection() {
         throw new Error(result.error || "Sync failed");
       }
 
-      if (result.matched > 0) {
-        toast.success(`Synced ${result.matched} workout${result.matched > 1 ? "s" : ""} from Strava!`);
+      // Refresh connection status to get updated last_synced_at
+      await checkConnectionStatus();
+
+      if (result.matched > 0 || result.rematched > 0) {
+        const total = (result.matched || 0) + (result.rematched || 0);
+        toast.success(`Synced ${total} workout${total > 1 ? "s" : ""} from Strava!`);
       } else if (result.synced > 0) {
         toast.info(`Found ${result.synced} activities, but none matched your habit mappings`);
       } else {
