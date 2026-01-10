@@ -3,78 +3,112 @@ import * as React from "react"
 const MOBILE_BREAKPOINT = 768
 const TABLET_BREAKPOINT = 1024
 
-// Get initial value synchronously to avoid hydration issues and re-render loops
-const getInitialMobile = () => {
+// Singleton state to prevent multiple instances from causing loops
+let cachedIsMobile: boolean | null = null
+let cachedIsTablet: boolean | null = null
+
+// Get value once synchronously and cache it
+const getIsMobile = (): boolean => {
   if (typeof window === 'undefined') return false
-  return window.innerWidth < MOBILE_BREAKPOINT
+  if (cachedIsMobile === null) {
+    cachedIsMobile = window.innerWidth < MOBILE_BREAKPOINT
+  }
+  return cachedIsMobile
 }
 
-const getInitialTablet = () => {
+const getIsTablet = (): boolean => {
   if (typeof window === 'undefined') return false
-  return window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT
+  if (cachedIsTablet === null) {
+    const width = window.innerWidth
+    cachedIsTablet = width < TABLET_BREAKPOINT && width >= MOBILE_BREAKPOINT
+  }
+  return cachedIsTablet
 }
 
-export function useIsMobile() {
-  // Initialize with actual value to prevent hydration mismatch and re-render loops
-  const [isMobile, setIsMobile] = React.useState<boolean>(getInitialMobile)
-  // Track if mounted to avoid state updates on unmounted component
-  const mountedRef = React.useRef(true)
+// Update cache - called from effect
+const updateCache = () => {
+  if (typeof window === 'undefined') return
+  const width = window.innerWidth
+  cachedIsMobile = width < MOBILE_BREAKPOINT
+  cachedIsTablet = width < TABLET_BREAKPOINT && width >= MOBILE_BREAKPOINT
+}
 
+// Single resize listener setup - shared across all hook instances
+let resizeListenerAttached = false
+const subscribers = new Set<() => void>()
+
+const setupResizeListener = () => {
+  if (resizeListenerAttached || typeof window === 'undefined') return
+  resizeListenerAttached = true
+  
+  // Debounced handler to prevent rapid firing
+  let timeoutId: number | null = null
+  const handleResize = () => {
+    if (timeoutId) {
+      window.clearTimeout(timeoutId)
+    }
+    timeoutId = window.setTimeout(() => {
+      updateCache()
+      subscribers.forEach(callback => callback())
+    }, 150) // Debounce 150ms
+  }
+  
+  window.addEventListener('resize', handleResize, { passive: true })
+}
+
+export function useIsMobile(): boolean {
+  // Initialize with cached/computed value - never undefined
+  const [isMobile, setIsMobile] = React.useState<boolean>(getIsMobile)
+  
   React.useEffect(() => {
-    mountedRef.current = true
+    setupResizeListener()
     
-    const handleResize = () => {
-      if (!mountedRef.current) return
-      const newValue = window.innerWidth < MOBILE_BREAKPOINT
-      // Only update if value actually changed to prevent re-render loops
+    const callback = () => {
+      const newValue = getIsMobile()
       setIsMobile(prev => prev !== newValue ? newValue : prev)
     }
     
-    // Use resize event instead of matchMedia for better iOS Safari compatibility
-    window.addEventListener("resize", handleResize, { passive: true })
+    subscribers.add(callback)
     
-    // Initial sync - only if value differs
-    const currentValue = window.innerWidth < MOBILE_BREAKPOINT
-    setIsMobile(prev => prev !== currentValue ? currentValue : prev)
+    // Sync initial value (in case cache was updated)
+    const currentValue = getIsMobile()
+    if (currentValue !== isMobile) {
+      setIsMobile(currentValue)
+    }
     
     return () => {
-      mountedRef.current = false
-      window.removeEventListener("resize", handleResize)
+      subscribers.delete(callback)
     }
-  }, [])
-
+  }, []) // Empty deps - only run once
+  
   return isMobile
 }
 
-export function useIsTablet() {
-  // Initialize with actual value to prevent hydration mismatch and re-render loops
-  const [isTablet, setIsTablet] = React.useState<boolean>(getInitialTablet)
-  // Track if mounted to avoid state updates on unmounted component
-  const mountedRef = React.useRef(true)
-
+export function useIsTablet(): boolean {
+  // Initialize with cached/computed value - never undefined
+  const [isTablet, setIsTablet] = React.useState<boolean>(getIsTablet)
+  
   React.useEffect(() => {
-    mountedRef.current = true
+    setupResizeListener()
     
-    const handleResize = () => {
-      if (!mountedRef.current) return
-      const newValue = window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT
-      // Only update if value actually changed to prevent re-render loops
+    const callback = () => {
+      const newValue = getIsTablet()
       setIsTablet(prev => prev !== newValue ? newValue : prev)
     }
     
-    // Use resize event instead of matchMedia for better iOS Safari compatibility
-    window.addEventListener("resize", handleResize, { passive: true })
+    subscribers.add(callback)
     
-    // Initial sync - only if value differs
-    const currentValue = window.innerWidth < TABLET_BREAKPOINT && window.innerWidth >= MOBILE_BREAKPOINT
-    setIsTablet(prev => prev !== currentValue ? currentValue : prev)
+    // Sync initial value (in case cache was updated)
+    const currentValue = getIsTablet()
+    if (currentValue !== isTablet) {
+      setIsTablet(currentValue)
+    }
     
     return () => {
-      mountedRef.current = false
-      window.removeEventListener("resize", handleResize)
+      subscribers.delete(callback)
     }
-  }, [])
-
+  }, []) // Empty deps - only run once
+  
   return isTablet
 }
 

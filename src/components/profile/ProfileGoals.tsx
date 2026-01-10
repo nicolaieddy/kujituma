@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,7 +9,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2, Users, Trophy, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 // Removed framer-motion AnimatePresence to prevent "Maximum call stack size exceeded" on iOS Safari
-
 interface ProfileGoalsProps {
   userId: string;
   isOwnProfile?: boolean;
@@ -50,7 +49,7 @@ const getGoalYear = (goal: Goal): number => {
   return new Date(goal.created_at).getFullYear();
 };
 
-export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner', onGoalUpdate }: ProfileGoalsProps) => {
+export const ProfileGoals = memo(({ userId, isOwnProfile = false, viewerType = 'owner', onGoalUpdate }: ProfileGoalsProps) => {
   const [goals, setGoals] = useState<Goal[]>([]);
   const [loading, setLoading] = useState(true);
   const [togglingGoalId, setTogglingGoalId] = useState<string | null>(null);
@@ -63,6 +62,8 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
   const showPrivateGoals = viewerType === 'owner' || isOwnProfile;
 
   useEffect(() => {
+    let mounted = true;
+    
     const fetchGoals = async () => {
       try {
         let fetchedGoals: Goal[];
@@ -78,25 +79,33 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
         } else {
           fetchedGoals = await GoalsService.getVisibleGoals(userId, false);
         }
-        setGoals(fetchedGoals);
+        if (mounted) {
+          setGoals(fetchedGoals);
+        }
       } catch (error) {
         console.error('Error fetching goals:', error);
       } finally {
-        setLoading(false);
+        if (mounted) {
+          setLoading(false);
+        }
       }
     };
 
     if (userId) {
       fetchGoals();
     }
+    
+    return () => {
+      mounted = false;
+    };
   }, [userId, effectiveIsOwner, viewerType]);
 
-  // Update goal visibility
-  const handleVisibilityChange = async (goal: Goal, newVisibility: GoalVisibility) => {
-    setTogglingGoalId(goal.id);
+  // Memoized visibility change handler to prevent re-renders
+  const handleVisibilityChange = useCallback(async (goalId: string, currentGoals: Goal[], newVisibility: GoalVisibility) => {
+    setTogglingGoalId(goalId);
     try {
-      const updatedGoal = await GoalsService.updateGoal(goal.id, { visibility: newVisibility });
-      setGoals(goals.map(g => g.id === goal.id ? updatedGoal : g));
+      const updatedGoal = await GoalsService.updateGoal(goalId, { visibility: newVisibility });
+      setGoals(currentGoals.map(g => g.id === goalId ? updatedGoal : g));
       const visibilityLabels = {
         public: 'public (visible to everyone)',
         friends: 'friends only',
@@ -117,7 +126,7 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
     } finally {
       setTogglingGoalId(null);
     }
-  };
+  }, [onGoalUpdate]);
 
   // Filter goals based on viewer type (visibility)
   const visibleGoals = useMemo(() => {
@@ -198,7 +207,7 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
               ) : null}
               <Select
                 value={goal.visibility}
-                onValueChange={(value: GoalVisibility) => handleVisibilityChange(goal, value)}
+                onValueChange={(value: GoalVisibility) => handleVisibilityChange(goal.id, goals, value)}
                 disabled={togglingGoalId === goal.id}
               >
                 <SelectTrigger className="h-7 w-[90px] text-xs">
@@ -396,4 +405,4 @@ export const ProfileGoals = ({ userId, isOwnProfile = false, viewerType = 'owner
       )}
     </div>
   );
-};
+});
