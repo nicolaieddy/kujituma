@@ -1,18 +1,27 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
+import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+const buildAuthReturnTo = () => {
+  const returnTo = `${window.location.pathname}${window.location.search}`;
+  return `/auth?returnTo=${encodeURIComponent(returnTo)}`;
+};
+
 export default function StravaCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { session, loading: authLoading } = useAuth();
   const { completeConnect, syncActivities } = useStravaConnection();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (authLoading) return;
+
     const code = searchParams.get("code");
     const state = searchParams.get("state");
     const errorParam = searchParams.get("error");
@@ -29,14 +38,26 @@ export default function StravaCallback() {
       return;
     }
 
+    // The Strava callback may land on a different subdomain (www vs non-www).
+    // Supabase sessions are stored per-domain, so we may need the user to sign in
+    // again on this domain to complete the connection.
+    if (!session) {
+      setStatus("error");
+      setError("Please sign in to finish connecting Strava");
+
+      // Redirect to auth with returnTo so we come back to this exact callback URL.
+      navigate(buildAuthReturnTo(), { replace: true });
+      return;
+    }
+
     const handleCallback = async () => {
       try {
         await completeConnect(code, state || "");
         setStatus("success");
-        
+
         // Sync activities after successful connection
         await syncActivities();
-        
+
         // Redirect after a short delay
         setTimeout(() => {
           navigate("/profile?tab=integrations", { replace: true });
@@ -49,7 +70,7 @@ export default function StravaCallback() {
     };
 
     handleCallback();
-  }, [searchParams, completeConnect, syncActivities, navigate]);
+  }, [searchParams, completeConnect, syncActivities, navigate, session, authLoading]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">

@@ -8,7 +8,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   isNewUser: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (redirectToPath?: string) => Promise<void>;
   signOut: () => Promise<void>;
   markProfileComplete: () => void;
 }
@@ -143,19 +143,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [checkProfileComplete]);
 
-  const signInWithGoogle = useCallback(async () => {
+  const signInWithGoogle = useCallback(async (redirectToPath?: string) => {
     try {
+      const normalizedPath = (() => {
+        if (!redirectToPath) return "/";
+        // Prevent open redirects; only allow internal paths.
+        if (!redirectToPath.startsWith("/")) return "/";
+        return redirectToPath;
+      })();
+
       // Use the current origin for redirect to ensure we go back to the same site
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = `${window.location.origin}${normalizedPath}`;
       console.log('[AuthContext] Starting Google OAuth with redirect to:', redirectUrl);
-      
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectUrl
-        }
+          redirectTo: redirectUrl,
+        },
       });
-      
+
       if (error) {
         console.error('Google sign in error:', error);
         throw error;

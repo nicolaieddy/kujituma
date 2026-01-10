@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,17 +12,27 @@ import { CURRENT_TOS_VERSION } from '@/constants/tosVersion';
 
 const Auth = () => {
   const navigate = useNavigate();
-  const { user, signInWithGoogle, loading } = useAuth();
+  const location = useLocation();
+  const { user, signInWithGoogle, loading, isNewUser } = useAuth();
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tosAccepted, setTosAccepted] = useState(false);
   const [isNewUserFlow, setIsNewUserFlow] = useState(false);
 
-  const { isNewUser } = useAuth();
-  
+  const returnTo = useMemo(() => {
+    const raw = new URLSearchParams(location.search).get('returnTo');
+    if (!raw) return null;
+    return raw.startsWith('/') ? raw : null;
+  }, [location.search]);
+
   useEffect(() => {
     console.log('Auth page mounted, user:', user, 'loading:', loading, 'isNewUser:', isNewUser);
     if (user) {
+      if (returnTo) {
+        navigate(returnTo, { replace: true });
+        return;
+      }
+
       if (isNewUser) {
         console.log('New user detected, redirecting to profile');
         navigate('/profile');
@@ -31,7 +41,7 @@ const Auth = () => {
         navigate('/community');
       }
     }
-  }, [user, isNewUser, navigate]);
+  }, [user, isNewUser, navigate, loading, returnTo]);
 
   const handleGoogleSignIn = async () => {
     // For new user sign-up flow, require ToS acceptance
@@ -39,18 +49,18 @@ const Auth = () => {
       setError('Please accept the Terms of Service and Privacy Policy to continue');
       return;
     }
-    
+
     try {
       console.log('Starting Google sign in...');
       setSigningIn(true);
       setError(null);
-      
+
       // Only store ToS acceptance for new users signing up
       if (isNewUserFlow) {
         sessionStorage.setItem('tos_accepted_during_signup', CURRENT_TOS_VERSION);
       }
-      
-      await signInWithGoogle();
+
+      await signInWithGoogle(returnTo ?? '/');
     } catch (error) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred during sign in');
