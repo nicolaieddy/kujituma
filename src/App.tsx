@@ -45,6 +45,7 @@ const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Goals = lazy(() => import("./pages/Goals"));
 const Profile = lazy(() => import("./pages/Profile"));
+const ProfileLite = lazy(() => import("./pages/ProfileLite"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
 import LandingPage from "./pages/LandingPage";
@@ -191,6 +192,8 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
           <Route path="/admin" element={<Admin />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/profile/:userId" element={<Profile />} />
+          <Route path="/profile-lite" element={<ProfileLite />} />
+          <Route path="/profile-lite/:userId" element={<ProfileLite />} />
           {/* Rituals is now part of Analytics page */}
           <Route path="/install" element={<Install />} />
           <Route path="/debug" element={<Debug />} />
