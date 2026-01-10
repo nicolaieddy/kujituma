@@ -221,7 +221,7 @@ const queryClient = new QueryClient({
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
+      <TooltipProvider delayDuration={300} skipDelayDuration={100}>
         <Toaster />
         <Sonner />
         <OfflineIndicator />
