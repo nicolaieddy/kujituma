@@ -2,6 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
+
+const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 
 // Common Strava activity types
 export const STRAVA_ACTIVITY_TYPES = [
@@ -41,9 +44,11 @@ export interface ActivityMapping {
 }
 
 export function useActivityMappings() {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [mappings, setMappings] = useState<ActivityMapping[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const queryClient = useQueryClient();
 
   const fetchMappings = useCallback(async () => {
     if (!user) {
@@ -70,6 +75,38 @@ export function useActivityMappings() {
   useEffect(() => {
     fetchMappings();
   }, [fetchMappings]);
+
+  // Trigger Strava sync after mapping changes
+  const triggerSync = useCallback(async () => {
+    if (!session) return;
+    
+    setIsSyncing(true);
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/strava-sync`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.matched > 0) {
+        toast.success(`Synced ${result.matched} activity${result.matched > 1 ? 'ies' : 'y'} from Strava!`);
+        // Invalidate habit completions and synced activities
+        queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
+        queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
+      }
+    } catch (error) {
+      console.error("Failed to trigger Strava sync:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [session, queryClient]);
 
   const createMapping = useCallback(async (
     stravaActivityType: string,
@@ -101,13 +138,17 @@ export function useActivityMappings() {
 
       toast.success(`Mapped ${stravaActivityType} to your habit`);
       await fetchMappings();
+      
+      // Auto-trigger sync after creating mapping
+      triggerSync();
+      
       return data as ActivityMapping;
     } catch (error) {
       console.error("Failed to create mapping:", error);
       toast.error("Failed to save mapping");
       return null;
     }
-  }, [user, fetchMappings]);
+  }, [user, fetchMappings, triggerSync]);
 
   const deleteMapping = useCallback(async (mappingId: string) => {
     if (!user) return;
@@ -133,12 +174,19 @@ export function useActivityMappings() {
     return mappings.find(m => m.strava_activity_type === activityType);
   }, [mappings]);
 
+  const getMappingForHabitItem = useCallback((habitItemId: string) => {
+    return mappings.find(m => m.habit_item_id === habitItemId);
+  }, [mappings]);
+
   return {
     mappings,
     isLoading,
+    isSyncing,
     createMapping,
     deleteMapping,
     getMappingForActivityType,
+    getMappingForHabitItem,
     refreshMappings: fetchMappings,
+    triggerSync,
   };
 }

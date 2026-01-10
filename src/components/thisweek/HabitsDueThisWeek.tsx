@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
-import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle } from "lucide-react";
+import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle, Zap } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal, HabitItem } from "@/types/goals";
@@ -13,6 +13,7 @@ import { useState, useEffect, useRef } from "react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
 import { useDailyStreaks } from "@/hooks/useDailyStreaks";
 import { useSyncedActivities } from "@/hooks/useSyncedActivities";
+import { useActivityMappings } from "@/hooks/useActivityMappings";
 import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
 import { celebrateGoalComplete } from "@/utils/confetti";
 import { hapticSuccess } from "@/utils/haptic";
@@ -35,7 +36,8 @@ export const HabitsDueThisWeek = ({
   const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
   const { streaks: dailyStreaks, getHabitStreak, activeStreaks, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
-  const { isStravaCompletion } = useSyncedActivities(currentWeekStart);
+  const { isStravaCompletion, getStravaCompletionsForHabit } = useSyncedActivities(currentWeekStart);
+  const { getMappingForHabitItem } = useActivityMappings();
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
   if (habits.length === 0) return null;
@@ -283,6 +285,11 @@ export const HabitsDueThisWeek = ({
                     const showDailyCheckboxes = isDailyTracking(item.frequency);
                     const isWeeklyCompleted = isWeeklyHabitCompleted(item.id);
                     
+                    // Check if this habit is Strava-mapped
+                    const stravaMapping = getMappingForHabitItem(item.id);
+                    const isStravaMapped = !!stravaMapping;
+                    const stravaCompletions = getStravaCompletionsForHabit(item.id);
+                    
                     // Get daily streak for this habit item
                     const habitStreak = getHabitStreak(item.id);
                     
@@ -297,7 +304,35 @@ export const HabitsDueThisWeek = ({
                     return (
                       <div key={item.id} className="space-y-1.5">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-medium truncate flex-1">{item.text}</p>
+                          <div className="flex items-center gap-2 truncate flex-1">
+                            {/* Strava indicator */}
+                            {isStravaMapped && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex-shrink-0">
+                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="#FC4C02">
+                                      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                                    </svg>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs">
+                                  <p className="font-medium flex items-center gap-1">
+                                    <Zap className="h-3 w-3" />
+                                    Auto-tracked via Strava
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    This habit is automatically marked complete when you log a matching activity on Strava.
+                                  </p>
+                                  {stravaCompletions.length > 0 && (
+                                    <p className="text-xs text-primary mt-1">
+                                      {stravaCompletions.length} activit{stravaCompletions.length === 1 ? 'y' : 'ies'} synced this week
+                                    </p>
+                                  )}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            <p className="text-sm font-medium truncate">{item.text}</p>
+                          </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             {/* Per-item daily streak with freeze status */}
                             {showDailyCheckboxes && habitStreak && habitStreak.currentStreak > 0 && (
@@ -339,7 +374,14 @@ export const HabitsDueThisWeek = ({
                                 <span className="text-xs">{completedDays}</span>
                               </div>
                             )}
-                            {showDailyCheckboxes ? (
+                            {isStravaMapped ? (
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs border-[#FC4C02]/30 text-[#FC4C02] bg-[#FC4C02]/5"
+                              >
+                                Strava
+                              </Badge>
+                            ) : showDailyCheckboxes ? (
                               <Badge variant="secondary" className="text-xs">
                                 {completedDays}/{daysToShow.length}
                               </Badge>
@@ -351,7 +393,61 @@ export const HabitsDueThisWeek = ({
                           </div>
                         </div>
                         
-                        {showDailyCheckboxes ? (
+                        {/* Strava-mapped habits: show read-only progress */}
+                        {isStravaMapped ? (
+                          <div className="flex items-center gap-1">
+                            {DAY_LABELS.map((label, index) => {
+                              const isChecked = completionStatus[index] || false;
+                              const date = weekDates[index];
+                              const isTodayDate = date && isToday(date);
+                              const stravaActivity = date ? isStravaCompletion(item.id, date) : null;
+                              
+                              return (
+                                <Tooltip key={index}>
+                                  <TooltipTrigger asChild>
+                                    <div className="flex flex-col items-center gap-0.5">
+                                      <span className={cn(
+                                        "text-[10px] font-medium",
+                                        isTodayDate ? "text-primary" : "text-muted-foreground"
+                                      )}>
+                                        {label}
+                                      </span>
+                                      <div className={cn(
+                                        "h-6 w-6 rounded flex items-center justify-center border transition-all",
+                                        isChecked 
+                                          ? "bg-[#FC4C02]/10 border-[#FC4C02]/30" 
+                                          : "bg-muted/30 border-border",
+                                        isTodayDate && !isChecked && "ring-2 ring-primary/30 ring-offset-1"
+                                      )}>
+                                        {isChecked ? (
+                                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="#FC4C02">
+                                            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
+                                          </svg>
+                                        ) : (
+                                          <span className="text-[10px] text-muted-foreground">—</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top">
+                                    {stravaActivity ? (
+                                      <div>
+                                        <p className="font-medium">{stravaActivity.activity_name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {stravaActivity.activity_type} • {Math.round(stravaActivity.duration_seconds / 60)}min
+                                        </p>
+                                      </div>
+                                    ) : isChecked ? (
+                                      <p>Completed via Strava</p>
+                                    ) : (
+                                      <p className="text-muted-foreground">Waiting for Strava activity</p>
+                                    )}
+                                  </TooltipContent>
+                                </Tooltip>
+                              );
+                            })}
+                          </div>
+                        ) : showDailyCheckboxes ? (
                           /* Day checkboxes for daily/weekday habits */
                           <div className="flex items-center gap-1">
                             {DAY_LABELS.map((label, index) => {
