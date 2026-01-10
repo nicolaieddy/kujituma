@@ -31,9 +31,21 @@ serve(async (req) => {
         throw new Error("STRAVA_CLIENT_ID not configured");
       }
 
-      // Get the redirect URI from query params or use default
-      const redirectUri = url.searchParams.get("redirect_uri") || `${url.origin}/strava-auth?action=callback`;
-      
+      // Get the redirect URI from query params or use default.
+      // Strava is strict and validates redirect_uri against the app's "Authorization Callback Domain".
+      // Strava also tends to normalize callback domains to `www`, so we canonicalize for kujituma.com.
+      const requestedRedirectUri = url.searchParams.get("redirect_uri") || `${url.origin}/strava-auth?action=callback`;
+      let redirectUri = requestedRedirectUri;
+
+      try {
+        const parsed = new URL(requestedRedirectUri);
+        if (parsed.hostname === "kujituma.com" || parsed.hostname === "www.kujituma.com") {
+          redirectUri = "https://www.kujituma.com/strava-callback";
+        }
+      } catch {
+        // If an invalid URL is provided, fall back to the default.
+        redirectUri = `${url.origin}/strava-auth?action=callback`;
+      }
       // Store state for CSRF protection
       const state = crypto.randomUUID();
       
