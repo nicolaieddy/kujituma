@@ -62,6 +62,7 @@ const Profile = () => {
   
   // Get active tab from URL or default to 'profile'
   const activeTab = searchParams.get('tab') || 'profile';
+  const safeMode = searchParams.get('safe') === '1';
   
   // Determine if viewing own profile or someone else's
   const isOwnProfile = !userId || userId === user?.id;
@@ -293,12 +294,18 @@ const Profile = () => {
                     </div>
                     
                     <TabsContent value="profile" className="mt-0">
+                      {safeMode && (
+                        <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                          Safe mode is enabled (reduced UI for iOS debugging). Remove <code>?safe=1</code> to return to full profile.
+                        </div>
+                      )}
                       <ProfilePublicView 
                         profile={profile} 
                         friendshipStatus={friendshipStatus}
                         partnershipStatus={partnershipStatus}
                         onFriendshipChange={setFriendshipStatus}
                         onPartnershipChange={setPartnershipStatus}
+                        safeMode={safeMode}
                       />
                     </TabsContent>
                     
@@ -315,6 +322,7 @@ const Profile = () => {
                 partnershipStatus={partnershipStatus}
                 onFriendshipChange={setFriendshipStatus}
                 onPartnershipChange={setPartnershipStatus}
+                safeMode={safeMode}
               />
             )}
           </>
