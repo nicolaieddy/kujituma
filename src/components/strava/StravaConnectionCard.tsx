@@ -47,7 +47,10 @@ export function StravaConnectionCard() {
                   {connection.athlete_firstname} {connection.athlete_lastname}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Connected {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
+                  {connection.last_synced_at 
+                    ? `Last synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
+                    : `Connected ${formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}`
+                  }
                 </p>
               </div>
               <div className="flex h-2 w-2 rounded-full bg-green-500" title="Connected" />
