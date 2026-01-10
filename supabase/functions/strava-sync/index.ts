@@ -105,11 +105,37 @@ serve(async (req) => {
     // Refresh token if needed
     const accessToken = await refreshTokenIfNeeded(adminClient, connection);
 
-    // Fetch activities from the last 30 days
-    const thirtyDaysAgo = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
+    // Get user's activity mappings with goal start dates
+    const { data: mappings, error: mappingsError } = await supabase
+      .from("activity_mappings")
+      .select("*, goals!inner(start_date)")
+      .eq("user_id", user.id);
+
+    if (mappingsError) {
+      throw new Error(`Failed to fetch mappings: ${mappingsError.message}`);
+    }
+
+    console.log(`Found ${mappings?.length || 0} activity mappings`);
+
+    // Find the earliest goal start date from mappings, or default to 30 days ago
+    let earliestDate = Math.floor(Date.now() / 1000) - (30 * 24 * 60 * 60);
     
+    if (mappings && mappings.length > 0) {
+      for (const mapping of mappings) {
+        const goalStartDate = (mapping as any).goals?.start_date;
+        if (goalStartDate) {
+          const startTimestamp = Math.floor(new Date(goalStartDate).getTime() / 1000);
+          if (startTimestamp < earliestDate) {
+            earliestDate = startTimestamp;
+          }
+        }
+      }
+      console.log(`Looking back to: ${new Date(earliestDate * 1000).toISOString()}`);
+    }
+
+    // Fetch activities from the earliest goal start date
     const activitiesResponse = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?after=${thirtyDaysAgo}&per_page=100`,
+      `https://www.strava.com/api/v3/athlete/activities?after=${earliestDate}&per_page=200`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
       }
@@ -122,18 +148,6 @@ serve(async (req) => {
 
     const activities: StravaActivity[] = await activitiesResponse.json();
     console.log(`Fetched ${activities.length} activities from Strava`);
-
-    // Get user's activity mappings
-    const { data: mappings, error: mappingsError } = await supabase
-      .from("activity_mappings")
-      .select("*")
-      .eq("user_id", user.id);
-
-    if (mappingsError) {
-      throw new Error(`Failed to fetch mappings: ${mappingsError.message}`);
-    }
-
-    console.log(`Found ${mappings?.length || 0} activity mappings`);
 
     // Get already synced activities
     const { data: existingSynced } = await supabase
