@@ -233,6 +233,47 @@ export type Database = {
           },
         ]
       }
+      activity_mappings: {
+        Row: {
+          created_at: string | null
+          goal_id: string
+          habit_item_id: string
+          id: string
+          min_duration_minutes: number | null
+          strava_activity_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          goal_id: string
+          habit_item_id: string
+          id?: string
+          min_duration_minutes?: number | null
+          strava_activity_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          goal_id?: string
+          habit_item_id?: string
+          id?: string
+          min_duration_minutes?: number | null
+          strava_activity_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_mappings_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_usage_logs: {
         Row: {
           created_at: string
@@ -1184,6 +1225,101 @@ export type Database = {
           year?: number
         }
         Relationships: []
+      }
+      strava_connections: {
+        Row: {
+          access_token: string
+          athlete_firstname: string | null
+          athlete_lastname: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          refresh_token: string
+          scope: string | null
+          strava_athlete_id: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          athlete_firstname?: string | null
+          athlete_lastname?: string | null
+          created_at?: string | null
+          expires_at: string
+          id?: string
+          refresh_token: string
+          scope?: string | null
+          strava_athlete_id: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          athlete_firstname?: string | null
+          athlete_lastname?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          scope?: string | null
+          strava_athlete_id?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      synced_activities: {
+        Row: {
+          activity_name: string | null
+          activity_type: string | null
+          distance_meters: number | null
+          duration_seconds: number | null
+          habit_completion_created: boolean | null
+          id: string
+          matched_goal_id: string | null
+          matched_habit_item_id: string | null
+          start_date: string | null
+          strava_activity_id: number
+          synced_at: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_name?: string | null
+          activity_type?: string | null
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          habit_completion_created?: boolean | null
+          id?: string
+          matched_goal_id?: string | null
+          matched_habit_item_id?: string | null
+          start_date?: string | null
+          strava_activity_id: number
+          synced_at?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_name?: string | null
+          activity_type?: string | null
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          habit_completion_created?: boolean | null
+          id?: string
+          matched_goal_id?: string | null
+          matched_habit_item_id?: string | null
+          start_date?: string | null
+          strava_activity_id?: number
+          synced_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "synced_activities_matched_goal_id_fkey"
+            columns: ["matched_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tos_acceptances: {
         Row: {
