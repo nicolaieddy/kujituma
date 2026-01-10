@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
@@ -69,7 +68,6 @@ export function useStravaConnection() {
     }
 
     try {
-      // Use current origin for redirect - Strava will redirect back here
       const redirectUri = `${window.location.origin}/strava-callback`;
       
       const response = await fetch(
@@ -87,39 +85,12 @@ export function useStravaConnection() {
       }
 
       const { url } = await response.json();
-      
-      // Redirect to Strava - no state verification needed, we rely on auth token
       window.location.href = url;
     } catch (error) {
       console.error("Failed to initiate Strava connection:", error);
       toast.error("Failed to connect to Strava");
     }
   }, [session]);
-
-  const completeConnect = useCallback(async (code: string) => {
-    if (!session) {
-      throw new Error("Not authenticated");
-    }
-
-    const response = await fetch(
-      `${SUPABASE_URL}/functions/v1/strava-auth?action=callback&code=${encodeURIComponent(code)}`,
-      {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || "Failed to complete connection");
-    }
-
-    const result = await response.json();
-    await checkConnectionStatus();
-    return result;
-  }, [session, checkConnectionStatus]);
 
   const disconnect = useCallback(async () => {
     if (!session) {
@@ -201,7 +172,6 @@ export function useStravaConnection() {
     isLoading,
     isSyncing,
     initiateConnect,
-    completeConnect,
     disconnect,
     syncActivities,
     refreshStatus: checkConnectionStatus,

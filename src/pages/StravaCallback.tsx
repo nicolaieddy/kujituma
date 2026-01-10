@@ -1,26 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
+const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
+
 export default function StravaCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { session, loading: authLoading } = useAuth();
-  const { completeConnect, syncActivities } = useStravaConnection();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [error, setError] = useState<string | null>(null);
-  const [hasProcessed, setHasProcessed] = useState(false);
+  
+  // Use ref to prevent double-processing (React Strict Mode, race conditions)
+  const isProcessing = useRef(false);
 
   useEffect(() => {
-    // Wait for auth to load
+    // Wait for auth to finish loading
     if (authLoading) return;
     
     // Prevent double-processing
-    if (hasProcessed) return;
+    if (isProcessing.current) return;
 
     const code = searchParams.get("code");
     const errorParam = searchParams.get("error");
@@ -29,7 +31,6 @@ export default function StravaCallback() {
     if (errorParam) {
       setStatus("error");
       setError("Authorization was denied or cancelled");
-      setHasProcessed(true);
       return;
     }
 
@@ -37,29 +38,51 @@ export default function StravaCallback() {
     if (!code) {
       setStatus("error");
       setError("No authorization code received");
-      setHasProcessed(true);
       return;
     }
 
     // If no session, user needs to log in first
-    // This can happen if cookies aren't shared across domains
     if (!session) {
       setStatus("error");
       setError("Please log in and try connecting Strava again from your profile settings");
-      setHasProcessed(true);
       return;
     }
 
-    // Process the callback
+    // Mark as processing immediately
+    isProcessing.current = true;
+
     const handleCallback = async () => {
-      setHasProcessed(true);
-      
       try {
-        await completeConnect(code);
+        // Exchange code for tokens
+        const response = await fetch(
+          `${SUPABASE_URL}/functions/v1/strava-auth?action=callback&code=${encodeURIComponent(code)}`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to complete connection");
+        }
+
         setStatus("success");
 
-        // Sync activities after successful connection
-        await syncActivities();
+        // Try to sync activities (non-blocking)
+        try {
+          await fetch(`${SUPABASE_URL}/functions/v1/strava-sync`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              "Content-Type": "application/json",
+            },
+          });
+        } catch (syncError) {
+          console.warn("Initial sync failed, user can retry later:", syncError);
+        }
 
         // Redirect after a short delay
         setTimeout(() => {
@@ -73,7 +96,7 @@ export default function StravaCallback() {
     };
 
     handleCallback();
-  }, [searchParams, completeConnect, syncActivities, navigate, session, authLoading, hasProcessed]);
+  }, [searchParams, navigate, session, authLoading]);
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
