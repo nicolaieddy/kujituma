@@ -6,6 +6,7 @@ export interface CustomSchedule {
   unit: 'day' | 'week' | 'month' | 'year';
   daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, etc.
   monthWeek?: 'first' | 'second' | 'third' | 'fourth' | 'last'; // For monthly on specific week
+  timesPerWeek?: number; // For "X times per week" without specific days (e.g., 2 = twice per week)
 }
 
 export interface HabitItem {

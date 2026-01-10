@@ -3,14 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { cn } from "@/lib/utils";
+import { CustomSchedule } from "@/types/goals";
 
-export interface CustomSchedule {
-  interval: number;
-  unit: 'day' | 'week' | 'month' | 'year';
-  daysOfWeek?: number[]; // 0 = Sunday, 1 = Monday, etc.
-  monthWeek?: 'first' | 'second' | 'third' | 'fourth' | 'last'; // For monthly on specific week
-}
+// Re-export the type for backward compatibility
+export type { CustomSchedule };
 
 interface CustomRecurrencePickerProps {
   isOpen: boolean;
@@ -37,6 +36,17 @@ const MONTH_WEEK_OPTIONS = [
   { value: 'last', label: 'Last week' },
 ];
 
+const TIMES_PER_WEEK_OPTIONS = [
+  { value: 1, label: '1 time per week' },
+  { value: 2, label: '2 times per week' },
+  { value: 3, label: '3 times per week' },
+  { value: 4, label: '4 times per week' },
+  { value: 5, label: '5 times per week' },
+  { value: 6, label: '6 times per week' },
+];
+
+type WeeklyMode = 'specific-days' | 'times-per-week';
+
 export const CustomRecurrencePicker = ({
   isOpen,
   onClose,
@@ -50,6 +60,12 @@ export const CustomRecurrencePicker = ({
     initialSchedule?.monthWeek || 'last'
   );
   const [useMonthWeek, setUseMonthWeek] = useState(!!initialSchedule?.monthWeek);
+  
+  // New state for "times per week" mode
+  const [weeklyMode, setWeeklyMode] = useState<WeeklyMode>(
+    initialSchedule?.timesPerWeek ? 'times-per-week' : 'specific-days'
+  );
+  const [timesPerWeek, setTimesPerWeek] = useState(initialSchedule?.timesPerWeek || 2);
 
   useEffect(() => {
     if (initialSchedule) {
@@ -58,12 +74,16 @@ export const CustomRecurrencePicker = ({
       setSelectedDays(initialSchedule.daysOfWeek || [1]);
       setMonthWeek(initialSchedule.monthWeek || 'last');
       setUseMonthWeek(!!initialSchedule.monthWeek);
+      setWeeklyMode(initialSchedule.timesPerWeek ? 'times-per-week' : 'specific-days');
+      setTimesPerWeek(initialSchedule.timesPerWeek || 2);
     } else {
       setInterval(1);
       setUnit('week');
       setSelectedDays([1]);
       setMonthWeek('last');
       setUseMonthWeek(false);
+      setWeeklyMode('specific-days');
+      setTimesPerWeek(2);
     }
   }, [initialSchedule, isOpen]);
 
@@ -82,9 +102,20 @@ export const CustomRecurrencePicker = ({
     const schedule: CustomSchedule = {
       interval,
       unit,
-      ...(unit === 'week' && { daysOfWeek: selectedDays }),
-      ...(unit === 'month' && useMonthWeek && { monthWeek }),
     };
+
+    if (unit === 'week') {
+      if (weeklyMode === 'times-per-week') {
+        schedule.timesPerWeek = timesPerWeek;
+      } else {
+        schedule.daysOfWeek = selectedDays;
+      }
+    }
+
+    if (unit === 'month' && useMonthWeek) {
+      schedule.monthWeek = monthWeek;
+    }
+
     onSave(schedule);
     onClose();
   };
@@ -131,28 +162,77 @@ export const CustomRecurrencePicker = ({
             </Select>
           </div>
 
-          {/* Repeat on (days of week) - only show for weekly */}
+          {/* Weekly options - mode selection */}
           {unit === 'week' && (
-            <div className="space-y-3">
-              <span className="text-sm text-foreground">Repeat on</span>
-              <div className="flex gap-2">
-                {DAYS.map((day) => (
-                  <button
-                    key={day.value}
-                    type="button"
-                    onClick={() => toggleDay(day.value)}
-                    title={day.fullLabel}
-                    className={cn(
-                      "w-9 h-9 rounded-full text-sm font-medium transition-all",
-                      selectedDays.includes(day.value)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground hover:bg-muted/80"
-                    )}
+            <div className="space-y-4">
+              <RadioGroup
+                value={weeklyMode}
+                onValueChange={(v) => setWeeklyMode(v as WeeklyMode)}
+                className="space-y-3"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="specific-days" id="specific-days" />
+                  <Label htmlFor="specific-days" className="text-sm font-normal cursor-pointer">
+                    On specific days
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="times-per-week" id="times-per-week" />
+                  <Label htmlFor="times-per-week" className="text-sm font-normal cursor-pointer">
+                    A number of times per week (flexible days)
+                  </Label>
+                </div>
+              </RadioGroup>
+
+              {/* Specific days picker */}
+              {weeklyMode === 'specific-days' && (
+                <div className="space-y-3 pl-6">
+                  <span className="text-sm text-muted-foreground">Repeat on</span>
+                  <div className="flex gap-2">
+                    {DAYS.map((day) => (
+                      <button
+                        key={day.value}
+                        type="button"
+                        onClick={() => toggleDay(day.value)}
+                        title={day.fullLabel}
+                        className={cn(
+                          "w-9 h-9 rounded-full text-sm font-medium transition-all",
+                          selectedDays.includes(day.value)
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground hover:bg-muted/80"
+                        )}
+                      >
+                        {day.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Times per week picker */}
+              {weeklyMode === 'times-per-week' && (
+                <div className="space-y-3 pl-6">
+                  <span className="text-sm text-muted-foreground">How many times?</span>
+                  <Select 
+                    value={timesPerWeek.toString()} 
+                    onValueChange={(v) => setTimesPerWeek(parseInt(v))}
                   >
-                    {day.label}
-                  </button>
-                ))}
-              </div>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-background border border-border">
+                      {TIMES_PER_WEEK_OPTIONS.map((option) => (
+                        <SelectItem key={option.value} value={option.value.toString()}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    Complete this habit {timesPerWeek} {timesPerWeek === 1 ? 'time' : 'times'} each week, on any days you choose.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -204,7 +284,7 @@ export const CustomRecurrencePicker = ({
 
 // Helper function to format custom schedule for display
 export const formatCustomSchedule = (schedule: CustomSchedule): string => {
-  const { interval, unit, daysOfWeek, monthWeek } = schedule;
+  const { interval, unit, daysOfWeek, monthWeek, timesPerWeek } = schedule;
   
   if (unit === 'day') {
     return interval === 1 ? 'Daily' : `Every ${interval} days`;
@@ -231,6 +311,15 @@ export const formatCustomSchedule = (schedule: CustomSchedule): string => {
   
   // Weekly
   if (unit === 'week') {
+    // Handle "times per week" mode
+    if (timesPerWeek) {
+      if (interval === 1) {
+        return `${timesPerWeek}x per week`;
+      }
+      return `${timesPerWeek}x every ${interval} weeks`;
+    }
+
+    // Handle specific days mode
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const days = daysOfWeek?.map(d => dayNames[d]).join(', ') || '';
     
