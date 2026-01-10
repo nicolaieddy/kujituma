@@ -125,12 +125,16 @@ export function useStravaConnection() {
       throw new Error("Not authenticated");
     }
 
-    // Verify state
+    // Verify state if we have it stored (may not exist if domain changed between
+    // initiating OAuth and receiving callback, e.g. www vs non-www).
+    // Auth token already provides security, so missing state is acceptable.
     const storedState = sessionStorage.getItem("strava_oauth_state");
-    if (storedState && storedState !== state) {
-      throw new Error("Invalid state parameter");
+    if (storedState) {
+      if (storedState !== state) {
+        throw new Error("Invalid state parameter");
+      }
+      sessionStorage.removeItem("strava_oauth_state");
     }
-    sessionStorage.removeItem("strava_oauth_state");
 
     const response = await fetch(
       `${SUPABASE_URL}/functions/v1/strava-auth?action=callback&code=${code}`,
