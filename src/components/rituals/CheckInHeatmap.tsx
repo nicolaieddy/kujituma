@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { DailyCheckIn } from "@/types/habits";
 import { format, eachDayOfInterval, subDays, getDay, isSameDay } from "date-fns";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from "@tanstack/react-query";
@@ -125,34 +125,33 @@ const HeatmapGrid = ({ checkIns, weeks = 52 }: { checkIns: DailyCheckIn[]; weeks
                 const isToday = isSameDay(day, today);
                 
                 return (
-                  <TooltipProvider key={dateStr}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div
-                          className={cn(
-                            "h-3 w-3 rounded-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/50",
-                            hasCheckIn && mood
-                              ? moodColors[mood]
-                              : hasCheckIn
-                              ? "bg-primary/60"
-                              : "bg-muted/40",
-                            isToday && "ring-2 ring-primary"
-                          )}
-                        />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs">
-                        <p className="font-medium">{format(day, 'EEEE, MMM d, yyyy')}</p>
-                        {hasCheckIn ? (
-                          <div className="text-muted-foreground space-y-0.5">
-                            {mood && <p>Mood: {['😔', '😕', '😐', '🙂', '😊'][mood - 1]} {mood}/5</p>}
-                            {checkIn.energy_level && <p>Energy: ⚡ {checkIn.energy_level}/5</p>}
-                          </div>
-                        ) : (
-                          <span className="text-muted-foreground">No check-in</span>
+                  // Removed nested TooltipProvider - using App-level provider
+                  <Tooltip key={dateStr}>
+                    <TooltipTrigger asChild>
+                      <div
+                        className={cn(
+                          "h-3 w-3 rounded-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/50",
+                          hasCheckIn && mood
+                            ? moodColors[mood]
+                            : hasCheckIn
+                            ? "bg-primary/60"
+                            : "bg-muted/40",
+                          isToday && "ring-2 ring-primary"
                         )}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                      />
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-xs">
+                      <p className="font-medium">{format(day, 'EEEE, MMM d, yyyy')}</p>
+                      {hasCheckIn ? (
+                        <div className="text-muted-foreground space-y-0.5">
+                          {mood && <p>Mood: {['😔', '😕', '😐', '🙂', '😊'][mood - 1]} {mood}/5</p>}
+                          {checkIn.energy_level && <p>Energy: ⚡ {checkIn.energy_level}/5</p>}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">No check-in</span>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
                 );
               })}
             </div>

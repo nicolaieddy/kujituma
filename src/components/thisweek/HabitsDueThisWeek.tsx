@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle, Zap } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
@@ -153,8 +153,8 @@ export const HabitsDueThisWeek = ({
     ? Math.round(habits.reduce((sum, h) => sum + h.completionRate, 0) / habits.length) 
     : 0;
 
+  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
-    <TooltipProvider>
     <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-2 sm:pb-3">
         <div className="flex items-center justify-between">
@@ -624,6 +624,5 @@ export const HabitsDueThisWeek = ({
         ))}
       </CardContent>
     </Card>
-    </TooltipProvider>
   );
 };

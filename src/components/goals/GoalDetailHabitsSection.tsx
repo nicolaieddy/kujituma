@@ -11,7 +11,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } 
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import { useActivityMappings } from "@/hooks/useActivityMappings";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
@@ -68,20 +68,19 @@ const SortableHabit = ({
       </button>
       <span className="flex-1 text-sm">{habit.text}</span>
       
+      {/* Removed nested TooltipProvider - using App-level provider */}
       {stravaMapping && (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
-                <Zap className="h-3 w-3" />
-                <span className="text-xs font-medium">Strava</span>
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Auto-tracked from Strava ({stravaMapping.strava_activity_type})</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+              <Zap className="h-3 w-3" />
+              <span className="text-xs font-medium">Strava</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Auto-tracked from Strava ({stravaMapping.strava_activity_type})</p>
+          </TooltipContent>
+        </Tooltip>
       )}
       
       <Badge variant="outline" className="text-xs shrink-0">{getFrequencyLabel(habit)}</Badge>
