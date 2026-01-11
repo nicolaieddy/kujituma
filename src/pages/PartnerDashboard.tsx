@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
@@ -12,7 +12,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
-import { CheckInsFeed } from '@/components/accountability/CheckInsFeed';
+import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
+import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
 import { PartnerSwitcher } from '@/components/accountability/PartnerSwitcher';
 import { 
@@ -71,6 +72,12 @@ const PartnerDashboard = () => {
     partnerCanViewMyGoals: boolean;
     myCheckInCadence: CheckInCadence;
   }>({ canViewPartnerGoals: false, partnerCanViewMyGoals: false, myCheckInCadence: 'weekly' });
+  const [currentUserProfile, setCurrentUserProfile] = useState<{
+    full_name: string;
+    avatar_url: string | null;
+  } | null>(null);
+  
+  const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
 
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -174,6 +181,25 @@ const PartnerDashboard = () => {
     fetchObjectives();
   }, [selectedWeekStart, partnerId, canViewPartner, loading]);
 
+  // Fetch current user's profile
+  useEffect(() => {
+    const fetchCurrentUserProfile = async () => {
+      if (!user) return;
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, avatar_url')
+        .eq('id', user.id)
+        .single();
+      
+      if (data) {
+        setCurrentUserProfile(data);
+      }
+    };
+    
+    fetchCurrentUserProfile();
+  }, [user]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -195,6 +221,8 @@ const PartnerDashboard = () => {
       // Refresh partnership details to get updated last_check_in_at
       const updatedPartnership = await accountabilityService.getPartnershipDetails(partnerId!);
       setPartnershipDetails(updatedPartnership);
+      // Refresh the check-ins feed immediately
+      await checkInsFeedRef.current?.refresh();
       toast.success('Check-in recorded!');
     } catch (err) {
       console.error('Error recording check-in:', err);
@@ -401,8 +429,10 @@ const PartnerDashboard = () => {
             <Card className="border-border">
               <CardContent className="pt-6">
                 <CheckInsFeed
+                  ref={checkInsFeedRef}
                   partnershipId={partnershipDetails.id}
                   currentUserId={user.id}
+                  currentUserProfile={currentUserProfile || undefined}
                   partnerName={partnerProfile.full_name}
                   maxVisible={5}
                   onRecordCheckIn={() => setCheckInDialogOpen(true)}
