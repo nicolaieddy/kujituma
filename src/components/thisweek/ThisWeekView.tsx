@@ -10,6 +10,7 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
+import { DuolingoStreakCard } from "@/components/thisweek/DuolingoStreakCard";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -170,6 +171,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
+
+      {/* Duolingo streak card - shows when connected */}
+      {isCurrentWeek && <DuolingoStreakCard />}
 
       {isCurrentWeek && habitStats.length > 0 && (
         <HabitsDueThisWeek
