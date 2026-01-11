@@ -13,6 +13,7 @@ import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed } from '@/components/accountability/CheckInsFeed';
+import { CheckInCadenceSettings } from '@/components/accountability/CheckInCadenceSettings';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -334,7 +335,13 @@ const PartnerDashboard = () => {
                     <span>No check-ins yet</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-3">
+                  <CheckInCadenceSettings
+                    partnerId={partnerId!}
+                    partnerName={partnerProfile?.full_name || 'Partner'}
+                    currentCadence="weekly"
+                    compact
+                  />
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button

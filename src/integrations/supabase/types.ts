@@ -185,6 +185,8 @@ export type Database = {
           created_at: string
           id: string
           last_check_in_at: string | null
+          my_check_in_cadence_user1: string | null
+          my_check_in_cadence_user2: string | null
           status: string
           updated_at: string
           user1_can_view_user2_goals: boolean
@@ -197,6 +199,8 @@ export type Database = {
           created_at?: string
           id?: string
           last_check_in_at?: string | null
+          my_check_in_cadence_user1?: string | null
+          my_check_in_cadence_user2?: string | null
           status?: string
           updated_at?: string
           user1_can_view_user2_goals?: boolean
@@ -209,6 +213,8 @@ export type Database = {
           created_at?: string
           id?: string
           last_check_in_at?: string | null
+          my_check_in_cadence_user1?: string | null
+          my_check_in_cadence_user2?: string | null
           status?: string
           updated_at?: string
           user1_can_view_user2_goals?: boolean

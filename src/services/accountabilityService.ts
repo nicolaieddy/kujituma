@@ -1,5 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 
+export type CheckInCadence = 'daily' | 'twice_weekly' | 'weekly' | 'biweekly';
+
 export interface AccountabilityPartner {
   partner_id: string;
   full_name: string;
@@ -9,6 +11,7 @@ export interface AccountabilityPartner {
   last_check_in_at: string | null;
   can_view_partner_goals: boolean;
   partner_can_view_my_goals: boolean;
+  my_check_in_cadence: CheckInCadence;
 }
 
 export interface AccountabilityPartnerRequest {
@@ -83,6 +86,9 @@ export interface CheckInReaction {
 
 class AccountabilityService {
   async getPartners(): Promise<AccountabilityPartner[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
     const { data, error } = await supabase.rpc('get_accountability_partners');
     
     if (error) {
@@ -90,7 +96,35 @@ class AccountabilityService {
       throw error;
     }
     
-    return data || [];
+    if (!data || data.length === 0) return [];
+
+    // Fetch cadence info from partnerships
+    const partnershipIds = data.map((p: any) => p.partnership_id);
+    const { data: partnerships } = await supabase
+      .from('accountability_partnerships')
+      .select('id, user1_id, user2_id, my_check_in_cadence_user1, my_check_in_cadence_user2')
+      .in('id', partnershipIds);
+
+    const partnershipMap = new Map(partnerships?.map(p => [p.id, p]) || []);
+
+    return data.map((partner: any) => {
+      const partnership = partnershipMap.get(partner.partnership_id);
+      let myCheckInCadence: CheckInCadence = 'weekly';
+      
+      if (partnership) {
+        // Determine which user we are and get our cadence
+        if (partnership.user1_id === user.id) {
+          myCheckInCadence = (partnership.my_check_in_cadence_user1 as CheckInCadence) || 'weekly';
+        } else {
+          myCheckInCadence = (partnership.my_check_in_cadence_user2 as CheckInCadence) || 'weekly';
+        }
+      }
+
+      return {
+        ...partner,
+        my_check_in_cadence: myCheckInCadence,
+      };
+    });
   }
 
   async getPartnerRequests(): Promise<{
@@ -647,6 +681,99 @@ class AccountabilityService {
     } else {
       const result = await this.addReactionToCheckIn(checkInId, reaction);
       return { ...result, added: true };
+    }
+  }
+
+  async updateCheckInCadence(
+    partnerId: string, 
+    cadence: CheckInCadence
+  ): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      // Find the partnership
+      const { data: partnership, error: fetchError } = await supabase
+        .from('accountability_partnerships')
+        .select('id, user1_id, user2_id')
+        .or(`and(user1_id.eq.${user.id},user2_id.eq.${partnerId}),and(user1_id.eq.${partnerId},user2_id.eq.${user.id})`)
+        .eq('status', 'active')
+        .single();
+
+      if (fetchError || !partnership) {
+        return { success: false, error: 'Partnership not found' };
+      }
+
+      // Update the appropriate cadence field based on which user we are
+      const updateField = partnership.user1_id === user.id 
+        ? 'my_check_in_cadence_user1' 
+        : 'my_check_in_cadence_user2';
+
+      const { error } = await supabase
+        .from('accountability_partnerships')
+        .update({ [updateField]: cadence })
+        .eq('id', partnership.id);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  // Get partners with due/overdue check-ins based on their cadence
+  async getDueCheckIns(): Promise<{
+    partner_id: string;
+    partner_name: string;
+    avatar_url: string | null;
+    cadence: CheckInCadence;
+    last_check_in_at: string | null;
+    is_overdue: boolean;
+    days_until_due: number;
+  }[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    try {
+      const partners = await this.getPartners();
+      const now = new Date();
+      
+      return partners.map(partner => {
+        const cadence = partner.my_check_in_cadence || 'weekly';
+        const lastCheckIn = partner.last_check_in_at ? new Date(partner.last_check_in_at) : null;
+        
+        // Calculate days between check-ins based on cadence
+        const cadenceDays: Record<CheckInCadence, number> = {
+          'daily': 1,
+          'twice_weekly': 3.5,
+          'weekly': 7,
+          'biweekly': 14,
+        };
+        
+        const expectedDays = cadenceDays[cadence];
+        let daysSinceLastCheckIn = lastCheckIn 
+          ? Math.floor((now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60 * 24))
+          : 999; // Never checked in
+        
+        const daysUntilDue = expectedDays - daysSinceLastCheckIn;
+        const isOverdue = daysUntilDue < 0;
+        
+        return {
+          partner_id: partner.partner_id,
+          partner_name: partner.full_name,
+          avatar_url: partner.avatar_url,
+          cadence,
+          last_check_in_at: partner.last_check_in_at,
+          is_overdue: isOverdue,
+          days_until_due: Math.ceil(daysUntilDue),
+        };
+      }).filter(p => p.days_until_due <= 1); // Only return partners due today or overdue
+    } catch (err) {
+      console.error('Error getting due check-ins:', err);
+      return [];
     }
   }
 }
