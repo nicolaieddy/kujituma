@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
+import { PartnerHabitsCard } from '@/components/accountability/PartnerHabitsCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
@@ -52,6 +53,8 @@ const PartnerDashboard = () => {
   } | null>(null);
   const [goals, setGoals] = useState<PartnerGoal[]>([]);
   const [weeklyObjectives, setWeeklyObjectives] = useState<PartnerWeeklyObjective[]>([]);
+  const [habitStats, setHabitStats] = useState<any[]>([]);
+  const [loadingHabits, setLoadingHabits] = useState(false);
   const [partnershipDetails, setPartnershipDetails] = useState<{
     id: string;
     user1_id: string;
@@ -133,11 +136,12 @@ const PartnerDashboard = () => {
         
         setCanViewPartner(true);
         
-        const [profile, goalsData, objectivesData, partnership] = await Promise.all([
+        const [profile, goalsData, objectivesData, partnership, habitsData] = await Promise.all([
           accountabilityService.getPartnerProfile(partnerId),
           accountabilityService.getPartnerGoals(partnerId),
           accountabilityService.getPartnerWeeklyObjectives(partnerId, getWeekStartString(selectedWeekStart)),
-          accountabilityService.getPartnershipDetails(partnerId)
+          accountabilityService.getPartnershipDetails(partnerId),
+          accountabilityService.getPartnerHabitStats(partnerId)
         ]);
         
         if (!profile) {
@@ -149,6 +153,7 @@ const PartnerDashboard = () => {
         setGoals(goalsData);
         setWeeklyObjectives(objectivesData);
         setPartnershipDetails(partnership);
+        setHabitStats(habitsData);
       } catch (err) {
         console.error('Error fetching partner data:', err);
         setError(err instanceof Error ? err.message : 'Failed to load partner data');
@@ -563,6 +568,9 @@ const PartnerDashboard = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Habits Review */}
+          <PartnerHabitsCard habitStats={habitStats} isLoading={loading} />
 
           {/* Active Goals */}
           <Card className="border-border">

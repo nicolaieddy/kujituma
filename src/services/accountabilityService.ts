@@ -880,6 +880,120 @@ class AccountabilityService {
       return [];
     }
   }
+
+  /**
+   * Get partner's habit stats (goals with habit_items and their completion data)
+   */
+  async getPartnerHabitStats(partnerId: string): Promise<{
+    goal: {
+      id: string;
+      title: string;
+      habit_items: any[];
+    };
+    currentStreak: number;
+    completionRate: number;
+    totalWeeks: number;
+    completedWeeks: number;
+    weeklyHistory: { weekStart: string; isCompleted: boolean }[];
+  }[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // First verify they are accountability partners
+    const partners = await this.getPartners();
+    const isPartner = partners.some(p => p.partner_id === partnerId);
+    
+    if (!isPartner) {
+      throw new Error('Not authorized to view this user\'s habits');
+    }
+
+    // Get partner's goals with habit_items
+    const { data: goals, error: goalsError } = await supabase
+      .from('goals')
+      .select('id, title, habit_items, status, start_date')
+      .eq('user_id', partnerId)
+      .neq('status', 'deleted');
+
+    if (goalsError) {
+      console.error('Error fetching partner goals for habits:', goalsError);
+      return [];
+    }
+
+    // Filter to only goals with habit_items
+    const habitGoals = (goals || []).filter(g => {
+      const items = g.habit_items as any;
+      return items && Array.isArray(items) && items.length > 0;
+    });
+
+    if (habitGoals.length === 0) return [];
+
+    // Get objectives for these goals
+    const goalIds = habitGoals.map(g => g.id);
+    const { data: objectives, error: objError } = await supabase
+      .from('weekly_objectives')
+      .select('id, is_completed, week_start, goal_id')
+      .eq('user_id', partnerId)
+      .in('goal_id', goalIds)
+      .order('week_start', { ascending: false });
+
+    if (objError) {
+      console.error('Error fetching partner objectives for habits:', objError);
+      return [];
+    }
+
+    const today = new Date();
+    const currentWeekStart = startOfWeek(today, { weekStartsOn: 1 });
+
+    return habitGoals.map(goal => {
+      const goalObjectives = (objectives || [])
+        .filter(obj => obj.goal_id === goal.id)
+        .sort((a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime());
+
+      // Build weekly history
+      const weeklyHistory = goalObjectives.slice(0, 8).map(obj => ({
+        weekStart: obj.week_start,
+        isCompleted: obj.is_completed,
+      }));
+
+      // Calculate completion stats
+      const totalWeeks = goalObjectives.length;
+      const completedWeeks = goalObjectives.filter(obj => obj.is_completed).length;
+      const completionRate = totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0;
+
+      // Calculate current streak
+      let currentStreak = 0;
+      const sortedObjectives = [...goalObjectives].sort(
+        (a, b) => new Date(b.week_start).getTime() - new Date(a.week_start).getTime()
+      );
+
+      for (const obj of sortedObjectives) {
+        const objWeekStart = new Date(obj.week_start);
+        if (objWeekStart > currentWeekStart) continue;
+        
+        if (obj.is_completed) {
+          currentStreak++;
+        } else {
+          if (format(objWeekStart, 'yyyy-MM-dd') === format(currentWeekStart, 'yyyy-MM-dd')) {
+            continue;
+          }
+          break;
+        }
+      }
+
+      return {
+        goal: {
+          id: goal.id,
+          title: goal.title,
+          habit_items: goal.habit_items as any[],
+        },
+        currentStreak,
+        completionRate,
+        totalWeeks,
+        completedWeeks,
+        weeklyHistory,
+      };
+    });
+  }
 }
 
 export const accountabilityService = new AccountabilityService();
