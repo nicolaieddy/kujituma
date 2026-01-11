@@ -66,7 +66,7 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           >
             Kujituma
           </h1>
-          {!isMobile && <NavigationMenu />}
+          {!isMobile && !ios && <NavigationMenu />}
         </div>
 
         <div className="flex items-center justify-end gap-3">
