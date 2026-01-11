@@ -12,6 +12,7 @@ import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmation
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { DuolingoStreakCard } from "@/components/thisweek/DuolingoStreakCard";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
+import { PartnerCheckInsCard } from "@/components/thisweek/PartnerCheckInsCard";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -199,6 +200,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           isCarryingOver={isCarryingOver}
         />
       )}
+
+      {/* Partner Check-ins Card - shows accountability partner activity */}
+      {isCurrentWeek && <PartnerCheckInsCard />}
 
       {/* Duolingo streak card - shows when connected */}
       {isCurrentWeek && <DuolingoStreakCard />}
