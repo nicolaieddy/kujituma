@@ -65,7 +65,7 @@ export class HabitsService {
       .from('daily_check_ins')
       .select('*')
       .eq('user_id', user.user.id)
-      .gte('check_in_date', startDate.toISOString().split('T')[0])
+      .gte('check_in_date', getLocalDateString(startDate))
       .order('check_in_date', { ascending: false });
     
     if (error) throw error;
@@ -169,10 +169,11 @@ export class HabitsService {
     
     let streaks = await this.getStreaks();
     
-    // Get last week's date
-    const lastWeek = new Date(weekStart);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    const lastWeekStr = lastWeek.toISOString().split('T')[0];
+    // Get last week's date using proper local date formatting
+    const [year, month, day] = weekStart.split('-').map(Number);
+    const lastWeekDate = new Date(year, month - 1, day);
+    lastWeekDate.setDate(lastWeekDate.getDate() - 7);
+    const lastWeekStr = getLocalDateString(lastWeekDate);
     
     if (!streaks) {
       const { data, error } = await supabase
@@ -235,7 +236,7 @@ export class HabitsService {
     return {
       year,
       quarter,
-      quarterStart: quarterStart.toISOString().split('T')[0]
+      quarterStart: getLocalDateString(quarterStart)
     };
   }
   
@@ -276,7 +277,7 @@ export class HabitsService {
     
     const { year, quarter } = review;
     const quarterStartMonth = (quarter - 1) * 3;
-    const quarterStart = new Date(year, quarterStartMonth, 1).toISOString().split('T')[0];
+    const quarterStart = getLocalDateString(new Date(year, quarterStartMonth, 1));
     
     const { data, error } = await supabase
       .from('quarterly_reviews')

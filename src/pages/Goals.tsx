@@ -7,6 +7,7 @@ import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
+import { getLocalDateString } from "@/utils/dateUtils";
 
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
@@ -114,7 +115,7 @@ const Goals = () => {
   const handleCarryOverAll = () => {
     // Mark previous-year goals as "resolved" for the current year so we don't prompt again
     const currentYear = new Date().getFullYear();
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const count = previousYearUnfinishedGoals.length;
 
     previousYearUnfinishedGoals.forEach(goal => {

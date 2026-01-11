@@ -22,12 +22,9 @@ export const useWeekClose = ({
   const queryClient = useQueryClient();
   const [showCloseDialog, setShowCloseDialog] = useState(false);
 
-  // Get next week start
+  // Get next week start using the service helper
   const getNextWeekStart = () => {
-    const [year, month, day] = currentWeekStart.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    date.setDate(date.getDate() + 7);
-    return date.toISOString().split('T')[0];
+    return WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 7);
   };
 
   const closeWeekMutation = useMutation({

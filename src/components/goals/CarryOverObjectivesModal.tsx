@@ -34,29 +34,23 @@ export const CarryOverObjectivesModal = ({
   // Calculate the default target week (next week from today or provided default)
   const nextWeekStart = useMemo(() => {
     if (defaultTargetWeek) return defaultTargetWeek;
-    const today = new Date();
-    const currentWeekStart = WeeklyProgressService.getWeekStart(today);
-    const [year, month, day] = currentWeekStart.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    date.setDate(date.getDate() + 7);
-    return date.toISOString().split('T')[0];
+    const currentWeekStart = WeeklyProgressService.getWeekStart(new Date());
+    return WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 7);
   }, [defaultTargetWeek]);
 
   // Generate future weeks (next 8 weeks)
   const futureWeeks = useMemo(() => {
     const weeks: { value: string; label: string; weekNumber: number }[] = [];
-    const [year, month, day] = nextWeekStart.split('-').map(Number);
-    let date = new Date(year, month - 1, day);
+    let currentWeek = nextWeekStart;
     
     for (let i = 0; i < 8; i++) {
-      const weekStart = date.toISOString().split('T')[0];
-      const weekNumber = WeeklyProgressService.getWeekNumber(weekStart);
+      const weekNumber = WeeklyProgressService.getWeekNumber(currentWeek);
       weeks.push({
-        value: weekStart,
-        label: `Week ${weekNumber} (${WeeklyProgressService.formatWeekRange(weekStart)})`,
+        value: currentWeek,
+        label: `Week ${weekNumber} (${WeeklyProgressService.formatWeekRange(currentWeek)})`,
         weekNumber,
       });
-      date.setDate(date.getDate() + 7);
+      currentWeek = WeeklyProgressService.addDaysToWeekStart(currentWeek, 7);
     }
     return weeks;
   }, [nextWeekStart]);

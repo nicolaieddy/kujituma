@@ -202,8 +202,7 @@ export const WeeklyProgressView = () => {
         .single();
 
       // Calculate week end date
-      const weekEnd = new Date(currentWeekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
+      const weekEnd = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 6);
 
       // Create detailed accomplishments with completed objectives
       console.log('Objectives for feed post:', objectives);
@@ -271,7 +270,7 @@ export const WeeklyProgressView = () => {
           priorities: priorities,
           help: '', // Could be enhanced to extract help requests from notes
           week_start: currentWeekStart,
-          week_end: weekEnd.toISOString().split('T')[0],
+          week_end: weekEnd,
           objectives_completed: completedCount,
           total_objectives: totalCount,
           completion_percentage: completionPercentage,
