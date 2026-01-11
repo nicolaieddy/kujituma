@@ -1,11 +1,16 @@
 import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
+import { DuolingoConnectionCard } from "@/components/duolingo/DuolingoConnectionCard";
 import { ActivityMappingCard } from "@/components/strava/ActivityMappingCard";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap } from "lucide-react";
 
 export function IntegrationsSection() {
-  const { isConnected } = useStravaConnection();
+  const { isConnected: isStravaConnected } = useStravaConnection();
+  const { isConnected: isDuolingoConnected } = useDuolingoConnection();
+  
+  const hasAnyConnection = isStravaConnected || isDuolingoConnected;
 
   return (
     <div className="space-y-6">
@@ -20,13 +25,14 @@ export function IntegrationsSection() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <StravaConnectionCard />
-        
-        {isConnected && (
-          <ActivityMappingCard />
-        )}
+        <DuolingoConnectionCard />
       </div>
 
-      {!isConnected && (
+      {hasAnyConnection && (
+        <ActivityMappingCard />
+      )}
+
+      {!hasAnyConnection && (
         <Card className="border-dashed">
           <CardHeader>
             <CardTitle className="text-base">More integrations coming soon</CardTitle>
