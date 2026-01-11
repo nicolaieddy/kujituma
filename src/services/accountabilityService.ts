@@ -362,11 +362,13 @@ class AccountabilityService {
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
-      // Get current week start (Monday)
+      // Get current week start (Monday) using date-fns for reliability
       const now = new Date();
-      const dayOfWeek = now.getDay();
-      const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-      const weekStart = new Date(now.setDate(diff));
+      const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+      // Calculate days to subtract to get to Monday
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - daysToMonday);
       weekStart.setHours(0, 0, 0, 0);
 
       const { data: checkIn, error } = await supabase
