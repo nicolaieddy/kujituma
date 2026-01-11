@@ -379,8 +379,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onOpenChange={setShowCarryOverModal}
         incompleteObjectives={carryOverIncompleteObjectives}
         goals={goals || []}
-        onConfirmCarryOver={(objectiveIds) => {
-          carryOverObjectives(objectiveIds);
+        onConfirmCarryOver={(objectivesWithWeeks) => {
+          carryOverObjectives(objectivesWithWeeks);
           setShowCarryOverModal(false);
         }}
         isCarryingOver={isCarryOverModalCarrying}
@@ -392,18 +392,25 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onOpenChange={setShowCarryOverFromClosedModal}
         incompleteObjectives={closeIncompleteObjectives}
         goals={goals || []}
-        onConfirmCarryOver={async (objectiveIds) => {
-          const nextWeekStart = getNextWeekStart();
-          await WeeklyProgressService.carryOverObjectives(objectiveIds, nextWeekStart);
+        onConfirmCarryOver={async (objectivesWithWeeks) => {
+          await WeeklyProgressService.carryOverObjectivesWithTargets(objectivesWithWeeks);
           setShowCarryOverFromClosedModal(false);
+          
+          // Invalidate queries for all target weeks
+          const targetWeeks = new Set(objectivesWithWeeks.map(o => o.targetWeek));
+          targetWeeks.forEach(() => {
+            // Queries will be invalidated by React Query automatically on navigation
+          });
+          
           toast({
             title: "Success",
-            description: `${objectiveIds.length} objective${objectiveIds.length !== 1 ? 's' : ''} carried over to next week!`,
+            description: `${objectivesWithWeeks.length} objective${objectivesWithWeeks.length !== 1 ? 's' : ''} carried over!`,
           });
         }}
         isCarryingOver={false}
         title="Carry Over to Next Week"
-        description="Select which incomplete objectives from this closed week to carry over to the next week."
+        description="Select which incomplete objectives to carry over and choose their target week."
+        defaultTargetWeek={getNextWeekStart()}
       />
     </div>
   );

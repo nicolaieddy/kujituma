@@ -368,6 +368,51 @@ export class WeeklyProgressService {
     return (newObjectives || []) as WeeklyObjective[];
   }
 
+  /**
+   * Carry over objectives to potentially different target weeks
+   */
+  static async carryOverObjectivesWithTargets(
+    objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]
+  ): Promise<WeeklyObjective[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    if (objectivesWithWeeks.length === 0) return [];
+
+    const objectiveIds = objectivesWithWeeks.map(o => o.objectiveId);
+    const targetWeekMap = new Map(objectivesWithWeeks.map(o => [o.objectiveId, o.targetWeek]));
+
+    const { data: originalObjectives, error: fetchError } = await supabase
+      .from('weekly_objectives')
+      .select('*')
+      .in('id', objectiveIds)
+      .eq('user_id', user.id);
+
+    if (fetchError) throw fetchError;
+
+    if (!originalObjectives || originalObjectives.length === 0) {
+      return [];
+    }
+
+    const objectivesToCreate = originalObjectives.map(obj => ({
+      user_id: user.id,
+      goal_id: obj.goal_id,
+      text: obj.text,
+      week_start: targetWeekMap.get(obj.id) || '',
+      is_completed: false
+    })).filter(obj => obj.week_start); // Filter out any without a target week
+
+    const { data: newObjectives, error: createError } = await supabase
+      .from('weekly_objectives')
+      .insert(objectivesToCreate)
+      .select();
+
+    if (createError) throw createError;
+    return (newObjectives || []) as WeeklyObjective[];
+  }
+
   static async getObjectivesForQuarter(year: number, quarter: number): Promise<WeeklyObjective[]> {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
