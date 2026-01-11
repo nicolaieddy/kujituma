@@ -7,6 +7,16 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter, Reply, Send, Pencil, Trash2, Check } from 'lucide-react';
@@ -64,6 +74,8 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   
   // Delete states
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
@@ -178,7 +190,19 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
       toast.error('Failed to delete check-in');
     } finally {
       setDeletingId(null);
+      setPendingDeleteId(null);
+      setDeleteConfirmOpen(false);
     }
+  };
+
+  const confirmDelete = (checkInId: string) => {
+    setPendingDeleteId(checkInId);
+    setDeleteConfirmOpen(true);
+  };
+
+  const cancelDelete = () => {
+    setPendingDeleteId(null);
+    setDeleteConfirmOpen(false);
   };
 
   const startEditing = (checkIn: CheckInRecord) => {
@@ -592,7 +616,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 px-1.5 text-xs gap-1 opacity-50 hover:opacity-100 text-destructive hover:text-destructive"
-                                onClick={() => handleDelete(checkIn.id)}
+                                onClick={() => confirmDelete(checkIn.id)}
                                 disabled={deletingId === checkIn.id}
                               >
                                 <Trash2 className="h-3 w-3" />
@@ -670,6 +694,27 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
           )}
         </Button>
       )}
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete check-in?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your check-in message and any reactions to it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelDelete}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => pendingDeleteId && handleDelete(pendingDeleteId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingId ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 });
