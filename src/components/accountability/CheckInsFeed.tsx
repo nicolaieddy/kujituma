@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,31 +6,42 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
+import { Textarea } from '@/components/ui/textarea';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter } from 'lucide-react';
+import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter, Reply, Send } from 'lucide-react';
 import { format, formatDistanceToNow, isSameWeek, startOfWeek, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { DateRange } from 'react-day-picker';
+import { toast } from 'sonner';
 
 const REACTIONS = ['👍', '❤️', '🔥', '👏', '💪'];
+
+export interface CheckInsFeedRef {
+  refresh: () => Promise<void>;
+}
 
 interface CheckInsFeedProps {
   partnershipId: string;
   currentUserId: string;
+  currentUserProfile?: {
+    full_name: string;
+    avatar_url: string | null;
+  };
   partnerName: string;
   maxVisible?: number;
   onRecordCheckIn?: () => void;
 }
 
-export const CheckInsFeed = ({ 
+export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({ 
   partnershipId, 
   currentUserId,
+  currentUserProfile,
   partnerName,
   maxVisible = 5,
   onRecordCheckIn
-}: CheckInsFeedProps) => {
+}, ref) => {
   const { user } = useAuth();
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,12 +51,22 @@ export const CheckInsFeed = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Reply states
+  const [replyingToId, setReplyingToId] = useState<string | null>(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isSubmittingReply, setIsSubmittingReply] = useState(false);
 
-  const fetchCheckIns = async () => {
+  const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
     setCheckIns(data);
     setLoading(false);
-  };
+  }, [partnershipId]);
+
+  // Expose refresh method via ref
+  useImperativeHandle(ref, () => ({
+    refresh: fetchCheckIns
+  }), [fetchCheckIns]);
 
   useEffect(() => {
     setLoading(true);
@@ -94,8 +115,26 @@ export const CheckInsFeed = ({
     await accountabilityService.toggleReaction(checkInId, reaction);
   };
 
+  const handleReply = async (checkInId: string) => {
+    if (!replyMessage.trim() || isSubmittingReply) return;
+    
+    try {
+      setIsSubmittingReply(true);
+      await accountabilityService.recordCheckIn(partnershipId, replyMessage.trim());
+      setReplyMessage('');
+      setReplyingToId(null);
+      await fetchCheckIns();
+      toast.success('Reply sent!');
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      toast.error('Failed to send reply');
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  };
+
   const getInitials = (name: string) =>
-    name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
 
   // Group check-ins by week for context
   const getWeekLabel = (weekStart: string, createdAt: string) => {
@@ -289,7 +328,12 @@ export const CheckInsFeed = ({
           <div className="space-y-4">
             {visibleCheckIns.map((checkIn, index) => {
               const isCurrentUser = checkIn.initiated_by === currentUserId;
-              const initiatorName = isCurrentUser ? 'You' : checkIn.initiator_profile?.full_name || partnerName;
+              const initiatorName = isCurrentUser 
+                ? (currentUserProfile?.full_name || 'You')
+                : (checkIn.initiator_profile?.full_name || partnerName);
+              const initiatorAvatar = isCurrentUser 
+                ? currentUserProfile?.avatar_url 
+                : checkIn.initiator_profile?.avatar_url;
               const weekLabel = getWeekLabel(checkIn.week_start, checkIn.created_at);
               
               // Get user's reactions for quick lookup
@@ -317,14 +361,14 @@ export const CheckInsFeed = ({
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
                         <Avatar className="h-6 w-6 flex-shrink-0">
-                          {!isCurrentUser && checkIn.initiator_profile?.avatar_url ? (
-                            <AvatarImage src={checkIn.initiator_profile.avatar_url} />
-                          ) : null}
+                          {initiatorAvatar && (
+                            <AvatarImage src={initiatorAvatar} />
+                          )}
                           <AvatarFallback className={cn(
                             "text-[10px] font-medium",
                             isCurrentUser ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
                           )}>
-                            {isCurrentUser ? 'You' : getInitials(initiatorName)}
+                            {getInitials(initiatorName)}
                           </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
@@ -363,7 +407,7 @@ export const CheckInsFeed = ({
                       </div>
                     )}
                     
-                    {/* Reactions */}
+                    {/* Reactions and Reply */}
                     <div className="flex items-center gap-1 mt-2 ml-8 flex-wrap">
                       {REACTIONS.map((emoji) => {
                         const emojiReactions = (checkIn.reactions || []).filter(r => r.reaction === emoji);
@@ -399,7 +443,62 @@ export const CheckInsFeed = ({
                           </Tooltip>
                         );
                       })}
+                      
+                      {/* Reply button - only show for partner's check-ins */}
+                      {!isCurrentUser && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 px-1.5 text-xs gap-1 opacity-50 hover:opacity-100"
+                              onClick={() => setReplyingToId(replyingToId === checkIn.id ? null : checkIn.id)}
+                            >
+                              <Reply className="h-3 w-3" />
+                              Reply
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            Reply to this check-in
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
                     </div>
+                    
+                    {/* Reply input */}
+                    {replyingToId === checkIn.id && (
+                      <div className="mt-3 ml-8 flex gap-2">
+                        <Avatar className="h-6 w-6 flex-shrink-0">
+                          {currentUserProfile?.avatar_url && (
+                            <AvatarImage src={currentUserProfile.avatar_url} />
+                          )}
+                          <AvatarFallback className="text-[10px] font-medium bg-primary/20 text-primary">
+                            {getInitials(currentUserProfile?.full_name || 'You')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 flex gap-2">
+                          <Textarea
+                            placeholder={`Reply to ${checkIn.initiator_profile?.full_name || partnerName}...`}
+                            value={replyMessage}
+                            onChange={(e) => setReplyMessage(e.target.value)}
+                            className="min-h-[60px] text-sm resize-none"
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                handleReply(checkIn.id);
+                              }
+                            }}
+                          />
+                          <Button
+                            size="sm"
+                            onClick={() => handleReply(checkIn.id)}
+                            disabled={!replyMessage.trim() || isSubmittingReply}
+                            className="h-auto self-end"
+                          >
+                            <Send className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
@@ -431,4 +530,6 @@ export const CheckInsFeed = ({
       )}
     </div>
   );
-};
+});
+
+CheckInsFeed.displayName = 'CheckInsFeed';
