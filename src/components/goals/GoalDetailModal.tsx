@@ -6,6 +6,7 @@ import { Goal, GoalStatus } from "@/types/goals";
 import { GoalForm } from "./GoalForm";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
+import { IntegrationsPromptCard } from "./IntegrationsPromptCard";
 import { CreateGoalUpdateModal } from "@/components/community/CreateGoalUpdateModal";
 import { LanguageLearningIntegration } from "./LanguageLearningIntegration";
 import { Edit, CheckCircle, Play, Clock, Trash2, Share2 } from "lucide-react";
@@ -104,6 +105,12 @@ export const GoalDetailModal = ({
             </div>
           ) : (
             <div className="mt-6 space-y-6">
+              {/* Integrations prompt for users who haven't set up integrations */}
+              <IntegrationsPromptCard 
+                category={goal.category} 
+                hasHabits={goal.habit_items && goal.habit_items.length > 0}
+              />
+              
               {/* Language Learning Integration */}
               {goal.category === 'Language Learning' && (
                 <LanguageLearningIntegration />
