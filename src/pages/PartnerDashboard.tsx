@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
-import { WeekCheckInsSection } from '@/components/accountability/WeekCheckInsSection';
+import { CheckInsFeed } from '@/components/accountability/CheckInsFeed';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -485,20 +485,24 @@ const PartnerDashboard = () => {
                     </div>
                   )}
 
-                  {/* Check-ins for this week */}
-                  {partnershipDetails && user && (
-                    <div className="mt-6 pt-6 border-t border-border">
-                      <WeekCheckInsSection
-                        partnershipId={partnershipDetails.id}
-                        weekStart={getWeekStartString(selectedWeekStart)}
-                        currentUserId={user.id}
-                      />
-                    </div>
-                  )}
                 </>
               )}
             </CardContent>
           </Card>
+
+          {/* Check-ins Feed - Full History */}
+          {partnershipDetails && partnerProfile && (
+            <Card className="border-border">
+              <CardContent className="pt-6">
+                <CheckInsFeed
+                  partnershipId={partnershipDetails.id}
+                  currentUserId={user.id}
+                  partnerName={partnerProfile.full_name}
+                  maxVisible={5}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Active Goals */}
           <Card className="border-border">
