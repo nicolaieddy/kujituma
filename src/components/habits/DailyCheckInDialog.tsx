@@ -4,6 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -24,9 +26,11 @@ import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useGoals } from "@/hooks/useGoals";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
 import { useWeeklyObjectives } from "@/hooks/useWeeklyObjectives";
+import { useDuePartnerCheckIns } from "@/hooks/useDuePartnerCheckIns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Zap, Target, AlertTriangle, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Zap, Target, AlertTriangle, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock } from "lucide-react";
 import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
@@ -81,6 +85,8 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const { user } = useAuth();
   const { submitCheckIn, isSubmitting, todayCheckIn, isCached, lastSync } = useDailyCheckIn();
   const { goals } = useGoals();
+  const { overdueCheckIns, dueTodayCheckIns, hasOverdue, hasDueToday } = useDuePartnerCheckIns();
+  const navigate = useNavigate();
   
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const weekStartStr = format(currentWeekStart, 'yyyy-MM-dd');
@@ -372,6 +378,77 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
                     </p>
                   )}
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Partner Check-in Reminders */}
+      {(hasOverdue || hasDueToday) && (
+        <div className="space-y-3">
+          <Label className="flex items-center gap-2">
+            <Users className="h-4 w-4 text-primary" />
+            Partner Check-ins
+            {hasOverdue && (
+              <Badge variant="destructive" className="text-xs">
+                {overdueCheckIns.length} overdue
+              </Badge>
+            )}
+          </Label>
+          <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+            {overdueCheckIns.map((checkIn) => (
+              <div
+                key={checkIn.partner_id}
+                className="flex items-center gap-3 p-2 rounded-md bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/20 transition-colors"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate(`/partner/${checkIn.partner_id}`);
+                }}
+              >
+                <Avatar className="h-8 w-8">
+                  {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
+                  <AvatarFallback className="text-xs bg-destructive/20 text-destructive">
+                    {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{checkIn.partner_name}</p>
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {Math.abs(checkIn.days_until_due)} day{Math.abs(checkIn.days_until_due) !== 1 ? 's' : ''} overdue
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
+                  {checkIn.cadence.replace('_', ' ')}
+                </Badge>
+              </div>
+            ))}
+            {dueTodayCheckIns.map((checkIn) => (
+              <div
+                key={checkIn.partner_id}
+                className="flex items-center gap-3 p-2 rounded-md bg-warning/10 border border-warning/20 cursor-pointer hover:bg-warning/20 transition-colors"
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate(`/partner/${checkIn.partner_id}`);
+                }}
+              >
+                <Avatar className="h-8 w-8">
+                  {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
+                  <AvatarFallback className="text-xs bg-warning/20 text-warning-foreground">
+                    {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{checkIn.partner_name}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    Due today
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-xs capitalize flex-shrink-0">
+                  {checkIn.cadence.replace('_', ' ')}
+                </Badge>
               </div>
             ))}
           </div>

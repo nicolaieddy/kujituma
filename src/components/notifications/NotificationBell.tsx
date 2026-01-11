@@ -3,26 +3,36 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFriends } from '@/hooks/useFriends';
 import { useAccountabilityPartners } from '@/hooks/useAccountabilityPartners';
+import { useDuePartnerCheckIns } from '@/hooks/useDuePartnerCheckIns';
 import { NotificationItem } from './NotificationItem';
-import { Bell, Users } from 'lucide-react';
+import { Bell, Users, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 export const NotificationBell = () => {
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
   const { friendRequests } = useFriends();
   const { partnerRequests } = useAccountabilityPartners();
+  const { overdueCheckIns, dueTodayCheckIns, hasOverdue, hasDueToday } = useDuePartnerCheckIns();
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   // Calculate pending requests count
   const pendingFriendRequests = friendRequests.received?.length || 0;
   const pendingPartnerRequests = partnerRequests.received?.length || 0;
   const totalPendingRequests = pendingFriendRequests + pendingPartnerRequests;
+  
+  // Count overdue partner check-ins as urgent notifications
+  const overdueCount = overdueCheckIns.length;
 
-  // Total badge count (unread notifications + pending requests that need action)
-  const totalBadgeCount = unreadCount;
+  // Total badge count (unread notifications + overdue check-ins)
+  const totalBadgeCount = unreadCount + overdueCount;
 
   const handleOpenChange = async (open: boolean) => {
     setIsOpen(open);
@@ -83,7 +93,66 @@ export const NotificationBell = () => {
           )}
         </div>
         <ScrollArea className="max-h-96 overflow-y-auto">
-          {notifications.length === 0 ? (
+          {/* Overdue Partner Check-ins Section */}
+          {(hasOverdue || hasDueToday) && (
+            <div className="p-3 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
+                <Users className="h-3 w-3" />
+                Partner Check-ins
+              </div>
+              {overdueCheckIns.map((checkIn) => (
+                <div
+                  key={checkIn.partner_id}
+                  className="flex items-center gap-3 p-2 rounded-md bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate(`/partner/${checkIn.partner_id}`);
+                  }}
+                >
+                  <Avatar className="h-8 w-8">
+                    {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
+                    <AvatarFallback className="text-xs bg-destructive/20 text-destructive">
+                      {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{checkIn.partner_name}</p>
+                    <p className="text-xs text-destructive flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      {Math.abs(checkIn.days_until_due)} day{Math.abs(checkIn.days_until_due) !== 1 ? 's' : ''} overdue
+                    </p>
+                  </div>
+                </div>
+              ))}
+              {dueTodayCheckIns.map((checkIn) => (
+                <div
+                  key={checkIn.partner_id}
+                  className="flex items-center gap-3 p-2 rounded-md bg-warning/10 border border-warning/20 cursor-pointer hover:bg-warning/15 transition-colors"
+                  onClick={() => {
+                    setIsOpen(false);
+                    navigate(`/partner/${checkIn.partner_id}`);
+                  }}
+                >
+                  <Avatar className="h-8 w-8">
+                    {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
+                    <AvatarFallback className="text-xs bg-warning/20">
+                      {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{checkIn.partner_name}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      Due today
+                    </p>
+                  </div>
+                </div>
+              ))}
+              <Separator className="my-2" />
+            </div>
+          )}
+          
+          {notifications.length === 0 && !hasOverdue && !hasDueToday ? (
             <div className="p-4 text-center text-muted-foreground">
               No notifications yet
             </div>
