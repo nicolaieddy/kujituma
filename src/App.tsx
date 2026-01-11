@@ -44,7 +44,7 @@ const Feed = lazy(() => import("./pages/Feed"));
 const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Goals = lazy(() => import("./pages/Goals"));
-const Profile = lazy(() => import("./pages/Profile"));
+const ProfileEntry = lazy(() => import("./pages/ProfileEntry"));
 const ProfileLite = lazy(() => import("./pages/ProfileLite"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
@@ -190,8 +190,8 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/profile/:userId" element={<Profile />} />
+          <Route path="/profile" element={<ProfileEntry />} />
+          <Route path="/profile/:userId" element={<ProfileEntry />} />
           <Route path="/profile-lite" element={<ProfileLite />} />
           <Route path="/profile-lite/:userId" element={<ProfileLite />} />
           {/* Rituals is now part of Analytics page */}
