@@ -15,8 +15,9 @@ import { useDailyStreaks } from "@/hooks/useDailyStreaks";
 import { useSyncedActivities } from "@/hooks/useSyncedActivities";
 import { useActivityMappings } from "@/hooks/useActivityMappings";
 import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
-import { celebrateGoalComplete } from "@/utils/confetti";
+import { celebrateGoalComplete, celebrateWeekComplete } from "@/utils/confetti";
 import { hapticSuccess } from "@/utils/haptic";
+import { toast } from "@/hooks/use-toast";
 
 interface HabitsDueThisWeekProps {
   habits: HabitStats[];
@@ -59,9 +60,24 @@ export const HabitsDueThisWeek = ({
   const legacyCompletedCount = legacyHabitsWithStatus.filter(h => h.isCompletedThisWeek).length;
   const totalLegacyCount = legacyHabitsWithStatus.length;
 
-  // Count habit items completions
+  // Helper functions for frequency checks (defined inline to use before main helpers)
+  const getDaysForFrequency = (frequency: string): number[] => {
+    switch (frequency) {
+      case 'daily': return [0, 1, 2, 3, 4, 5, 6];
+      case 'weekdays': return [0, 1, 2, 3, 4];
+      default: return [0, 1, 2, 3, 4, 5, 6];
+    }
+  };
+  
+  const isFrequencyDaily = (frequency: string): boolean => {
+    return frequency === 'daily' || frequency === 'weekdays';
+  };
+
+  // Count habit items completions for today AND for the week
   let habitItemsCompletedToday = 0;
   let habitItemsTotal = 0;
+  let habitItemsCompletedThisWeek = 0;
+  let habitItemsExpectedThisWeek = 0;
   const todayIndex = weekDates.findIndex(d => isToday(d));
   
   goalsWithHabitItems.forEach(h => {
@@ -72,21 +88,64 @@ export const HabitsDueThisWeek = ({
       if (todayIndex >= 0 && status[todayIndex]) {
         habitItemsCompletedToday++;
       }
+      
+      // Count weekly expected and completed based on frequency
+      const daysToCheck = getDaysForFrequency(item.frequency);
+      const isDailyType = isFrequencyDaily(item.frequency);
+      
+      if (isDailyType) {
+        // For daily/weekday habits, count expected days up to today
+        const expectedDays = daysToCheck.filter(dayIdx => {
+          const date = weekDates[dayIdx];
+          return date && (isBefore(date, new Date()) || isToday(date));
+        }).length;
+        habitItemsExpectedThisWeek += expectedDays;
+        
+        // Count completed days
+        daysToCheck.forEach(dayIdx => {
+          if (status[dayIdx]) {
+            habitItemsCompletedThisWeek++;
+          }
+        });
+      } else {
+        // For weekly/other habits, just need 1 completion
+        habitItemsExpectedThisWeek += 1;
+        if (Object.values(status).some(Boolean)) {
+          habitItemsCompletedThisWeek++;
+        }
+      }
     });
   });
 
   // Track if all habits for today are complete and celebrate
   const allTodayHabitsComplete = habitItemsTotal > 0 && habitItemsCompletedToday === habitItemsTotal;
-  const prevAllCompleteRef = useRef(allTodayHabitsComplete);
+  const prevAllTodayCompleteRef = useRef(allTodayHabitsComplete);
+  
+  // Track if all weekly habit expectations are met
+  const allWeeklyHabitsComplete = habitItemsExpectedThisWeek > 0 && habitItemsCompletedThisWeek >= habitItemsExpectedThisWeek;
+  const prevAllWeeklyCompleteRef = useRef(allWeeklyHabitsComplete);
   
   useEffect(() => {
-    // Only celebrate when transitioning from incomplete to complete
-    if (allTodayHabitsComplete && !prevAllCompleteRef.current) {
+    // Celebrate daily completion
+    if (allTodayHabitsComplete && !prevAllTodayCompleteRef.current) {
       celebrateGoalComplete();
       hapticSuccess();
     }
-    prevAllCompleteRef.current = allTodayHabitsComplete;
+    prevAllTodayCompleteRef.current = allTodayHabitsComplete;
   }, [allTodayHabitsComplete]);
+  
+  useEffect(() => {
+    // Celebrate weekly completion - bigger celebration!
+    if (allWeeklyHabitsComplete && !prevAllWeeklyCompleteRef.current) {
+      celebrateWeekComplete();
+      hapticSuccess();
+      toast({
+        title: "🎉 Perfect Week!",
+        description: "You've completed all your habits for the week!",
+      });
+    }
+    prevAllWeeklyCompleteRef.current = allWeeklyHabitsComplete;
+  }, [allWeeklyHabitsComplete]);
 
   const toggleGoalExpanded = (goalId: string) => {
     const newExpanded = new Set(expandedGoals);

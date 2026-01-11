@@ -2,7 +2,6 @@ import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, ChevronLeft, ChevronRight, ClipboardList, Sun, CalendarDays, CheckCircle } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { StreakCounter } from "@/components/habits/StreakCounter";
 import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
@@ -174,9 +173,6 @@ export const WeekHeader = ({
                 </TooltipContent>
               </Tooltip>
             )}
-            
-            {/* Streak Counter - only show on current week */}
-            {isCurrentWeek && <StreakCounter variant="compact" />}
             
             <div className="flex items-center space-x-2">
               <Calendar className="h-5 w-5 text-muted-foreground" />
