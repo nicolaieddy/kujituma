@@ -4,14 +4,17 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Goal, HabitItem, CustomSchedule } from "@/types/goals";
-import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap } from "lucide-react";
+import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap, Link } from "lucide-react";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import { useActivityMappings } from "@/hooks/useActivityMappings";
+import { useActivityMappings, STRAVA_ACTIVITY_TYPES } from "@/hooks/useActivityMappings";
+import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 
 type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
@@ -37,13 +40,17 @@ const SortableHabit = ({
   onRemove, 
   getFrequencyLabel,
   onEdit,
-  stravaMapping
+  stravaMapping,
+  isStravaConnected,
+  onLinkStrava
 }: { 
   habit: HabitItem; 
   onRemove: (id: string) => void;
   getFrequencyLabel: (h: HabitItem) => string;
   onEdit: (habit: HabitItem) => void;
   stravaMapping: { strava_activity_type: string } | undefined;
+  isStravaConnected: boolean;
+  onLinkStrava: (habit: HabitItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
@@ -68,8 +75,7 @@ const SortableHabit = ({
       </button>
       <span className="flex-1 text-sm">{habit.text}</span>
       
-      {/* Removed nested TooltipProvider - using App-level provider */}
-      {stravaMapping && (
+      {stravaMapping ? (
         <Tooltip>
           <TooltipTrigger asChild>
             <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
@@ -81,6 +87,16 @@ const SortableHabit = ({
             <p>Auto-tracked from Strava ({stravaMapping.strava_activity_type})</p>
           </TooltipContent>
         </Tooltip>
+      ) : isStravaConnected && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={(e) => { e.stopPropagation(); onLinkStrava(habit); }}
+          className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+        >
+          <Link className="h-3 w-3 mr-1" />
+          Link Strava
+        </Button>
       )}
       
       <Badge variant="outline" className="text-xs shrink-0">{getFrequencyLabel(habit)}</Badge>
@@ -97,7 +113,8 @@ const SortableHabit = ({
 };
 
 export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectionProps) => {
-  const { getMappingForHabitItem } = useActivityMappings();
+  const { getMappingForHabitItem, createMapping } = useActivityMappings();
+  const { isConnected: isStravaConnected } = useStravaConnection();
   const [newHabitText, setNewHabitText] = useState("");
   const [newHabitFrequency, setNewHabitFrequency] = useState<HabitFrequency>("weekly");
   const [newHabitCustomSchedule, setNewHabitCustomSchedule] = useState<CustomSchedule | undefined>();
@@ -108,12 +125,35 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
   const [editingHabitText, setEditingHabitText] = useState("");
   const [editingHabitFrequency, setEditingHabitFrequency] = useState<HabitFrequency>("weekly");
 
+  // Strava mapping dialog state
+  const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
+  const [stravaHabit, setStravaHabit] = useState<HabitItem | null>(null);
+  const [selectedActivityType, setSelectedActivityType] = useState("");
+  const [minDuration, setMinDuration] = useState(0);
+  const [isLinking, setIsLinking] = useState(false);
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
   );
 
   const habitItems = goal.habit_items || [];
+
+  const handleOpenStravaDialog = (habit: HabitItem) => {
+    setStravaHabit(habit);
+    setSelectedActivityType("");
+    setMinDuration(0);
+    setStravaDialogOpen(true);
+  };
+
+  const handleLinkStrava = async () => {
+    if (!stravaHabit || !selectedActivityType) return;
+    setIsLinking(true);
+    await createMapping(selectedActivityType, goal.id, stravaHabit.id, minDuration);
+    setIsLinking(false);
+    setStravaDialogOpen(false);
+    setStravaHabit(null);
+  };
 
   const getHabitFrequencyLabel = (habit: HabitItem): string => {
     if (habit.frequency === 'custom' && habit.customSchedule) return formatCustomSchedule(habit.customSchedule);
@@ -241,6 +281,8 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
                       getFrequencyLabel={getHabitFrequencyLabel}
                       onEdit={handleStartEditHabit}
                       stravaMapping={getMappingForHabitItem(habit.id)}
+                      isStravaConnected={isStravaConnected}
+                      onLinkStrava={handleOpenStravaDialog}
                     />
                   );
                 })}
@@ -288,6 +330,70 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
         onSave={(schedule) => setNewHabitCustomSchedule(schedule)}
         initialSchedule={newHabitCustomSchedule}
       />
+
+      {/* Inline Strava mapping dialog */}
+      <Dialog open={stravaDialogOpen} onOpenChange={setStravaDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="h-5 w-5 text-orange-500" />
+              Link to Strava
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-sm text-muted-foreground">
+              Auto-complete "{stravaHabit?.text}" when you log this activity type in Strava.
+            </p>
+            
+            <div className="space-y-2">
+              <Label>Activity Type</Label>
+              <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Strava activity..." />
+                </SelectTrigger>
+                <SelectContent className="bg-background border z-[300]">
+                  {STRAVA_ACTIVITY_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Minimum Duration (optional)</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  value={minDuration || ""}
+                  onChange={(e) => setMinDuration(Number(e.target.value))}
+                  placeholder="0"
+                  className="w-24"
+                />
+                <span className="text-sm text-muted-foreground">minutes</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Only count activities longer than this duration
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setStravaDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleLinkStrava} 
+                disabled={!selectedActivityType || isLinking}
+                className="bg-orange-500 hover:bg-orange-600"
+              >
+                {isLinking ? "Linking..." : "Link Activity"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
