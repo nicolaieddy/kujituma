@@ -6,6 +6,7 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { accountabilityService } from "@/services/accountabilityService";
 import { DashboardHeader } from "@/components/layout/DashboardHeader";
+import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -543,15 +544,13 @@ const Profile = () => {
   // Main render
   // ────────────────────────────────────────────────────────────────────────────
 
-  // If editing mode, render ProfileEditForm (keep existing heavy implementation – we don't need it on iOS)
+  // If editing mode, render ProfileEditForm
   if (isEditing && isOwnProfile && profile) {
-    // Dynamically import the edit form only when needed to avoid iOS crash during module init
-    const ProfileEditFormLazy = require("@/components/profile/ProfileEditForm").ProfileEditForm;
     return (
       <div className="min-h-screen bg-background">
         <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
         <div className="container mx-auto px-4 py-8">
-          <ProfileEditFormLazy
+          <ProfileEditForm
             profile={profile}
             onUpdate={(updated: Profile) => {
               setProfile(updated);
