@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useGoals } from "@/hooks/useGoals";
+import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 
 import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
@@ -26,6 +27,7 @@ const Goals = () => {
   const { isAdmin } = useAdminStatus();
   const isMobile = useIsMobile();
   const { lastSync, isOffline } = useOfflineStatus();
+  const { connection: duolingoConnection } = useDuolingoConnection();
   const {
     activeGoals,
     deprioritizedGoals,
@@ -294,6 +296,7 @@ const Goals = () => {
                       onDeprioritizeAll={handleDeprioritizeAll}
                       onReorder={handleGoalReorder}
                       isLoading={goalsLoading}
+                      duolingoStreak={duolingoConnection?.current_streak}
                     />
                   )}
                 </>
