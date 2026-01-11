@@ -218,10 +218,11 @@ export const CarryOverObjectivesModal = ({
                                   <span className="text-xs text-muted-foreground">Move to:</span>
                                   <Select
                                     value={targetWeek}
+                                    defaultValue={nextWeekStart}
                                     onValueChange={(value) => handleChangeTargetWeek(objective.id, value)}
                                   >
                                     <SelectTrigger className="h-8 w-auto min-w-[200px] text-xs">
-                                      <SelectValue />
+                                      <SelectValue placeholder={futureWeeks[0]?.label || "Select week"} />
                                     </SelectTrigger>
                                     <SelectContent>
                                       {futureWeeks.map((week) => (
