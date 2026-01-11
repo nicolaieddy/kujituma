@@ -34,26 +34,51 @@ interface GoalDetailHabitsSectionProps {
   onEdit: (goal: Goal) => void;
 }
 
+// Integration types - extensible for future integrations
+type IntegrationType = 'strava' | 'garmin' | 'apple_health' | 'google_fit';
+
+interface IntegrationConfig {
+  id: IntegrationType;
+  name: string;
+  icon: typeof Zap;
+  color: string;
+  bgColor: string;
+}
+
+const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
+  strava: {
+    id: 'strava',
+    name: 'Strava',
+    icon: Zap,
+    color: 'text-orange-600 dark:text-orange-400',
+    bgColor: 'bg-orange-100 dark:bg-orange-900/30',
+  },
+  // Future integrations can be added here
+  // garmin: { id: 'garmin', name: 'Garmin', icon: Watch, color: '...', bgColor: '...' },
+};
+
 // Sortable habit item component
 const SortableHabit = ({ 
   habit, 
   onRemove, 
   getFrequencyLabel,
   onEdit,
-  stravaMapping,
-  isStravaConnected,
-  onLinkStrava
+  linkedIntegration,
+  availableIntegrations,
+  onLinkIntegration
 }: { 
   habit: HabitItem; 
   onRemove: (id: string) => void;
   getFrequencyLabel: (h: HabitItem) => string;
   onEdit: (habit: HabitItem) => void;
-  stravaMapping: { strava_activity_type: string } | undefined;
-  isStravaConnected: boolean;
-  onLinkStrava: (habit: HabitItem) => void;
+  linkedIntegration: { type: string; activityType: string } | null;
+  availableIntegrations: IntegrationType[];
+  onLinkIntegration: (habit: HabitItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
+
+  const integrationConfig = linkedIntegration ? INTEGRATION_CONFIGS[linkedIntegration.type] : null;
 
   return (
     <div
@@ -75,27 +100,27 @@ const SortableHabit = ({
       </button>
       <span className="flex-1 text-sm">{habit.text}</span>
       
-      {stravaMapping ? (
+      {linkedIntegration && integrationConfig ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
-              <Zap className="h-3 w-3" />
-              <span className="text-xs font-medium">Strava</span>
+            <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full", integrationConfig.bgColor, integrationConfig.color)}>
+              <integrationConfig.icon className="h-3 w-3" />
+              <span className="text-xs font-medium">{integrationConfig.name}</span>
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Auto-tracked from Strava ({stravaMapping.strava_activity_type})</p>
+            <p>Auto-tracked from {integrationConfig.name} ({linkedIntegration.activityType})</p>
           </TooltipContent>
         </Tooltip>
-      ) : isStravaConnected && (
+      ) : availableIntegrations.length > 0 && (
         <Button
           variant="ghost"
           size="sm"
-          onClick={(e) => { e.stopPropagation(); onLinkStrava(habit); }}
-          className="h-6 px-2 text-xs text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-900/20"
+          onClick={(e) => { e.stopPropagation(); onLinkIntegration(habit); }}
+          className="h-6 px-2 text-xs text-muted-foreground hover:text-foreground"
         >
           <Link className="h-3 w-3 mr-1" />
-          Link Strava
+          Link
         </Button>
       )}
       
@@ -125,12 +150,18 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
   const [editingHabitText, setEditingHabitText] = useState("");
   const [editingHabitFrequency, setEditingHabitFrequency] = useState<HabitFrequency>("weekly");
 
-  // Strava mapping dialog state
-  const [stravaDialogOpen, setStravaDialogOpen] = useState(false);
-  const [stravaHabit, setStravaHabit] = useState<HabitItem | null>(null);
+  // Integration linking dialog state
+  const [integrationDialogOpen, setIntegrationDialogOpen] = useState(false);
+  const [linkingHabit, setLinkingHabit] = useState<HabitItem | null>(null);
+  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationType | "">("");
   const [selectedActivityType, setSelectedActivityType] = useState("");
   const [minDuration, setMinDuration] = useState(0);
   const [isLinking, setIsLinking] = useState(false);
+
+  // Determine available integrations
+  const availableIntegrations: IntegrationType[] = [];
+  if (isStravaConnected) availableIntegrations.push('strava');
+  // Future: if (isGarminConnected) availableIntegrations.push('garmin');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -139,20 +170,37 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
 
   const habitItems = goal.habit_items || [];
 
-  const handleOpenStravaDialog = (habit: HabitItem) => {
-    setStravaHabit(habit);
-    setSelectedActivityType("");
-    setMinDuration(0);
-    setStravaDialogOpen(true);
+  // Get linked integration for a habit
+  const getLinkedIntegration = (habitId: string): { type: string; activityType: string } | null => {
+    const stravaMapping = getMappingForHabitItem(habitId);
+    if (stravaMapping) {
+      return { type: 'strava', activityType: stravaMapping.strava_activity_type };
+    }
+    // Future: check other integrations
+    return null;
   };
 
-  const handleLinkStrava = async () => {
-    if (!stravaHabit || !selectedActivityType) return;
+  const handleOpenIntegrationDialog = (habit: HabitItem) => {
+    setLinkingHabit(habit);
+    // Auto-select if only one integration available
+    setSelectedIntegration(availableIntegrations.length === 1 ? availableIntegrations[0] : "");
+    setSelectedActivityType("");
+    setMinDuration(0);
+    setIntegrationDialogOpen(true);
+  };
+
+  const handleLinkIntegration = async () => {
+    if (!linkingHabit || !selectedActivityType || !selectedIntegration) return;
     setIsLinking(true);
-    await createMapping(selectedActivityType, goal.id, stravaHabit.id, minDuration);
+    
+    if (selectedIntegration === 'strava') {
+      await createMapping(selectedActivityType, goal.id, linkingHabit.id, minDuration);
+    }
+    // Future: handle other integrations
+    
     setIsLinking(false);
-    setStravaDialogOpen(false);
-    setStravaHabit(null);
+    setIntegrationDialogOpen(false);
+    setLinkingHabit(null);
   };
 
   const getHabitFrequencyLabel = (habit: HabitItem): string => {
@@ -280,9 +328,9 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
                       onRemove={handleRemoveHabit} 
                       getFrequencyLabel={getHabitFrequencyLabel}
                       onEdit={handleStartEditHabit}
-                      stravaMapping={getMappingForHabitItem(habit.id)}
-                      isStravaConnected={isStravaConnected}
-                      onLinkStrava={handleOpenStravaDialog}
+                      linkedIntegration={getLinkedIntegration(habit.id)}
+                      availableIntegrations={availableIntegrations}
+                      onLinkIntegration={handleOpenIntegrationDialog}
                     />
                   );
                 })}
@@ -331,62 +379,92 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
         initialSchedule={newHabitCustomSchedule}
       />
 
-      {/* Inline Strava mapping dialog */}
-      <Dialog open={stravaDialogOpen} onOpenChange={setStravaDialogOpen}>
+      {/* Integration linking dialog */}
+      <Dialog open={integrationDialogOpen} onOpenChange={setIntegrationDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Zap className="h-5 w-5 text-orange-500" />
-              Link to Strava
+              <Link className="h-5 w-5 text-primary" />
+              Link to Integration
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <p className="text-sm text-muted-foreground">
-              Auto-complete "{stravaHabit?.text}" when you log this activity type in Strava.
+              Auto-complete "{linkingHabit?.text}" when tracked by an external app.
             </p>
-            
-            <div className="space-y-2">
-              <Label>Activity Type</Label>
-              <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select Strava activity..." />
-                </SelectTrigger>
-                <SelectContent className="bg-background border z-[300]">
-                  {STRAVA_ACTIVITY_TYPES.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
 
-            <div className="space-y-2">
-              <Label>Minimum Duration (optional)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  type="number"
-                  min="0"
-                  value={minDuration || ""}
-                  onChange={(e) => setMinDuration(Number(e.target.value))}
-                  placeholder="0"
-                  className="w-24"
-                />
-                <span className="text-sm text-muted-foreground">minutes</span>
+            {/* Integration selector (show if multiple available) */}
+            {availableIntegrations.length > 1 && (
+              <div className="space-y-2">
+                <Label>Integration</Label>
+                <Select value={selectedIntegration} onValueChange={(v) => { setSelectedIntegration(v as IntegrationType); setSelectedActivityType(""); }}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select integration..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-[300]">
+                    {availableIntegrations.map((integ) => {
+                      const config = INTEGRATION_CONFIGS[integ];
+                      return (
+                        <SelectItem key={integ} value={integ}>
+                          <span className="flex items-center gap-2">
+                            <config.icon className="h-4 w-4" />
+                            {config.name}
+                          </span>
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Only count activities longer than this duration
-              </p>
-            </div>
+            )}
+
+            {/* Activity type selector - Strava */}
+            {selectedIntegration === 'strava' && (
+              <div className="space-y-2">
+                <Label>Activity Type</Label>
+                <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select activity type..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-[300]">
+                    {STRAVA_ACTIVITY_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Duration filter (optional) */}
+            {selectedIntegration && (
+              <div className="space-y-2">
+                <Label>Minimum Duration (optional)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    type="number"
+                    min="0"
+                    value={minDuration || ""}
+                    onChange={(e) => setMinDuration(Number(e.target.value))}
+                    placeholder="0"
+                    className="w-24"
+                  />
+                  <span className="text-sm text-muted-foreground">minutes</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Only count activities longer than this duration
+                </p>
+              </div>
+            )}
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => setStravaDialogOpen(false)}>
+              <Button variant="outline" onClick={() => setIntegrationDialogOpen(false)}>
                 Cancel
               </Button>
               <Button 
-                onClick={handleLinkStrava} 
-                disabled={!selectedActivityType || isLinking}
-                className="bg-orange-500 hover:bg-orange-600"
+                onClick={handleLinkIntegration} 
+                disabled={!selectedActivityType || !selectedIntegration || isLinking}
               >
                 {isLinking ? "Linking..." : "Link Activity"}
               </Button>
