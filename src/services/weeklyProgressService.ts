@@ -243,8 +243,19 @@ export class WeeklyProgressService {
   }
 
   /**
+   * Format a date as YYYY-MM-DD in local timezone (NOT UTC)
+   * This is critical - using toISOString() converts to UTC which shifts dates!
+   */
+  static formatLocalDate(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+
+  /**
    * Get the start of the week (Monday) for a given date
-   * Returns date in YYYY-MM-DD format
+   * Returns date in YYYY-MM-DD format in local timezone
    */
   static getWeekStart(date: Date = new Date()): string {
     const startOfWeek = new Date(date.getTime());
@@ -252,10 +263,17 @@ export class WeeklyProgressService {
     const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
     startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
     
-    const year = startOfWeek.getFullYear();
-    const month = String(startOfWeek.getMonth() + 1).padStart(2, '0');
-    const day = String(startOfWeek.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return this.formatLocalDate(startOfWeek);
+  }
+
+  /**
+   * Add days to a week start date and return the new date string
+   */
+  static addDaysToWeekStart(weekStart: string, days: number): string {
+    const [year, month, day] = weekStart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + days);
+    return this.formatLocalDate(date);
   }
 
   static formatWeekRange(weekStart: string): string {
@@ -423,8 +441,8 @@ export class WeeklyProgressService {
     const quarterStart = new Date(year, startMonth, 1);
     const quarterEnd = new Date(year, startMonth + 3, 0);
     
-    const startDate = quarterStart.toISOString().split('T')[0];
-    const endDate = quarterEnd.toISOString().split('T')[0];
+    const startDate = this.formatLocalDate(quarterStart);
+    const endDate = this.formatLocalDate(quarterEnd);
 
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')

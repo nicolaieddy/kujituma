@@ -99,13 +99,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   } = useCarryOverObjectives(currentWeekStart);
 
   const hasIncompleteObjectivesFromPastWeeks = carryOverIncompleteObjectives.length > 0;
-  
+
   // Calculate next week start for carrying over from closed week
   const getNextWeekStart = () => {
-    const [year, month, day] = currentWeekStart.split('-').map(Number);
-    const date = new Date(year, month - 1, day);
-    date.setDate(date.getDate() + 7);
-    return date.toISOString().split('T')[0];
+    return WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 7);
   };
 
   // Incomplete reflections handling

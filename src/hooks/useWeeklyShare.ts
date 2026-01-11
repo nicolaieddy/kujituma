@@ -59,8 +59,7 @@ export const useWeeklyShare = ({
         latestProgressPost?.notes
       );
 
-      const weekEnd = new Date(currentWeekStart);
-      weekEnd.setDate(weekEnd.getDate() + 6);
+      const weekEnd = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 6);
 
       const completedCount = completedObjectives.length;
       const totalCount = objectives?.length || 0;
@@ -76,7 +75,7 @@ export const useWeeklyShare = ({
           help: '',
           reflection: latestProgressPost?.notes?.trim() || '',
           week_start: currentWeekStart,
-          week_end: weekEnd.toISOString().split('T')[0],
+          week_end: weekEnd,
           objectives_completed: completedCount,
           total_objectives: totalCount,
           completion_percentage: completionPercentage,

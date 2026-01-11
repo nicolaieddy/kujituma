@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useGoals } from '@/hooks/useGoals';
 import { GoalUpdatesService } from '@/services/goalUpdatesService';
 import { toast } from 'sonner';
+import { getLocalDateString } from '@/utils/dateUtils';
 
 interface CreateGoalUpdateModalProps {
   isOpen: boolean;
@@ -63,7 +64,7 @@ export const CreateGoalUpdateModal = ({
     setIsSubmitting(true);
 
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
 
       if (askingForHelp) {
         // Create help request update
