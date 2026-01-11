@@ -353,8 +353,8 @@ export const WeeklyProgressView = () => {
     setShowCarryOverModal(true);
   };
 
-  const handleCarryOverObjectives = (objectiveIds: string[]) => {
-    carryOverObjectives(objectiveIds);
+  const handleCarryOverObjectives = (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => {
+    carryOverObjectives(objectivesWithWeeks);
     setShowCarryOverModal(false);
   };
 

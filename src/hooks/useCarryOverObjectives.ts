@@ -18,17 +18,20 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
   });
 
   const carryOverMutation = useMutation({
-    mutationFn: ({ objectiveIds, newWeekStart }: { objectiveIds: string[]; newWeekStart: string }) =>
-      WeeklyProgressService.carryOverObjectives(objectiveIds, newWeekStart),
+    mutationFn: (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) =>
+      WeeklyProgressService.carryOverObjectivesWithTargets(objectivesWithWeeks),
     onSuccess: (newObjectives, variables) => {
-      // Invalidate the target week (where objectives were carried to)
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, variables.newWeekStart] });
+      // Get unique target weeks and invalidate each
+      const targetWeeks = new Set(variables.map(v => v.targetWeek));
+      targetWeeks.forEach(week => {
+        queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, week] });
+      });
       // Also invalidate incomplete objectives since they're now duplicated
       queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
       // Invalidate all weekly objectives to ensure fresh data everywhere
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
       
-      console.log('[useCarryOverObjectives] Carried over to:', variables.newWeekStart, 'New objectives:', newObjectives);
+      console.log('[useCarryOverObjectives] Carried over objectives:', newObjectives);
       
       toast({
         title: "Success",
@@ -45,8 +48,8 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
     },
   });
 
-  const carryOverObjectives = (objectiveIds: string[]) => {
-    carryOverMutation.mutate({ objectiveIds, newWeekStart: currentWeekStart });
+  const carryOverObjectives = (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => {
+    carryOverMutation.mutate(objectivesWithWeeks);
   };
 
   return {
