@@ -10,6 +10,7 @@ export interface AccountabilityPartner {
   partnership_id: string;
   status: string;
   last_check_in_at: string | null;
+  my_last_check_in_at: string | null; // Current user's last check-in with this partner
   can_view_partner_goals: boolean;
   partner_can_view_my_goals: boolean;
   my_check_in_cadence: CheckInCadence;
@@ -107,6 +108,25 @@ class AccountabilityService {
       .select('id, user1_id, user2_id, my_check_in_cadence_user1, my_check_in_cadence_user2, created_at')
       .in('id', partnershipIds);
 
+    // Fetch the current user's last check-in for each partnership
+    const { data: myCheckIns } = await supabase
+      .from('accountability_check_ins')
+      .select('partnership_id, created_at')
+      .eq('initiated_by', user.id)
+      .in('partnership_id', partnershipIds)
+      .order('created_at', { ascending: false });
+
+    // Build a map of partnership_id -> my last check-in timestamp
+    const myLastCheckInMap = new Map<string, string>();
+    if (myCheckIns) {
+      for (const checkIn of myCheckIns) {
+        // Only store the first (most recent) check-in for each partnership
+        if (!myLastCheckInMap.has(checkIn.partnership_id)) {
+          myLastCheckInMap.set(checkIn.partnership_id, checkIn.created_at);
+        }
+      }
+    }
+
     const partnershipMap = new Map(partnerships?.map(p => [p.id, p]) || []);
 
     return data.map((partner: any) => {
@@ -128,6 +148,8 @@ class AccountabilityService {
         ...partner,
         my_check_in_cadence: myCheckInCadence,
         partnership_created_at: partnershipCreatedAt,
+        // Override last_check_in_at with the user's own last check-in
+        my_last_check_in_at: myLastCheckInMap.get(partner.partnership_id) || null,
       };
     });
   }
