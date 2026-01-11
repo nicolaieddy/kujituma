@@ -1,22 +1,19 @@
 import { useEffect, useRef } from 'react';
-import { useQueryClient, useIsMutating } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
 /**
  * Hook to subscribe to real-time changes for goals.
  * This ensures that goal status changes appear instantly across devices.
- * Skips invalidation during active mutations to prevent race conditions.
+ * Uses a debounce to prevent rapid invalidation loops.
  */
 export const useRealtimeGoals = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const channelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
-  
-  // Track if mutations are in progress to avoid redundant refetches
-  const isMutating = useIsMutating({ mutationKey: ['goals'] });
-  const isMutatingRef = useRef(isMutating);
-  isMutatingRef.current = isMutating;
+  const lastInvalidationRef = useRef<number>(0);
+  const debounceMs = 1000; // Minimum time between invalidations
 
   useEffect(() => {
     if (!user?.id) return;
@@ -38,11 +35,13 @@ export const useRealtimeGoals = () => {
           const record = (payload.new || payload.old) as { user_id?: string } | undefined;
           if (record?.user_id !== user.id) return;
           
-          // Skip if we're the ones making the change (mutation in progress)
-          if (isMutatingRef.current > 0) {
-            console.log('[Realtime] Skipping goals invalidation - mutation in progress');
+          // Debounce to prevent rapid invalidations
+          const now = Date.now();
+          if (now - lastInvalidationRef.current < debounceMs) {
+            console.log('[Realtime] Skipping goals invalidation - debounced');
             return;
           }
+          lastInvalidationRef.current = now;
           
           console.log('[Realtime] Goal change from another source:', payload.eventType);
           
