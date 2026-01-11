@@ -4,8 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
-import { Loader2, RefreshCw, Unlink, Flame, Zap } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Loader2, RefreshCw, Unlink, Flame, Zap, Clock } from "lucide-react";
 
 // Duolingo green color
 const DUOLINGO_GREEN = "#58CC02";
@@ -19,7 +18,8 @@ export function DuolingoConnectionCard() {
     isSyncing,
     connect, 
     disconnect,
-    syncActivities 
+    syncActivities,
+    lastSyncDisplay
   } = useDuolingoConnection();
   
   const [username, setUsername] = useState("");
@@ -73,12 +73,12 @@ export function DuolingoConnectionCard() {
                     {connection.total_xp.toLocaleString()} XP
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  {connection.last_synced_at 
-                    ? `Synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
-                    : `Connected ${formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}`
-                  }
-                </p>
+                {lastSyncDisplay && (
+                  <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    Synced {lastSyncDisplay}
+                  </p>
+                )}
               </div>
               <div className="flex h-2 w-2 rounded-full" style={{ backgroundColor: DUOLINGO_GREEN }} title="Connected" />
             </div>
@@ -109,7 +109,7 @@ export function DuolingoConnectionCard() {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Habits linked to Duolingo will auto-complete when you maintain your streak.
+              Language Learning goals will show your Duolingo streak automatically.
             </p>
           </>
         ) : (

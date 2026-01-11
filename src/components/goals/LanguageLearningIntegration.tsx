@@ -1,7 +1,7 @@
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Flame, ExternalLink, RefreshCw, Link2, Loader2 } from "lucide-react";
+import { Flame, ExternalLink, RefreshCw, Link2, Loader2, Clock } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 
@@ -17,7 +17,8 @@ export const LanguageLearningIntegration = ({ compact = false }: LanguageLearnin
     isConnecting, 
     isSyncing,
     connect, 
-    syncActivities 
+    syncActivities,
+    lastSyncDisplay
   } = useDuolingoConnection();
   
   const [showConnect, setShowConnect] = useState(false);
@@ -49,6 +50,12 @@ export const LanguageLearningIntegration = ({ compact = false }: LanguageLearnin
             <Flame className="h-3 w-3" />
             {connection.current_streak} day streak
           </Badge>
+          {lastSyncDisplay && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {lastSyncDisplay}
+            </span>
+          )}
           <Button 
             variant="ghost" 
             size="sm" 
@@ -78,6 +85,12 @@ export const LanguageLearningIntegration = ({ compact = false }: LanguageLearnin
               <span>•</span>
               <span>{connection.total_xp?.toLocaleString() || 0} XP</span>
             </div>
+            {lastSyncDisplay && (
+              <p className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                <Clock className="h-3 w-3" />
+                Synced {lastSyncDisplay}
+              </p>
+            )}
           </div>
         </div>
         <Button 
