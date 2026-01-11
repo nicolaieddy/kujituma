@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { startOfWeek, format } from 'date-fns';
 
 export type CheckInCadence = 'daily' | 'twice_weekly' | 'weekly' | 'biweekly';
 
@@ -363,20 +364,14 @@ class AccountabilityService {
 
     try {
       // Get current week start (Monday) using date-fns for reliability
-      const now = new Date();
-      const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-      // Calculate days to subtract to get to Monday
-      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - daysToMonday);
-      weekStart.setHours(0, 0, 0, 0);
+      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
       const { data: checkIn, error } = await supabase
         .from('accountability_check_ins')
         .insert({
           partnership_id: partnershipId,
           initiated_by: user.id,
-          week_start: weekStart.toISOString().split('T')[0],
+          week_start: format(weekStart, 'yyyy-MM-dd'),
           message: message || null,
         })
         .select('id')
