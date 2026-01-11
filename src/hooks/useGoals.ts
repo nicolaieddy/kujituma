@@ -152,8 +152,8 @@ export const useGoals = () => {
       return { previousGoals };
     },
     onSuccess: () => {
-      // Invalidate to ensure sync with server
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      // Don't invalidate here - the realtime subscription will handle it
+      // This prevents double-refetching
       toast({
         title: "Success",
         description: "Goal updated successfully!",
@@ -176,7 +176,8 @@ export const useGoals = () => {
   const deleteGoalMutation = useMutation({
     mutationFn: GoalsService.deleteGoal,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      // Invalidate with specific user query key
+      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
       toast({
         title: "Success",
         description: "Goal deleted successfully!",
@@ -195,7 +196,7 @@ export const useGoals = () => {
   const deprioritizeMutation = useMutation({
     mutationFn: GoalsService.deprioritizeGoal,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
       toast({
         title: "Goal Deprioritized",
         description: "Goal moved to deprioritized section.",
@@ -214,7 +215,7 @@ export const useGoals = () => {
   const reprioritizeMutation = useMutation({
     mutationFn: GoalsService.reprioritizeGoal,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', user?.id] });
       toast({
         title: "Goal Re-prioritized",
         description: "Goal moved back to active goals.",
