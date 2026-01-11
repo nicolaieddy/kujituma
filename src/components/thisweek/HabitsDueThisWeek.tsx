@@ -37,7 +37,7 @@ export const HabitsDueThisWeek = ({
   const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
   const { streaks: dailyStreaks, getHabitStreak, activeStreaks, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
-  const { isStravaCompletion, getStravaCompletionsForDate, getStravaCompletionsForHabit, formatDuration } = useSyncedActivities(currentWeekStart);
+  const { isStravaCompletion, getStravaCompletionsForDate, getStravaCompletionsForHabit, formatDuration, formatDistance } = useSyncedActivities(currentWeekStart);
   const { getMappingForHabitItem } = useActivityMappings();
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
@@ -497,6 +497,7 @@ export const HabitsDueThisWeek = ({
                                             <p className="text-xs text-muted-foreground">
                                               {activity.activity_type}
                                               {activity.duration_seconds && ` • ${formatDuration(activity.duration_seconds)}`}
+                                              {activity.distance_meters && activity.distance_meters > 0 && ` • ${formatDistance(activity.distance_meters)}`}
                                               {activity.start_date && ` • ${format(new Date(activity.start_date), 'h:mm a')}`}
                                             </p>
                                           </div>
