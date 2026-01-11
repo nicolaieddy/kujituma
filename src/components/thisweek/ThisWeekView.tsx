@@ -10,7 +10,7 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
-import { DuolingoStreakCard } from "@/components/thisweek/DuolingoStreakCard";
+// DuolingoStreakCard is now integrated inside HabitsDueThisWeek
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
 import { PartnerCheckInsCard } from "@/components/thisweek/PartnerCheckInsCard";
 import { useHabitStats } from "@/hooks/useHabitStats";
@@ -204,8 +204,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       {/* Partner Check-ins Card - shows accountability partner activity */}
       {isCurrentWeek && <PartnerCheckInsCard />}
 
-      {/* Duolingo streak card - shows when connected */}
-      {isCurrentWeek && <DuolingoStreakCard />}
+      {/* Duolingo is now integrated inside HabitsDueThisWeek */}
 
       {isCurrentWeek && habitStats.length > 0 && (
         <HabitsDueThisWeek

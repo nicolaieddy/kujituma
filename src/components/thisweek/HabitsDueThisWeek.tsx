@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle, Zap } from "lucide-react";
+import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle, Zap, Clock, Loader2 } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal, HabitItem } from "@/types/goals";
@@ -18,6 +18,7 @@ import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
 import { celebrateGoalComplete, celebrateWeekComplete } from "@/utils/confetti";
 import { hapticSuccess } from "@/utils/haptic";
 import { toast } from "@/hooks/use-toast";
+import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 
 interface HabitsDueThisWeekProps {
   habits: HabitStats[];
@@ -40,6 +41,16 @@ export const HabitsDueThisWeek = ({
   const { isStravaCompletion, getStravaCompletionsForDate, getStravaCompletionsForHabit, formatDuration, formatDistance } = useSyncedActivities(currentWeekStart);
   const { getMappingForHabitItem } = useActivityMappings();
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+
+  // Duolingo integration
+  const { 
+    isConnected: duolingoConnected, 
+    connection: duolingoConnection, 
+    isLoading: duolingoLoading, 
+    isSyncing: duolingoSyncing,
+    syncActivities: syncDuolingo,
+    lastSyncDisplay: duolingoLastSync
+  } = useDuolingoConnection();
 
   if (habits.length === 0) return null;
 
@@ -262,6 +273,74 @@ export const HabitsDueThisWeek = ({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
+        {/* Duolingo Integration */}
+        {duolingoConnected && duolingoConnection && !duolingoLoading && (
+          <div className="flex items-center justify-between p-3 rounded-lg border border-[#58CC02]/30 bg-gradient-to-br from-[#58CC02]/5 to-[#89E219]/5">
+            <div className="flex items-center gap-3">
+              {/* Duolingo owl */}
+              <div className="w-10 h-10 rounded-full bg-[#58CC02] flex items-center justify-center flex-shrink-0">
+                <span className="text-xl">🦉</span>
+              </div>
+              
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="font-medium text-sm">Duolingo</p>
+                  {(duolingoConnection.current_streak || 0) > 0 && (
+                    <Badge variant="outline" className="bg-[#58CC02]/10 border-[#58CC02]/30 text-[#58CC02] gap-1 text-xs">
+                      <Check className="h-3 w-3" />
+                      Today
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                  <span className="flex items-center gap-1 text-[#FF9600] font-medium">
+                    <Flame className="h-3.5 w-3.5" />
+                    {duolingoConnection.current_streak || 0} day streak
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Zap className="h-3 w-3 text-yellow-500" />
+                    {duolingoConnection.total_xp?.toLocaleString() || 0} XP
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {/* Last sync time */}
+              {duolingoLastSync && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="text-xs text-muted-foreground flex items-center gap-1 cursor-help">
+                      <Clock className="h-3 w-3" />
+                      {duolingoLastSync}
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Last synced {duolingoLastSync}</p>
+                    <p className="text-xs text-muted-foreground">Auto-syncs every 6 hours</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+
+              {/* Sync button */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => syncDuolingo()}
+                disabled={duolingoSyncing}
+              >
+                {duolingoSyncing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Goals with multiple habit items (daily checkboxes) */}
         {goalsWithHabitItems.map((habit) => {
           const isExpanded = expandedGoals.has(habit.goal.id);
