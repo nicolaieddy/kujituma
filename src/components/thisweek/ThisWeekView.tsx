@@ -95,6 +95,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const {
     incompleteObjectives: carryOverIncompleteObjectives,
     carryOverObjectives,
+    carryOverObjectivesAsync,
     isCarryingOver: isCarryOverModalCarrying,
   } = useCarryOverObjectives(currentWeekStart);
 
@@ -104,6 +105,33 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const getNextWeekStart = () => {
     return WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 7);
   };
+
+  const maybeNavigateToTargetWeek = useCallback(
+    (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => {
+      if (!onNavigateWeek) return;
+
+      const targetWeeks = Array.from(new Set(objectivesWithWeeks.map(o => o.targetWeek)));
+      if (targetWeeks.length !== 1) return;
+
+      const targetWeek = targetWeeks[0];
+      if (!targetWeek || targetWeek === currentWeekStart) return;
+
+      const [fy, fm, fd] = currentWeekStart.split('-').map(Number);
+      const [ty, tm, td] = targetWeek.split('-').map(Number);
+      const from = new Date(fy, fm - 1, fd);
+      const to = new Date(ty, tm - 1, td);
+
+      const diffDays = Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
+      const diffWeeks = Math.round(diffDays / 7);
+      if (diffWeeks === 0) return;
+
+      const direction = diffWeeks > 0 ? 'next' : 'previous';
+      for (let i = 0; i < Math.abs(diffWeeks); i++) {
+        onNavigateWeek(direction);
+      }
+    },
+    [currentWeekStart, onNavigateWeek]
+  );
 
   // Incomplete reflections handling
   const { incompleteReflections, handleUpdateIncompleteReflection } = useIncompleteReflections(
@@ -376,9 +404,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onOpenChange={setShowCarryOverModal}
         incompleteObjectives={carryOverIncompleteObjectives}
         goals={goals || []}
-        onConfirmCarryOver={(objectivesWithWeeks) => {
-          carryOverObjectives(objectivesWithWeeks);
+        onConfirmCarryOver={async (objectivesWithWeeks) => {
+          await carryOverObjectivesAsync(objectivesWithWeeks);
           setShowCarryOverModal(false);
+          maybeNavigateToTargetWeek(objectivesWithWeeks);
         }}
         isCarryingOver={isCarryOverModalCarrying}
         title="Carry Over From Previous Weeks"
@@ -393,21 +422,11 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         incompleteObjectives={closeIncompleteObjectives}
         goals={goals || []}
         onConfirmCarryOver={async (objectivesWithWeeks) => {
-          await WeeklyProgressService.carryOverObjectivesWithTargets(objectivesWithWeeks);
+          await carryOverObjectivesAsync(objectivesWithWeeks);
           setShowCarryOverFromClosedModal(false);
-          
-          // Invalidate queries for all target weeks
-          const targetWeeks = new Set(objectivesWithWeeks.map(o => o.targetWeek));
-          targetWeeks.forEach(() => {
-            // Queries will be invalidated by React Query automatically on navigation
-          });
-          
-          toast({
-            title: "Success",
-            description: `${objectivesWithWeeks.length} objective${objectivesWithWeeks.length !== 1 ? 's' : ''} carried over!`,
-          });
+          maybeNavigateToTargetWeek(objectivesWithWeeks);
         }}
-        isCarryingOver={false}
+        isCarryingOver={isCarryOverModalCarrying}
         title="Carry Over to Next Week"
         description="Select which incomplete objectives to carry over and choose their target week."
         defaultTargetWeek={getNextWeekStart()}
