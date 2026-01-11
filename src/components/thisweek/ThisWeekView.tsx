@@ -381,6 +381,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           setShowCarryOverModal(false);
         }}
         isCarryingOver={isCarryOverModalCarrying}
+        title="Carry Over From Previous Weeks"
+        description="Select which incomplete objectives to carry over and choose their target week."
+        defaultTargetWeek={currentWeekStart}
       />
 
       {/* Carry over from a closed week to the next week */}
