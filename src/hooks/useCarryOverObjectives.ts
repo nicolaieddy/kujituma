@@ -20,16 +20,23 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
   const carryOverMutation = useMutation({
     mutationFn: ({ objectiveIds, newWeekStart }: { objectiveIds: string[]; newWeekStart: string }) =>
       WeeklyProgressService.carryOverObjectives(objectiveIds, newWeekStart),
-    onSuccess: (newObjectives) => {
-      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, currentWeekStart] });
+    onSuccess: (newObjectives, variables) => {
+      // Invalidate the target week (where objectives were carried to)
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, variables.newWeekStart] });
+      // Also invalidate incomplete objectives since they're now duplicated
       queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
+      // Invalidate all weekly objectives to ensure fresh data everywhere
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      
+      console.log('[useCarryOverObjectives] Carried over to:', variables.newWeekStart, 'New objectives:', newObjectives);
+      
       toast({
         title: "Success",
         description: `${newObjectives.length} objective${newObjectives.length !== 1 ? 's' : ''} carried over successfully!`,
       });
     },
     onError: (error) => {
-      console.error('Error carrying over objectives:', error);
+      console.error('[useCarryOverObjectives] Error carrying over objectives:', error);
       toast({
         title: "Error",
         description: "Failed to carry over objectives. Please try again.",

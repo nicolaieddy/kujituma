@@ -32,6 +32,11 @@ export const useWeekClose = ({
 
   const closeWeekMutation = useMutation({
     mutationFn: async ({ carryOverIds }: { carryOverIds: string[] }) => {
+      const nextWeekStart = getNextWeekStart();
+      console.log('[useWeekClose] Closing week:', currentWeekStart);
+      console.log('[useWeekClose] Carrying over to:', nextWeekStart);
+      console.log('[useWeekClose] Carry over IDs:', carryOverIds);
+      
       // Save reflections first
       await WeeklyProgressService.upsertWeeklyProgressPostWithReflections(
         currentWeekStart,
@@ -40,21 +45,26 @@ export const useWeekClose = ({
       );
 
       // Carry over selected objectives to next week
+      let carriedOver = 0;
       if (carryOverIds.length > 0) {
-        const nextWeekStart = getNextWeekStart();
-        await WeeklyProgressService.carryOverObjectives(carryOverIds, nextWeekStart);
+        const newObjectives = await WeeklyProgressService.carryOverObjectives(carryOverIds, nextWeekStart);
+        carriedOver = newObjectives.length;
+        console.log('[useWeekClose] Carried over objectives:', newObjectives);
       }
 
       // Mark week as completed
       await WeeklyProgressService.completeWeek(currentWeekStart);
 
-      return { carryOverCount: carryOverIds.length };
+      return { carryOverCount: carriedOver, nextWeekStart };
     },
-    onSuccess: ({ carryOverCount }) => {
-      // Invalidate all relevant queries
+    onSuccess: ({ carryOverCount, nextWeekStart }) => {
+      // Invalidate all relevant queries including the next week
       queryClient.invalidateQueries({ queryKey: ['weekly-progress-post'] });
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
       queryClient.invalidateQueries({ queryKey: ['incomplete-objectives'] });
+      
+      // Also invalidate next week specifically to ensure carried-over objectives show up
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives', user?.id, nextWeekStart] });
       
       const message = carryOverCount > 0
         ? `Week closed! ${carryOverCount} objective${carryOverCount !== 1 ? 's' : ''} carried to next week.`
@@ -68,7 +78,7 @@ export const useWeekClose = ({
       setShowCloseDialog(false);
     },
     onError: (error) => {
-      console.error('Error closing week:', error);
+      console.error('[useWeekClose] Error closing week:', error);
       toast({ 
         title: "Error", 
         description: "Failed to close week. Please try again.", 
