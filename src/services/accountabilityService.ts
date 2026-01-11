@@ -427,6 +427,55 @@ class AccountabilityService {
     }
   }
 
+  async updateCheckIn(checkInId: string, message: string): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      const { error } = await supabase
+        .from('accountability_check_ins')
+        .update({ message: message || null })
+        .eq('id', checkInId)
+        .eq('initiated_by', user.id); // Only allow editing own check-ins
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
+  async deleteCheckIn(checkInId: string): Promise<{ success: boolean; error?: string }> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+
+    try {
+      // First delete any reactions to this check-in
+      await supabase
+        .from('check_in_reactions')
+        .delete()
+        .eq('check_in_id', checkInId);
+
+      // Then delete the check-in (only if user owns it)
+      const { error } = await supabase
+        .from('accountability_check_ins')
+        .delete()
+        .eq('id', checkInId)
+        .eq('initiated_by', user.id); // Only allow deleting own check-ins
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
+    }
+  }
+
   async updateVisibilitySettings(
     partnerId: string, 
     settings: { canViewPartnerGoals?: boolean; partnerCanViewMyGoals?: boolean }

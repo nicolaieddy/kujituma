@@ -9,7 +9,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Textarea } from '@/components/ui/textarea';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
-import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter, Reply, Send } from 'lucide-react';
+import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter, Reply, Send, Pencil, Trash2, Check } from 'lucide-react';
 import { format, formatDistanceToNow, isSameWeek, startOfWeek, isAfter, isBefore, startOfDay, endOfDay } from 'date-fns';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
@@ -56,6 +56,14 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyMessage, setReplyMessage] = useState('');
   const [isSubmittingReply, setIsSubmittingReply] = useState(false);
+  
+  // Edit states
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editMessage, setEditMessage] = useState('');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  
+  // Delete states
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
@@ -131,6 +139,57 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     } finally {
       setIsSubmittingReply(false);
     }
+  };
+
+  const handleEdit = async (checkInId: string) => {
+    if (isSubmittingEdit) return;
+    
+    try {
+      setIsSubmittingEdit(true);
+      const result = await accountabilityService.updateCheckIn(checkInId, editMessage.trim());
+      if (result.success) {
+        setEditMessage('');
+        setEditingId(null);
+        await fetchCheckIns();
+        toast.success('Check-in updated!');
+      } else {
+        toast.error(result.error || 'Failed to update check-in');
+      }
+    } catch (error) {
+      console.error('Error updating check-in:', error);
+      toast.error('Failed to update check-in');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
+  };
+
+  const handleDelete = async (checkInId: string) => {
+    try {
+      setDeletingId(checkInId);
+      const result = await accountabilityService.deleteCheckIn(checkInId);
+      if (result.success) {
+        await fetchCheckIns();
+        toast.success('Check-in deleted');
+      } else {
+        toast.error(result.error || 'Failed to delete check-in');
+      }
+    } catch (error) {
+      console.error('Error deleting check-in:', error);
+      toast.error('Failed to delete check-in');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const startEditing = (checkIn: CheckInRecord) => {
+    setEditingId(checkIn.id);
+    setEditMessage(checkIn.message || '');
+    setReplyingToId(null);
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setEditMessage('');
   };
 
   const getInitials = (name: string) =>
@@ -407,12 +466,49 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                       </div>
                     </div>
                     
-                    {/* Message */}
-                    {checkIn.message && (
+                    {/* Message - with edit mode */}
+                    {editingId === checkIn.id ? (
+                      <div className="mt-2 ml-8 flex gap-2">
+                        <Textarea
+                          value={editMessage}
+                          onChange={(e) => setEditMessage(e.target.value)}
+                          placeholder="Edit your message..."
+                          className="min-h-[60px] text-sm resize-none flex-1"
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                              handleEdit(checkIn.id);
+                            }
+                            if (e.key === 'Escape') {
+                              cancelEditing();
+                            }
+                          }}
+                        />
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="sm"
+                            onClick={() => handleEdit(checkIn.id)}
+                            disabled={isSubmittingEdit}
+                            className="h-8"
+                          >
+                            <Check className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={cancelEditing}
+                            disabled={isSubmittingEdit}
+                            className="h-8"
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : checkIn.message ? (
                       <div className="mt-2 ml-8 text-sm text-foreground bg-background/50 rounded-md p-2.5 border border-border/50">
                         {checkIn.message}
                       </div>
-                    )}
+                    ) : null}
                     
                     {/* Reactions and Reply */}
                     <div className="flex items-center gap-1 mt-2 ml-8 flex-wrap">
@@ -452,7 +548,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                       })}
                       
                       {/* Reply button - only show for partner's check-ins */}
-                      {!isCurrentUser && (
+                      {!isCurrentUser && editingId !== checkIn.id && (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Button
@@ -469,6 +565,45 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                             Reply to this check-in
                           </TooltipContent>
                         </Tooltip>
+                      )}
+                      
+                      {/* Edit/Delete buttons - only for current user's check-ins */}
+                      {isCurrentUser && editingId !== checkIn.id && (
+                        <>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1.5 text-xs gap-1 opacity-50 hover:opacity-100"
+                                onClick={() => startEditing(checkIn)}
+                              >
+                                <Pencil className="h-3 w-3" />
+                                Edit
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              Edit this check-in
+                            </TooltipContent>
+                          </Tooltip>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-1.5 text-xs gap-1 opacity-50 hover:opacity-100 text-destructive hover:text-destructive"
+                                onClick={() => handleDelete(checkIn.id)}
+                                disabled={deletingId === checkIn.id}
+                              >
+                                <Trash2 className="h-3 w-3" />
+                                {deletingId === checkIn.id ? 'Deleting...' : 'Delete'}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs">
+                              Delete this check-in
+                            </TooltipContent>
+                          </Tooltip>
+                        </>
                       )}
                     </div>
                     
