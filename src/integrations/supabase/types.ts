@@ -314,6 +314,50 @@ export type Database = {
         }
         Relationships: []
       }
+      carry_over_logs: {
+        Row: {
+          created_at: string
+          goal_id: string | null
+          goal_title: string | null
+          id: string
+          objective_id: string
+          objective_text: string
+          source_week_start: string
+          target_week_start: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_id?: string | null
+          goal_title?: string | null
+          id?: string
+          objective_id: string
+          objective_text: string
+          source_week_start: string
+          target_week_start: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string | null
+          goal_title?: string | null
+          id?: string
+          objective_id?: string
+          objective_text?: string
+          source_week_start?: string
+          target_week_start?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "carry_over_logs_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       check_in_reactions: {
         Row: {
           check_in_id: string

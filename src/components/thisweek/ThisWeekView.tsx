@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
@@ -22,6 +22,7 @@ import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { CarryOverObjectivesModal } from "@/components/goals/CarryOverObjectivesModal";
+import { CarryOverActivityLog } from "@/components/goals/CarryOverActivityLog";
 import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
 import { useWeekClose } from "@/hooks/useWeekClose";
 import { toast } from "@/hooks/use-toast";
@@ -92,12 +93,18 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Carry-over modal for when viewing a closed week (carry to NEXT week)
   const [showCarryOverFromClosedModal, setShowCarryOverFromClosedModal] = useState(false);
   
+  // Build goals map for logging
+  const goalsForLogging = useMemo(() => 
+    (goals || []).map(g => ({ id: g.id, title: g.title })),
+    [goals]
+  );
+
   const {
     incompleteObjectives: carryOverIncompleteObjectives,
     carryOverObjectives,
     carryOverObjectivesAsync,
     isCarryingOver: isCarryOverModalCarrying,
-  } = useCarryOverObjectives(currentWeekStart);
+  } = useCarryOverObjectives(currentWeekStart, goalsForLogging);
 
   const hasIncompleteObjectivesFromPastWeeks = carryOverIncompleteObjectives.length > 0;
 
@@ -361,6 +368,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         isReadOnly={isReadOnly}
         weekStart={currentWeekStart}
       />
+
+      {/* Carry-Over Activity Log */}
+      <CarryOverActivityLog />
 
       <ShareWeekCard
         hasShared={hasShared}

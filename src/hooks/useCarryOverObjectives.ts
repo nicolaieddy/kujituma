@@ -3,7 +3,15 @@ import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
-export const useCarryOverObjectives = (currentWeekStart: string) => {
+interface CarryOverInput {
+  objectiveId: string;
+  targetWeek: string;
+}
+
+export const useCarryOverObjectives = (
+  currentWeekStart: string,
+  goals?: { id: string; title: string }[]
+) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
@@ -18,8 +26,8 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
   });
 
   const carryOverMutation = useMutation({
-    mutationFn: (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) =>
-      WeeklyProgressService.carryOverObjectivesWithTargets(objectivesWithWeeks),
+    mutationFn: (objectivesWithWeeks: CarryOverInput[]) =>
+      WeeklyProgressService.carryOverObjectivesWithTargets(objectivesWithWeeks, goals),
     onSuccess: (newObjectives, variables) => {
       // Get unique target weeks and invalidate each
       const targetWeeks = new Set(variables.map(v => v.targetWeek));
@@ -30,6 +38,8 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
       queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
       // Invalidate all weekly objectives to ensure fresh data everywhere
       queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      // Invalidate carry-over logs
+      queryClient.invalidateQueries({ queryKey: ['carry-over-logs'] });
       
       console.log('[useCarryOverObjectives] Carried over objectives:', newObjectives);
       
@@ -48,11 +58,11 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
     },
   });
 
-  const carryOverObjectives = (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => {
+  const carryOverObjectives = (objectivesWithWeeks: CarryOverInput[]) => {
     carryOverMutation.mutate(objectivesWithWeeks);
   };
 
-  const carryOverObjectivesAsync = (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => {
+  const carryOverObjectivesAsync = (objectivesWithWeeks: CarryOverInput[]) => {
     return carryOverMutation.mutateAsync(objectivesWithWeeks);
   };
 
