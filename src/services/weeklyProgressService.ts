@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { parseISO, startOfWeek, isBefore } from "date-fns";
+import { CarryOverLogService } from "@/services/carryOverLogService";
 
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
@@ -390,7 +391,8 @@ export class WeeklyProgressService {
    * Carry over objectives to potentially different target weeks
    */
   static async carryOverObjectivesWithTargets(
-    objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]
+    objectivesWithWeeks: { objectiveId: string; targetWeek: string }[],
+    goals?: { id: string; title: string }[]
   ): Promise<WeeklyObjective[]> {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -414,6 +416,12 @@ export class WeeklyProgressService {
       return [];
     }
 
+    // Build a goal title lookup map
+    const goalTitleMap = new Map<string, string>();
+    if (goals) {
+      goals.forEach(g => goalTitleMap.set(g.id, g.title));
+    }
+
     const objectivesToCreate = originalObjectives.map(obj => ({
       user_id: user.id,
       goal_id: obj.goal_id,
@@ -428,6 +436,26 @@ export class WeeklyProgressService {
       .select();
 
     if (createError) throw createError;
+
+    // Log the carry-over actions
+    try {
+      const logs = originalObjectives.map(obj => ({
+        objective_id: obj.id,
+        objective_text: obj.text,
+        source_week_start: obj.week_start,
+        target_week_start: targetWeekMap.get(obj.id) || '',
+        goal_id: obj.goal_id,
+        goal_title: obj.goal_id ? goalTitleMap.get(obj.goal_id) || null : null,
+      })).filter(log => log.target_week_start);
+
+      if (logs.length > 0) {
+        await CarryOverLogService.logCarryOver(logs);
+      }
+    } catch (logError) {
+      // Don't fail the carry-over if logging fails
+      console.error('[WeeklyProgressService] Failed to log carry-over:', logError);
+    }
+
     return (newObjectives || []) as WeeklyObjective[];
   }
 
