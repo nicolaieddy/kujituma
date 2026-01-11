@@ -71,11 +71,13 @@ export interface CheckInRecord {
   week_start: string;
   message: string | null;
   created_at: string;
+  reply_to_id: string | null;
   initiator_profile?: {
     full_name: string;
     avatar_url: string | null;
   };
   reactions?: CheckInReaction[];
+  replies?: CheckInRecord[]; // Nested replies
 }
 
 export interface CheckInReaction {
@@ -380,7 +382,7 @@ class AccountabilityService {
     return data;
   }
 
-  async recordCheckIn(partnershipId: string, message?: string): Promise<{ success: boolean; error?: string; checkInId?: string }> {
+  async recordCheckIn(partnershipId: string, message?: string, replyToId?: string): Promise<{ success: boolean; error?: string; checkInId?: string }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
@@ -395,6 +397,7 @@ class AccountabilityService {
           initiated_by: user.id,
           week_start: format(weekStart, 'yyyy-MM-dd'),
           message: message || null,
+          reply_to_id: replyToId || null,
         })
         .select('id')
         .single();
@@ -587,6 +590,7 @@ class AccountabilityService {
         week_start,
         message,
         created_at,
+        reply_to_id,
         initiator_profile:profiles!accountability_check_ins_initiated_by_fkey (
           full_name,
           avatar_url
@@ -594,14 +598,31 @@ class AccountabilityService {
       `)
       .eq('partnership_id', partnershipId)
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(50);
 
     if (error) {
       console.error('Error fetching check-in history:', error);
       return [];
     }
 
-    return (data || []) as CheckInRecord[];
+    // Organize into parent check-ins with nested replies
+    const allCheckIns = (data || []) as CheckInRecord[];
+    const parentCheckIns = allCheckIns.filter(c => !c.reply_to_id);
+    const repliesMap = new Map<string, CheckInRecord[]>();
+    
+    allCheckIns.filter(c => c.reply_to_id).forEach(reply => {
+      const existing = repliesMap.get(reply.reply_to_id!) || [];
+      existing.push(reply);
+      repliesMap.set(reply.reply_to_id!, existing);
+    });
+
+    // Attach replies to their parents and sort replies by created_at ascending
+    return parentCheckIns.map(parent => ({
+      ...parent,
+      replies: (repliesMap.get(parent.id) || []).sort((a, b) => 
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      ),
+    }));
   }
 
   async getWeekCheckIns(partnershipId: string, weekStart: string): Promise<CheckInRecord[]> {
