@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -19,6 +19,8 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { CarryOverObjectivesModal } from "@/components/goals/CarryOverObjectivesModal";
+import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
 
 // Extracted hooks for better code organization
 import { useWeeklyShare } from "@/hooks/useWeeklyShare";
@@ -78,8 +80,18 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     handleCarryOver,
     handleSetIntention,
     handleCompleteTransition,
-    isCarryingOver,
+    isCarryingOver: isTransitionCarryingOver,
   } = useWeekTransition(currentWeekStart);
+
+  // Carry-over modal for bringing incomplete objectives from past weeks
+  const [showCarryOverModal, setShowCarryOverModal] = useState(false);
+  const {
+    incompleteObjectives: carryOverIncompleteObjectives,
+    carryOverObjectives,
+    isCarryingOver: isCarryOverModalCarrying,
+  } = useCarryOverObjectives(currentWeekStart);
+
+  const hasIncompleteObjectivesFromPastWeeks = carryOverIncompleteObjectives.length > 0;
 
   // Incomplete reflections handling
   const { incompleteReflections, handleUpdateIncompleteReflection } = useIncompleteReflections(
@@ -197,7 +209,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           onCarryOver={handleCarryOver}
           onSetIntention={handleSetIntention}
           onComplete={handleCompleteTransition}
-          isCarryingOver={isCarryingOver}
+          isCarryingOver={isTransitionCarryingOver}
         />
       )}
 
@@ -239,6 +251,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onDeleteObjective={handleDeleteObjective}
             onDeleteAllObjectives={deleteAllObjectives}
             onAddObjective={handleAddObjective}
+            onOpenCarryOver={() => setShowCarryOverModal(true)}
+            hasIncompleteObjectives={hasIncompleteObjectivesFromPastWeeks}
             isDeletingAll={isDeletingAll}
             onReorderObjective={handleReorderObjective}
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
@@ -285,6 +299,18 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onConfirm={handleConfirmShare}
         isSharing={isSharing}
         goals={(goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started').map(g => ({ id: g.id, title: g.title }))}
+      />
+
+      <CarryOverObjectivesModal
+        open={showCarryOverModal}
+        onOpenChange={setShowCarryOverModal}
+        incompleteObjectives={carryOverIncompleteObjectives}
+        goals={goals || []}
+        onConfirmCarryOver={(objectiveIds) => {
+          carryOverObjectives(objectiveIds);
+          setShowCarryOverModal(false);
+        }}
+        isCarryingOver={isCarryOverModalCarrying}
       />
     </div>
   );
