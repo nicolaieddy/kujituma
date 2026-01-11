@@ -4,18 +4,19 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Goal, HabitItem, CustomSchedule } from "@/types/goals";
-import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap, Link, Languages } from "lucide-react";
+import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap, Link, Languages, Check } from "lucide-react";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import { useActivityMappings, STRAVA_ACTIVITY_TYPES, DUOLINGO_ACTIVITY_TYPES, IntegrationType } from "@/hooks/useActivityMappings";
+import { useActivityMappings, STRAVA_ACTIVITY_TYPES, DUOLINGO_ACTIVITY_TYPES, IntegrationType, ActivityMapping } from "@/hooks/useActivityMappings";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 
 type HabitFrequency = 'daily' | 'weekdays' | 'weekly' | 'biweekly' | 'monthly' | 'quarterly' | 'custom';
 
@@ -69,7 +70,7 @@ const SortableHabit = ({
   onRemove, 
   getFrequencyLabel,
   onEdit,
-  linkedIntegration,
+  linkedMappings,
   availableIntegrations,
   onLinkIntegration
 }: { 
@@ -77,14 +78,25 @@ const SortableHabit = ({
   onRemove: (id: string) => void;
   getFrequencyLabel: (h: HabitItem) => string;
   onEdit: (habit: HabitItem) => void;
-  linkedIntegration: { type: string; activityType: string } | null;
+  linkedMappings: ActivityMapping[];
   availableIntegrations: HabitIntegrationType[];
   onLinkIntegration: (habit: HabitItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
   const style = { transform: CSS.Transform.toString(transform), transition };
 
-  const integrationConfig = linkedIntegration ? INTEGRATION_CONFIGS[linkedIntegration.type] : null;
+  // Group mappings by integration type
+  const stravaTypes = linkedMappings.filter(m => m.integration_type === 'strava');
+  const duolingoTypes = linkedMappings.filter(m => m.integration_type === 'duolingo');
+  const hasLinks = linkedMappings.length > 0;
+
+  const getActivityTypeLabel = (mapping: ActivityMapping) => {
+    if (mapping.integration_type === 'duolingo') {
+      const actType = mapping.strava_activity_type?.replace('duolingo_', '') || '';
+      return DUOLINGO_ACTIVITY_TYPES.find(t => t.value === actType)?.label || actType;
+    }
+    return STRAVA_ACTIVITY_TYPES.find(t => t.value === mapping.strava_activity_type)?.label || mapping.strava_activity_type;
+  };
 
   return (
     <div
@@ -106,16 +118,39 @@ const SortableHabit = ({
       </button>
       <span className="flex-1 text-sm">{habit.text}</span>
       
-      {linkedIntegration && integrationConfig ? (
+      {hasLinks ? (
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full", integrationConfig.bgColor, integrationConfig.color)}>
-              <integrationConfig.icon className="h-3 w-3" />
-              <span className="text-xs font-medium">{integrationConfig.name}</span>
-            </div>
+            <button
+              className="flex items-center gap-1"
+              onClick={(e) => { e.stopPropagation(); onLinkIntegration(habit); }}
+            >
+              {stravaTypes.length > 0 && (
+                <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full", INTEGRATION_CONFIGS.strava.bgColor, INTEGRATION_CONFIGS.strava.color)}>
+                  <Zap className="h-3 w-3" />
+                  <span className="text-xs font-medium">
+                    {stravaTypes.length === 1 
+                      ? getActivityTypeLabel(stravaTypes[0])
+                      : `${stravaTypes.length} types`}
+                  </span>
+                </div>
+              )}
+              {duolingoTypes.length > 0 && (
+                <div className={cn("flex items-center gap-1 px-2 py-0.5 rounded-full", INTEGRATION_CONFIGS.duolingo.bgColor, INTEGRATION_CONFIGS.duolingo.color)}>
+                  <Languages className="h-3 w-3" />
+                  <span className="text-xs font-medium">Duolingo</span>
+                </div>
+              )}
+            </button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Auto-tracked from {integrationConfig.name} ({linkedIntegration.activityType})</p>
+            <div className="text-xs space-y-1">
+              <p className="font-medium">Auto-tracked activities:</p>
+              {linkedMappings.map((m, i) => (
+                <p key={i}>• {getActivityTypeLabel(m)}</p>
+              ))}
+              <p className="text-muted-foreground mt-1">Click to edit</p>
+            </div>
           </TooltipContent>
         </Tooltip>
       ) : availableIntegrations.length > 0 && (
@@ -144,7 +179,7 @@ const SortableHabit = ({
 };
 
 export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectionProps) => {
-  const { getMappingForHabitItem, createMapping } = useActivityMappings();
+  const { getAllMappingsForHabitItem, createMultipleMappings, deleteMapping } = useActivityMappings();
   const { isConnected: isStravaConnected } = useStravaConnection();
   const { isConnected: isDuolingoConnected } = useDuolingoConnection();
   const [newHabitText, setNewHabitText] = useState("");
@@ -161,7 +196,7 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
   const [integrationDialogOpen, setIntegrationDialogOpen] = useState(false);
   const [linkingHabit, setLinkingHabit] = useState<HabitItem | null>(null);
   const [selectedIntegration, setSelectedIntegration] = useState<HabitIntegrationType | "">("");
-  const [selectedActivityType, setSelectedActivityType] = useState("");
+  const [selectedActivityTypes, setSelectedActivityTypes] = useState<string[]>([]);
   const [minDuration, setMinDuration] = useState(0);
   const [isLinking, setIsLinking] = useState(false);
 
@@ -177,43 +212,81 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
 
   const habitItems = goal.habit_items || [];
 
-  // Get linked integration for a habit
-  const getLinkedIntegration = (habitId: string): { type: string; activityType: string } | null => {
-    const mapping = getMappingForHabitItem(habitId);
-    if (mapping) {
-      const activityType = mapping.integration_type === 'duolingo'
-        ? (mapping.strava_activity_type?.replace('duolingo_', '') || 'streak')
-        : mapping.strava_activity_type;
-      return { type: mapping.integration_type || 'strava', activityType };
-    }
-    return null;
-  };
-
   const handleOpenIntegrationDialog = (habit: HabitItem) => {
     setLinkingHabit(habit);
     // Auto-select if only one integration available
-    setSelectedIntegration(availableIntegrations.length === 1 ? availableIntegrations[0] : "");
-    setSelectedActivityType("");
-    setMinDuration(0);
+    const defaultIntegration = availableIntegrations.length === 1 ? availableIntegrations[0] : "";
+    setSelectedIntegration(defaultIntegration);
+    
+    // Pre-populate with existing mappings
+    const existingMappings = getAllMappingsForHabitItem(habit.id);
+    const existingTypes = existingMappings
+      .filter(m => (defaultIntegration === '' || m.integration_type === defaultIntegration))
+      .map(m => {
+        if (m.integration_type === 'duolingo') {
+          return m.strava_activity_type?.replace('duolingo_', '') || '';
+        }
+        return m.strava_activity_type;
+      })
+      .filter(Boolean);
+    
+    setSelectedActivityTypes(existingTypes);
+    setMinDuration(existingMappings[0]?.min_duration_minutes || 0);
     setIntegrationDialogOpen(true);
   };
 
   const handleLinkIntegration = async () => {
-    if (!linkingHabit || !selectedActivityType || !selectedIntegration) return;
+    if (!linkingHabit || selectedActivityTypes.length === 0 || !selectedIntegration) return;
     setIsLinking(true);
     
-    // Use the integration type when creating mapping
-    await createMapping(
-      selectedActivityType, 
-      goal.id, 
-      linkingHabit.id, 
-      selectedIntegration === 'strava' ? minDuration : 0,
-      selectedIntegration as IntegrationType
-    );
+    // Get existing mappings to determine what to delete
+    const existingMappings = getAllMappingsForHabitItem(linkingHabit.id)
+      .filter(m => m.integration_type === selectedIntegration);
+    
+    const existingTypes = existingMappings.map(m => {
+      if (m.integration_type === 'duolingo') {
+        return m.strava_activity_type?.replace('duolingo_', '') || '';
+      }
+      return m.strava_activity_type;
+    });
+    
+    // Delete mappings that are no longer selected
+    const toDelete = existingMappings.filter(m => {
+      const actType = m.integration_type === 'duolingo' 
+        ? m.strava_activity_type?.replace('duolingo_', '') 
+        : m.strava_activity_type;
+      return !selectedActivityTypes.includes(actType || '');
+    });
+    
+    for (const mapping of toDelete) {
+      await deleteMapping(mapping.id);
+    }
+    
+    // Create new mappings for newly selected types
+    const newTypes = selectedActivityTypes.filter(t => !existingTypes.includes(t));
+    
+    if (newTypes.length > 0) {
+      await createMultipleMappings(
+        newTypes,
+        goal.id,
+        linkingHabit.id,
+        selectedIntegration === 'strava' ? minDuration : 0,
+        selectedIntegration as IntegrationType
+      );
+    }
     
     setIsLinking(false);
     setIntegrationDialogOpen(false);
     setLinkingHabit(null);
+    setSelectedActivityTypes([]);
+  };
+
+  const toggleActivityType = (activityType: string) => {
+    setSelectedActivityTypes(prev => 
+      prev.includes(activityType)
+        ? prev.filter(t => t !== activityType)
+        : [...prev, activityType]
+    );
   };
 
   const getHabitFrequencyLabel = (habit: HabitItem): string => {
@@ -341,7 +414,7 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
                       onRemove={handleRemoveHabit} 
                       getFrequencyLabel={getHabitFrequencyLabel}
                       onEdit={handleStartEditHabit}
-                      linkedIntegration={getLinkedIntegration(habit.id)}
+                      linkedMappings={getAllMappingsForHabitItem(habit.id)}
                       availableIntegrations={availableIntegrations}
                       onLinkIntegration={handleOpenIntegrationDialog}
                     />
@@ -410,7 +483,7 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
             {availableIntegrations.length > 1 && (
               <div className="space-y-2">
                 <Label>Integration</Label>
-                <Select value={selectedIntegration} onValueChange={(v) => { setSelectedIntegration(v as HabitIntegrationType); setSelectedActivityType(""); }}>
+                <Select value={selectedIntegration} onValueChange={(v) => { setSelectedIntegration(v as HabitIntegrationType); setSelectedActivityTypes([]); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select integration..." />
                   </SelectTrigger>
@@ -431,41 +504,64 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
               </div>
             )}
 
-            {/* Activity type selector - Strava */}
+            {/* Activity type multi-select - Strava */}
             {selectedIntegration === 'strava' && (
               <div className="space-y-2">
-                <Label>Activity Type</Label>
-                <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select activity type..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-[300]">
-                    {STRAVA_ACTIVITY_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Activity Types <span className="text-muted-foreground font-normal">(select multiple)</span></Label>
+                <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {STRAVA_ACTIVITY_TYPES.map((type) => (
+                    <div
+                      key={type.value}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors",
+                        selectedActivityTypes.includes(type.value)
+                          ? "bg-primary/10 text-foreground"
+                          : "hover:bg-muted/50"
+                      )}
+                      onClick={() => toggleActivityType(type.value)}
+                    >
+                      <Checkbox
+                        checked={selectedActivityTypes.includes(type.value)}
+                        onCheckedChange={() => toggleActivityType(type.value)}
+                        className="pointer-events-none"
+                      />
+                      <span className="text-sm">{type.label}</span>
+                    </div>
+                  ))}
+                </div>
+                {selectedActivityTypes.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {selectedActivityTypes.length} type{selectedActivityTypes.length !== 1 ? 's' : ''} selected
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Activity type selector - Duolingo */}
+            {/* Activity type selector - Duolingo (single select for now) */}
             {selectedIntegration === 'duolingo' && (
               <div className="space-y-2">
                 <Label>Activity Type</Label>
-                <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select activity type..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border z-[300]">
-                    {DUOLINGO_ACTIVITY_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="max-h-48 overflow-y-auto border rounded-md p-2 space-y-1">
+                  {DUOLINGO_ACTIVITY_TYPES.map((type) => (
+                    <div
+                      key={type.value}
+                      className={cn(
+                        "flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer transition-colors",
+                        selectedActivityTypes.includes(type.value)
+                          ? "bg-primary/10 text-foreground"
+                          : "hover:bg-muted/50"
+                      )}
+                      onClick={() => toggleActivityType(type.value)}
+                    >
+                      <Checkbox
+                        checked={selectedActivityTypes.includes(type.value)}
+                        onCheckedChange={() => toggleActivityType(type.value)}
+                        className="pointer-events-none"
+                      />
+                      <span className="text-sm">{type.label}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
@@ -496,9 +592,9 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
               </Button>
               <Button 
                 onClick={handleLinkIntegration} 
-                disabled={!selectedActivityType || !selectedIntegration || isLinking}
+                disabled={selectedActivityTypes.length === 0 || !selectedIntegration || isLinking}
               >
-                {isLinking ? "Linking..." : "Link Activity"}
+                {isLinking ? "Saving..." : `Link ${selectedActivityTypes.length || ''} Activity${selectedActivityTypes.length !== 1 ? ' Types' : ''}`}
               </Button>
             </div>
           </div>
