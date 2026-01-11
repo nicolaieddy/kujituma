@@ -386,24 +386,25 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                           </span>
                         </div>
                       </div>
-                      
-                      {/* Week badge */}
-                      <Badge 
-                        variant="outline" 
-                        className={cn(
-                          "text-[10px] flex-shrink-0",
-                          weekLabel === 'This Week' && "border-primary/30 bg-primary/5 text-primary"
-                        )}
-                      >
-                        <CalendarIcon className="h-2.5 w-2.5 mr-1" />
-                        {weekLabel}
-                      </Badge>
                     </div>
                     
-                    {/* Time */}
-                    <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground ml-8">
-                      <Clock className="h-2.5 w-2.5" />
-                      {formatDistanceToNow(new Date(checkIn.created_at), { addSuffix: true })}
+                    {/* Combined timestamp with week context */}
+                    <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground ml-8 flex-wrap">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-2.5 w-2.5" />
+                        <span>{formatDistanceToNow(new Date(checkIn.created_at), { addSuffix: true })}</span>
+                      </div>
+                      <span className="text-muted-foreground/50">•</span>
+                      <div className="flex items-center gap-1">
+                        <CalendarIcon className="h-2.5 w-2.5" />
+                        <span className={cn(
+                          weekLabel === 'This Week' && "text-primary font-medium"
+                        )}>
+                          for {weekLabel === 'This Week' || weekLabel === 'Last Week' 
+                            ? weekLabel.toLowerCase() 
+                            : `week of ${format(new Date(checkIn.week_start), 'MMM d')}`}
+                        </span>
+                      </div>
                     </div>
                     
                     {/* Message */}
