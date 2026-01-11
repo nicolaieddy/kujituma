@@ -11,19 +11,20 @@ import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { DuolingoStreakCard } from "@/components/thisweek/DuolingoStreakCard";
+import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
 import { useHabitStats } from "@/hooks/useHabitStats";
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { HabitsService } from "@/services/habitsService";
 
 // Extracted hooks for better code organization
 import { useWeeklyShare } from "@/hooks/useWeeklyShare";
 import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
 import { useIncompleteReflections } from "@/hooks/useIncompleteReflections";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
+import { useWeekTransition } from "@/hooks/useWeekTransition";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -64,8 +65,20 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Week status
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   const isWeekCompleted = progressPost?.is_completed || false;
-  const isEndOfWeek = HabitsService.isEndOfWeek();
   const isReadOnly = isWeekCompleted;
+
+  // Week transition (combines close last week + planning + reflections)
+  const {
+    shouldShowTransition,
+    lastWeekStart,
+    lastWeekObjectives,
+    lastWeekReflections,
+    handleUpdateReflection: handleUpdateLastWeekReflection,
+    handleCarryOver,
+    handleSetIntention,
+    handleCompleteTransition,
+    isCarryingOver,
+  } = useWeekTransition(currentWeekStart);
 
   // Incomplete reflections handling
   const { incompleteReflections, handleUpdateIncompleteReflection } = useIncompleteReflections(
@@ -171,6 +184,21 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
+      {/* Week Transition Card - shows at start of week when last week needs closing */}
+      {isCurrentWeek && shouldShowTransition && (
+        <WeekTransitionCard
+          lastWeekObjectives={lastWeekObjectives}
+          lastWeekStart={lastWeekStart}
+          lastWeekReflections={lastWeekReflections}
+          currentWeekStart={currentWeekStart}
+          goals={goals || []}
+          onUpdateReflection={handleUpdateLastWeekReflection}
+          onCarryOver={handleCarryOver}
+          onSetIntention={handleSetIntention}
+          onComplete={handleCompleteTransition}
+          isCarryingOver={isCarryingOver}
+        />
+      )}
 
       {/* Duolingo streak card - shows when connected */}
       {isCurrentWeek && <DuolingoStreakCard />}
@@ -219,7 +247,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         </CardContent>
       </Card>
 
-      {isEndOfWeek && isCurrentWeek && !isReadOnly && objectives && objectives.some(obj => !obj.is_completed) && (
+      {/* Show incomplete objectives reflection - any time during current week when there are incomplete objectives */}
+      {isCurrentWeek && !isReadOnly && objectives && objectives.some(obj => !obj.is_completed) && (
         <EndOfWeekReflection
           objectives={objectives}
           incompleteReflections={incompleteReflections}
