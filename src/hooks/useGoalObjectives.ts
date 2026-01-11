@@ -6,10 +6,13 @@ import { WeeklyObjective, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData }
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 
+// Track which goals have already been auto-expanded across all instances
+const expandedGoalsSet = new Set<string>();
+
 export const useGoalObjectives = (goalId?: string, goalStartDate?: string | null) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const hasAutoExpandedRef = useRef(false);
+  const isExpandingRef = useRef(false);
 
   // Fetch ALL objectives for this specific goal (no date limit)
   const { data: goalObjectives = [], isLoading, refetch } = useQuery({
@@ -19,6 +22,7 @@ export const useGoalObjectives = (goalId?: string, goalStartDate?: string | null
       return WeeklyProgressService.getObjectivesForGoal(goalId);
     },
     enabled: !!user && !!goalId,
+    staleTime: 30000, // Cache for 30 seconds to prevent excessive refetches
   });
 
   // Find the earliest objective date
@@ -34,18 +38,25 @@ export const useGoalObjectives = (goalId?: string, goalStartDate?: string | null
     ? earliestObjectiveDate < goalStartDate 
     : false;
 
-  // Auto-expand goal start date on load if needed (run once per goal)
+  // Auto-expand goal start date on load if needed (run once per goal globally)
   useEffect(() => {
     if (
       needsStartDateExpansion && 
       goalId && 
       earliestObjectiveDate && 
-      !hasAutoExpandedRef.current
+      !expandedGoalsSet.has(goalId) &&
+      !isExpandingRef.current
     ) {
-      hasAutoExpandedRef.current = true;
+      // Mark as expanding immediately to prevent duplicate calls
+      isExpandingRef.current = true;
+      expandedGoalsSet.add(goalId);
+      
       GoalsService.updateGoal(goalId, { start_date: earliestObjectiveDate })
         .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['goals'] });
+          // Use a delayed invalidation to prevent immediate re-render loops
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['goals'] });
+          }, 500);
           toast({
             title: "Goal updated",
             description: "Start date adjusted to include all objectives.",
@@ -53,14 +64,16 @@ export const useGoalObjectives = (goalId?: string, goalStartDate?: string | null
         })
         .catch((error) => {
           console.error('Error auto-expanding goal start date:', error);
+          // Remove from set on error so it can be retried
+          expandedGoalsSet.delete(goalId);
+        })
+        .finally(() => {
+          isExpandingRef.current = false;
         });
     }
   }, [needsStartDateExpansion, goalId, earliestObjectiveDate, queryClient]);
 
-  // Reset the ref when goalId changes
-  useEffect(() => {
-    hasAutoExpandedRef.current = false;
-  }, [goalId]);
+  // Note: We no longer reset on goalId change since we use a global Set
 
   const createObjectiveMutation = useMutation({
     mutationFn: async (data: CreateWeeklyObjectiveData) => {

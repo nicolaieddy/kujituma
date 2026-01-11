@@ -7,6 +7,9 @@ import { useQueryClient } from "@tanstack/react-query";
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 const AUTO_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
+// Global flag to track if auto-sync has been attempted this session
+let globalAutoSyncAttempted = false;
+
 export interface DuolingoConnection {
   id: string;
   user_id: string;
@@ -34,15 +37,16 @@ export function useDuolingoConnection() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [lastAutoSync, setLastAutoSync] = useState<Date | null>(null);
-  const autoSyncAttemptedRef = useRef(false);
+  const connectionCheckedRef = useRef(false);
   const queryClient = useQueryClient();
 
   const checkConnectionStatus = useCallback(async () => {
-    if (!user) {
-      setIsLoading(false);
+    if (!user || connectionCheckedRef.current) {
+      if (!user) setIsLoading(false);
       return;
     }
+
+    connectionCheckedRef.current = true;
 
     try {
       const { data, error } = await supabase
@@ -170,8 +174,6 @@ export function useDuolingoConnection() {
         });
       }
 
-      setLastAutoSync(new Date());
-
       if (!silent) {
         if (result.habitsCompleted > 0) {
           toast.success(`Synced ${result.habitsCompleted} habit${result.habitsCompleted > 1 ? 's' : ''} from Duolingo!`);
@@ -200,9 +202,12 @@ export function useDuolingoConnection() {
     }
   }, [session, connection, queryClient]);
 
-  // Auto-sync logic - runs once when connection is loaded and stale
+  const syncActivitiesRef = useRef(syncActivities);
+  syncActivitiesRef.current = syncActivities;
+
+  // Auto-sync logic - runs once globally when connection is loaded and stale
   useEffect(() => {
-    if (!isConnected || !connection || isLoading || autoSyncAttemptedRef.current) {
+    if (!isConnected || !connection || isLoading || globalAutoSyncAttempted) {
       return;
     }
 
@@ -217,11 +222,12 @@ export function useDuolingoConnection() {
     };
 
     if (shouldAutoSync()) {
-      autoSyncAttemptedRef.current = true;
+      globalAutoSyncAttempted = true;
       console.log("[Duolingo] Auto-syncing (last sync was stale)");
-      syncActivities(true); // Silent sync
+      // Use ref to avoid dependency on syncActivities
+      syncActivitiesRef.current(true);
     }
-  }, [isConnected, connection, isLoading, syncActivities]);
+  }, [isConnected, connection, isLoading]);
 
   // Calculate time since last sync for display
   const getLastSyncDisplay = useCallback(() => {
