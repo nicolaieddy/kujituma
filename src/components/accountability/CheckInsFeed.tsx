@@ -141,7 +141,8 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     
     try {
       setIsSubmittingReply(true);
-      await accountabilityService.recordCheckIn(partnershipId, replyMessage.trim());
+      // Pass the checkInId as replyToId to link the reply to this check-in
+      await accountabilityService.recordCheckIn(partnershipId, replyMessage.trim(), checkInId);
       setReplyMessage('');
       setReplyingToId(null);
       await fetchCheckIns();
@@ -664,6 +665,46 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                             <Send className="h-3 w-3" />
                           </Button>
                         </div>
+                      </div>
+                    )}
+                    
+                    {/* Nested replies */}
+                    {checkIn.replies && checkIn.replies.length > 0 && (
+                      <div className="mt-3 ml-8 space-y-2 border-l-2 border-primary/20 pl-3">
+                        {checkIn.replies.map(reply => {
+                          const isReplyFromCurrentUser = reply.initiated_by === currentUserId;
+                          const replyName = isReplyFromCurrentUser 
+                            ? (currentUserProfile?.full_name || 'You')
+                            : (reply.initiator_profile?.full_name || partnerName);
+                          const replyAvatar = isReplyFromCurrentUser 
+                            ? currentUserProfile?.avatar_url 
+                            : reply.initiator_profile?.avatar_url;
+                          
+                          return (
+                            <div key={reply.id} className="flex gap-2 items-start">
+                              <Avatar className="h-5 w-5 flex-shrink-0">
+                                {replyAvatar && <AvatarImage src={replyAvatar} />}
+                                <AvatarFallback className={cn(
+                                  "text-[8px] font-medium",
+                                  isReplyFromCurrentUser ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+                                )}>
+                                  {getInitials(replyName)}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-xs font-medium text-foreground">{replyName}</span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                  </span>
+                                </div>
+                                {reply.message && (
+                                  <p className="text-xs text-foreground mt-0.5">{reply.message}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                   </div>

@@ -22,6 +22,7 @@ export type Database = {
           initiated_by: string
           message: string | null
           partnership_id: string
+          reply_to_id: string | null
           week_start: string
         }
         Insert: {
@@ -31,6 +32,7 @@ export type Database = {
           initiated_by: string
           message?: string | null
           partnership_id: string
+          reply_to_id?: string | null
           week_start: string
         }
         Update: {
@@ -40,6 +42,7 @@ export type Database = {
           initiated_by?: string
           message?: string | null
           partnership_id?: string
+          reply_to_id?: string | null
           week_start?: string
         }
         Relationships: [
@@ -62,6 +65,13 @@ export type Database = {
             columns: ["partnership_id"]
             isOneToOne: false
             referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accountability_check_ins_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_check_ins"
             referencedColumns: ["id"]
           },
         ]
