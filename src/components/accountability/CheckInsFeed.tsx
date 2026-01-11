@@ -216,9 +216,15 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
       <div className="text-center py-6">
         <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
         <p className="text-sm text-muted-foreground">No check-ins yet</p>
-        <p className="text-xs text-muted-foreground/70 mt-1">
+        <p className="text-xs text-muted-foreground/70 mt-1 mb-4">
           Record your first check-in to start the conversation
         </p>
+        {onRecordCheckIn && (
+          <Button onClick={onRecordCheckIn} className="gap-1.5">
+            <MessageSquare className="h-4 w-4" />
+            Record Check-in
+          </Button>
+        )}
       </div>
     );
   }
