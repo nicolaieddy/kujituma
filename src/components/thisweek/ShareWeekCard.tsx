@@ -1,6 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Lock, Share2 } from "lucide-react";
+import { ArrowRight, CheckCircle, Lock, Share2 } from "lucide-react";
 import { UnifiedPost } from "@/services/unifiedPostsService";
 import { SharedPostPreview } from "./SharedPostPreview";
 
@@ -14,6 +14,8 @@ interface ShareWeekCardProps {
   onShareWeek: () => void;
   onViewInCommunity: () => void;
   onCloseWeek?: () => void;
+  onCarryOverIncomplete?: () => void;
+  incompleteCount?: number;
   isWeekCompleted?: boolean;
   isClosingWeek?: boolean;
 }
@@ -28,6 +30,8 @@ export const ShareWeekCard = ({
   onShareWeek,
   onViewInCommunity,
   onCloseWeek,
+  onCarryOverIncomplete,
+  incompleteCount = 0,
   isWeekCompleted = false,
   isClosingWeek = false
 }: ShareWeekCardProps) => {
@@ -60,6 +64,15 @@ export const ShareWeekCard = ({
                 }
               </p>
               <div className="flex gap-2 mt-4 justify-center flex-wrap">
+                {incompleteCount > 0 && onCarryOverIncomplete && (
+                  <Button
+                    onClick={onCarryOverIncomplete}
+                    variant="default"
+                  >
+                    <ArrowRight className="h-4 w-4 mr-2" />
+                    Carry Over {incompleteCount} Incomplete
+                  </Button>
+                )}
                 {hasShared ? (
                   <Button
                     onClick={onViewInCommunity}
