@@ -15,7 +15,7 @@ import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
 import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
-import { PartnerSwitcher } from '@/components/accountability/PartnerSwitcher';
+import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability/PartnerSwitcher';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -78,6 +78,7 @@ const PartnerDashboard = () => {
   } | null>(null);
   
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
+  const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
 
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -221,8 +222,11 @@ const PartnerDashboard = () => {
       // Refresh partnership details to get updated last_check_in_at
       const updatedPartnership = await accountabilityService.getPartnershipDetails(partnerId!);
       setPartnershipDetails(updatedPartnership);
-      // Refresh the check-ins feed immediately
-      await checkInsFeedRef.current?.refresh();
+      // Refresh the check-ins feed and partner switcher immediately
+      await Promise.all([
+        checkInsFeedRef.current?.refresh(),
+        partnerSwitcherRef.current?.refresh()
+      ]);
       toast.success('Check-in recorded!');
     } catch (err) {
       console.error('Error recording check-in:', err);
@@ -338,7 +342,7 @@ const PartnerDashboard = () => {
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Partner Switcher */}
-          {partnerId && <PartnerSwitcher currentPartnerId={partnerId} />}
+          {partnerId && <PartnerSwitcher ref={partnerSwitcherRef} currentPartnerId={partnerId} />}
           
           {/* Back Button */}
           <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-2">
@@ -434,7 +438,7 @@ const PartnerDashboard = () => {
                   currentUserId={user.id}
                   currentUserProfile={currentUserProfile || undefined}
                   partnerName={partnerProfile.full_name}
-                  maxVisible={5}
+                  maxVisible={2}
                   onRecordCheckIn={() => setCheckInDialogOpen(true)}
                 />
               </CardContent>
