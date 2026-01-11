@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
+const AUTO_SYNC_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 
 export interface DuolingoConnection {
   id: string;
@@ -33,6 +34,8 @@ export function useDuolingoConnection() {
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [lastAutoSync, setLastAutoSync] = useState<Date | null>(null);
+  const autoSyncAttemptedRef = useRef(false);
   const queryClient = useQueryClient();
 
   const checkConnectionStatus = useCallback(async () => {
@@ -133,7 +136,7 @@ export function useDuolingoConnection() {
     }
   }, [session]);
 
-  const syncActivities = useCallback(async (): Promise<SyncResult | null> => {
+  const syncActivities = useCallback(async (silent = false): Promise<SyncResult | null> => {
     if (!session) return null;
 
     setIsSyncing(true);
@@ -151,7 +154,9 @@ export function useDuolingoConnection() {
       const result = await response.json();
 
       if (!response.ok) {
-        toast.error(result.message || result.error || "Sync failed");
+        if (!silent) {
+          toast.error(result.message || result.error || "Sync failed");
+        }
         return null;
       }
 
@@ -165,24 +170,76 @@ export function useDuolingoConnection() {
         });
       }
 
-      if (result.habitsCompleted > 0) {
-        toast.success(`Synced ${result.habitsCompleted} habit${result.habitsCompleted > 1 ? 's' : ''} from Duolingo!`);
-        queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
-      } else if (result.streakMaintained) {
-        toast.success(`Duolingo synced! Streak: ${result.streak} 🔥`);
+      setLastAutoSync(new Date());
+
+      if (!silent) {
+        if (result.habitsCompleted > 0) {
+          toast.success(`Synced ${result.habitsCompleted} habit${result.habitsCompleted > 1 ? 's' : ''} from Duolingo!`);
+          queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
+        } else if (result.streakMaintained) {
+          toast.success(`Duolingo synced! Streak: ${result.streak} 🔥`);
+        } else {
+          toast.info("Duolingo synced - no new completions");
+        }
       } else {
-        toast.info("Duolingo synced - no new completions");
+        // Silent sync - still invalidate if habits completed
+        if (result.habitsCompleted > 0) {
+          queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
+        }
       }
 
       return result as SyncResult;
     } catch (error) {
       console.error("Error syncing Duolingo:", error);
-      toast.error("Failed to sync with Duolingo");
+      if (!silent) {
+        toast.error("Failed to sync with Duolingo");
+      }
       return null;
     } finally {
       setIsSyncing(false);
     }
   }, [session, connection, queryClient]);
+
+  // Auto-sync logic - runs once when connection is loaded and stale
+  useEffect(() => {
+    if (!isConnected || !connection || isLoading || autoSyncAttemptedRef.current) {
+      return;
+    }
+
+    const shouldAutoSync = () => {
+      if (!connection.last_synced_at) return true;
+      
+      const lastSync = new Date(connection.last_synced_at);
+      const now = new Date();
+      const timeSinceSync = now.getTime() - lastSync.getTime();
+      
+      return timeSinceSync > AUTO_SYNC_INTERVAL_MS;
+    };
+
+    if (shouldAutoSync()) {
+      autoSyncAttemptedRef.current = true;
+      console.log("[Duolingo] Auto-syncing (last sync was stale)");
+      syncActivities(true); // Silent sync
+    }
+  }, [isConnected, connection, isLoading, syncActivities]);
+
+  // Calculate time since last sync for display
+  const getLastSyncDisplay = useCallback(() => {
+    const lastSyncTime = connection?.last_synced_at;
+    if (!lastSyncTime) return null;
+
+    const lastSync = new Date(lastSyncTime);
+    const now = new Date();
+    const diffMs = now.getTime() - lastSync.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  }, [connection?.last_synced_at]);
 
   return {
     isConnected,
@@ -194,5 +251,6 @@ export function useDuolingoConnection() {
     disconnect,
     syncActivities,
     refreshConnection: checkConnectionStatus,
+    lastSyncDisplay: getLastSyncDisplay(),
   };
 }

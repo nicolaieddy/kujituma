@@ -53,7 +53,7 @@ export const LanguageLearningIntegration = ({ compact = false }: LanguageLearnin
             variant="ghost" 
             size="sm" 
             className="h-6 px-2 text-xs"
-            onClick={syncActivities}
+            onClick={() => syncActivities()}
             disabled={isSyncing}
           >
             {isSyncing ? <Loader2 className="h-3 w-3 animate-spin" /> : <RefreshCw className="h-3 w-3" />}
@@ -83,7 +83,7 @@ export const LanguageLearningIntegration = ({ compact = false }: LanguageLearnin
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={syncActivities}
+          onClick={() => syncActivities()}
           disabled={isSyncing}
           className="gap-1.5"
         >
