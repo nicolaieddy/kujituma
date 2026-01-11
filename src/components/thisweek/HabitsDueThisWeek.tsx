@@ -37,7 +37,7 @@ export const HabitsDueThisWeek = ({
   const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
   const { streaks: dailyStreaks, getHabitStreak, activeStreaks, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
-  const { isStravaCompletion, getStravaCompletionsForHabit } = useSyncedActivities(currentWeekStart);
+  const { isStravaCompletion, getStravaCompletionsForDate, getStravaCompletionsForHabit, formatDuration } = useSyncedActivities(currentWeekStart);
   const { getMappingForHabitItem } = useActivityMappings();
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
 
@@ -459,7 +459,7 @@ export const HabitsDueThisWeek = ({
                               const isChecked = completionStatus[index] || false;
                               const date = weekDates[index];
                               const isTodayDate = date && isToday(date);
-                              const stravaActivity = date ? isStravaCompletion(item.id, date) : null;
+                              const stravaActivitiesForDay = date ? getStravaCompletionsForDate(item.id, date) : [];
                               
                               return (
                                 <Tooltip key={index}>
@@ -488,13 +488,19 @@ export const HabitsDueThisWeek = ({
                                       </div>
                                     </div>
                                   </TooltipTrigger>
-                                  <TooltipContent side="top">
-                                    {stravaActivity ? (
-                                      <div>
-                                        <p className="font-medium">{stravaActivity.activity_name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                          {stravaActivity.activity_type} • {Math.round(stravaActivity.duration_seconds / 60)}min
-                                        </p>
+                                  <TooltipContent side="top" className="max-w-xs">
+                                    {stravaActivitiesForDay.length > 0 ? (
+                                      <div className="space-y-2">
+                                        {stravaActivitiesForDay.map((activity, idx) => (
+                                          <div key={activity.id} className={idx > 0 ? "pt-2 border-t border-border" : ""}>
+                                            <p className="font-medium">{activity.activity_name || 'Activity'}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                              {activity.activity_type}
+                                              {activity.duration_seconds && ` • ${formatDuration(activity.duration_seconds)}`}
+                                              {activity.start_date && ` • ${format(new Date(activity.start_date), 'h:mm a')}`}
+                                            </p>
+                                          </div>
+                                        ))}
                                       </div>
                                     ) : isChecked ? (
                                       <p>Completed via Strava</p>
@@ -516,8 +522,8 @@ export const HabitsDueThisWeek = ({
                               const isPast = date && isBefore(date, new Date()) && !isToday(date);
                               const isTodayDate = date && isToday(date);
                               
-                              // Check if this completion came from Strava
-                              const stravaActivity = date ? isStravaCompletion(item.id, date) : null;
+                              // Get all Strava completions for this day
+                              const stravaActivitiesForDay = date ? getStravaCompletionsForDate(item.id, date) : [];
                               
                               return (
                                 <div
@@ -550,14 +556,9 @@ export const HabitsDueThisWeek = ({
                                       )}
                                     />
                                     {/* Strava badge overlay */}
-                                    {stravaActivity && isChecked && (
+                                    {stravaActivitiesForDay.length > 0 && isChecked && (
                                       <div className="absolute -top-1 -right-1">
-                                        <StravaActivityBadge
-                                          activityName={stravaActivity.activity_name}
-                                          activityType={stravaActivity.activity_type}
-                                          durationSeconds={stravaActivity.duration_seconds}
-                                          distanceMeters={stravaActivity.distance_meters}
-                                        />
+                                        <StravaActivityBadge activities={stravaActivitiesForDay} />
                                       </div>
                                     )}
                                   </div>

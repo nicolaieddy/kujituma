@@ -47,14 +47,20 @@ export function useSyncedActivities(weekStart?: Date) {
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
-  // Check if a habit item was completed via Strava on a specific date
-  const isStravaCompletion = (habitItemId: string, date: Date): SyncedActivity | null => {
+  // Get all Strava completions for a habit item on a specific date
+  const getStravaCompletionsForDate = (habitItemId: string, date: Date): SyncedActivity[] => {
     const dateStr = format(date, "yyyy-MM-dd");
     
-    return syncedActivities.find(activity => 
+    return syncedActivities.filter(activity => 
       activity.matched_habit_item_id === habitItemId &&
       activity.start_date?.startsWith(dateStr)
-    ) || null;
+    );
+  };
+
+  // Check if a habit item was completed via Strava on a specific date (returns first match for backwards compatibility)
+  const isStravaCompletion = (habitItemId: string, date: Date): SyncedActivity | null => {
+    const completions = getStravaCompletionsForDate(habitItemId, date);
+    return completions.length > 0 ? completions[0] : null;
   };
 
   // Get all Strava completions for a habit item this week
@@ -87,6 +93,7 @@ export function useSyncedActivities(weekStart?: Date) {
     syncedActivities,
     isLoading,
     isStravaCompletion,
+    getStravaCompletionsForDate,
     getStravaCompletionsForHabit,
     formatDuration,
     formatDistance,

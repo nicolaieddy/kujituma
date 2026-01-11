@@ -86,7 +86,7 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
   const { user } = useAuth();
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
   const { toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
-  const { isStravaCompletion } = useSyncedActivities(currentWeekStart);
+  const { getStravaCompletionsForDate } = useSyncedActivities(currentWeekStart);
 
   const habitItems = goal.habit_items || [];
   const hasHabits = habitItems.length > 0;
@@ -298,8 +298,8 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
                         const isTodayDate = date && isToday(date);
                         const isPast = date && isBefore(date, new Date()) && !isTodayDate;
                         
-                        // Check if this completion came from Strava
-                        const stravaActivity = date ? isStravaCompletion(habit.id, date) : null;
+                        // Get all Strava completions for this day
+                        const stravaActivitiesForDay = date ? getStravaCompletionsForDate(habit.id, date) : [];
                         
                         return (
                           <div
@@ -333,14 +333,9 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
                                 )}
                               />
                               {/* Strava badge overlay */}
-                              {stravaActivity && isChecked && (
+                              {stravaActivitiesForDay.length > 0 && isChecked && (
                                 <div className="absolute -top-1 -right-1">
-                                  <StravaActivityBadge
-                                    activityName={stravaActivity.activity_name}
-                                    activityType={stravaActivity.activity_type}
-                                    durationSeconds={stravaActivity.duration_seconds}
-                                    distanceMeters={stravaActivity.distance_meters}
-                                  />
+                                  <StravaActivityBadge activities={stravaActivitiesForDay} />
                                 </div>
                               )}
                             </div>
