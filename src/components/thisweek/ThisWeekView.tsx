@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -10,7 +12,7 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
-// DuolingoStreakCard is now integrated inside HabitsDueThisWeek
+import { CloseWeekDialog } from "@/components/thisweek/CloseWeekDialog";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
 import { PartnerCheckInsCard } from "@/components/thisweek/PartnerCheckInsCard";
 import { useHabitStats } from "@/hooks/useHabitStats";
@@ -21,6 +23,7 @@ import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { CarryOverObjectivesModal } from "@/components/goals/CarryOverObjectivesModal";
 import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
+import { useWeekClose } from "@/hooks/useWeekClose";
 
 // Extracted hooks for better code organization
 import { useWeeklyShare } from "@/hooks/useWeeklyShare";
@@ -98,6 +101,21 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     progressPost,
     currentWeekStart
   );
+
+  // Week close functionality
+  const {
+    showCloseDialog,
+    setShowCloseDialog,
+    closeWeek,
+    isClosingWeek,
+    incompleteObjectives: closeIncompleteObjectives,
+    completedObjectives: closeCompletedObjectives,
+  } = useWeekClose({
+    currentWeekStart,
+    objectives: objectives || [],
+    incompleteReflections,
+    progressNotes: progressPost?.notes || '',
+  });
 
   // AI Suggestions
   const { 
@@ -197,6 +215,32 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
+      {/* Carry Over Banner - prominent call to action when there are incomplete objectives from past weeks */}
+      {isCurrentWeek && !isReadOnly && hasIncompleteObjectivesFromPastWeeks && !shouldShowTransition && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <ArrowRight className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">
+                    {carryOverIncompleteObjectives.length} incomplete objective{carryOverIncompleteObjectives.length !== 1 ? 's' : ''} from past weeks
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Carry them over to continue working on them
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => setShowCarryOverModal(true)} size="sm">
+                Review & Carry Over
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Week Transition Card - shows at start of week when last week needs closing */}
       {isCurrentWeek && shouldShowTransition && (
         <WeekTransitionCard
@@ -290,7 +334,19 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         reflectionValue={progressPost?.notes || ""}
         onShareWeek={handleRequestShare}
         onViewInCommunity={() => handleViewInCommunity(feedPost?.id)}
+        onCloseWeek={() => setShowCloseDialog(true)}
         isWeekCompleted={isWeekCompleted}
+        isClosingWeek={isClosingWeek}
+      />
+
+      <CloseWeekDialog
+        open={showCloseDialog}
+        onOpenChange={setShowCloseDialog}
+        completedObjectives={closeCompletedObjectives}
+        incompleteObjectives={closeIncompleteObjectives}
+        goals={goals || []}
+        onConfirmClose={closeWeek}
+        isClosing={isClosingWeek}
       />
 
       <ShareConfirmationDialog
