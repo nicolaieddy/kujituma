@@ -16,6 +16,7 @@ interface DraggableGoalCardProps {
   onVisibilityChange?: (id: string, visibility: GoalVisibility) => void;
   isDeprioritized?: boolean;
   currentStreak?: number;
+  duolingoStreak?: number;
 }
 
 export const DraggableGoalCard = ({ 
@@ -29,7 +30,8 @@ export const DraggableGoalCard = ({
   onPauseToggle,
   onVisibilityChange,
   isDeprioritized,
-  currentStreak
+  currentStreak,
+  duolingoStreak
 }: DraggableGoalCardProps) => {
   const {
     attributes,
@@ -88,6 +90,7 @@ export const DraggableGoalCard = ({
           onVisibilityChange={onVisibilityChange}
           isDeprioritized={isDeprioritized}
           currentStreak={currentStreak}
+          duolingoStreak={duolingoStreak}
         />
       </div>
     </div>

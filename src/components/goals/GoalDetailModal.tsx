@@ -7,6 +7,7 @@ import { GoalForm } from "./GoalForm";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
 import { CreateGoalUpdateModal } from "@/components/community/CreateGoalUpdateModal";
+import { LanguageLearningIntegration } from "./LanguageLearningIntegration";
 import { Edit, CheckCircle, Play, Clock, Trash2, Share2 } from "lucide-react";
 
 interface GoalDetailModalProps {
@@ -103,6 +104,11 @@ export const GoalDetailModal = ({
             </div>
           ) : (
             <div className="mt-6 space-y-6">
+              {/* Language Learning Integration */}
+              {goal.category === 'Language Learning' && (
+                <LanguageLearningIntegration />
+              )}
+              
               <GoalDetailHabitsSection 
                 goal={goal} 
                 onEdit={onEdit} 

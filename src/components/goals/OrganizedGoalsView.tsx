@@ -32,6 +32,7 @@ interface OrganizedGoalsViewProps {
   onReorder?: (reorderedGoals: { id: string; order_index: number }[]) => void;
   isLoading?: boolean;
   habitStreaks?: Record<string, number>; // Map of goal ID to current streak
+  duolingoStreak?: number; // Duolingo streak for language learning goals
 }
 
 const initialFilters: GoalFilters = {
@@ -59,7 +60,8 @@ export const OrganizedGoalsView = ({
   onDeprioritizeAll,
   onReorder,
   isLoading = false,
-  habitStreaks = {}
+  habitStreaks = {},
+  duolingoStreak
 }: OrganizedGoalsViewProps) => {
   const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
@@ -358,6 +360,7 @@ export const OrganizedGoalsView = ({
                               onPauseToggle={onPauseToggle}
                               onVisibilityChange={onVisibilityChange}
                               currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
+                              duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
                             />
                           ))
                         )}
@@ -397,6 +400,7 @@ export const OrganizedGoalsView = ({
                               onPauseToggle={onPauseToggle}
                               onVisibilityChange={onVisibilityChange}
                               currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
+                              duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
                             />
                           ))
                         )}
@@ -436,6 +440,7 @@ export const OrganizedGoalsView = ({
                               onPauseToggle={onPauseToggle}
                               onVisibilityChange={onVisibilityChange}
                               currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
+                              duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
                             />
                           ))
                         )}
@@ -485,6 +490,7 @@ export const OrganizedGoalsView = ({
                       onPauseToggle={onPauseToggle}
                       onVisibilityChange={onVisibilityChange}
                       isDeprioritized
+                      duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
                     />
                   ))}
                 </div>

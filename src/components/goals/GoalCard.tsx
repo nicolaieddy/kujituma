@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff } from "lucide-react";
+import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff, Flame } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -39,6 +39,7 @@ interface GoalCardProps {
   onVisibilityChange?: (id: string, visibility: GoalVisibility) => void;
   isDeprioritized?: boolean;
   currentStreak?: number;
+  duolingoStreak?: number;
 }
 
 const STATUS_CONFIG = {
@@ -75,7 +76,8 @@ export const GoalCard = ({
   onPauseToggle,
   onVisibilityChange,
   isDeprioritized = false,
-  currentStreak = 0
+  currentStreak = 0,
+  duolingoStreak
 }: GoalCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -293,6 +295,23 @@ export const GoalCard = ({
                           <p className="text-xs text-muted-foreground">Click to view details</p>
                         </>
                       )}
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+                {/* Duolingo streak badge for Language Learning goals */}
+                {goal.category === 'Language Learning' && duolingoStreak !== undefined && duolingoStreak > 0 && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Badge 
+                        variant="outline" 
+                        className="text-xs gap-1 cursor-help border-[#FF9600]/30 text-[#FF9600] bg-[#FF9600]/5"
+                      >
+                        <Flame className="h-3 w-3" />
+                        {duolingoStreak}
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-[#FF9600]">🦉 Duolingo streak: {duolingoStreak} days</p>
                     </TooltipContent>
                   </Tooltip>
                 )}
