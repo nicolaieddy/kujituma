@@ -4,7 +4,6 @@ import { UserDropdownMenu } from "./UserDropdownMenu";
 import { UserMobileMenu } from "./UserMobileMenu";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { PendingSyncBadge } from "@/components/pwa/PendingSyncBadge";
-import { StreakIndicator } from "./StreakIndicator";
 import { Button } from "@/components/ui/button";
 
 import { useNavigate } from "react-router-dom";
@@ -74,7 +73,6 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
             renderIOSActions()
           ) : (
             <>
-              <StreakIndicator />
               <PendingSyncBadge />
               <NotificationBell />
 
