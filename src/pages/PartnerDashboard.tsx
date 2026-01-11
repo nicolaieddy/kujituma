@@ -342,7 +342,7 @@ const PartnerDashboard = () => {
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Partner Switcher */}
-          {partnerId && <PartnerSwitcher currentPartnerId={partnerId} />}
+          {partnerId && <PartnerSwitcher ref={partnerSwitcherRef} currentPartnerId={partnerId} />}
           
           {/* Back Button */}
           <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-2">
