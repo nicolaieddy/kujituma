@@ -172,6 +172,60 @@ export function useActivityMappings() {
     }
   }, [user, fetchMappings, triggerSync]);
 
+  // Create multiple mappings at once (for multi-select)
+  const createMultipleMappings = useCallback(async (
+    activityTypes: string[],
+    goalId: string,
+    habitItemId: string,
+    minDurationMinutes: number = 0,
+    integrationType: IntegrationType = 'strava'
+  ) => {
+    if (!user) {
+      toast.error("Please log in first");
+      return false;
+    }
+
+    try {
+      const records = activityTypes.map(activityType => {
+        const stravaActivityType = integrationType === 'duolingo' 
+          ? `duolingo_${activityType}` 
+          : activityType;
+        
+        return {
+          user_id: user.id,
+          goal_id: goalId,
+          habit_item_id: habitItemId,
+          min_duration_minutes: minDurationMinutes,
+          integration_type: integrationType,
+          strava_activity_type: stravaActivityType,
+        };
+      });
+
+      const { error } = await supabase
+        .from("activity_mappings")
+        .upsert(records, {
+          onConflict: "user_id,strava_activity_type",
+        });
+
+      if (error) throw error;
+
+      const integrationName = integrationType === 'strava' ? 'Strava' : 'Duolingo';
+      toast.success(`Linked ${activityTypes.length} activity type${activityTypes.length > 1 ? 's' : ''} to ${integrationName}`);
+      await fetchMappings();
+      
+      // Auto-trigger sync after creating mapping (only for Strava)
+      if (integrationType === 'strava') {
+        triggerSync();
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Failed to create mappings:", error);
+      toast.error("Failed to save mappings");
+      return false;
+    }
+  }, [user, fetchMappings, triggerSync]);
+
   const deleteMapping = useCallback(async (mappingId: string) => {
     if (!user) return;
 
@@ -203,6 +257,11 @@ export function useActivityMappings() {
     return mappings.find(m => m.habit_item_id === habitItemId);
   }, [mappings]);
 
+  // Get ALL mappings for a habit item (for multi-activity support)
+  const getAllMappingsForHabitItem = useCallback((habitItemId: string) => {
+    return mappings.filter(m => m.habit_item_id === habitItemId);
+  }, [mappings]);
+
   const getMappingsForIntegration = useCallback((integrationType: IntegrationType) => {
     return mappings.filter(m => m.integration_type === integrationType);
   }, [mappings]);
@@ -212,9 +271,11 @@ export function useActivityMappings() {
     isLoading,
     isSyncing,
     createMapping,
+    createMultipleMappings,
     deleteMapping,
     getMappingForActivityType,
     getMappingForHabitItem,
+    getAllMappingsForHabitItem,
     getMappingsForIntegration,
     refreshMappings: fetchMappings,
     triggerSync,
