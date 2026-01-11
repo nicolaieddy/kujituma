@@ -1,29 +1,19 @@
 import { lazy } from "react";
 
+// The rewritten Profile.tsx avoids Radix Tabs and useSearchParams, so it
+// should work on iOS. We still keep ProfileLite as a fallback via ?lite=1.
 const ProfileFull = lazy(() => import("./Profile"));
 const ProfileLite = lazy(() => import("./ProfileLite"));
 
-const isIOS = () => {
-  if (typeof navigator === "undefined") return false;
-  const ua = navigator.userAgent || "";
-  const platform = (navigator as any).platform || "";
-  const maxTouchPoints = (navigator as any).maxTouchPoints || 0;
-  return /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1);
-};
-
 /**
- * Entry route for /profile that can switch implementations without importing
- * the full profile module on iOS.
+ * Entry point for /profile route.
+ * - Default: renders the full (now iOS-safe) Profile page.
+ * - ?lite=1: renders the minimal debug ProfileLite page.
  */
 const ProfileEntry = () => {
-  // Avoid react-router search param hooks here—some iOS builds were still
-  // crashing even in safe mode; parsing directly is the simplest/most robust.
-  const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
-  const safe = params.get("safe") === "1";
-  const forceFull = params.get("full") === "1";
-
-  // Default: iOS uses the lightweight version to avoid stack overflows.
-  const useLite = (safe || isIOS()) && !forceFull;
+  const params =
+    typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const useLite = params.get("lite") === "1";
 
   return useLite ? <ProfileLite /> : <ProfileFull />;
 };
