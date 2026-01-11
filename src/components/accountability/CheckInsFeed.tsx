@@ -679,9 +679,10 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                           const replyAvatar = isReplyFromCurrentUser 
                             ? currentUserProfile?.avatar_url 
                             : reply.initiator_profile?.avatar_url;
+                          const isEditingReply = editingId === reply.id;
                           
                           return (
-                            <div key={reply.id} className="flex gap-2 items-start">
+                            <div key={reply.id} className="flex gap-2 items-start group">
                               <Avatar className="h-5 w-5 flex-shrink-0">
                                 {replyAvatar && <AvatarImage src={replyAvatar} />}
                                 <AvatarFallback className={cn(
@@ -697,10 +698,83 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                                   <span className="text-[10px] text-muted-foreground">
                                     {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
                                   </span>
+                                  {/* Edit/Delete buttons for own replies */}
+                                  {isReplyFromCurrentUser && !isEditingReply && (
+                                    <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0"
+                                            onClick={() => startEditing(reply)}
+                                          >
+                                            <Pencil className="h-2.5 w-2.5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">
+                                          Edit reply
+                                        </TooltipContent>
+                                      </Tooltip>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 w-5 p-0 text-destructive hover:text-destructive"
+                                            onClick={() => confirmDelete(reply.id)}
+                                            disabled={deletingId === reply.id}
+                                          >
+                                            <Trash2 className="h-2.5 w-2.5" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="top" className="text-xs">
+                                          Delete reply
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </div>
+                                  )}
                                 </div>
-                                {reply.message && (
+                                {isEditingReply ? (
+                                  <div className="mt-1 flex gap-2">
+                                    <Textarea
+                                      value={editMessage}
+                                      onChange={(e) => setEditMessage(e.target.value)}
+                                      placeholder="Edit your reply..."
+                                      className="min-h-[40px] text-xs resize-none flex-1"
+                                      autoFocus
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                                          handleEdit(reply.id);
+                                        }
+                                        if (e.key === 'Escape') {
+                                          cancelEditing();
+                                        }
+                                      }}
+                                    />
+                                    <div className="flex flex-col gap-0.5">
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleEdit(reply.id)}
+                                        disabled={isSubmittingEdit}
+                                        className="h-6 px-2"
+                                      >
+                                        <Check className="h-3 w-3" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={cancelEditing}
+                                        disabled={isSubmittingEdit}
+                                        className="h-6 px-2"
+                                      >
+                                        <X className="h-3 w-3" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : reply.message ? (
                                   <p className="text-xs text-foreground mt-0.5">{reply.message}</p>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                           );
