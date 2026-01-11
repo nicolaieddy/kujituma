@@ -26,10 +26,10 @@ export const useAccountabilityPartners = () => {
       setLoading(true);
       setError(null);
       
-      const [partnersData, requestsData] = await Promise.all([
-        accountabilityService.getPartners(),
-        accountabilityService.getPartnerRequests()
-      ]);
+      // Fetch partners first, then pass IDs to filter requests
+      const partnersData = await accountabilityService.getPartners();
+      const partnerIds = new Set(partnersData.map(p => p.partner_id));
+      const requestsData = await accountabilityService.getPartnerRequests(partnerIds);
       
       setPartners(partnersData);
       setPartnerRequests(requestsData);
