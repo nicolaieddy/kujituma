@@ -133,6 +133,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
 
   const handleToggleReaction = async (checkInId: string, reaction: string) => {
     await accountabilityService.toggleReaction(checkInId, reaction);
+    await fetchCheckIns(); // Refresh to show updated reaction
   };
 
   const handleReply = async (checkInId: string) => {

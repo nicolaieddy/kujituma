@@ -45,9 +45,10 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
 
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
-  const hasCheckedInThisWeek = (lastCheckIn: string | null): boolean => {
-    if (!lastCheckIn) return false;
-    const checkInDate = parseISO(lastCheckIn);
+  // Check if the CURRENT USER has checked in with this partner this week
+  const hasCheckedInThisWeek = (myLastCheckIn: string | null): boolean => {
+    if (!myLastCheckIn) return false;
+    const checkInDate = parseISO(myLastCheckIn);
     return isAfter(checkInDate, currentWeekStart) || checkInDate >= currentWeekStart;
   };
 
@@ -58,7 +59,7 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
         <div className="flex gap-3 pb-2">
           {partners.map((partner) => {
             const isCurrent = partner.partner_id === currentPartnerId;
-            const checkedIn = hasCheckedInThisWeek(partner.last_check_in_at);
+            const checkedIn = hasCheckedInThisWeek(partner.my_last_check_in_at);
             const initials = partner.full_name
               .split(' ')
               .map(n => n[0])
