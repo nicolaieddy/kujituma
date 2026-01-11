@@ -15,7 +15,7 @@ import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
 import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
-import { PartnerSwitcher } from '@/components/accountability/PartnerSwitcher';
+import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability/PartnerSwitcher';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -78,6 +78,7 @@ const PartnerDashboard = () => {
   } | null>(null);
   
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
+  const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
 
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -221,8 +222,11 @@ const PartnerDashboard = () => {
       // Refresh partnership details to get updated last_check_in_at
       const updatedPartnership = await accountabilityService.getPartnershipDetails(partnerId!);
       setPartnershipDetails(updatedPartnership);
-      // Refresh the check-ins feed immediately
-      await checkInsFeedRef.current?.refresh();
+      // Refresh the check-ins feed and partner switcher immediately
+      await Promise.all([
+        checkInsFeedRef.current?.refresh(),
+        partnerSwitcherRef.current?.refresh()
+      ]);
       toast.success('Check-in recorded!');
     } catch (err) {
       console.error('Error recording check-in:', err);

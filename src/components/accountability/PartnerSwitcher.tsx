@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
@@ -7,28 +7,37 @@ import { accountabilityService, AccountabilityPartner } from '@/services/account
 import { Check, AlertCircle } from 'lucide-react';
 import { startOfWeek, isAfter, parseISO } from 'date-fns';
 
+export interface PartnerSwitcherRef {
+  refresh: () => Promise<void>;
+}
+
 interface PartnerSwitcherProps {
   currentPartnerId: string;
 }
 
-export const PartnerSwitcher = ({ currentPartnerId }: PartnerSwitcherProps) => {
+export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherProps>(({ currentPartnerId }, ref) => {
   const navigate = useNavigate();
   const [partners, setPartners] = useState<AccountabilityPartner[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchPartners = async () => {
-      try {
-        const data = await accountabilityService.getPartners();
-        setPartners(data);
-      } catch (err) {
-        console.error('Failed to fetch partners:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchPartners();
+  const fetchPartners = useCallback(async () => {
+    try {
+      const data = await accountabilityService.getPartners();
+      setPartners(data);
+    } catch (err) {
+      console.error('Failed to fetch partners:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    refresh: fetchPartners
+  }), [fetchPartners]);
+
+  useEffect(() => {
+    fetchPartners();
+  }, [fetchPartners]);
 
   if (loading || partners.length <= 1) {
     return null;
@@ -110,4 +119,6 @@ export const PartnerSwitcher = ({ currentPartnerId }: PartnerSwitcherProps) => {
       </ScrollArea>
     </div>
   );
-};
+});
+
+PartnerSwitcher.displayName = 'PartnerSwitcher';
