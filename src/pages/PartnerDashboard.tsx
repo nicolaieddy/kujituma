@@ -438,7 +438,7 @@ const PartnerDashboard = () => {
                   currentUserId={user.id}
                   currentUserProfile={currentUserProfile || undefined}
                   partnerName={partnerProfile.full_name}
-                  maxVisible={5}
+                  maxVisible={2}
                   onRecordCheckIn={() => setCheckInDialogOpen(true)}
                 />
               </CardContent>
