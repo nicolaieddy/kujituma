@@ -21,13 +21,15 @@ interface CheckInsFeedProps {
   currentUserId: string;
   partnerName: string;
   maxVisible?: number;
+  onRecordCheckIn?: () => void;
 }
 
 export const CheckInsFeed = ({ 
   partnershipId, 
   currentUserId,
   partnerName,
-  maxVisible = 5
+  maxVisible = 5,
+  onRecordCheckIn
 }: CheckInsFeedProps) => {
   const { user } = useAuth();
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
@@ -184,6 +186,7 @@ export const CheckInsFeed = ({
 
   return (
     <div className="space-y-4">
+      {/* Header with Record Check-in button */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium text-foreground">
           <MessageSquare className="h-4 w-4" />
@@ -195,15 +198,28 @@ export const CheckInsFeed = ({
             )}
           </Badge>
         </div>
-        <Button
-          variant={showFilters ? "secondary" : "ghost"}
-          size="sm"
-          onClick={() => setShowFilters(!showFilters)}
-          className="gap-1.5"
-        >
-          <Filter className="h-3 w-3" />
-          {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={showFilters ? "secondary" : "ghost"}
+            size="sm"
+            onClick={() => setShowFilters(!showFilters)}
+            className="gap-1.5"
+          >
+            <Filter className="h-3 w-3" />
+            {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
+          </Button>
+          {onRecordCheckIn && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onRecordCheckIn}
+              className="gap-1.5"
+            >
+              <MessageSquare className="h-3.5 w-3.5" />
+              Record Check-in
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
