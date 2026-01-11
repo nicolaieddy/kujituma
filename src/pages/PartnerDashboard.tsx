@@ -14,6 +14,7 @@ import { VisibilityHistoryTimeline } from '@/components/accountability/Visibilit
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed } from '@/components/accountability/CheckInsFeed';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
+import { PartnerSwitcher } from '@/components/accountability/PartnerSwitcher';
 import { 
   accountabilityService, 
   PartnerGoal, 
@@ -308,6 +309,9 @@ const PartnerDashboard = () => {
       
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
+          {/* Partner Switcher */}
+          {partnerId && <PartnerSwitcher currentPartnerId={partnerId} />}
+          
           {/* Back Button */}
           <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
