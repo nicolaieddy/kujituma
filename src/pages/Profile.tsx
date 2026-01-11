@@ -262,9 +262,39 @@ const Profile = () => {
                     onUpdate={handleProfileUpdate}
                     onCancel={() => setIsEditing(false)}
                   />
+                ) : safeMode ? (
+                  <div className="max-w-4xl mx-auto space-y-4">
+                    <div className="rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
+                      Safe mode is enabled: we’ve disabled the tab system and other complex UI to isolate the iOS crash.
+                      <div className="mt-2">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const next = new URLSearchParams(searchParams);
+                            next.delete("safe");
+                            next.set("tab", "profile");
+                            setSearchParams(next, { replace: true });
+                          }}
+                        >
+                          Exit safe mode
+                        </Button>
+                      </div>
+                    </div>
+
+                    <ProfilePublicView
+                      profile={profile}
+                      friendshipStatus={friendshipStatus}
+                      partnershipStatus={partnershipStatus}
+                      onFriendshipChange={setFriendshipStatus}
+                      onPartnershipChange={setPartnershipStatus}
+                      safeMode
+                    />
+                  </div>
                 ) : (
-                  <Tabs 
-                    value={activeTab} 
+                  <Tabs
+                    value={activeTab}
                     onValueChange={(value) => setSearchParams({ tab: value })}
                     className="max-w-4xl mx-auto"
                   >
@@ -279,8 +309,8 @@ const Profile = () => {
                           Integrations
                         </TabsTrigger>
                       </TabsList>
-                      
-                      {activeTab === 'profile' && (
+
+                      {activeTab === "profile" && (
                         <Button
                           onClick={() => setIsEditing(true)}
                           variant="outline"
@@ -292,15 +322,10 @@ const Profile = () => {
                         </Button>
                       )}
                     </div>
-                    
+
                     <TabsContent value="profile" className="mt-0">
-                      {safeMode && (
-                        <div className="mb-4 rounded-lg border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
-                          Safe mode is enabled (reduced UI for iOS debugging). Remove <code>?safe=1</code> to return to full profile.
-                        </div>
-                      )}
-                      <ProfilePublicView 
-                        profile={profile} 
+                      <ProfilePublicView
+                        profile={profile}
                         friendshipStatus={friendshipStatus}
                         partnershipStatus={partnershipStatus}
                         onFriendshipChange={setFriendshipStatus}
@@ -308,7 +333,7 @@ const Profile = () => {
                         safeMode={safeMode}
                       />
                     </TabsContent>
-                    
+
                     <TabsContent value="integrations" className="mt-0">
                       <IntegrationsSection />
                     </TabsContent>
@@ -316,8 +341,8 @@ const Profile = () => {
                 )}
               </>
             ) : (
-              <ProfilePublicView 
-                profile={profile} 
+              <ProfilePublicView
+                profile={profile}
                 friendshipStatus={friendshipStatus}
                 partnershipStatus={partnershipStatus}
                 onFriendshipChange={setFriendshipStatus}

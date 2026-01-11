@@ -351,12 +351,18 @@ const ProfilePublicViewSafe = ({ profile }: { profile: Profile }) => {
 
         <div className="px-6 sm:px-8 pb-6 -mt-16 relative z-10">
           <div className="flex flex-col sm:flex-row items-center gap-6">
-            <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
-              <AvatarImage src={profile.avatar_url} alt={profile.full_name} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                <User className="h-12 w-12" />
-              </AvatarFallback>
-            </Avatar>
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt={profile.full_name}
+                loading="lazy"
+                className="h-28 w-28 rounded-full border-4 border-background shadow-lg object-cover"
+              />
+            ) : (
+              <div className="h-28 w-28 rounded-full border-4 border-background shadow-lg bg-muted flex items-center justify-center">
+                <User className="h-12 w-12 text-muted-foreground" />
+              </div>
+            )}
 
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{profile.full_name}</h1>
