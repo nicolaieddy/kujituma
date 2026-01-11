@@ -131,16 +131,12 @@ class AccountabilityService {
     });
   }
 
-  async getPartnerRequests(): Promise<{
+  async getPartnerRequests(existingPartnerIds?: Set<string>): Promise<{
     sent: AccountabilityPartnerRequest[];
     received: AccountabilityPartnerRequest[];
   }> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('Not authenticated');
-
-    // Get existing partners to filter out stale requests
-    const existingPartners = await this.getPartners();
-    const partnerIds = new Set(existingPartners.map(p => p.partner_id));
 
     // Fetch sent requests
     const { data: sentData, error: sentError } = await supabase
@@ -180,13 +176,20 @@ class AccountabilityService {
       throw receivedError;
     }
 
-    // Filter out requests where a partnership already exists
-    const filteredSent = (sentData || []).filter(r => !partnerIds.has(r.receiver_id));
-    const filteredReceived = (receivedData || []).filter(r => !partnerIds.has(r.sender_id));
+    // Filter out requests where a partnership already exists (if partnerIds provided)
+    const sent = sentData || [];
+    const received = receivedData || [];
+    
+    if (existingPartnerIds && existingPartnerIds.size > 0) {
+      return {
+        sent: sent.filter(r => !existingPartnerIds.has(r.receiver_id)) as AccountabilityPartnerRequest[],
+        received: received.filter(r => !existingPartnerIds.has(r.sender_id)) as AccountabilityPartnerRequest[],
+      };
+    }
 
     return {
-      sent: filteredSent as AccountabilityPartnerRequest[],
-      received: filteredReceived as AccountabilityPartnerRequest[],
+      sent: sent as AccountabilityPartnerRequest[],
+      received: received as AccountabilityPartnerRequest[],
     };
   }
 
