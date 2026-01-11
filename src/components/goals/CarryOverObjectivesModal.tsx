@@ -14,6 +14,8 @@ interface CarryOverObjectivesModalProps {
   goals: Goal[];
   onConfirmCarryOver: (objectiveIds: string[]) => void;
   isCarryingOver: boolean;
+  title?: string;
+  description?: string;
 }
 
 export const CarryOverObjectivesModal = ({
@@ -23,6 +25,8 @@ export const CarryOverObjectivesModal = ({
   goals,
   onConfirmCarryOver,
   isCarryingOver,
+  title = "Carry Over Incomplete Objectives",
+  description,
 }: CarryOverObjectivesModalProps) => {
   const [selectedObjectives, setSelectedObjectives] = useState<Set<string>>(new Set());
 
@@ -76,8 +80,11 @@ export const CarryOverObjectivesModal = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <RotateCcw className="h-5 w-5 text-primary" />
-            Carry Over Incomplete Objectives
+            {title}
           </DialogTitle>
+          {description && (
+            <p className="text-muted-foreground text-sm">{description}</p>
+          )}
         </DialogHeader>
         
         <div className="space-y-6">

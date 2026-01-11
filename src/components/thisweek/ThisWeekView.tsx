@@ -24,6 +24,7 @@ import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { CarryOverObjectivesModal } from "@/components/goals/CarryOverObjectivesModal";
 import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
 import { useWeekClose } from "@/hooks/useWeekClose";
+import { toast } from "@/hooks/use-toast";
 
 // Extracted hooks for better code organization
 import { useWeeklyShare } from "@/hooks/useWeeklyShare";
@@ -88,6 +89,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
 
   // Carry-over modal for bringing incomplete objectives from past weeks
   const [showCarryOverModal, setShowCarryOverModal] = useState(false);
+  // Carry-over modal for when viewing a closed week (carry to NEXT week)
+  const [showCarryOverFromClosedModal, setShowCarryOverFromClosedModal] = useState(false);
+  
   const {
     incompleteObjectives: carryOverIncompleteObjectives,
     carryOverObjectives,
@@ -95,6 +99,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   } = useCarryOverObjectives(currentWeekStart);
 
   const hasIncompleteObjectivesFromPastWeeks = carryOverIncompleteObjectives.length > 0;
+  
+  // Calculate next week start for carrying over from closed week
+  const getNextWeekStart = () => {
+    const [year, month, day] = currentWeekStart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    date.setDate(date.getDate() + 7);
+    return date.toISOString().split('T')[0];
+  };
 
   // Incomplete reflections handling
   const { incompleteReflections, handleUpdateIncompleteReflection } = useIncompleteReflections(
@@ -335,6 +347,11 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onShareWeek={handleRequestShare}
         onViewInCommunity={() => handleViewInCommunity(feedPost?.id)}
         onCloseWeek={() => setShowCloseDialog(true)}
+        onCarryOverIncomplete={isWeekCompleted && closeIncompleteObjectives.length > 0 
+          ? () => setShowCarryOverFromClosedModal(true) 
+          : undefined
+        }
+        incompleteCount={closeIncompleteObjectives.length}
         isWeekCompleted={isWeekCompleted}
         isClosingWeek={isClosingWeek}
       />
@@ -367,6 +384,26 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           setShowCarryOverModal(false);
         }}
         isCarryingOver={isCarryOverModalCarrying}
+      />
+
+      {/* Carry over from a closed week to the next week */}
+      <CarryOverObjectivesModal
+        open={showCarryOverFromClosedModal}
+        onOpenChange={setShowCarryOverFromClosedModal}
+        incompleteObjectives={closeIncompleteObjectives}
+        goals={goals || []}
+        onConfirmCarryOver={async (objectiveIds) => {
+          const nextWeekStart = getNextWeekStart();
+          await WeeklyProgressService.carryOverObjectives(objectiveIds, nextWeekStart);
+          setShowCarryOverFromClosedModal(false);
+          toast({
+            title: "Success",
+            description: `${objectiveIds.length} objective${objectiveIds.length !== 1 ? 's' : ''} carried over to next week!`,
+          });
+        }}
+        isCarryingOver={false}
+        title="Carry Over to Next Week"
+        description="Select which incomplete objectives from this closed week to carry over to the next week."
       />
     </div>
   );
