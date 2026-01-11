@@ -342,29 +342,6 @@ const PartnerDashboard = () => {
                     currentCadence="weekly"
                     compact
                   />
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/partner/${partnerId}/check-ins`)}
-                        className="gap-1.5"
-                      >
-                        <History className="h-4 w-4" />
-                        <span className="hidden sm:inline">History</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>View check-in history</TooltipContent>
-                  </Tooltip>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setCheckInDialogOpen(true)}
-                    className="gap-1.5"
-                  >
-                    <MessageSquare className="h-4 w-4" />
-                    Record Check-in
-                  </Button>
                 </div>
               </div>
             </CardContent>
@@ -377,6 +354,21 @@ const PartnerDashboard = () => {
             partnerName={partnerProfile?.full_name || 'Partner'}
             onConfirm={handleRecordCheckIn}
           />
+
+          {/* Check-ins Feed - Full History - Moved to top */}
+          {partnershipDetails && partnerProfile && (
+            <Card className="border-border">
+              <CardContent className="pt-6">
+                <CheckInsFeed
+                  partnershipId={partnershipDetails.id}
+                  currentUserId={user.id}
+                  partnerName={partnerProfile.full_name}
+                  maxVisible={5}
+                  onRecordCheckIn={() => setCheckInDialogOpen(true)}
+                />
+              </CardContent>
+            </Card>
+          )}
 
           {/* Weekly Progress Summary */}
           <Card className="border-border">
@@ -496,20 +488,6 @@ const PartnerDashboard = () => {
               )}
             </CardContent>
           </Card>
-
-          {/* Check-ins Feed - Full History */}
-          {partnershipDetails && partnerProfile && (
-            <Card className="border-border">
-              <CardContent className="pt-6">
-                <CheckInsFeed
-                  partnershipId={partnershipDetails.id}
-                  currentUserId={user.id}
-                  partnerName={partnerProfile.full_name}
-                  maxVisible={5}
-                />
-              </CardContent>
-            </Card>
-          )}
 
           {/* Active Goals */}
           <Card className="border-border">
