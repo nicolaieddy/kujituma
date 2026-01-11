@@ -33,6 +33,16 @@ export const STRAVA_ACTIVITY_TYPES = [
   { value: "Basketball", label: "Basketball" },
 ] as const;
 
+// Duolingo activity types
+export const DUOLINGO_ACTIVITY_TYPES = [
+  { value: "daily_goal", label: "Daily Goal" },
+  { value: "lesson", label: "Lesson Completed" },
+  { value: "streak", label: "Streak Maintained" },
+  { value: "practice", label: "Practice Session" },
+] as const;
+
+export type IntegrationType = 'strava' | 'duolingo';
+
 export interface ActivityMapping {
   id: string;
   user_id: string;
@@ -40,6 +50,8 @@ export interface ActivityMapping {
   goal_id: string;
   habit_item_id: string;
   min_duration_minutes: number;
+  integration_type: IntegrationType;
+  duolingo_activity_type?: string;
   created_at: string;
 }
 
@@ -109,10 +121,11 @@ export function useActivityMappings() {
   }, [session, queryClient]);
 
   const createMapping = useCallback(async (
-    stravaActivityType: string,
+    activityType: string,
     goalId: string,
     habitItemId: string,
-    minDurationMinutes: number = 0
+    minDurationMinutes: number = 0,
+    integrationType: IntegrationType = 'strava'
   ) => {
     if (!user) {
       toast.error("Please log in first");
@@ -120,14 +133,20 @@ export function useActivityMappings() {
     }
 
     try {
+      // Determine the strava_activity_type field (used as unique constraint key)
+      const stravaActivityType = integrationType === 'duolingo' 
+        ? `duolingo_${activityType}` 
+        : activityType;
+
       const { data, error } = await supabase
         .from("activity_mappings")
         .upsert({
           user_id: user.id,
-          strava_activity_type: stravaActivityType,
           goal_id: goalId,
           habit_item_id: habitItemId,
           min_duration_minutes: minDurationMinutes,
+          integration_type: integrationType,
+          strava_activity_type: stravaActivityType,
         }, {
           onConflict: "user_id,strava_activity_type",
         })
@@ -136,11 +155,14 @@ export function useActivityMappings() {
 
       if (error) throw error;
 
-      toast.success(`Mapped ${stravaActivityType} to your habit`);
+      const integrationName = integrationType === 'strava' ? 'Strava' : 'Duolingo';
+      toast.success(`Linked habit to ${integrationName}`);
       await fetchMappings();
       
-      // Auto-trigger sync after creating mapping
-      triggerSync();
+      // Auto-trigger sync after creating mapping (only for Strava)
+      if (integrationType === 'strava') {
+        triggerSync();
+      }
       
       return data as ActivityMapping;
     } catch (error) {
@@ -170,12 +192,19 @@ export function useActivityMappings() {
     }
   }, [user, fetchMappings]);
 
-  const getMappingForActivityType = useCallback((activityType: string) => {
-    return mappings.find(m => m.strava_activity_type === activityType);
+  const getMappingForActivityType = useCallback((activityType: string, integrationType?: IntegrationType) => {
+    return mappings.find(m => {
+      if (integrationType && m.integration_type !== integrationType) return false;
+      return m.strava_activity_type === activityType || m.duolingo_activity_type === activityType;
+    });
   }, [mappings]);
 
   const getMappingForHabitItem = useCallback((habitItemId: string) => {
     return mappings.find(m => m.habit_item_id === habitItemId);
+  }, [mappings]);
+
+  const getMappingsForIntegration = useCallback((integrationType: IntegrationType) => {
+    return mappings.filter(m => m.integration_type === integrationType);
   }, [mappings]);
 
   return {
@@ -186,6 +215,7 @@ export function useActivityMappings() {
     deleteMapping,
     getMappingForActivityType,
     getMappingForHabitItem,
+    getMappingsForIntegration,
     refreshMappings: fetchMappings,
     triggerSync,
   };

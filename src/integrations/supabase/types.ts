@@ -239,6 +239,7 @@ export type Database = {
           goal_id: string
           habit_item_id: string
           id: string
+          integration_type: string
           min_duration_minutes: number | null
           strava_activity_type: string
           updated_at: string | null
@@ -249,6 +250,7 @@ export type Database = {
           goal_id: string
           habit_item_id: string
           id?: string
+          integration_type?: string
           min_duration_minutes?: number | null
           strava_activity_type: string
           updated_at?: string | null
@@ -259,6 +261,7 @@ export type Database = {
           goal_id?: string
           habit_item_id?: string
           id?: string
+          integration_type?: string
           min_duration_minutes?: number | null
           strava_activity_type?: string
           updated_at?: string | null
@@ -459,6 +462,42 @@ export type Database = {
           id?: string
           mood_rating?: number | null
           quick_win?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      duolingo_connections: {
+        Row: {
+          created_at: string
+          current_streak: number | null
+          display_name: string | null
+          duolingo_username: string
+          id: string
+          last_synced_at: string | null
+          total_xp: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_streak?: number | null
+          display_name?: string | null
+          duolingo_username: string
+          id?: string
+          last_synced_at?: string | null
+          total_xp?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_streak?: number | null
+          display_name?: string | null
+          duolingo_username?: string
+          id?: string
+          last_synced_at?: string | null
+          total_xp?: number | null
           updated_at?: string
           user_id?: string
         }

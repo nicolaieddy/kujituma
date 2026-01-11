@@ -4,14 +4,15 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Goal, HabitItem, CustomSchedule } from "@/types/goals";
-import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap, Link } from "lucide-react";
+import { RefreshCw, CheckCircle, Plus, X, GripVertical, Zap, Link, Languages } from "lucide-react";
 import { CustomRecurrencePicker, formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
-import { useActivityMappings, STRAVA_ACTIVITY_TYPES } from "@/hooks/useActivityMappings";
+import { useActivityMappings, STRAVA_ACTIVITY_TYPES, DUOLINGO_ACTIVITY_TYPES, IntegrationType } from "@/hooks/useActivityMappings";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
+import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -35,10 +36,10 @@ interface GoalDetailHabitsSectionProps {
 }
 
 // Integration types - extensible for future integrations
-type IntegrationType = 'strava' | 'garmin' | 'apple_health' | 'google_fit';
+type HabitIntegrationType = 'strava' | 'duolingo';
 
 interface IntegrationConfig {
-  id: IntegrationType;
+  id: HabitIntegrationType;
   name: string;
   icon: typeof Zap;
   color: string;
@@ -53,8 +54,13 @@ const INTEGRATION_CONFIGS: Record<string, IntegrationConfig> = {
     color: 'text-orange-600 dark:text-orange-400',
     bgColor: 'bg-orange-100 dark:bg-orange-900/30',
   },
-  // Future integrations can be added here
-  // garmin: { id: 'garmin', name: 'Garmin', icon: Watch, color: '...', bgColor: '...' },
+  duolingo: {
+    id: 'duolingo',
+    name: 'Duolingo',
+    icon: Languages,
+    color: 'text-green-600 dark:text-green-400',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+  },
 };
 
 // Sortable habit item component
@@ -72,7 +78,7 @@ const SortableHabit = ({
   getFrequencyLabel: (h: HabitItem) => string;
   onEdit: (habit: HabitItem) => void;
   linkedIntegration: { type: string; activityType: string } | null;
-  availableIntegrations: IntegrationType[];
+  availableIntegrations: HabitIntegrationType[];
   onLinkIntegration: (habit: HabitItem) => void;
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: habit.id });
@@ -140,6 +146,7 @@ const SortableHabit = ({
 export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectionProps) => {
   const { getMappingForHabitItem, createMapping } = useActivityMappings();
   const { isConnected: isStravaConnected } = useStravaConnection();
+  const { isConnected: isDuolingoConnected } = useDuolingoConnection();
   const [newHabitText, setNewHabitText] = useState("");
   const [newHabitFrequency, setNewHabitFrequency] = useState<HabitFrequency>("weekly");
   const [newHabitCustomSchedule, setNewHabitCustomSchedule] = useState<CustomSchedule | undefined>();
@@ -153,15 +160,15 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
   // Integration linking dialog state
   const [integrationDialogOpen, setIntegrationDialogOpen] = useState(false);
   const [linkingHabit, setLinkingHabit] = useState<HabitItem | null>(null);
-  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationType | "">("");
+  const [selectedIntegration, setSelectedIntegration] = useState<HabitIntegrationType | "">("");
   const [selectedActivityType, setSelectedActivityType] = useState("");
   const [minDuration, setMinDuration] = useState(0);
   const [isLinking, setIsLinking] = useState(false);
 
   // Determine available integrations
-  const availableIntegrations: IntegrationType[] = [];
+  const availableIntegrations: HabitIntegrationType[] = [];
   if (isStravaConnected) availableIntegrations.push('strava');
-  // Future: if (isGarminConnected) availableIntegrations.push('garmin');
+  if (isDuolingoConnected) availableIntegrations.push('duolingo');
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -172,11 +179,13 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
 
   // Get linked integration for a habit
   const getLinkedIntegration = (habitId: string): { type: string; activityType: string } | null => {
-    const stravaMapping = getMappingForHabitItem(habitId);
-    if (stravaMapping) {
-      return { type: 'strava', activityType: stravaMapping.strava_activity_type };
+    const mapping = getMappingForHabitItem(habitId);
+    if (mapping) {
+      const activityType = mapping.integration_type === 'duolingo'
+        ? (mapping.strava_activity_type?.replace('duolingo_', '') || 'streak')
+        : mapping.strava_activity_type;
+      return { type: mapping.integration_type || 'strava', activityType };
     }
-    // Future: check other integrations
     return null;
   };
 
@@ -193,10 +202,14 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
     if (!linkingHabit || !selectedActivityType || !selectedIntegration) return;
     setIsLinking(true);
     
-    if (selectedIntegration === 'strava') {
-      await createMapping(selectedActivityType, goal.id, linkingHabit.id, minDuration);
-    }
-    // Future: handle other integrations
+    // Use the integration type when creating mapping
+    await createMapping(
+      selectedActivityType, 
+      goal.id, 
+      linkingHabit.id, 
+      selectedIntegration === 'strava' ? minDuration : 0,
+      selectedIntegration as IntegrationType
+    );
     
     setIsLinking(false);
     setIntegrationDialogOpen(false);
@@ -397,7 +410,7 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
             {availableIntegrations.length > 1 && (
               <div className="space-y-2">
                 <Label>Integration</Label>
-                <Select value={selectedIntegration} onValueChange={(v) => { setSelectedIntegration(v as IntegrationType); setSelectedActivityType(""); }}>
+                <Select value={selectedIntegration} onValueChange={(v) => { setSelectedIntegration(v as HabitIntegrationType); setSelectedActivityType(""); }}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select integration..." />
                   </SelectTrigger>
@@ -437,8 +450,27 @@ export const GoalDetailHabitsSection = ({ goal, onEdit }: GoalDetailHabitsSectio
               </div>
             )}
 
-            {/* Duration filter (optional) */}
-            {selectedIntegration && (
+            {/* Activity type selector - Duolingo */}
+            {selectedIntegration === 'duolingo' && (
+              <div className="space-y-2">
+                <Label>Activity Type</Label>
+                <Select value={selectedActivityType} onValueChange={setSelectedActivityType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select activity type..." />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border z-[300]">
+                    {DUOLINGO_ACTIVITY_TYPES.map((type) => (
+                      <SelectItem key={type.value} value={type.value}>
+                        {type.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Duration filter (optional - only for Strava) */}
+            {selectedIntegration === 'strava' && (
               <div className="space-y-2">
                 <Label>Minimum Duration (optional)</Label>
                 <div className="flex items-center gap-2">
