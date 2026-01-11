@@ -12,6 +12,7 @@ export interface AccountabilityPartner {
   can_view_partner_goals: boolean;
   partner_can_view_my_goals: boolean;
   my_check_in_cadence: CheckInCadence;
+  partnership_created_at: string | null;
 }
 
 export interface AccountabilityPartnerRequest {
@@ -98,11 +99,11 @@ class AccountabilityService {
     
     if (!data || data.length === 0) return [];
 
-    // Fetch cadence info from partnerships
+    // Fetch cadence info and created_at from partnerships
     const partnershipIds = data.map((p: any) => p.partnership_id);
     const { data: partnerships } = await supabase
       .from('accountability_partnerships')
-      .select('id, user1_id, user2_id, my_check_in_cadence_user1, my_check_in_cadence_user2')
+      .select('id, user1_id, user2_id, my_check_in_cadence_user1, my_check_in_cadence_user2, created_at')
       .in('id', partnershipIds);
 
     const partnershipMap = new Map(partnerships?.map(p => [p.id, p]) || []);
@@ -110,8 +111,10 @@ class AccountabilityService {
     return data.map((partner: any) => {
       const partnership = partnershipMap.get(partner.partnership_id);
       let myCheckInCadence: CheckInCadence = 'weekly';
+      let partnershipCreatedAt: string | null = null;
       
       if (partnership) {
+        partnershipCreatedAt = partnership.created_at;
         // Determine which user we are and get our cadence
         if (partnership.user1_id === user.id) {
           myCheckInCadence = (partnership.my_check_in_cadence_user1 as CheckInCadence) || 'weekly';
@@ -123,6 +126,7 @@ class AccountabilityService {
       return {
         ...partner,
         my_check_in_cadence: myCheckInCadence,
+        partnership_created_at: partnershipCreatedAt,
       };
     });
   }
@@ -743,7 +747,13 @@ class AccountabilityService {
       
       return partners.map(partner => {
         const cadence = partner.my_check_in_cadence || 'weekly';
-        const lastCheckIn = partner.last_check_in_at ? new Date(partner.last_check_in_at) : null;
+        
+        // Use last check-in date, or fall back to partnership creation date
+        const referenceDate = partner.last_check_in_at 
+          ? new Date(partner.last_check_in_at)
+          : partner.partnership_created_at 
+            ? new Date(partner.partnership_created_at)
+            : null;
         
         // Calculate days between check-ins based on cadence
         const cadenceDays: Record<CheckInCadence, number> = {
@@ -754,11 +764,13 @@ class AccountabilityService {
         };
         
         const expectedDays = cadenceDays[cadence];
-        let daysSinceLastCheckIn = lastCheckIn 
-          ? Math.floor((now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60 * 24))
-          : 999; // Never checked in
         
-        const daysUntilDue = expectedDays - daysSinceLastCheckIn;
+        // If no reference date, treat as just starting (not overdue)
+        let daysSinceReference = referenceDate 
+          ? Math.floor((now.getTime() - referenceDate.getTime()) / (1000 * 60 * 60 * 24))
+          : 0;
+        
+        const daysUntilDue = expectedDays - daysSinceReference;
         const isOverdue = daysUntilDue < 0;
         
         return {

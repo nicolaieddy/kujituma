@@ -13,11 +13,12 @@ import { PartnerGoalCard } from '@/components/accountability/PartnerGoalCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed } from '@/components/accountability/CheckInsFeed';
-import { CheckInCadenceSettings } from '@/components/accountability/CheckInCadenceSettings';
+import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
 import { 
   accountabilityService, 
   PartnerGoal, 
-  PartnerWeeklyObjective 
+  PartnerWeeklyObjective,
+  CheckInCadence
 } from '@/services/accountabilityService';
 import { toast } from 'sonner';
 import { 
@@ -29,8 +30,8 @@ import {
   ChevronLeft,
   ChevronRight,
   MessageSquare,
-  History,
-  Clock
+  Clock,
+  Settings
 } from 'lucide-react';
 import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, formatDistanceToNow } from 'date-fns';
 
@@ -63,6 +64,12 @@ const PartnerDashboard = () => {
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [partnerVisibility, setPartnerVisibility] = useState<{
+    canViewPartnerGoals: boolean;
+    partnerCanViewMyGoals: boolean;
+    myCheckInCadence: CheckInCadence;
+  }>({ canViewPartnerGoals: false, partnerCanViewMyGoals: false, myCheckInCadence: 'weekly' });
 
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -99,6 +106,13 @@ const PartnerDashboard = () => {
           setError('Partner not found or partnership not active');
           return;
         }
+        
+        // Store visibility settings
+        setPartnerVisibility({
+          canViewPartnerGoals: partnerData.can_view_partner_goals,
+          partnerCanViewMyGoals: partnerData.partner_can_view_my_goals,
+          myCheckInCadence: partnerData.my_check_in_cadence || 'weekly',
+        });
         
         if (!partnerData.can_view_partner_goals) {
           setCanViewPartner(false);
@@ -336,12 +350,20 @@ const PartnerDashboard = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-3">
-                  <CheckInCadenceSettings
-                    partnerId={partnerId!}
-                    partnerName={partnerProfile?.full_name || 'Partner'}
-                    currentCadence="weekly"
-                    compact
-                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSettingsModalOpen(true)}
+                        className="gap-1.5"
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span className="hidden sm:inline">Settings</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Partnership settings</TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
             </CardContent>
@@ -353,6 +375,21 @@ const PartnerDashboard = () => {
             onOpenChange={setCheckInDialogOpen}
             partnerName={partnerProfile?.full_name || 'Partner'}
             onConfirm={handleRecordCheckIn}
+          />
+
+          {/* Partnership Settings Modal */}
+          <PartnershipSettingsModal
+            open={settingsModalOpen}
+            onOpenChange={setSettingsModalOpen}
+            partnerId={partnerId!}
+            partnerName={partnerProfile?.full_name || 'Partner'}
+            currentCadence={partnerVisibility.myCheckInCadence}
+            canViewPartnerGoals={partnerVisibility.canViewPartnerGoals}
+            partnerCanViewMyGoals={partnerVisibility.partnerCanViewMyGoals}
+            onSettingsChange={() => {
+              // Refetch data when settings change
+              window.location.reload();
+            }}
           />
 
           {/* Check-ins Feed - Full History - Moved to top */}
