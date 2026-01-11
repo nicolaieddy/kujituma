@@ -52,11 +52,16 @@ export const useCarryOverObjectives = (currentWeekStart: string) => {
     carryOverMutation.mutate(objectivesWithWeeks);
   };
 
+  const carryOverObjectivesAsync = (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => {
+    return carryOverMutation.mutateAsync(objectivesWithWeeks);
+  };
+
   return {
     incompleteObjectives,
     isLoading,
     error,
     carryOverObjectives,
+    carryOverObjectivesAsync,
     isCarryingOver: carryOverMutation.isPending,
   };
 };

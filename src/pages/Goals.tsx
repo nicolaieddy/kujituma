@@ -157,16 +157,8 @@ const Goals = () => {
   };
 
   const navigateToWeek = (direction: 'previous' | 'next') => {
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    const newDate = new Date(currentDate);
-    
-    if (direction === 'previous') {
-      newDate.setUTCDate(currentDate.getUTCDate() - 7);
-    } else {
-      newDate.setUTCDate(currentDate.getUTCDate() + 7);
-    }
-    
-    const newWeekStart = WeeklyProgressService.getWeekStart(newDate);
+    const deltaDays = direction === 'previous' ? -7 : 7;
+    const newWeekStart = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, deltaDays);
     setCurrentWeekStart(newWeekStart);
   };
 
