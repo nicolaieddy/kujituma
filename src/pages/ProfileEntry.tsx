@@ -1,20 +1,32 @@
 import { lazy } from "react";
-import { useSearchParams } from "react-router-dom";
 
 const ProfileFull = lazy(() => import("./Profile"));
 const ProfileLite = lazy(() => import("./ProfileLite"));
 
+const isIOS = () => {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const platform = (navigator as any).platform || "";
+  const maxTouchPoints = (navigator as any).maxTouchPoints || 0;
+  return /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1);
+};
+
 /**
  * Entry route for /profile that can switch implementations without importing
- * the full profile module on iOS safe-mode.
+ * the full profile module on iOS.
  */
 const ProfileEntry = () => {
-  const [searchParams] = useSearchParams();
-  const safeMode = searchParams.get("safe") === "1";
+  // Avoid react-router search param hooks here—some iOS builds were still
+  // crashing even in safe mode; parsing directly is the simplest/most robust.
+  const params = new URLSearchParams(typeof window !== "undefined" ? window.location.search : "");
+  const safe = params.get("safe") === "1";
+  const forceFull = params.get("full") === "1";
 
-  // IMPORTANT: In safe mode we render ProfileLite to avoid importing Profile.tsx
-  // and its Radix-heavy dependency graph, which can trigger iOS stack overflows.
-  return safeMode ? <ProfileLite /> : <ProfileFull />;
+  // Default: iOS uses the lightweight version to avoid stack overflows.
+  const useLite = (safe || isIOS()) && !forceFull;
+
+  return useLite ? <ProfileLite /> : <ProfileFull />;
 };
 
 export default ProfileEntry;
+
