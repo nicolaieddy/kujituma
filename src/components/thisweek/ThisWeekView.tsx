@@ -21,6 +21,7 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
 import { AISuggestionsCard } from "@/components/goals/AISuggestionsCard";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { HabitsService } from "@/services/habitsService";
 import { CarryOverObjectivesModal } from "@/components/goals/CarryOverObjectivesModal";
 import { CarryOverActivityLog } from "@/components/goals/CarryOverActivityLog";
 import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
@@ -74,6 +75,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
   const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
+  const isEndOfWeekTime = HabitsService.isEndOfWeek();
 
   // Week transition (combines close last week + planning + reflections)
   const {
@@ -356,8 +358,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         </CardContent>
       </Card>
 
-      {/* Show incomplete objectives reflection - any time during current week when there are incomplete objectives */}
-      {isCurrentWeek && !isReadOnly && objectives && objectives.some(obj => !obj.is_completed) && (
+      {/* Show incomplete objectives reflection - only Friday 6pm through Sunday when there are incomplete objectives */}
+      {isCurrentWeek && !isReadOnly && isEndOfWeekTime && objectives && objectives.some(obj => !obj.is_completed) && (
         <EndOfWeekReflection
           objectives={objectives}
           incompleteReflections={incompleteReflections}
