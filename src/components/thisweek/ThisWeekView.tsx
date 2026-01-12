@@ -307,13 +307,14 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       {/* Partner Check-ins Card - shows accountability partner activity */}
       {isCurrentWeek && <PartnerCheckInsCard />}
 
-      {/* Duolingo is now integrated inside HabitsDueThisWeek */}
-
-      {isCurrentWeek && habitStats.length > 0 && (
+      {/* Habits section - shown for all weeks with habit data */}
+      {habitStats.length > 0 && (
         <HabitsDueThisWeek
           habits={habitStats}
           objectives={objectives || []}
-          onToggleObjective={handleToggleObjective}
+          onToggleObjective={isCurrentWeek ? handleToggleObjective : undefined}
+          weekStart={new Date(currentWeekStart)}
+          isReadOnly={!isCurrentWeek}
         />
       )}
 
