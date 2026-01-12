@@ -64,16 +64,12 @@ export const WeeklyProgressView = () => {
   }, [progressPost]);
 
   const handlePreviousWeek = () => {
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    currentDate.setUTCDate(currentDate.getUTCDate() - 7);
-    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    const newWeekStart = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, -7);
     setCurrentWeekStart(newWeekStart);
   };
 
   const handleNextWeek = () => {
-    const currentDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-    currentDate.setUTCDate(currentDate.getUTCDate() + 7);
-    const newWeekStart = WeeklyProgressService.getWeekStart(currentDate);
+    const newWeekStart = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 7);
     setCurrentWeekStart(newWeekStart);
   };
 
@@ -308,12 +304,8 @@ export const WeeklyProgressView = () => {
     // If there are objectives to carry over, do it first
     if (carryOverIds.length > 0) {
       try {
-        // Calculate next week start
-        const [year, month, day] = currentWeekStart.split('-').map(Number);
-        const currentDate = new Date(year, month - 1, day);
-        const nextWeekDate = new Date(currentDate);
-        nextWeekDate.setDate(currentDate.getDate() + 7);
-        const nextWeekStart = WeeklyProgressService.getWeekStart(nextWeekDate);
+        // Calculate next week start using the standard helper
+        const nextWeekStart = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, 7);
         
         // Carry over the selected objectives to next week
         await WeeklyProgressService.carryOverObjectives(carryOverIds, nextWeekStart);
