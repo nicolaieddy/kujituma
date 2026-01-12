@@ -434,6 +434,22 @@ export class WeeklyProgressService {
     if (error) throw error;
   }
 
+  static async getDismissedCarryOverObjectives(): Promise<{ id: string; objective_text: string; goal_id: string | null; dismissed_at: string }[]> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data, error } = await supabase
+      .from('dismissed_carryover_objectives')
+      .select('id, objective_text, goal_id, dismissed_at')
+      .eq('user_id', user.id)
+      .order('dismissed_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  }
+
   static async carryOverObjectives(objectiveIds: string[], newWeekStart: string): Promise<WeeklyObjective[]> {
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
