@@ -1856,6 +1856,7 @@ export type Database = {
         Args: { _notification_id: string; _user_id: string }
         Returns: boolean
       }
+      normalize_to_monday: { Args: { d: string }; Returns: string }
       remove_friend: { Args: { _friend_id: string }; Returns: boolean }
       respond_to_accountability_partner_request: {
         Args: {

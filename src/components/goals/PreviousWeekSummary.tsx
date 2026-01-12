@@ -9,10 +9,8 @@ interface PreviousWeekSummaryProps {
 }
 
 export const PreviousWeekSummary = ({ currentWeekStart }: PreviousWeekSummaryProps) => {
-  // Calculate previous week start
-  const previousWeekDate = new Date(currentWeekStart + 'T00:00:00.000Z');
-  previousWeekDate.setUTCDate(previousWeekDate.getUTCDate() - 7);
-  const previousWeekStart = WeeklyProgressService.getWeekStart(previousWeekDate);
+  // Calculate previous week start using string-based helper (no Date/UTC issues)
+  const previousWeekStart = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, -7);
   
   const { objectives: previousObjectives } = useWeeklyProgress(previousWeekStart);
   

@@ -1,17 +1,24 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
-import { startOfWeek, format } from "date-fns";
+import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 import { useRealtimeHabits } from "@/hooks/useRealtimeHabits";
 import { HabitCompletion } from "@/types/goals";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 export const useHabitCompletions = (weekStart?: Date) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   
-  const currentWeekStart = weekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
-  const weekKey = format(currentWeekStart, "yyyy-MM-dd");
+  // Use WeeklyProgressService for consistent Monday-based week calculation
+  const weekKey = weekStart 
+    ? WeeklyProgressService.getWeekStart(weekStart) 
+    : WeeklyProgressService.getWeekStart();
+  
+  // Parse weekKey back to Date for downstream usage
+  const [year, month, day] = weekKey.split('-').map(Number);
+  const currentWeekStart = new Date(year, month - 1, day);
 
   // Subscribe to real-time habit completion changes
   useRealtimeHabits(weekKey);
