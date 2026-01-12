@@ -3,9 +3,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
-import { RotateCcw, Target, Calendar, ChevronRight } from "lucide-react";
+import { RotateCcw, Target, Calendar, ChevronRight, EyeOff } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 interface CarryOverObjectivesModalProps {
@@ -14,6 +15,7 @@ interface CarryOverObjectivesModalProps {
   incompleteObjectives: WeeklyObjective[];
   goals: Goal[];
   onConfirmCarryOver: (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => void;
+  onDismissObjective?: (objectiveText: string, goalId: string | null) => void;
   isCarryingOver: boolean;
   title?: string;
   description?: string;
@@ -26,6 +28,7 @@ export const CarryOverObjectivesModal = ({
   incompleteObjectives,
   goals,
   onConfirmCarryOver,
+  onDismissObjective,
   isCarryingOver,
   title = "Carry Over Incomplete Objectives",
   description,
@@ -182,7 +185,7 @@ export const CarryOverObjectivesModal = ({
                       const isSelected = selectedObjectives.has(objective.id);
                       const targetWeek = selectedObjectives.get(objective.id) || nextWeekStart;
                       
-                      return (
+                        return (
                         <div 
                           key={objective.id} 
                           className={`p-4 rounded-lg border transition-all ${
@@ -235,6 +238,30 @@ export const CarryOverObjectivesModal = ({
                                 </div>
                               )}
                             </div>
+                            
+                            {/* Dismiss button */}
+                            {onDismissObjective && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDismissObjective(objective.text, objective.goal_id);
+                                      }}
+                                    >
+                                      <EyeOff className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left">
+                                    <p>Don't show this again</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                           </div>
                         </div>
                       );

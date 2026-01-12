@@ -527,6 +527,38 @@ export type Database = {
         }
         Relationships: []
       }
+      dismissed_carryover_objectives: {
+        Row: {
+          dismissed_at: string
+          goal_id: string | null
+          id: string
+          objective_text: string
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string
+          goal_id?: string | null
+          id?: string
+          objective_text: string
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string
+          goal_id?: string | null
+          id?: string
+          objective_text?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dismissed_carryover_objectives_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       duolingo_connections: {
         Row: {
           created_at: string
