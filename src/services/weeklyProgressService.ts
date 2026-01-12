@@ -339,7 +339,8 @@ export class WeeklyProgressService {
       throw new Error('User not authenticated');
     }
     
-    const { data: objectives, error } = await supabase
+    // Get all incomplete objectives from previous weeks
+    const { data: incompleteObjectives, error: incompleteError } = await supabase
       .from('weekly_objectives')
       .select('*')
       .eq('user_id', user.id)
@@ -348,8 +349,35 @@ export class WeeklyProgressService {
       .order('week_start', { ascending: false })
       .order('created_at', { ascending: true });
 
-    if (error) throw error;
-    return (objectives || []) as WeeklyObjective[];
+    if (incompleteError) throw incompleteError;
+    
+    if (!incompleteObjectives || incompleteObjectives.length === 0) {
+      return [];
+    }
+
+    // Get all objectives from current and future weeks to check for already-carried-over items
+    const { data: currentAndFutureObjectives, error: futureError } = await supabase
+      .from('weekly_objectives')
+      .select('text, goal_id')
+      .eq('user_id', user.id)
+      .gte('week_start', currentWeekStart);
+
+    if (futureError) throw futureError;
+
+    // Build a set of "text|goal_id" keys for quick lookup
+    const carriedOverSet = new Set<string>();
+    (currentAndFutureObjectives || []).forEach(obj => {
+      const key = `${obj.text}|${obj.goal_id || ''}`;
+      carriedOverSet.add(key);
+    });
+
+    // Filter out objectives that already have a matching copy in current/future weeks
+    const filteredObjectives = incompleteObjectives.filter(obj => {
+      const key = `${obj.text}|${obj.goal_id || ''}`;
+      return !carriedOverSet.has(key);
+    });
+
+    return filteredObjectives as WeeklyObjective[];
   }
 
   static async carryOverObjectives(objectiveIds: string[], newWeekStart: string): Promise<WeeklyObjective[]> {
