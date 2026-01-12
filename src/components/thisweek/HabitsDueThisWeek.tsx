@@ -25,6 +25,7 @@ interface HabitsDueThisWeekProps {
   objectives: WeeklyObjective[];
   onToggleObjective?: (objectiveId: string, isCompleted: boolean) => void;
   weekStart?: Date;
+  isReadOnly?: boolean;
 }
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -33,7 +34,8 @@ export const HabitsDueThisWeek = ({
   habits, 
   objectives, 
   onToggleObjective,
-  weekStart: propWeekStart 
+  weekStart: propWeekStart,
+  isReadOnly = false,
 }: HabitsDueThisWeekProps) => {
   const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
@@ -230,11 +232,11 @@ export const HabitsDueThisWeek = ({
         <div className="flex items-center justify-between">
           <CardTitle className="text-base sm:text-lg flex items-center gap-2">
             <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            Habits This Week
+            {isReadOnly ? "Habits Review" : "Habits This Week"}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {/* Daily streak summary - show count of active streaks */}
-            {activeStreaks > 0 && (
+            {/* Daily streak summary - show count of active streaks (only for current week) */}
+            {!isReadOnly && activeStreaks > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1 text-orange-500 cursor-help">
@@ -264,9 +266,12 @@ export const HabitsDueThisWeek = ({
                 </TooltipContent>
               </Tooltip>
             )}
+            {/* Show today badge only for current week, otherwise show completed count */}
             {habitItemsTotal > 0 && (
               <Badge variant="outline" className="text-xs">
-                {habitItemsCompletedToday}/{habitItemsTotal} today
+                {isReadOnly 
+                  ? `${habitItemsCompletedThisWeek}/${habitItemsExpectedThisWeek} completed` 
+                  : `${habitItemsCompletedToday}/${habitItemsTotal} today`}
               </Badge>
             )}
           </div>
@@ -646,20 +651,20 @@ export const HabitsDueThisWeek = ({
                                   )}>
                                     {label}
                                   </span>
-                                  <div className="relative">
+                                    <div className="relative">
                                     <Checkbox
                                       checked={isChecked}
-                                      disabled={!isActiveDay || isToggling}
+                                      disabled={!isActiveDay || isToggling || isReadOnly}
                                       onCheckedChange={() => {
-                                        if (isActiveDay) {
+                                        if (isActiveDay && !isReadOnly) {
                                           handleDayToggle(habit.goal.id, item.id, index);
                                         }
                                       }}
                                       className={cn(
                                         "h-6 w-6 rounded",
-                                        isTodayDate && "ring-2 ring-primary ring-offset-1",
+                                        isTodayDate && !isReadOnly && "ring-2 ring-primary ring-offset-1",
                                         isChecked && "bg-success border-success",
-                                        !isActiveDay && "cursor-not-allowed"
+                                        (!isActiveDay || isReadOnly) && "cursor-not-allowed"
                                       )}
                                     />
                                     {/* Strava badge overlay */}
@@ -678,11 +683,12 @@ export const HabitsDueThisWeek = ({
                           <div className="flex items-center gap-2">
                             <Checkbox
                               checked={isWeeklyCompleted}
-                              disabled={isToggling}
-                              onCheckedChange={() => handleWeeklyToggle(habit.goal.id, item.id)}
+                              disabled={isToggling || isReadOnly}
+                              onCheckedChange={() => !isReadOnly && handleWeeklyToggle(habit.goal.id, item.id)}
                               className={cn(
                                 "h-5 w-5 rounded",
-                                isWeeklyCompleted && "bg-success border-success"
+                                isWeeklyCompleted && "bg-success border-success",
+                                isReadOnly && "cursor-not-allowed"
                               )}
                             />
                             <span className={cn(
@@ -719,15 +725,17 @@ export const HabitsDueThisWeek = ({
             {/* Completion Status */}
             <Checkbox
               checked={habit.isCompletedThisWeek}
+              disabled={isReadOnly}
               onCheckedChange={() => {
-                if (habit.objective && onToggleObjective) {
+                if (habit.objective && onToggleObjective && !isReadOnly) {
                   onToggleObjective(habit.objective.id, habit.isCompletedThisWeek);
                 }
               }}
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 "h-5 w-5",
-                habit.isCompletedThisWeek && "bg-success border-success"
+                habit.isCompletedThisWeek && "bg-success border-success",
+                isReadOnly && "cursor-not-allowed"
               )}
             />
 
@@ -759,7 +767,7 @@ export const HabitsDueThisWeek = ({
             )}
 
             {/* Quick Complete Button */}
-            {habit.objective && !habit.isCompletedThisWeek && (
+            {habit.objective && !habit.isCompletedThisWeek && !isReadOnly && (
               <Button
                 size="sm"
                 variant="outline"
@@ -772,7 +780,7 @@ export const HabitsDueThisWeek = ({
             )}
 
             {/* Undo button for completed */}
-            {habit.objective && habit.isCompletedThisWeek && (
+            {habit.objective && habit.isCompletedThisWeek && !isReadOnly && (
               <Button
                 size="sm"
                 variant="ghost"
