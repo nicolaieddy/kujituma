@@ -56,6 +56,7 @@ export const WeeklyProgressView = () => {
     incompleteObjectives,
     carryOverObjectives,
     isCarryingOver,
+    dismissObjective,
   } = useCarryOverObjectives(currentWeekStart);
 
   // Initialize progress notes when progressPost changes
@@ -442,6 +443,7 @@ export const WeeklyProgressView = () => {
         incompleteObjectives={incompleteObjectives}
         goals={goals || []}
         onConfirmCarryOver={handleCarryOverObjectives}
+        onDismissObjective={dismissObjective}
         isCarryingOver={isCarryingOver}
       />
     </>

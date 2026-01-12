@@ -58,12 +58,38 @@ export const useCarryOverObjectives = (
     },
   });
 
+  const dismissMutation = useMutation({
+    mutationFn: ({ objectiveText, goalId }: { objectiveText: string; goalId: string | null }) =>
+      WeeklyProgressService.dismissObjectiveFromCarryOver(objectiveText, goalId),
+    onSuccess: () => {
+      // Invalidate incomplete objectives to remove the dismissed one from the list
+      queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
+      
+      toast({
+        title: "Objective hidden",
+        description: "This objective won't appear in carry-over suggestions anymore.",
+      });
+    },
+    onError: (error) => {
+      console.error('[useCarryOverObjectives] Error dismissing objective:', error);
+      toast({
+        title: "Error",
+        description: "Failed to dismiss objective. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const carryOverObjectives = (objectivesWithWeeks: CarryOverInput[]) => {
     carryOverMutation.mutate(objectivesWithWeeks);
   };
 
   const carryOverObjectivesAsync = (objectivesWithWeeks: CarryOverInput[]) => {
     return carryOverMutation.mutateAsync(objectivesWithWeeks);
+  };
+
+  const dismissObjective = (objectiveText: string, goalId: string | null) => {
+    dismissMutation.mutate({ objectiveText, goalId });
   };
 
   return {
@@ -73,5 +99,7 @@ export const useCarryOverObjectives = (
     carryOverObjectives,
     carryOverObjectivesAsync,
     isCarryingOver: carryOverMutation.isPending,
+    dismissObjective,
+    isDismissing: dismissMutation.isPending,
   };
 };

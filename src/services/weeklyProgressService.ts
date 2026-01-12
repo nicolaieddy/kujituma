@@ -364,20 +364,74 @@ export class WeeklyProgressService {
 
     if (futureError) throw futureError;
 
-    // Build a set of "text|goal_id" keys for quick lookup
+    // Get dismissed objectives
+    const { data: dismissedObjectives, error: dismissedError } = await supabase
+      .from('dismissed_carryover_objectives')
+      .select('objective_text, goal_id')
+      .eq('user_id', user.id);
+
+    if (dismissedError) throw dismissedError;
+
+    // Build a set of "text|goal_id" keys for carried-over objectives
     const carriedOverSet = new Set<string>();
     (currentAndFutureObjectives || []).forEach(obj => {
       const key = `${obj.text}|${obj.goal_id || ''}`;
       carriedOverSet.add(key);
     });
 
-    // Filter out objectives that already have a matching copy in current/future weeks
+    // Build a set of "text|goal_id" keys for dismissed objectives
+    const dismissedSet = new Set<string>();
+    (dismissedObjectives || []).forEach(obj => {
+      const key = `${obj.objective_text}|${obj.goal_id || ''}`;
+      dismissedSet.add(key);
+    });
+
+    // Filter out objectives that are already carried over OR dismissed
     const filteredObjectives = incompleteObjectives.filter(obj => {
       const key = `${obj.text}|${obj.goal_id || ''}`;
-      return !carriedOverSet.has(key);
+      return !carriedOverSet.has(key) && !dismissedSet.has(key);
     });
 
     return filteredObjectives as WeeklyObjective[];
+  }
+
+  static async dismissObjectiveFromCarryOver(objectiveText: string, goalId: string | null): Promise<void> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    const { error } = await supabase
+      .from('dismissed_carryover_objectives')
+      .insert({
+        user_id: user.id,
+        objective_text: objectiveText,
+        goal_id: goalId,
+      });
+
+    if (error) throw error;
+  }
+
+  static async undismissObjectiveFromCarryOver(objectiveText: string, goalId: string | null): Promise<void> {
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      throw new Error('User not authenticated');
+    }
+
+    let query = supabase
+      .from('dismissed_carryover_objectives')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('objective_text', objectiveText);
+
+    if (goalId) {
+      query = query.eq('goal_id', goalId);
+    } else {
+      query = query.is('goal_id', null);
+    }
+
+    const { error } = await query;
+    if (error) throw error;
   }
 
   static async carryOverObjectives(objectiveIds: string[], newWeekStart: string): Promise<WeeklyObjective[]> {
