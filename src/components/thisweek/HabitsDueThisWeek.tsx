@@ -423,10 +423,11 @@ export const HabitsDueThisWeek = ({
                     const showDailyCheckboxes = isDailyTracking(item.frequency);
                     const isWeeklyCompleted = isWeeklyHabitCompleted(item.id);
                     
-                    // Check if this habit is Strava-mapped
-                    const stravaMapping = getMappingForHabitItem(item.id);
-                    const isStravaMapped = !!stravaMapping;
-                    const stravaCompletions = getStravaCompletionsForHabit(item.id);
+                    // Check if this habit is mapped to an integration
+                    const habitMapping = getMappingForHabitItem(item.id);
+                    const isStravaMapped = habitMapping?.integration_type === 'strava';
+                    const isDuolingoMapped = habitMapping?.integration_type === 'duolingo';
+                    const stravaCompletions = isStravaMapped ? getStravaCompletionsForHabit(item.id) : [];
                     
                     // Get daily streak for this habit item
                     const habitStreak = getHabitStreak(item.id);
@@ -466,6 +467,25 @@ export const HabitsDueThisWeek = ({
                                       {stravaCompletions.length} activit{stravaCompletions.length === 1 ? 'y' : 'ies'} synced this week
                                     </p>
                                   )}
+                                </TooltipContent>
+                              </Tooltip>
+                            )}
+                            {/* Duolingo indicator */}
+                            {isDuolingoMapped && (
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="flex-shrink-0">
+                                    <span className="text-base">🦉</span>
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent side="left" className="max-w-xs">
+                                  <p className="font-medium flex items-center gap-1">
+                                    <Zap className="h-3 w-3" />
+                                    Linked to Duolingo
+                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    This habit is linked to your Duolingo activity.
+                                  </p>
                                 </TooltipContent>
                               </Tooltip>
                             )}
@@ -518,6 +538,13 @@ export const HabitsDueThisWeek = ({
                                 className="text-xs border-[#FC4C02]/30 text-[#FC4C02] bg-[#FC4C02]/5"
                               >
                                 Strava
+                              </Badge>
+                            ) : isDuolingoMapped ? (
+                              <Badge 
+                                variant="outline" 
+                                className="text-xs border-[#58CC02]/30 text-[#58CC02] bg-[#58CC02]/5"
+                              >
+                                Duolingo
                               </Badge>
                             ) : showDailyCheckboxes ? (
                               <Badge variant="secondary" className="text-xs">
