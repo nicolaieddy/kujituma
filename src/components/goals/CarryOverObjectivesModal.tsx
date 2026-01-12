@@ -4,10 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
-import { RotateCcw, Target, Calendar, ChevronRight, EyeOff } from "lucide-react";
+import { RotateCcw, Target, Calendar, ChevronRight, EyeOff, Eye, ChevronDown } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
+import { DismissedObjective } from "@/hooks/useCarryOverObjectives";
 
 interface CarryOverObjectivesModalProps {
   open: boolean;
@@ -16,6 +18,8 @@ interface CarryOverObjectivesModalProps {
   goals: Goal[];
   onConfirmCarryOver: (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => void;
   onDismissObjective?: (objectiveText: string, goalId: string | null) => void;
+  onRestoreObjective?: (objectiveText: string, goalId: string | null) => void;
+  dismissedObjectives?: DismissedObjective[];
   isCarryingOver: boolean;
   title?: string;
   description?: string;
@@ -29,6 +33,8 @@ export const CarryOverObjectivesModal = ({
   goals,
   onConfirmCarryOver,
   onDismissObjective,
+  onRestoreObjective,
+  dismissedObjectives = [],
   isCarryingOver,
   title = "Carry Over Incomplete Objectives",
   description,
@@ -60,11 +66,13 @@ export const CarryOverObjectivesModal = ({
 
   // Track selected objectives and their target weeks
   const [selectedObjectives, setSelectedObjectives] = useState<Map<string, string>>(new Map());
+  const [showDismissed, setShowDismissed] = useState(false);
 
   // Reset selections when modal opens
   useEffect(() => {
     if (open) {
       setSelectedObjectives(new Map());
+      setShowDismissed(false);
     }
   }, [open]);
 
@@ -136,6 +144,8 @@ export const CarryOverObjectivesModal = ({
     return summary;
   }, [selectedObjectives]);
 
+  const hasDismissedObjectives = dismissedObjectives.length > 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -150,7 +160,7 @@ export const CarryOverObjectivesModal = ({
         </DialogHeader>
         
         <div className="space-y-6">
-          {incompleteObjectives.length === 0 ? (
+          {incompleteObjectives.length === 0 && !hasDismissedObjectives ? (
             <div className="text-center py-8">
               <p className="text-foreground text-lg mb-2">🎉 All caught up!</p>
               <p className="text-muted-foreground text-sm">
@@ -159,116 +169,126 @@ export const CarryOverObjectivesModal = ({
             </div>
           ) : (
             <>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between gap-4">
-                  <p className="text-muted-foreground text-sm">
-                    Select objectives and choose which week to carry them to.
-                  </p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleSelectAll}
-                  >
-                    {selectedObjectives.size === incompleteObjectives.length ? 'Deselect All' : 'Select All'}
-                  </Button>
-                </div>
+              {incompleteObjectives.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="text-muted-foreground text-sm">
+                      Select objectives and choose which week to carry them to.
+                    </p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSelectAll}
+                    >
+                      {selectedObjectives.size === incompleteObjectives.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </div>
 
-                {sortedWeeks.map(weekStart => (
-                  <div key={weekStart} className="space-y-3">
-                    <h4 className="text-foreground font-medium text-sm flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      From: {formatWeekDisplay(weekStart)}
-                    </h4>
-                    
-                    {objectivesByWeek[weekStart].map((objective) => {
-                      const goalName = getGoalName(objective.goal_id);
-                      const isSelected = selectedObjectives.has(objective.id);
-                      const targetWeek = selectedObjectives.get(objective.id) || nextWeekStart;
+                  {sortedWeeks.map(weekStart => (
+                    <div key={weekStart} className="space-y-3">
+                      <h4 className="text-foreground font-medium text-sm flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        From: {formatWeekDisplay(weekStart)}
+                      </h4>
                       
-                        return (
-                        <div 
-                          key={objective.id} 
-                          className={`p-4 rounded-lg border transition-all ${
-                            isSelected 
-                              ? 'bg-primary/10 border-primary/40' 
-                              : 'bg-muted/30 border-border hover:bg-muted/50'
-                          }`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => handleToggleObjective(objective.id)}
-                              className="mt-1"
-                            />
-                            <div className="flex-1 min-w-0 space-y-2">
-                              <div 
-                                className="cursor-pointer"
-                                onClick={() => handleToggleObjective(objective.id)}
-                              >
-                                <p className="text-foreground font-medium">{objective.text}</p>
-                                {goalName && (
-                                  <div className="flex items-center gap-1 mt-1">
-                                    <Target className="h-3 w-3 text-muted-foreground" />
-                                    <span className="text-xs text-muted-foreground">{goalName}</span>
+                      {objectivesByWeek[weekStart].map((objective) => {
+                        const goalName = getGoalName(objective.goal_id);
+                        const isSelected = selectedObjectives.has(objective.id);
+                        const targetWeek = selectedObjectives.get(objective.id) || nextWeekStart;
+                        
+                          return (
+                          <div 
+                            key={objective.id} 
+                            className={`p-4 rounded-lg border transition-all ${
+                              isSelected 
+                                ? 'bg-primary/10 border-primary/40' 
+                                : 'bg-muted/30 border-border hover:bg-muted/50'
+                            }`}
+                          >
+                            <div className="flex items-start gap-3">
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={() => handleToggleObjective(objective.id)}
+                                className="mt-1"
+                              />
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div 
+                                  className="cursor-pointer"
+                                  onClick={() => handleToggleObjective(objective.id)}
+                                >
+                                  <p className="text-foreground font-medium">{objective.text}</p>
+                                  {goalName && (
+                                    <div className="flex items-center gap-1 mt-1">
+                                      <Target className="h-3 w-3 text-muted-foreground" />
+                                      <span className="text-xs text-muted-foreground">{goalName}</span>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Target week selector - only show when selected */}
+                                {isSelected && (
+                                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                                    <ChevronRight className="h-4 w-4 text-primary" />
+                                    <span className="text-xs text-muted-foreground">Move to:</span>
+                                    <Select
+                                      value={targetWeek}
+                                      defaultValue={nextWeekStart}
+                                      onValueChange={(value) => handleChangeTargetWeek(objective.id, value)}
+                                    >
+                                      <SelectTrigger className="h-8 w-auto min-w-[200px] text-xs">
+                                        <SelectValue placeholder={futureWeeks[0]?.label || "Select week"} />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {futureWeeks.map((week) => (
+                                          <SelectItem key={week.value} value={week.value} className="text-xs">
+                                            {week.label}
+                                          </SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
                                   </div>
                                 )}
                               </div>
                               
-                              {/* Target week selector - only show when selected */}
-                              {isSelected && (
-                                <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                                  <ChevronRight className="h-4 w-4 text-primary" />
-                                  <span className="text-xs text-muted-foreground">Move to:</span>
-                                  <Select
-                                    value={targetWeek}
-                                    defaultValue={nextWeekStart}
-                                    onValueChange={(value) => handleChangeTargetWeek(objective.id, value)}
-                                  >
-                                    <SelectTrigger className="h-8 w-auto min-w-[200px] text-xs">
-                                      <SelectValue placeholder={futureWeeks[0]?.label || "Select week"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {futureWeeks.map((week) => (
-                                        <SelectItem key={week.value} value={week.value} className="text-xs">
-                                          {week.label}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                              {/* Dismiss button */}
+                              {onDismissObjective && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onDismissObjective(objective.text, objective.goal_id);
+                                        }}
+                                      >
+                                        <EyeOff className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>Don't show this again</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
                               )}
                             </div>
-                            
-                            {/* Dismiss button */}
-                            {onDismissObjective && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDismissObjective(objective.text, objective.goal_id);
-                                      }}
-                                    >
-                                      <EyeOff className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="left">
-                                    <p>Don't show this again</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
                           </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {incompleteObjectives.length === 0 && hasDismissedObjectives && (
+                <div className="text-center py-4">
+                  <p className="text-muted-foreground text-sm">
+                    No objectives to carry over. You have {dismissedObjectives.length} hidden objective{dismissedObjectives.length !== 1 ? 's' : ''}.
+                  </p>
+                </div>
+              )}
 
               {/* Summary of selected objectives */}
               {selectedObjectives.size > 0 && (
@@ -289,6 +309,66 @@ export const CarryOverObjectivesModal = ({
                     })}
                   </div>
                 </div>
+              )}
+
+              {/* Hidden objectives section */}
+              {hasDismissedObjectives && onRestoreObjective && (
+                <Collapsible open={showDismissed} onOpenChange={setShowDismissed}>
+                  <CollapsibleTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-between text-muted-foreground hover:text-foreground"
+                    >
+                      <span className="flex items-center gap-2">
+                        <EyeOff className="h-4 w-4" />
+                        Hidden objectives ({dismissedObjectives.length})
+                      </span>
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showDismissed ? 'rotate-180' : ''}`} />
+                    </Button>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent className="space-y-2 pt-2">
+                    <p className="text-xs text-muted-foreground mb-3">
+                      These objectives won't appear in carry-over suggestions. Click to restore.
+                    </p>
+                    {dismissedObjectives.map((dismissed) => {
+                      const goalName = getGoalName(dismissed.goal_id);
+                      return (
+                        <div
+                          key={dismissed.id}
+                          className="p-3 rounded-lg border border-border bg-muted/20 flex items-start justify-between gap-3"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <p className="text-foreground text-sm">{dismissed.objective_text}</p>
+                            {goalName && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <Target className="h-3 w-3 text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">{goalName}</span>
+                              </div>
+                            )}
+                          </div>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-muted-foreground hover:text-primary shrink-0"
+                                  onClick={() => onRestoreObjective(dismissed.objective_text, dismissed.goal_id)}
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent side="left">
+                                <p>Restore this objective</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      );
+                    })}
+                  </CollapsibleContent>
+                </Collapsible>
               )}
 
               <div className="flex justify-end gap-3 pt-4 border-t">

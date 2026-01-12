@@ -105,6 +105,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     carryOverObjectivesAsync,
     isCarryingOver: isCarryOverModalCarrying,
     dismissObjective,
+    dismissedObjectives,
+    restoreObjective,
   } = useCarryOverObjectives(currentWeekStart, goalsForLogging);
 
   const hasIncompleteObjectivesFromPastWeeks = carryOverIncompleteObjectives.length > 0;
@@ -421,6 +423,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           maybeNavigateToTargetWeek(objectivesWithWeeks);
         }}
         onDismissObjective={dismissObjective}
+        onRestoreObjective={restoreObjective}
+        dismissedObjectives={dismissedObjectives}
         isCarryingOver={isCarryOverModalCarrying}
         title="Carry Over From Previous Weeks"
         description="Select which incomplete objectives to carry over and choose their target week."
@@ -439,6 +443,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           maybeNavigateToTargetWeek(objectivesWithWeeks);
         }}
         onDismissObjective={dismissObjective}
+        onRestoreObjective={restoreObjective}
+        dismissedObjectives={dismissedObjectives}
         isCarryingOver={isCarryOverModalCarrying}
         title="Carry Over to Next Week"
         description="Select which incomplete objectives to carry over and choose their target week."

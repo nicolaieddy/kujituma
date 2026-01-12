@@ -8,6 +8,13 @@ interface CarryOverInput {
   targetWeek: string;
 }
 
+export interface DismissedObjective {
+  id: string;
+  objective_text: string;
+  goal_id: string | null;
+  dismissed_at: string;
+}
+
 export const useCarryOverObjectives = (
   currentWeekStart: string,
   goals?: { id: string; title: string }[]
@@ -23,6 +30,12 @@ export const useCarryOverObjectives = (
       console.error('Incomplete objectives query failed:', error);
       return failureCount < 2;
     }
+  });
+
+  const { data: dismissedObjectives = [], isLoading: isLoadingDismissed } = useQuery({
+    queryKey: ['dismissed-carryover-objectives', user?.id],
+    queryFn: () => WeeklyProgressService.getDismissedCarryOverObjectives(),
+    enabled: !!user,
   });
 
   const carryOverMutation = useMutation({
@@ -64,6 +77,8 @@ export const useCarryOverObjectives = (
     onSuccess: () => {
       // Invalidate incomplete objectives to remove the dismissed one from the list
       queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
+      // Also invalidate dismissed list
+      queryClient.invalidateQueries({ queryKey: ['dismissed-carryover-objectives', user?.id] });
       
       toast({
         title: "Objective hidden",
@@ -75,6 +90,29 @@ export const useCarryOverObjectives = (
       toast({
         title: "Error",
         description: "Failed to dismiss objective. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: ({ objectiveText, goalId }: { objectiveText: string; goalId: string | null }) =>
+      WeeklyProgressService.undismissObjectiveFromCarryOver(objectiveText, goalId),
+    onSuccess: () => {
+      // Invalidate both lists
+      queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
+      queryClient.invalidateQueries({ queryKey: ['dismissed-carryover-objectives', user?.id] });
+      
+      toast({
+        title: "Objective restored",
+        description: "This objective will now appear in carry-over suggestions.",
+      });
+    },
+    onError: (error) => {
+      console.error('[useCarryOverObjectives] Error restoring objective:', error);
+      toast({
+        title: "Error",
+        description: "Failed to restore objective. Please try again.",
         variant: "destructive",
       });
     },
@@ -92,6 +130,10 @@ export const useCarryOverObjectives = (
     dismissMutation.mutate({ objectiveText, goalId });
   };
 
+  const restoreObjective = (objectiveText: string, goalId: string | null) => {
+    restoreMutation.mutate({ objectiveText, goalId });
+  };
+
   return {
     incompleteObjectives,
     isLoading,
@@ -101,5 +143,9 @@ export const useCarryOverObjectives = (
     isCarryingOver: carryOverMutation.isPending,
     dismissObjective,
     isDismissing: dismissMutation.isPending,
+    dismissedObjectives,
+    isLoadingDismissed,
+    restoreObjective,
+    isRestoring: restoreMutation.isPending,
   };
 };
