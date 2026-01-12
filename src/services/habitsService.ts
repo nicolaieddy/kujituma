@@ -456,9 +456,25 @@ export class HabitsService {
     return new Date().getDay() === 0;
   }
   
+  /**
+   * Check if it's end of week reflection time: Friday 6pm through Sunday
+   * Day 0 = Sunday, Day 5 = Friday, Day 6 = Saturday
+   */
   static isEndOfWeek(): boolean {
-    const day = new Date().getDay();
-    return day === 5 || day === 6; // Friday or Saturday
+    const now = new Date();
+    const day = now.getDay();
+    const hour = now.getHours();
+    
+    // Sunday (day 0) - all day
+    if (day === 0) return true;
+    
+    // Saturday (day 6) - all day
+    if (day === 6) return true;
+    
+    // Friday (day 5) - only from 6pm onwards
+    if (day === 5 && hour >= 18) return true;
+    
+    return false;
   }
   
   static isEndOfQuarter(): boolean {
