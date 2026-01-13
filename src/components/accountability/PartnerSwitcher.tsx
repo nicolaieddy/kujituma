@@ -78,7 +78,7 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
                 className={cn(
                   "flex flex-col items-center gap-1.5 p-2 rounded-lg transition-colors min-w-[72px]",
                   isCurrent 
-                    ? "bg-primary/10 ring-2 ring-primary" 
+                    ? "bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background" 
                     : "hover:bg-muted"
                 )}
               >

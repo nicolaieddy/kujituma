@@ -19,7 +19,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { accountabilityService, CheckInCadence } from '@/services/accountabilityService';
 import { toast } from 'sonner';
-import { Clock, Eye, EyeOff, Settings2, Loader2 } from 'lucide-react';
+import { Clock, Eye, EyeOff, Settings2, Loader2, BellOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PartnershipSettingsModalProps {
@@ -34,6 +34,7 @@ interface PartnershipSettingsModalProps {
 }
 
 const CADENCE_OPTIONS: { value: CheckInCadence; label: string; description: string }[] = [
+  { value: 'none', label: 'Disabled', description: 'No check-in reminders' },
   { value: 'daily', label: 'Daily', description: 'Check in every day' },
   { value: 'twice_weekly', label: 'Twice Weekly', description: 'Check in every 3-4 days' },
   { value: 'weekly', label: 'Weekly', description: 'Check in once a week' },
@@ -52,16 +53,19 @@ export const PartnershipSettingsModal = ({
 }: PartnershipSettingsModalProps) => {
   const [cadence, setCadence] = useState<CheckInCadence>(currentCadence);
   const [shareMyGoals, setShareMyGoals] = useState(partnerCanViewMyGoals);
+  const [viewPartnerGoals, setViewPartnerGoals] = useState(canViewPartnerGoals);
   const [isSavingCadence, setIsSavingCadence] = useState(false);
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
+  const [isSavingViewPartner, setIsSavingViewPartner] = useState(false);
 
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setCadence(currentCadence);
       setShareMyGoals(partnerCanViewMyGoals);
+      setViewPartnerGoals(canViewPartnerGoals);
     }
-  }, [open, currentCadence, partnerCanViewMyGoals]);
+  }, [open, currentCadence, partnerCanViewMyGoals, canViewPartnerGoals]);
 
   const handleCadenceChange = async (newCadence: CheckInCadence) => {
     setCadence(newCadence);
@@ -72,7 +76,7 @@ export const PartnershipSettingsModal = ({
     setIsSavingCadence(false);
 
     if (result.success) {
-      toast.success('Check-in cadence updated');
+      toast.success(newCadence === 'none' ? 'Check-ins disabled' : 'Check-in cadence updated');
       onSettingsChange?.();
     } else {
       toast.error(result.error || 'Failed to update cadence');
@@ -96,6 +100,25 @@ export const PartnershipSettingsModal = ({
     } else {
       toast.error(result.error || 'Failed to update visibility');
       setShareMyGoals(partnerCanViewMyGoals);
+    }
+  };
+
+  const handleViewPartnerGoalsChange = async (view: boolean) => {
+    setViewPartnerGoals(view);
+    setIsSavingViewPartner(true);
+
+    const result = await accountabilityService.updateVisibilitySettings(partnerId, {
+      canViewPartnerGoals: view,
+    });
+
+    setIsSavingViewPartner(false);
+
+    if (result.success) {
+      toast.success(view ? `Now viewing ${partnerName}'s goals` : `Stopped viewing ${partnerName}'s goals`);
+      onSettingsChange?.();
+    } else {
+      toast.error(result.error || 'Failed to update visibility');
+      setViewPartnerGoals(canViewPartnerGoals);
     }
   };
 
@@ -134,13 +157,21 @@ export const PartnershipSettingsModal = ({
                 {CADENCE_OPTIONS.map(option => (
                   <SelectItem key={option.value} value={option.value}>
                     <div className="flex flex-col">
-                      <span>{option.label}</span>
+                      <span className={cn(option.value === 'none' && "text-muted-foreground")}>
+                        {option.label}
+                      </span>
                       <span className="text-xs text-muted-foreground">{option.description}</span>
                     </div>
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {cadence === 'none' && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                <BellOff className="h-3 w-3" />
+                <span>Check-in reminders are disabled for this partner</span>
+              </div>
+            )}
           </div>
 
           <Separator />
@@ -148,7 +179,7 @@ export const PartnershipSettingsModal = ({
           {/* Goal Visibility */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              {shareMyGoals ? (
+              {shareMyGoals || viewPartnerGoals ? (
                 <Eye className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -174,26 +205,32 @@ export const PartnershipSettingsModal = ({
               </div>
             </div>
 
-            {/* Partner's sharing status (read-only) */}
-            <div className="flex items-center justify-between gap-4 rounded-lg border border-dashed p-4 bg-muted/30">
+            {/* View partner's goals toggle */}
+            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
               <div className="space-y-1">
-                <Label className="text-sm text-muted-foreground">{partnerName}'s goals</Label>
+                <Label className="text-sm">View {partnerName}'s goals</Label>
                 <p className="text-xs text-muted-foreground">
-                  {canViewPartnerGoals 
-                    ? `${partnerName} is sharing their goals with you`
+                  {partnerCanViewMyGoals 
+                    ? `See ${partnerName}'s goals and weekly objectives (they are sharing with you)`
                     : `${partnerName} is not sharing their goals with you`
                   }
                 </p>
               </div>
-              <div className={cn(
-                "px-2 py-1 rounded text-xs font-medium",
-                canViewPartnerGoals 
-                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
-                  : "bg-muted text-muted-foreground"
-              )}>
-                {canViewPartnerGoals ? 'Visible' : 'Hidden'}
+              <div className="flex items-center gap-2">
+                {isSavingViewPartner && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                <Switch
+                  checked={viewPartnerGoals}
+                  onCheckedChange={handleViewPartnerGoalsChange}
+                  disabled={isSavingViewPartner || !partnerCanViewMyGoals}
+                />
               </div>
             </div>
+
+            {!partnerCanViewMyGoals && (
+              <p className="text-xs text-muted-foreground italic">
+                Note: You can only view {partnerName}'s goals if they choose to share them with you.
+              </p>
+            )}
           </div>
         </div>
       </DialogContent>
