@@ -52,6 +52,8 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
       navigate('/friends?tab=accountability');
     } else if (notification.type === 'accountability_partner_accepted') {
       navigate(`/profile/${notification.triggered_by_user_id}`);
+    } else if (notification.type === 'partner_objective_feedback') {
+      navigate('/goals?tab=weekly');
     } else if (notification.related_post_id) {
       navigate(`/feed?post=${notification.related_post_id}`);
     }
@@ -147,6 +149,8 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
         return '🎯';
       case 'accountability_partner_accepted':
         return '🤝';
+      case 'partner_objective_feedback':
+        return '💡';
       default:
         return '🔔';
     }
