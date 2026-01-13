@@ -26,15 +26,6 @@ export const GoalUpdatesService = {
   }): Promise<GoalUpdate[]> {
     const { feedType, userId, limit = 20, offset = 0 } = options;
 
-    let query = supabase
-      .from('goal_updates')
-      .select(`
-        *,
-        goal:goals!inner(id, title, description, status, category, target_date, user_id, visibility)
-      `)
-      .order('created_at', { ascending: false })
-      .range(offset, offset + limit - 1);
-
     if (feedType === 'following') {
       // Get updates only from goals the user follows
       const { data: follows } = await supabase
@@ -45,16 +36,57 @@ export const GoalUpdatesService = {
       const followedGoalIds = follows?.map(f => f.goal_id) || [];
       if (followedGoalIds.length === 0) return [];
       
-      query = query.in('goal_id', followedGoalIds);
+      const { data, error } = await supabase
+        .from('goal_updates')
+        .select(`
+          *,
+          goal:goals!inner(id, title, description, status, category, target_date, user_id, visibility)
+        `)
+        .in('goal_id', followedGoalIds)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) throw error;
+      return this.enrichUpdates(data || [], userId);
     }
 
-    const { data, error } = await query;
-    if (error) throw error;
+    // feedType === 'all' - Get updates from friends only
+    // First, get friend IDs from both columns of the friends table
+    const [friends1Result, friends2Result] = await Promise.all([
+      supabase.from('friends').select('user2_id').eq('user1_id', userId),
+      supabase.from('friends').select('user1_id').eq('user2_id', userId)
+    ]);
 
-    const updateIds = (data || []).map(u => u.id);
-    const userIds = [...new Set((data || []).map(u => u.user_id))];
-    
-    if (updateIds.length === 0) return [];
+    const friendIds = [
+      ...(friends1Result.data?.map(f => f.user2_id) || []),
+      ...(friends2Result.data?.map(f => f.user1_id) || [])
+    ];
+
+    // Include user's own updates too
+    friendIds.push(userId);
+
+    if (friendIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from('goal_updates')
+      .select(`
+        *,
+        goal:goals!inner(id, title, description, status, category, target_date, user_id, visibility)
+      `)
+      .in('user_id', friendIds)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (error) throw error;
+    return this.enrichUpdates(data || [], userId);
+  },
+
+  // Helper to enrich updates with profiles, cheers, comments
+  async enrichUpdates(data: any[], userId: string): Promise<GoalUpdate[]> {
+    if (data.length === 0) return [];
+
+    const updateIds = data.map(u => u.id);
+    const userIds = [...new Set(data.map(u => u.user_id))];
 
     // Fetch user profiles, cheers, comments in parallel
     const [profilesResult, cheersResult, commentsResult, userCheersResult] = await Promise.all([
@@ -82,7 +114,7 @@ export const GoalUpdatesService = {
       userCheers.set(c.update_id, c.cheer_type as CheerType);
     });
 
-    return (data || []).map(update => ({
+    return data.map(update => ({
       id: update.id,
       goal_id: update.goal_id,
       user_id: update.user_id,
