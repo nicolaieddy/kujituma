@@ -107,23 +107,39 @@ export const FriendCard = ({
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3 flex-1">
-                  <div className="relative">
+                <div className="flex items-center space-x-3 min-w-0 flex-1">
+                  <div className="relative flex-shrink-0">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={friend.avatar_url} alt={friend.full_name} />
                       <AvatarFallback>
                         <User className="h-6 w-6" />
                       </AvatarFallback>
                     </Avatar>
+                    {/* Facebook-style green dot for online status */}
                     {recentlyActive && (
-                      <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-500 border-2 border-background" />
+                      <span className="absolute bottom-0 right-0 h-3.5 w-3.5 rounded-full bg-green-500 border-2 border-background" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h4 className="font-medium text-foreground hover:text-primary transition-colors truncate">
-                      {friend.full_name}
-                    </h4>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-medium text-foreground hover:text-primary transition-colors truncate">
+                        {friend.full_name}
+                      </h4>
+                      {/* Accountability partner badge - subtle indicator */}
+                      {isAlreadyPartner && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center justify-center h-5 w-5 rounded-full bg-success/10 text-success flex-shrink-0">
+                              <Handshake className="h-3 w-3" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Accountability Partner</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Users className="h-3 w-3" />
                         {friend.friend_count ?? 0} friends
@@ -134,72 +150,58 @@ export const FriendCard = ({
                           {friend.mutual_friends_count} mutual
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        <span className={recentlyActive ? "text-green-600 dark:text-green-400" : ""}>
+                      {!recentlyActive && (
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
                           {lastActiveText}
                         </span>
-                      </span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 {showActions && (
-                  <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-                    {/* Accountability Partner Request Button */}
-                    {isAlreadyPartner ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled
-                            className="text-success border-success/30"
-                          >
-                            <Check className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Already partners</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : requestSent ? (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled
-                            className="text-muted-foreground"
-                          >
-                            <Handshake className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Request pending</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={handleSendPartnerRequest}
-                            disabled={sendingRequest || loading}
-                            className="text-primary hover:text-primary-foreground hover:bg-primary"
-                          >
-                            {sendingRequest ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
+                  <div className="flex space-x-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                    {/* Accountability Partner Request Button - only show if not already partner */}
+                    {!isAlreadyPartner && (
+                      requestSent ? (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled
+                              className="text-muted-foreground"
+                            >
                               <Handshake className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Send partner request</p>
-                        </TooltipContent>
-                      </Tooltip>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Partner request pending</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleSendPartnerRequest}
+                              disabled={sendingRequest || loading}
+                              className="text-primary hover:text-primary-foreground hover:bg-primary"
+                            >
+                              {sendingRequest ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Handshake className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Send partner request</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      )
                     )}
                     <Button
                       size="sm"
