@@ -991,6 +991,48 @@ export type Database = {
         }
         Relationships: []
       }
+      objective_partner_feedback: {
+        Row: {
+          created_at: string
+          feedback_type: string
+          id: string
+          objective_id: string
+          partner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          feedback_type: string
+          id?: string
+          objective_id: string
+          partner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          feedback_type?: string
+          id?: string
+          objective_id?: string
+          partner_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objective_partner_feedback_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_partner_feedback_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnership_visibility_history: {
         Row: {
           changed_by: string

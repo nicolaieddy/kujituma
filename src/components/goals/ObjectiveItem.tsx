@@ -10,6 +10,8 @@ import { Goal } from "@/types/goals";
 import { celebrateSuccess } from "@/utils/confetti";
 import { ObjectiveTimeBlocker } from "@/components/habits/ObjectiveTimeBlocker";
 import { SortableObjectiveItem } from "./SortableObjectiveItem";
+import { ObjectiveFeedbackIndicator } from "@/components/thisweek/ObjectiveFeedbackIndicator";
+import { ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
 
 interface GroupedGoals {
   in_progress: Goal[];
@@ -31,6 +33,8 @@ interface ObjectiveItemProps {
   recentlySavedIds?: Set<string>;
   currentWeekStart: string;
   allObjectives: WeeklyObjective[];
+  agreeFeedback?: ObjectiveFeedback[];
+  questionFeedback?: ObjectiveFeedback[];
   onToggleObjective: (id: string, isCompleted: boolean) => void;
   onEditObjective: (objective: WeeklyObjective) => void;
   onEditingTextChange: (text: string) => void;
@@ -59,6 +63,8 @@ export const ObjectiveItem = memo(({
   recentlySavedIds = new Set(),
   currentWeekStart,
   allObjectives,
+  agreeFeedback = [],
+  questionFeedback = [],
   onToggleObjective,
   onEditObjective,
   onEditingTextChange,
@@ -140,6 +146,8 @@ export const ObjectiveItem = memo(({
               allObjectives={allObjectives}
               goals={goals}
               groupedGoals={groupedGoals}
+              agreeFeedback={agreeFeedback}
+              questionFeedback={questionFeedback}
               onEditGoal={onEditGoal}
               onGoalChange={onGoalChange}
               onUpdateObjectiveSchedule={onUpdateObjectiveSchedule}
@@ -177,6 +185,8 @@ interface ObjectiveContentProps {
   allObjectives: WeeklyObjective[];
   goals: Goal[];
   groupedGoals: GroupedGoals;
+  agreeFeedback: ObjectiveFeedback[];
+  questionFeedback: ObjectiveFeedback[];
   onEditGoal: (objectiveId: string, currentGoalId: string | null) => void;
   onGoalChange: (objectiveId: string, goalId: string) => void;
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
@@ -195,6 +205,8 @@ const ObjectiveContent = ({
   allObjectives,
   goals,
   groupedGoals,
+  agreeFeedback,
+  questionFeedback,
   onEditGoal,
   onGoalChange,
   onUpdateObjectiveSchedule,
@@ -282,6 +294,14 @@ const ObjectiveContent = ({
           <Check className="h-3 w-3 text-primary" />
           <span className="text-xs text-primary">Saved</span>
         </div>
+      )}
+      
+      {/* Partner Feedback Indicator */}
+      {(agreeFeedback.length > 0 || questionFeedback.length > 0) && (
+        <ObjectiveFeedbackIndicator
+          agreeFeedback={agreeFeedback}
+          questionFeedback={questionFeedback}
+        />
       )}
     </div>
   </div>
