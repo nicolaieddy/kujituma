@@ -11,7 +11,8 @@ export type NotificationType =
   | 'goal_update_cheer'
   | 'goal_milestone'
   | 'goal_help_request'
-  | 'goal_update_comment';
+  | 'goal_update_comment'
+  | 'partner_objective_feedback';
 
 export interface Notification {
   id: string;
