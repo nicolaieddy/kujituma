@@ -2,25 +2,64 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
 import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 
 import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen } from "lucide-react";
+import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen, Search } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
+import { DailyCheckIn } from "@/types/habits";
 
 const moodEmojis = ['😔', '😕', '😐', '🙂', '😊'];
+const ITEMS_PER_PAGE = 10;
 
 export const DailyCheckInsTab = () => {
-  const { checkIns, analytics, isLoading } = useAllDailyCheckIns(90);
+  const { checkIns, analytics, isLoading } = useAllDailyCheckIns(365); // Fetch up to a year
   const { hasCheckedInToday, todayCheckIn } = useDailyCheckIn();
   const { openDailyCheckIn } = useRitualsTrigger();
-  const [selectedCheckIn, setSelectedCheckIn] = useState<any>(null);
+  const [selectedCheckIn, setSelectedCheckIn] = useState<DailyCheckIn | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Filter check-ins based on search query
+  const filteredCheckIns = useMemo(() => {
+    if (!searchQuery.trim()) return checkIns;
+    
+    const query = searchQuery.toLowerCase();
+    return checkIns.filter((checkIn) => {
+      const dateStr = format(parseISO(checkIn.check_in_date), 'MMM d yyyy EEE').toLowerCase();
+      const journalMatch = checkIn.journal_entry?.toLowerCase().includes(query);
+      const focusMatch = checkIn.focus_today?.toLowerCase().includes(query);
+      const dateMatch = dateStr.includes(query);
+      return journalMatch || focusMatch || dateMatch;
+    });
+  }, [checkIns, searchQuery]);
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredCheckIns.length / ITEMS_PER_PAGE);
+  const paginatedCheckIns = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredCheckIns.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredCheckIns, currentPage]);
+
+  // Reset to page 1 when search changes
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // Prepare chart data for mood/energy trends
   const trendData = useMemo(() => {
@@ -211,12 +250,23 @@ export const DailyCheckInsTab = () => {
       {checkIns.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <BookOpen className="h-4 w-4" />
-              Journal & Focus History
-            </CardTitle>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <CardTitle className="text-base flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Journal & Focus History
+              </CardTitle>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by date or content..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+            </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <div className="rounded-md border">
               <Table>
                 <TableHeader>
@@ -228,56 +278,112 @@ export const DailyCheckInsTab = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {checkIns.slice(0, 14).map((checkIn) => (
-                    <TableRow 
-                      key={checkIn.id} 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => {
-                        setSelectedCheckIn(checkIn);
-                        setIsDetailOpen(true);
-                      }}
-                    >
-                      <TableCell className="font-medium">
-                        <div>
-                          <p className="text-sm">{format(parseISO(checkIn.check_in_date), 'EEE')}</p>
-                          <p className="text-xs text-muted-foreground">{format(parseISO(checkIn.check_in_date), 'MMM d')}</p>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          {checkIn.mood_rating && (
-                            <span className="text-lg">{moodEmojis[checkIn.mood_rating - 1]}</span>
-                          )}
-                          {checkIn.energy_level && (
-                            <Badge variant="outline" className="text-xs">
-                              <Zap className="h-3 w-3 text-yellow-500" />
-                              {checkIn.energy_level}
-                            </Badge>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {checkIn.journal_entry ? (
-                          <p className="text-sm line-clamp-2">{checkIn.journal_entry}</p>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">No entry</span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {checkIn.focus_today ? (
-                          <div className="flex items-start gap-1.5">
-                            <Target className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
-                            <p className="text-sm text-muted-foreground line-clamp-2">{checkIn.focus_today}</p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground italic">—</span>
-                        )}
+                  {paginatedCheckIns.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        {searchQuery ? "No entries match your search" : "No check-ins yet"}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    paginatedCheckIns.map((checkIn) => (
+                      <TableRow 
+                        key={checkIn.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => {
+                          setSelectedCheckIn(checkIn);
+                          setIsDetailOpen(true);
+                        }}
+                      >
+                        <TableCell className="font-medium">
+                          <div>
+                            <p className="text-sm">{format(parseISO(checkIn.check_in_date), 'EEE')}</p>
+                            <p className="text-xs text-muted-foreground">{format(parseISO(checkIn.check_in_date), 'MMM d')}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {checkIn.mood_rating && (
+                              <span className="text-lg">{moodEmojis[checkIn.mood_rating - 1]}</span>
+                            )}
+                            {checkIn.energy_level && (
+                              <Badge variant="outline" className="text-xs">
+                                <Zap className="h-3 w-3 text-yellow-500" />
+                                {checkIn.energy_level}
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {checkIn.journal_entry ? (
+                            <p className="text-sm line-clamp-2">{checkIn.journal_entry}</p>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">No entry</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {checkIn.focus_today ? (
+                            <div className="flex items-start gap-1.5">
+                              <Target className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                              <p className="text-sm text-muted-foreground line-clamp-2">{checkIn.focus_today}</p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-muted-foreground">
+                  Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredCheckIns.length)} of {filteredCheckIns.length} entries
+                </p>
+                <Pagination>
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious 
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum: number;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+                      return (
+                        <PaginationItem key={pageNum}>
+                          <PaginationLink
+                            onClick={() => setCurrentPage(pageNum)}
+                            isActive={currentPage === pageNum}
+                            className="cursor-pointer"
+                          >
+                            {pageNum}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    })}
+                    <PaginationItem>
+                      <PaginationNext 
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

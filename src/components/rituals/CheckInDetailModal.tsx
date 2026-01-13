@@ -14,14 +14,14 @@ const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Great'];
 interface CheckIn {
   id: string;
   check_in_date: string;
-  mood_rating: number | null;
-  energy_level: number | null;
-  focus_today: string | null;
-  quick_win: string | null;
-  blocker: string | null;
-  journal_entry: string | null;
-  created_at: string;
-  updated_at: string;
+  mood_rating?: number | null;
+  energy_level?: number | null;
+  focus_today?: string | null;
+  quick_win?: string | null;
+  blocker?: string | null;
+  journal_entry?: string | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface CheckInDetailModalProps {
