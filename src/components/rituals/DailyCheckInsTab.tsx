@@ -23,7 +23,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "rec
 import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen, Search, CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, subDays, startOfMonth, startOfWeek } from "date-fns";
 import { useMemo, useState } from "react";
 import { DailyCheckIn } from "@/types/habits";
 
@@ -323,7 +323,41 @@ export const DailyCheckInsTab = () => {
               
               <div className="h-6 w-px bg-border mx-1" />
               
-              {/* Date Range Picker */}
+              {/* Quick Date Presets */}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDateRange({ from: subDays(new Date(), 6), to: new Date() })}
+                className="text-xs"
+              >
+                Last 7 days
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDateRange({ from: subDays(new Date(), 29), to: new Date() })}
+                className="text-xs"
+              >
+                Last 30 days
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDateRange({ from: startOfMonth(new Date()), to: new Date() })}
+                className="text-xs"
+              >
+                This month
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDateRange({ from: startOfWeek(new Date(), { weekStartsOn: 1 }), to: new Date() })}
+                className="text-xs"
+              >
+                This week
+              </Button>
+              
+              {/* Custom Date Range Picker */}
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -341,7 +375,7 @@ export const DailyCheckInsTab = () => {
                         format(dateRange.from, "MMM d, yyyy")
                       )
                     ) : (
-                      <span>Date range</span>
+                      <span>Custom</span>
                     )}
                   </Button>
                 </PopoverTrigger>
