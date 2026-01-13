@@ -26,6 +26,15 @@ import { DailyCheckIn } from "@/types/habits";
 const moodEmojis = ['😔', '😕', '😐', '🙂', '😊'];
 const ITEMS_PER_PAGE = 10;
 
+type MoodFilter = 'all' | 'happy' | 'neutral' | 'sad';
+
+const moodFilters: { value: MoodFilter; label: string; emoji: string; range: number[] }[] = [
+  { value: 'all', label: 'All', emoji: '📋', range: [] },
+  { value: 'happy', label: 'Happy', emoji: '😊', range: [4, 5] },
+  { value: 'neutral', label: 'Neutral', emoji: '😐', range: [3] },
+  { value: 'sad', label: 'Low', emoji: '😔', range: [1, 2] },
+];
+
 export const DailyCheckInsTab = () => {
   const { checkIns, analytics, isLoading } = useAllDailyCheckIns(365); // Fetch up to a year
   const { hasCheckedInToday, todayCheckIn } = useDailyCheckIn();
@@ -34,20 +43,36 @@ export const DailyCheckInsTab = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [moodFilter, setMoodFilter] = useState<MoodFilter>('all');
 
-  // Filter check-ins based on search query
+  // Filter check-ins based on search query and mood filter
   const filteredCheckIns = useMemo(() => {
-    if (!searchQuery.trim()) return checkIns;
+    let filtered = checkIns;
     
-    const query = searchQuery.toLowerCase();
-    return checkIns.filter((checkIn) => {
-      const dateStr = format(parseISO(checkIn.check_in_date), 'MMM d yyyy EEE').toLowerCase();
-      const journalMatch = checkIn.journal_entry?.toLowerCase().includes(query);
-      const focusMatch = checkIn.focus_today?.toLowerCase().includes(query);
-      const dateMatch = dateStr.includes(query);
-      return journalMatch || focusMatch || dateMatch;
-    });
-  }, [checkIns, searchQuery]);
+    // Apply mood filter
+    if (moodFilter !== 'all') {
+      const filterConfig = moodFilters.find(f => f.value === moodFilter);
+      if (filterConfig) {
+        filtered = filtered.filter((checkIn) => 
+          checkIn.mood_rating && filterConfig.range.includes(checkIn.mood_rating)
+        );
+      }
+    }
+    
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((checkIn) => {
+        const dateStr = format(parseISO(checkIn.check_in_date), 'MMM d yyyy EEE').toLowerCase();
+        const journalMatch = checkIn.journal_entry?.toLowerCase().includes(query);
+        const focusMatch = checkIn.focus_today?.toLowerCase().includes(query);
+        const dateMatch = dateStr.includes(query);
+        return journalMatch || focusMatch || dateMatch;
+      });
+    }
+    
+    return filtered;
+  }, [checkIns, searchQuery, moodFilter]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredCheckIns.length / ITEMS_PER_PAGE);
@@ -56,10 +81,10 @@ export const DailyCheckInsTab = () => {
     return filteredCheckIns.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   }, [filteredCheckIns, currentPage]);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, moodFilter]);
 
   // Prepare chart data for mood/energy trends
   const trendData = useMemo(() => {
@@ -249,7 +274,7 @@ export const DailyCheckInsTab = () => {
       {/* Check-ins History Table */}
       {checkIns.length > 0 && (
         <Card>
-          <CardHeader>
+          <CardHeader className="space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle className="text-base flex items-center gap-2">
                 <BookOpen className="h-4 w-4" />
@@ -264,6 +289,21 @@ export const DailyCheckInsTab = () => {
                   className="pl-9"
                 />
               </div>
+            </div>
+            {/* Mood Filter Buttons */}
+            <div className="flex flex-wrap gap-2">
+              {moodFilters.map((filter) => (
+                <Button
+                  key={filter.value}
+                  variant={moodFilter === filter.value ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setMoodFilter(filter.value)}
+                  className="gap-1.5"
+                >
+                  <span>{filter.emoji}</span>
+                  <span>{filter.label}</span>
+                </Button>
+              ))}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -281,7 +321,7 @@ export const DailyCheckInsTab = () => {
                   {paginatedCheckIns.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        {searchQuery ? "No entries match your search" : "No check-ins yet"}
+                        {searchQuery || moodFilter !== 'all' ? "No entries match your filters" : "No check-ins yet"}
                       </TableCell>
                     </TableRow>
                   ) : (
