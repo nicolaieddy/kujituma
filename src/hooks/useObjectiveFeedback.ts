@@ -1,0 +1,143 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
+export type FeedbackType = 'agree' | 'question';
+
+export interface ObjectiveFeedback {
+  id: string;
+  objective_id: string;
+  partner_id: string;
+  feedback_type: FeedbackType;
+  created_at: string;
+  partner?: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
+// Hook for partners to manage their feedback on objectives
+export const usePartnerObjectiveFeedback = (objectiveIds: string[]) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: feedback = [], isLoading } = useQuery({
+    queryKey: ['objective-partner-feedback', user?.id, objectiveIds],
+    queryFn: async () => {
+      if (!objectiveIds.length) return [];
+      
+      const { data, error } = await supabase
+        .from('objective_partner_feedback')
+        .select('*')
+        .eq('partner_id', user!.id)
+        .in('objective_id', objectiveIds);
+      
+      if (error) throw error;
+      return data as ObjectiveFeedback[];
+    },
+    enabled: !!user && objectiveIds.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const toggleFeedbackMutation = useMutation({
+    mutationFn: async ({ objectiveId, feedbackType }: { objectiveId: string; feedbackType: FeedbackType }) => {
+      const existing = feedback.find(f => f.objective_id === objectiveId);
+      
+      if (existing) {
+        if (existing.feedback_type === feedbackType) {
+          // Remove feedback if clicking same type
+          const { error } = await supabase
+            .from('objective_partner_feedback')
+            .delete()
+            .eq('id', existing.id);
+          if (error) throw error;
+          return null;
+        } else {
+          // Update to different type
+          const { data, error } = await supabase
+            .from('objective_partner_feedback')
+            .update({ feedback_type: feedbackType, updated_at: new Date().toISOString() })
+            .eq('id', existing.id)
+            .select()
+            .single();
+          if (error) throw error;
+          return data;
+        }
+      } else {
+        // Create new feedback
+        const { data, error } = await supabase
+          .from('objective_partner_feedback')
+          .insert({
+            objective_id: objectiveId,
+            partner_id: user!.id,
+            feedback_type: feedbackType,
+          })
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['objective-partner-feedback'] });
+    },
+  });
+
+  const getFeedbackForObjective = (objectiveId: string) => {
+    return feedback.find(f => f.objective_id === objectiveId);
+  };
+
+  return {
+    feedback,
+    isLoading,
+    toggleFeedback: toggleFeedbackMutation.mutate,
+    isToggling: toggleFeedbackMutation.isPending,
+    getFeedbackForObjective,
+  };
+};
+
+// Hook for users to see feedback on their own objectives
+export const useMyObjectivesFeedback = (objectiveIds: string[]) => {
+  const { user } = useAuth();
+
+  const { data: feedback = [], isLoading, refetch } = useQuery({
+    queryKey: ['my-objectives-feedback', user?.id, objectiveIds],
+    queryFn: async () => {
+      if (!objectiveIds.length) return [];
+      
+      const { data, error } = await supabase
+        .from('objective_partner_feedback')
+        .select(`
+          *,
+          partner:profiles!objective_partner_feedback_partner_id_fkey(full_name, avatar_url)
+        `)
+        .in('objective_id', objectiveIds);
+      
+      if (error) throw error;
+      return data as ObjectiveFeedback[];
+    },
+    enabled: !!user && objectiveIds.length > 0,
+    staleTime: 30 * 1000,
+  });
+
+  const getFeedbackForObjective = (objectiveId: string) => {
+    return feedback.filter(f => f.objective_id === objectiveId);
+  };
+
+  const getAgreeFeedback = (objectiveId: string) => {
+    return feedback.filter(f => f.objective_id === objectiveId && f.feedback_type === 'agree');
+  };
+
+  const getQuestionFeedback = (objectiveId: string) => {
+    return feedback.filter(f => f.objective_id === objectiveId && f.feedback_type === 'question');
+  };
+
+  return {
+    feedback,
+    isLoading,
+    refetch,
+    getFeedbackForObjective,
+    getAgreeFeedback,
+    getQuestionFeedback,
+  };
+};

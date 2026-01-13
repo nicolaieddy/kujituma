@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
@@ -14,6 +14,7 @@ import { PartnerHabitsCard } from '@/components/accountability/PartnerHabitsCard
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
+import { PartnerObjectiveFeedback } from '@/components/accountability/PartnerObjectiveFeedback';
 import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
 import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability/PartnerSwitcher';
@@ -23,6 +24,7 @@ import {
   PartnerWeeklyObjective,
   CheckInCadence
 } from '@/services/accountabilityService';
+import { usePartnerObjectiveFeedback } from '@/hooks/useObjectiveFeedback';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -331,6 +333,10 @@ const PartnerDashboard = () => {
   const totalObjectives = weeklyObjectives.length;
   const progressPercentage = totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0;
 
+  // Get objective IDs for feedback hook
+  const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
+  const { feedback, toggleFeedback, isToggling, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
+
   const initials = partnerProfile?.full_name
     .split(' ')
     .map(n => n[0])
@@ -500,37 +506,47 @@ const PartnerDashboard = () => {
                   <div className="text-sm text-muted-foreground">Loading objectives...</div>
                 </div>
               ) : weeklyObjectives.length > 0 ? (
-                <div className="space-y-3">
-                  {weeklyObjectives.map((objective) => (
-                    <div 
-                      key={objective.id}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors"
-                    >
-                      {objective.is_completed ? (
-                        <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <span className={`text-sm ${objective.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
-                          {objective.text}
-                        </span>
-                        {objective.goal?.title && (
-                          <div className="flex items-center gap-1 mt-0.5">
-                            <Target className="h-3 w-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground truncate">
-                              {objective.goal.title}
-                            </span>
-                          </div>
+                <div className="space-y-2">
+                  {weeklyObjectives.map((objective) => {
+                    const objFeedback = getFeedbackForObjective(objective.id);
+                    return (
+                      <div 
+                        key={objective.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group"
+                      >
+                        {objective.is_completed ? (
+                          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                        ) : (
+                          <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                         )}
+                        <div className="flex-1 min-w-0">
+                          <span className={`text-sm ${objective.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                            {objective.text}
+                          </span>
+                          {objective.goal?.title && (
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Target className="h-3 w-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground truncate">
+                                {objective.goal.title}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        {objective.scheduled_day && (
+                          <Badge variant="secondary" className="text-xs flex-shrink-0 mr-1">
+                            {objective.scheduled_day}
+                          </Badge>
+                        )}
+                        {/* Partner Feedback Buttons */}
+                        <PartnerObjectiveFeedback
+                          objectiveId={objective.id}
+                          feedback={objFeedback}
+                          onToggleFeedback={(feedbackType) => toggleFeedback({ objectiveId: objective.id, feedbackType })}
+                          isToggling={isToggling}
+                        />
                       </div>
-                      {objective.scheduled_day && (
-                        <Badge variant="secondary" className="text-xs flex-shrink-0">
-                          {objective.scheduled_day}
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-6 text-muted-foreground text-sm">

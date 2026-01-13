@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -11,6 +11,7 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import { ObjectiveItem } from "./ObjectiveItem";
 import { InlineAddObjective } from "./InlineAddObjective";
 import { EmptyObjectivesState } from "./EmptyObjectivesState";
+import { useMyObjectivesFeedback } from "@/hooks/useObjectiveFeedback";
 
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
@@ -61,6 +62,10 @@ export const WeeklyObjectivesList = ({
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [savingObjectiveIds, setSavingObjectiveIds] = useState<Set<string>>(new Set());
   const [localObjectives, setLocalObjectives] = useState(objectives);
+
+  // Get feedback for all objectives
+  const objectiveIds = useMemo(() => objectives.map(o => o.id), [objectives]);
+  const { getAgreeFeedback, getQuestionFeedback } = useMyObjectivesFeedback(objectiveIds);
 
   useEffect(() => {
     setLocalObjectives(objectives);
@@ -203,6 +208,8 @@ export const WeeklyObjectivesList = ({
                   recentlySavedIds={recentlySavedIds}
                   currentWeekStart={currentWeekStart}
                   allObjectives={localObjectives}
+                  agreeFeedback={getAgreeFeedback(objective.id)}
+                  questionFeedback={getQuestionFeedback(objective.id)}
                   onToggleObjective={onToggleObjective}
                   onEditObjective={handleEditObjective}
                   onEditingTextChange={setEditingText}
