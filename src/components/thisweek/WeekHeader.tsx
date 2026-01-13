@@ -104,13 +104,13 @@ export const WeekHeader = ({
                     variant="ghost"
                     size="sm"
                     onClick={hasCheckedInToday ? openDailyCheckInHistory : openDailyCheckIn}
-                    className={`text-muted-foreground hover:text-foreground relative ${
+                    className={`text-muted-foreground hover:text-foreground relative overflow-visible ${
                       !hasCheckedInToday ? 'animate-pulse' : ''
                     }`}
                   >
                     <Sun className="h-5 w-5" />
                     {hasCheckedInToday && (
-                      <CheckCircle className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
+                      <CheckCircle className="h-3.5 w-3.5 text-green-500 absolute -top-1.5 -right-1.5 fill-background" />
                     )}
                   </Button>
                 </TooltipTrigger>
@@ -129,13 +129,13 @@ export const WeekHeader = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        className={`text-muted-foreground hover:text-foreground relative ${
+                        className={`text-muted-foreground hover:text-foreground relative overflow-visible ${
                           !hasCompletedPlanning ? 'animate-pulse' : ''
                         }`}
                       >
                         <CalendarDays className="h-5 w-5" />
                         {hasCompletedPlanning && (
-                          <CheckCircle className="h-3 w-3 text-green-500 absolute -top-1 -right-1" />
+                          <CheckCircle className="h-3.5 w-3.5 text-green-500 absolute -top-1.5 -right-1.5 fill-background" />
                         )}
                       </Button>
                     </DropdownMenuTrigger>
