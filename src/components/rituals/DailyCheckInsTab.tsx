@@ -4,6 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Pagination,
   PaginationContent,
@@ -18,7 +20,9 @@ import { useRitualsTrigger } from "@/contexts/RitualsContext";
 
 import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen, Search } from "lucide-react";
+import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen, Search, CalendarIcon, X } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { DateRange } from "react-day-picker";
 import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 import { DailyCheckIn } from "@/types/habits";
@@ -44,10 +48,21 @@ export const DailyCheckInsTab = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [moodFilter, setMoodFilter] = useState<MoodFilter>('all');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
-  // Filter check-ins based on search query and mood filter
+  // Filter check-ins based on search query, mood filter, and date range
   const filteredCheckIns = useMemo(() => {
     let filtered = checkIns;
+    
+    // Apply date range filter
+    if (dateRange?.from) {
+      filtered = filtered.filter((checkIn) => {
+        const checkInDate = parseISO(checkIn.check_in_date);
+        const fromDate = dateRange.from!;
+        const toDate = dateRange.to || fromDate;
+        return checkInDate >= fromDate && checkInDate <= toDate;
+      });
+    }
     
     // Apply mood filter
     if (moodFilter !== 'all') {
@@ -72,7 +87,7 @@ export const DailyCheckInsTab = () => {
     }
     
     return filtered;
-  }, [checkIns, searchQuery, moodFilter]);
+  }, [checkIns, searchQuery, moodFilter, dateRange]);
 
   // Pagination calculations
   const totalPages = Math.ceil(filteredCheckIns.length / ITEMS_PER_PAGE);
@@ -84,7 +99,7 @@ export const DailyCheckInsTab = () => {
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1);
-  }, [searchQuery, moodFilter]);
+  }, [searchQuery, moodFilter, dateRange]);
 
   // Prepare chart data for mood/energy trends
   const trendData = useMemo(() => {
@@ -290,8 +305,9 @@ export const DailyCheckInsTab = () => {
                 />
               </div>
             </div>
-            {/* Mood Filter Buttons */}
-            <div className="flex flex-wrap gap-2">
+            {/* Filters Row */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Mood Filter Buttons */}
               {moodFilters.map((filter) => (
                 <Button
                   key={filter.value}
@@ -304,6 +320,54 @@ export const DailyCheckInsTab = () => {
                   <span>{filter.label}</span>
                 </Button>
               ))}
+              
+              <div className="h-6 w-px bg-border mx-1" />
+              
+              {/* Date Range Picker */}
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={dateRange?.from ? "default" : "outline"}
+                    size="sm"
+                    className={cn("gap-1.5", !dateRange?.from && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="h-4 w-4" />
+                    {dateRange?.from ? (
+                      dateRange.to ? (
+                        <span>
+                          {format(dateRange.from, "MMM d")} - {format(dateRange.to, "MMM d")}
+                        </span>
+                      ) : (
+                        format(dateRange.from, "MMM d, yyyy")
+                      )
+                    ) : (
+                      <span>Date range</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="range"
+                    selected={dateRange}
+                    onSelect={setDateRange}
+                    numberOfMonths={2}
+                    className="pointer-events-auto"
+                    disabled={(date) => date > new Date()}
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              {/* Clear Date Range Button */}
+              {dateRange?.from && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDateRange(undefined)}
+                  className="h-8 px-2"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -321,7 +385,7 @@ export const DailyCheckInsTab = () => {
                   {paginatedCheckIns.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
-                        {searchQuery || moodFilter !== 'all' ? "No entries match your filters" : "No check-ins yet"}
+                        {searchQuery || moodFilter !== 'all' || dateRange?.from ? "No entries match your filters" : "No check-ins yet"}
                       </TableCell>
                     </TableRow>
                   ) : (
