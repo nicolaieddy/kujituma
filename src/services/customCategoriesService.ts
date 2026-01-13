@@ -3,9 +3,13 @@ import { CustomGoalCategory, CreateCustomCategoryData } from "@/types/customCate
 
 export class CustomCategoriesService {
   static async getCustomCategories(): Promise<CustomGoalCategory[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+    
     const { data: categories, error } = await supabase
       .from('custom_goal_categories')
       .select('*')
+      .eq('user_id', user.id)
       .order('name', { ascending: true });
 
     if (error) throw error;
