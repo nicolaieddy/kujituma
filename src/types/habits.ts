@@ -8,6 +8,7 @@ export interface DailyCheckIn {
   focus_today?: string;
   quick_win?: string;
   blocker?: string;
+  journal_entry?: string;
   created_at: string;
   updated_at: string;
 }
@@ -63,6 +64,7 @@ export interface CreateDailyCheckIn {
   focus_today?: string;
   quick_win?: string;
   blocker?: string;
+  journal_entry?: string;
 }
 
 export interface CreateQuarterlyReview {
