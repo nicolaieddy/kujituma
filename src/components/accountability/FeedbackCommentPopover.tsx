@@ -25,9 +25,9 @@ export const FeedbackCommentPopover = ({
   onRemoveFeedback,
   isSubmitting,
 }: FeedbackCommentPopoverProps) => {
-  const [selectedType, setSelectedType] = useState<FeedbackType | null>(null);
   const [comment, setComment] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [activeType, setActiveType] = useState<FeedbackType | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isAgree = feedback?.feedback_type === 'agree';
@@ -37,43 +37,43 @@ export const FeedbackCommentPopover = ({
     if (isOpen && textareaRef.current) {
       textareaRef.current.focus();
     }
-  }, [isOpen, selectedType]);
+  }, [isOpen]);
+
+  useEffect(() => {
+    // Initialize comment from existing feedback when popover opens
+    if (isOpen && feedback?.comment) {
+      setComment(feedback.comment);
+    }
+  }, [isOpen, feedback?.comment]);
 
   const handleButtonClick = (type: FeedbackType) => {
     if (feedback?.feedback_type === type) {
-      // Remove existing feedback
+      // Already has this feedback - remove it
       onRemoveFeedback();
       setIsOpen(false);
     } else {
-      // Open popover for optional comment
-      setSelectedType(type);
-      setComment(feedback?.comment || "");
+      // Immediately submit the feedback (without comment)
+      onSubmitFeedback(type, undefined);
+      // Then open popover for optional comment
+      setActiveType(type);
+      setComment("");
       setIsOpen(true);
     }
   };
 
-  const handleSubmit = () => {
-    if (selectedType) {
-      onSubmitFeedback(selectedType, comment.trim() || undefined);
-      setComment("");
-      setSelectedType(null);
-      setIsOpen(false);
+  const handleAddComment = () => {
+    if (activeType && comment.trim()) {
+      onSubmitFeedback(activeType, comment.trim());
     }
-  };
-
-  const handleSkip = () => {
-    if (selectedType) {
-      onSubmitFeedback(selectedType, undefined);
-      setComment("");
-      setSelectedType(null);
-      setIsOpen(false);
-    }
-  };
-
-  const handleCancel = () => {
     setComment("");
-    setSelectedType(null);
     setIsOpen(false);
+    setActiveType(null);
+  };
+
+  const handleClose = () => {
+    setComment("");
+    setIsOpen(false);
+    setActiveType(null);
   };
 
   return (
@@ -129,22 +129,22 @@ export const FeedbackCommentPopover = ({
         >
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              {selectedType === 'agree' ? (
+              {activeType === 'agree' ? (
                 <div className="flex items-center gap-2 text-emerald-600">
                   <ThumbsUp className="h-4 w-4 fill-current" />
-                  <span className="text-sm font-medium">Strongly agree</span>
+                  <span className="text-sm font-medium">Add a note?</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 text-amber-600">
                   <HelpCircle className="h-4 w-4 fill-current" />
-                  <span className="text-sm font-medium">Question this</span>
+                  <span className="text-sm font-medium">Add a note?</span>
                 </div>
               )}
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="ml-auto h-6 w-6 p-0"
-                onClick={handleCancel}
+                onClick={handleClose}
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -153,8 +153,8 @@ export const FeedbackCommentPopover = ({
             <Textarea
               ref={textareaRef}
               placeholder={
-                selectedType === 'agree' 
-                  ? "Add a note (optional)..." 
+                activeType === 'agree' 
+                  ? "Why do you agree? (optional)" 
                   : "Why do you question this? (optional)"
               }
               value={comment}
@@ -162,29 +162,29 @@ export const FeedbackCommentPopover = ({
               className="min-h-[60px] resize-none text-sm"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.metaKey) {
-                  handleSubmit();
+                  handleAddComment();
                 }
               }}
             />
             
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-end gap-2">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={handleSkip}
+                onClick={handleClose}
                 disabled={isSubmitting}
                 className="text-muted-foreground text-xs"
               >
-                Skip note
+                Skip
               </Button>
               <Button
                 size="sm"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
+                onClick={handleAddComment}
+                disabled={isSubmitting || !comment.trim()}
                 className="gap-1.5"
               >
                 <Send className="h-3 w-3" />
-                Send
+                Add note
               </Button>
             </div>
           </div>
