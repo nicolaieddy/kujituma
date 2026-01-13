@@ -42,14 +42,21 @@ export const ObjectiveFeedbackIndicator = ({
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
-            <div className="space-y-1">
+            <div className="space-y-2">
               <p className="font-medium text-xs text-emerald-600 flex items-center gap-1">
                 <ThumbsUp className="h-3 w-3" />
                 Partners who agree:
               </p>
-              <ul className="text-xs">
+              <ul className="text-xs space-y-1.5">
                 {agreeFeedback.map(f => (
-                  <li key={f.id}>{f.partner?.full_name}</li>
+                  <li key={f.id} className="flex flex-col gap-0.5">
+                    <span className="font-medium">{f.partner?.full_name}</span>
+                    {f.comment && (
+                      <span className="text-muted-foreground italic pl-2 border-l-2 border-emerald-500/30">
+                        "{f.comment}"
+                      </span>
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -80,14 +87,21 @@ export const ObjectiveFeedbackIndicator = ({
             </div>
           </TooltipTrigger>
           <TooltipContent side="top" className="max-w-xs">
-            <div className="space-y-1">
+            <div className="space-y-2">
               <p className="font-medium text-xs text-amber-600 flex items-center gap-1">
                 <HelpCircle className="h-3 w-3" />
                 Partners questioning this:
               </p>
-              <ul className="text-xs">
+              <ul className="text-xs space-y-1.5">
                 {questionFeedback.map(f => (
-                  <li key={f.id}>{f.partner?.full_name}</li>
+                  <li key={f.id} className="flex flex-col gap-0.5">
+                    <span className="font-medium">{f.partner?.full_name}</span>
+                    {f.comment && (
+                      <span className="text-muted-foreground italic pl-2 border-l-2 border-amber-500/30">
+                        "{f.comment}"
+                      </span>
+                    )}
+                  </li>
                 ))}
               </ul>
             </div>
