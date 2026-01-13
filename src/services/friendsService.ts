@@ -231,8 +231,8 @@ class FriendsService {
   async searchUsers(query: string): Promise<UserProfile[]> {
     try {
       const trimmedQuery = query.trim();
-      // Validate input length
-      if (!trimmedQuery || trimmedQuery.length > 100) {
+      // Validate input length (empty is allowed for "discover all")
+      if (trimmedQuery.length > 100) {
         return [];
       }
 
@@ -255,15 +255,17 @@ class FriendsService {
         ...receivedRequestIds
       ];
 
-      // Sanitize query for ILIKE pattern
-      const sanitizedQuery = this.sanitizeForIlike(trimmedQuery);
-
       // Build query - use filter for array exclusion
       let queryBuilder = supabase
         .from('profiles')
         .select('id, full_name, avatar_url, about_me, linkedin_url')
-        .ilike('full_name', `%${sanitizedQuery}%`)
         .limit(20);
+
+      // Add search filter only if query is provided
+      if (trimmedQuery) {
+        const sanitizedQuery = this.sanitizeForIlike(trimmedQuery);
+        queryBuilder = queryBuilder.ilike('full_name', `%${sanitizedQuery}%`);
+      }
 
       // Only add exclusion filter if there are IDs to exclude
       if (excludeIds.length > 0) {

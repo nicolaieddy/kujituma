@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { User, UserMinus, MessageCircle, Users, Clock } from "lucide-react";
+import { User, UserMinus, Users, Clock, Handshake, Check, Loader2 } from "lucide-react";
 import { Friend } from "@/services/friendsService";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,12 +11,17 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useState } from "react";
+import { toast } from "sonner";
 
 interface FriendCardProps {
   friend: Friend;
   onRemove?: (friendId: string) => void;
+  onSendPartnerRequest?: (friendId: string) => Promise<{ success: boolean; error?: string }>;
   loading?: boolean;
   showActions?: boolean;
+  isAlreadyPartner?: boolean;
+  hasPendingPartnerRequest?: boolean;
 }
 
 const getLastActiveText = (lastActiveAt?: string): string => {
@@ -43,10 +48,15 @@ const isRecentlyActive = (lastActiveAt?: string): boolean => {
 export const FriendCard = ({
   friend,
   onRemove,
+  onSendPartnerRequest,
   loading = false,
-  showActions = true
+  showActions = true,
+  isAlreadyPartner = false,
+  hasPendingPartnerRequest = false,
 }: FriendCardProps) => {
   const navigate = useNavigate();
+  const [sendingRequest, setSendingRequest] = useState(false);
+  const [requestSent, setRequestSent] = useState(hasPendingPartnerRequest);
   const recentlyActive = isRecentlyActive(friend.last_active_at);
   const lastActiveText = getLastActiveText(friend.last_active_at);
 
@@ -54,9 +64,28 @@ export const FriendCard = ({
     navigate(`/profile/${friend.friend_id}`);
   };
 
+  const handleSendPartnerRequest = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onSendPartnerRequest || isAlreadyPartner || requestSent) return;
+    
+    setSendingRequest(true);
+    try {
+      const result = await onSendPartnerRequest(friend.friend_id);
+      if (result.success) {
+        setRequestSent(true);
+        toast.success("Partner request sent!");
+      } else {
+        toast.error(result.error || "Failed to send request");
+      }
+    } catch (error) {
+      toast.error("Failed to send request");
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
   const friendsSinceDate = format(new Date(friend.created_at), "MMMM d, yyyy");
 
-  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -67,13 +96,13 @@ export const FriendCard = ({
           transition={{ duration: 0.2 }}
           whileHover={{ scale: 1.02, transition: { duration: 0.2 } }}
         >
-          <Card className="hover:shadow-lg transition-shadow border-border hover:border-primary/20">
+          <Card 
+            className="hover:shadow-lg transition-shadow border-border hover:border-primary/20 cursor-pointer"
+            onClick={handleViewProfile}
+          >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div 
-                  className="flex items-center space-x-3 cursor-pointer flex-1"
-                  onClick={handleViewProfile}
-                >
+                <div className="flex items-center space-x-3 flex-1">
                   <div className="relative">
                     <Avatar className="h-12 w-12">
                       <AvatarImage src={friend.avatar_url} alt={friend.full_name} />
@@ -111,21 +140,71 @@ export const FriendCard = ({
                 </div>
 
                 {showActions && (
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Accountability Partner Request Button */}
+                    {isAlreadyPartner ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled
+                            className="text-success border-success/30"
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Already partners</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : requestSent ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled
+                            className="text-muted-foreground"
+                          >
+                            <Handshake className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Request pending</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleSendPartnerRequest}
+                            disabled={sendingRequest || loading}
+                            className="text-primary hover:text-primary-foreground hover:bg-primary"
+                          >
+                            {sendingRequest ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Handshake className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Send partner request</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={handleViewProfile}
-                      className="text-primary hover:text-primary-dark"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => onRemove?.(friend.friend_id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemove?.(friend.friend_id);
+                      }}
                       disabled={loading}
-                      className="border-red-300 text-red-600 hover:bg-red-50"
+                      className="border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     >
                       <UserMinus className="h-4 w-4" />
                     </Button>

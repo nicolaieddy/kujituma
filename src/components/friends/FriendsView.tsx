@@ -3,6 +3,8 @@ import { Friend, FriendRequest } from "@/services/friendsService";
 import { UserSearchSection } from "./UserSearchSection";
 import { FriendRequestsSection } from "./FriendRequestsSection";
 import { FriendsListSection } from "./FriendsListSection";
+import { AccountabilityPartner, AccountabilityPartnerRequest } from "@/services/accountabilityService";
+import { useAccountabilityPartners } from "@/hooks/useAccountabilityPartners";
 
 interface FriendsViewProps {
   friends: Friend[];
@@ -11,15 +13,28 @@ interface FriendsViewProps {
     received: FriendRequest[];
   };
   loading: boolean;
+  partners?: AccountabilityPartner[];
+  partnerRequests?: {
+    sent: AccountabilityPartnerRequest[];
+    received: AccountabilityPartnerRequest[];
+  };
 }
 
-export const FriendsView = ({ friends, friendRequests, loading }: FriendsViewProps) => {
+export const FriendsView = ({ 
+  friends, 
+  friendRequests, 
+  loading,
+  partners = [],
+  partnerRequests = { sent: [], received: [] },
+}: FriendsViewProps) => {
   const { 
     sendFriendRequest, 
     respondToFriendRequest, 
     cancelFriendRequest,
     removeFriend 
   } = useFriends();
+
+  const { sendPartnerRequest } = useAccountabilityPartners();
 
   const handleAcceptRequest = async (requestId: string) => {
     await respondToFriendRequest(requestId, 'accepted');
@@ -36,6 +51,13 @@ export const FriendsView = ({ friends, friendRequests, loading }: FriendsViewPro
   const handleRemoveFriend = async (friendId: string) => {
     await removeFriend(friendId);
   };
+
+  const handleSendPartnerRequest = async (friendId: string) => {
+    return await sendPartnerRequest(friendId);
+  };
+
+  // Build set of user IDs with pending partner requests (sent by current user)
+  const pendingPartnerRequests = new Set(partnerRequests.sent.map(r => r.receiver_id));
 
   if (loading) {
     return (
@@ -64,7 +86,10 @@ export const FriendsView = ({ friends, friendRequests, loading }: FriendsViewPro
       <FriendsListSection
         friends={friends}
         onRemove={handleRemoveFriend}
+        onSendPartnerRequest={handleSendPartnerRequest}
         loading={loading}
+        partners={partners}
+        pendingPartnerRequests={pendingPartnerRequests}
       />
     </div>
   );

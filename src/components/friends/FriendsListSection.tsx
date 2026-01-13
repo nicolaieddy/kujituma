@@ -2,14 +2,27 @@ import { FriendCard } from "./FriendCard";
 import { Friend } from "@/services/friendsService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
+import { AccountabilityPartner } from "@/services/accountabilityService";
 
 interface FriendsListSectionProps {
   friends: Friend[];
   onRemove: (friendId: string) => Promise<void>;
+  onSendPartnerRequest?: (friendId: string) => Promise<{ success: boolean; error?: string }>;
   loading?: boolean;
+  partners?: AccountabilityPartner[];
+  pendingPartnerRequests?: Set<string>;
 }
 
-export const FriendsListSection = ({ friends, onRemove, loading }: FriendsListSectionProps) => {
+export const FriendsListSection = ({ 
+  friends, 
+  onRemove, 
+  onSendPartnerRequest,
+  loading,
+  partners = [],
+  pendingPartnerRequests = new Set(),
+}: FriendsListSectionProps) => {
+  const partnerIds = new Set(partners.map(p => p.partner_id));
+
   return (
     <Card className="border-border hover:border-primary/20 transition-colors">
       <CardHeader>
@@ -38,7 +51,10 @@ export const FriendsListSection = ({ friends, onRemove, loading }: FriendsListSe
                 key={friend.friend_id}
                 friend={friend}
                 onRemove={onRemove}
+                onSendPartnerRequest={onSendPartnerRequest}
                 loading={loading}
+                isAlreadyPartner={partnerIds.has(friend.friend_id)}
+                hasPendingPartnerRequest={pendingPartnerRequests.has(friend.friend_id)}
               />
             ))}
           </div>
