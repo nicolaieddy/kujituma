@@ -1908,7 +1908,7 @@ export type Database = {
       }
       send_accountability_partner_request: {
         Args: {
-          _message: string
+          _message?: string
           _receiver_can_view_sender_goals?: boolean
           _receiver_id: string
           _sender_can_view_receiver_goals?: boolean
