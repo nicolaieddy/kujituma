@@ -2,13 +2,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 
 import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, ChevronRight, BookOpen } from "lucide-react";
+import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 
@@ -206,52 +207,77 @@ export const DailyCheckInsTab = () => {
         </Card>
       )}
 
-      {/* Recent Check-ins List */}
+      {/* Check-ins History Table */}
       {checkIns.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Recent Check-ins</CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              Journal & Focus History
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            {checkIns.slice(0, 7).map((checkIn) => (
-              <div 
-                key={checkIn.id} 
-                className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors group"
-                onClick={() => {
-                  setSelectedCheckIn(checkIn);
-                  setIsDetailOpen(true);
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="text-center min-w-[60px]">
-                    <p className="text-sm font-medium">{format(parseISO(checkIn.check_in_date), 'EEE')}</p>
-                    <p className="text-xs text-muted-foreground">{format(parseISO(checkIn.check_in_date), 'MMM d')}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {checkIn.mood_rating && (
-                      <span className="text-lg">{moodEmojis[checkIn.mood_rating - 1]}</span>
-                    )}
-                    {checkIn.energy_level && (
-                      <Badge variant="outline" className="text-xs">
-                        <Zap className="h-3 w-3 mr-1 text-yellow-500" />
-                        {checkIn.energy_level}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {checkIn.journal_entry && (
-                    <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
-                  )}
-                  {checkIn.focus_today && (
-                    <p className="text-sm text-muted-foreground truncate max-w-[200px]">
-                      {checkIn.focus_today}
-                    </p>
-                  )}
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-              </div>
-            ))}
+          <CardContent>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[100px]">Date</TableHead>
+                    <TableHead className="w-[80px] text-center">Mood</TableHead>
+                    <TableHead className="min-w-[250px]">Journal Entry</TableHead>
+                    <TableHead className="min-w-[200px]">#1 Focus</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {checkIns.slice(0, 14).map((checkIn) => (
+                    <TableRow 
+                      key={checkIn.id} 
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => {
+                        setSelectedCheckIn(checkIn);
+                        setIsDetailOpen(true);
+                      }}
+                    >
+                      <TableCell className="font-medium">
+                        <div>
+                          <p className="text-sm">{format(parseISO(checkIn.check_in_date), 'EEE')}</p>
+                          <p className="text-xs text-muted-foreground">{format(parseISO(checkIn.check_in_date), 'MMM d')}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          {checkIn.mood_rating && (
+                            <span className="text-lg">{moodEmojis[checkIn.mood_rating - 1]}</span>
+                          )}
+                          {checkIn.energy_level && (
+                            <Badge variant="outline" className="text-xs">
+                              <Zap className="h-3 w-3 text-yellow-500" />
+                              {checkIn.energy_level}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {checkIn.journal_entry ? (
+                          <p className="text-sm line-clamp-2">{checkIn.journal_entry}</p>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">No entry</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {checkIn.focus_today ? (
+                          <div className="flex items-start gap-1.5">
+                            <Target className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                            <p className="text-sm text-muted-foreground line-clamp-2">{checkIn.focus_today}</p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground italic">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       )}
