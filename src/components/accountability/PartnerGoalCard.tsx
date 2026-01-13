@@ -4,6 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PartnerGoal } from '@/services/accountabilityService';
 import { Target, Calendar, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
+import { getCategoryConfig, CustomCategoryIcon } from '@/types/customCategories';
 
 interface PartnerGoalCardProps {
   goal: PartnerGoal;
@@ -69,11 +70,16 @@ export const PartnerGoalCard = ({ goal, objectivesCount = 0, completedObjectives
                 {goal.timeframe}
               </Badge>
               
-              {goal.category && (
-                <span className="flex items-center gap-1">
-                  {goal.category}
-                </span>
-              )}
+              {goal.category && (() => {
+                const categoryConfig = getCategoryConfig(goal.category);
+                const IconComponent = categoryConfig?.icon || CustomCategoryIcon;
+                return (
+                  <span className="flex items-center gap-1">
+                    <IconComponent className="h-3 w-3" />
+                    {goal.category}
+                  </span>
+                );
+              })()}
               
               {goal.target_date && (
                 <span className="flex items-center gap-1">

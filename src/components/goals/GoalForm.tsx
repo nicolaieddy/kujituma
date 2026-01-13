@@ -6,11 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, Plus, Eye, EyeOff, Users, Globe } from "lucide-react";
+import { X, Plus, Eye, EyeOff, Users } from "lucide-react";
 import { CreateGoalData, GoalTimeframe, Goal, HabitItem, RecurrenceFrequency } from "@/types/goals";
 import { HabitItemsEditor } from "./HabitItemsEditor";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { PREDEFINED_CATEGORIES, CATEGORY_INTEGRATIONS } from "@/types/customCategories";
+import { CATEGORY_CONFIGS, CATEGORY_INTEGRATIONS, CustomCategoryIcon } from "@/types/customCategories";
 import { CustomCategoriesService } from "@/services/customCategoriesService";
 import { CustomGoalCategory } from "@/types/customCategories";
 import { toast } from "@/hooks/use-toast";
@@ -187,13 +187,15 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
     }
   };
 
+  const predefinedCategoryNames = CATEGORY_CONFIGS.map(c => c.name);
+  
   const allCategories = [
-    ...PREDEFINED_CATEGORIES.map(cat => ({ name: cat, isCustom: false })),
+    ...CATEGORY_CONFIGS.map(cat => ({ name: cat.name, isCustom: false })),
     ...customCategories.map(cat => ({ name: cat.name, isCustom: true, id: cat.id }))
   ];
   
   const knownCategoryNames = new Set<string>([
-    ...PREDEFINED_CATEGORIES,
+    ...predefinedCategoryNames,
     ...customCategories.map((c) => c.name)
   ]);
   const hasCurrentButMissing = !!formData.category && !knownCategoryNames.has(formData.category);
@@ -339,23 +341,26 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                     </SelectItem>
                   )}
 
-                  {PREDEFINED_CATEGORIES.map((category) => (
-                    <SelectItem 
-                      key={category} 
-                      value={category} 
-                      className="cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2">
-                        {category === 'Language Learning' && <Globe className="h-4 w-4 text-[#58CC02]" />}
-                        {category}
-                        {CATEGORY_INTEGRATIONS[category as keyof typeof CATEGORY_INTEGRATIONS] && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            ({CATEGORY_INTEGRATIONS[category as keyof typeof CATEGORY_INTEGRATIONS] === 'duolingo' ? '🦉' : '🏃'})
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
+                  {CATEGORY_CONFIGS.map((categoryConfig) => {
+                    const IconComponent = categoryConfig.icon;
+                    return (
+                      <SelectItem 
+                        key={categoryConfig.name} 
+                        value={categoryConfig.name} 
+                        className="cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4 text-muted-foreground" />
+                          {categoryConfig.name}
+                          {categoryConfig.integrationEmoji && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              ({categoryConfig.integrationEmoji})
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                   {customCategories.length > 0 && (
                     <>
                       <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground border-t mt-1">
@@ -367,7 +372,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                           value={category.name} 
                           className="cursor-pointer"
                         >
-                          {category.name}
+                          <div className="flex items-center gap-2">
+                            <CustomCategoryIcon className="h-4 w-4 text-muted-foreground" />
+                            {category.name}
+                          </div>
                         </SelectItem>
                       ))}
                     </>

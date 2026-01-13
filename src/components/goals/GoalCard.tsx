@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MoreHorizontal, Calendar, Tag, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff, Flame } from "lucide-react";
+import { MoreHorizontal, Calendar, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff, Flame } from "lucide-react";
+import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import {
@@ -437,12 +438,16 @@ export const GoalCard = ({
                 <span>{getDateDisplay()}</span>
               </div>
               
-              {goal.category && (
-                <div className="flex items-center gap-1">
-                  <Tag className="h-3 w-3" />
-                  <span>{goal.category}</span>
-                </div>
-              )}
+              {goal.category && (() => {
+                const categoryConfig = getCategoryConfig(goal.category);
+                const IconComponent = categoryConfig?.icon || CustomCategoryIcon;
+                return (
+                  <div className="flex items-center gap-1">
+                    <IconComponent className="h-3 w-3" />
+                    <span>{goal.category}</span>
+                  </div>
+                );
+              })()}
               
               {goal.notes && (
                 <div className="flex items-center gap-1">

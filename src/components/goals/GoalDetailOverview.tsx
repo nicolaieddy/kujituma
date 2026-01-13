@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Goal } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
-import { Calendar, Tag, StickyNote, Target, RefreshCw, Flame, TrendingUp } from "lucide-react";
+import { Calendar, StickyNote, Target, RefreshCw, Flame, TrendingUp } from "lucide-react";
+import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
 import { useSyncedActivities } from "@/hooks/useSyncedActivities";
 import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
@@ -390,21 +391,26 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
           </CardContent>
         </Card>
 
-        {goal.category && (
-          <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-white text-sm flex items-center gap-2">
-                <Tag className="h-4 w-4" />
-                Category
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Badge variant="secondary" className="bg-white/20 text-white">
-                {goal.category}
-              </Badge>
-            </CardContent>
-          </Card>
-        )}
+        {goal.category && (() => {
+          const categoryConfig = getCategoryConfig(goal.category);
+          const IconComponent = categoryConfig?.icon || CustomCategoryIcon;
+          return (
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-white text-sm flex items-center gap-2">
+                  <IconComponent className="h-4 w-4" />
+                  Category
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Badge variant="secondary" className="bg-white/20 text-white flex items-center gap-1.5 w-fit">
+                  <IconComponent className="h-3 w-3" />
+                  {goal.category}
+                </Badge>
+              </CardContent>
+            </Card>
+          );
+        })()}
       </div>
 
       {/* Notes */}
