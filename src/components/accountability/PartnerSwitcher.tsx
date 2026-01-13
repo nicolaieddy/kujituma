@@ -4,8 +4,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { accountabilityService, AccountabilityPartner } from '@/services/accountabilityService';
-import { Check, AlertCircle } from 'lucide-react';
+import { Check, AlertCircle, Ban } from 'lucide-react';
 import { startOfWeek, isAfter, parseISO } from 'date-fns';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export interface PartnerSwitcherRef {
   refresh: () => Promise<void>;
@@ -14,6 +19,8 @@ export interface PartnerSwitcherRef {
 interface PartnerSwitcherProps {
   currentPartnerId: string;
 }
+
+type CheckInStatus = 'checked-in' | 'needs-check-in' | 'disabled';
 
 export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherProps>(({ currentPartnerId }, ref) => {
   const navigate = useNavigate();
@@ -45,21 +52,57 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
 
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
 
-  // Check if the CURRENT USER has checked in with this partner this week
-  const hasCheckedInThisWeek = (myLastCheckIn: string | null): boolean => {
-    if (!myLastCheckIn) return false;
-    const checkInDate = parseISO(myLastCheckIn);
-    return isAfter(checkInDate, currentWeekStart) || checkInDate >= currentWeekStart;
+  // Determine the check-in status for a partner
+  const getCheckInStatus = (partner: AccountabilityPartner): CheckInStatus => {
+    // If cadence is 'none', check-ins are disabled
+    if (partner.my_check_in_cadence === 'none') {
+      return 'disabled';
+    }
+    
+    // Check if checked in this week
+    if (partner.my_last_check_in_at) {
+      const checkInDate = parseISO(partner.my_last_check_in_at);
+      if (isAfter(checkInDate, currentWeekStart) || checkInDate >= currentWeekStart) {
+        return 'checked-in';
+      }
+    }
+    
+    return 'needs-check-in';
+  };
+
+  const getStatusConfig = (status: CheckInStatus) => {
+    switch (status) {
+      case 'checked-in':
+        return {
+          bgClass: 'bg-primary text-primary-foreground',
+          icon: Check,
+          tooltip: 'Checked in this week'
+        };
+      case 'needs-check-in':
+        return {
+          bgClass: 'bg-warning text-warning-foreground',
+          icon: AlertCircle,
+          tooltip: 'Check-in needed'
+        };
+      case 'disabled':
+        return {
+          bgClass: 'bg-muted text-muted-foreground',
+          icon: Ban,
+          tooltip: 'Check-ins disabled'
+        };
+    }
   };
 
   return (
     <div className="mb-4">
       <p className="text-xs text-muted-foreground mb-2">Switch Partner</p>
       <ScrollArea className="w-full whitespace-nowrap">
-        <div className="flex gap-3 pb-2">
+        <div className="flex gap-3 py-1 px-1">
           {partners.map((partner) => {
             const isCurrent = partner.partner_id === currentPartnerId;
-            const checkedIn = hasCheckedInThisWeek(partner.my_last_check_in_at);
+            const status = getCheckInStatus(partner);
+            const statusConfig = getStatusConfig(status);
+            const StatusIcon = statusConfig.icon;
             const initials = partner.full_name
               .split(' ')
               .map(n => n[0])
@@ -76,10 +119,10 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
                   }
                 }}
                 className={cn(
-                  "flex flex-col items-center gap-1.5 p-2 rounded-lg transition-colors min-w-[72px]",
+                  "flex flex-col items-center gap-1.5 p-2 rounded-lg transition-all min-w-[72px]",
                   isCurrent 
-                    ? "bg-primary/10 ring-2 ring-primary ring-offset-2 ring-offset-background" 
-                    : "hover:bg-muted"
+                    ? "bg-primary/10 border-2 border-primary" 
+                    : "hover:bg-muted border-2 border-transparent"
                 )}
               >
                 <div className="relative">
@@ -93,18 +136,19 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
                     </AvatarFallback>
                   </Avatar>
                   {/* Check-in status indicator */}
-                  <div className={cn(
-                    "absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full flex items-center justify-center border-2 border-background",
-                    checkedIn 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-warning text-warning-foreground"
-                  )}>
-                    {checkedIn ? (
-                      <Check className="h-3 w-3" />
-                    ) : (
-                      <AlertCircle className="h-3 w-3" />
-                    )}
-                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={cn(
+                        "absolute -bottom-0.5 -right-0.5 h-5 w-5 rounded-full flex items-center justify-center border-2 border-background",
+                        statusConfig.bgClass
+                      )}>
+                        <StatusIcon className="h-3 w-3" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom">
+                      <p>{statusConfig.tooltip}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
                 <span className={cn(
                   "text-xs truncate max-w-[64px]",
