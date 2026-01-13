@@ -143,6 +143,8 @@ const Friends = () => {
                 friends={friends}
                 friendRequests={friendRequests}
                 loading={loading}
+                partners={partners}
+                partnerRequests={partnerRequests}
               />
             </TabsContent>
 
