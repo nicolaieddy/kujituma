@@ -74,7 +74,13 @@ export const HabitsDueThisWeek = ({
   const totalLegacyCount = legacyHabitsWithStatus.length;
 
   // Helper functions for frequency checks (defined inline to use before main helpers)
-  const getDaysForFrequency = (frequency: string): number[] => {
+  const getDaysForFrequencyWithItem = (frequency: string, habitItem?: HabitItem): number[] => {
+    // For custom schedules with specific days, convert from 0=Sunday to 0=Monday format
+    if (habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+      // customSchedule.daysOfWeek uses 0=Sunday, but our UI uses 0=Monday
+      // Convert: Sun(0)->6, Mon(1)->0, Tue(2)->1, Wed(3)->2, Thu(4)->3, Fri(5)->4, Sat(6)->5
+      return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
+    }
     switch (frequency) {
       case 'daily': return [0, 1, 2, 3, 4, 5, 6];
       case 'weekdays': return [0, 1, 2, 3, 4];
@@ -82,8 +88,13 @@ export const HabitsDueThisWeek = ({
     }
   };
   
-  const isFrequencyDaily = (frequency: string): boolean => {
-    return frequency === 'daily' || frequency === 'weekdays';
+  const isFrequencyDailyWithItem = (frequency: string, habitItem?: HabitItem): boolean => {
+    if (frequency === 'daily' || frequency === 'weekdays') return true;
+    // Custom frequency with specific days should be treated as daily tracking
+    if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+      return true;
+    }
+    return false;
   };
 
   // Count habit items completions for today AND for the week
@@ -103,8 +114,8 @@ export const HabitsDueThisWeek = ({
       }
       
       // Count weekly expected and completed based on frequency
-      const daysToCheck = getDaysForFrequency(item.frequency);
-      const isDailyType = isFrequencyDaily(item.frequency);
+      const daysToCheck = getDaysForFrequencyWithItem(item.frequency, item);
+      const isDailyType = isFrequencyDailyWithItem(item.frequency, item);
       
       if (isDailyType) {
         // For daily/weekday habits, count expected days up to today
