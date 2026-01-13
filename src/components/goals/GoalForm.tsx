@@ -337,7 +337,10 @@ export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFor
                       value={formData.category} 
                       className="cursor-pointer"
                     >
-                      {formData.category}
+                      <div className="flex items-center gap-2">
+                        <CustomCategoryIcon className="h-4 w-4 text-muted-foreground" />
+                        {formData.category}
+                      </div>
                     </SelectItem>
                   )}
 
