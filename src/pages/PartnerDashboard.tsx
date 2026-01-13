@@ -83,6 +83,10 @@ const PartnerDashboard = () => {
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
 
+  // Get objective IDs for feedback hook - must be called before any early returns
+  const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
+  const { feedback, toggleFeedback, isToggling, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
+
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
   };
@@ -332,10 +336,6 @@ const PartnerDashboard = () => {
   const completedObjectives = weeklyObjectives.filter(o => o.is_completed).length;
   const totalObjectives = weeklyObjectives.length;
   const progressPercentage = totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0;
-
-  // Get objective IDs for feedback hook
-  const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
-  const { feedback, toggleFeedback, isToggling, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
 
   const initials = partnerProfile?.full_name
     .split(' ')
