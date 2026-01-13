@@ -23,6 +23,7 @@ interface CheckInCadenceSettingsProps {
 }
 
 const CADENCE_OPTIONS: { value: CheckInCadence; label: string; description: string }[] = [
+  { value: 'none', label: 'Disabled', description: 'No check-in reminders' },
   { value: 'daily', label: 'Daily', description: 'Check in every day' },
   { value: 'twice_weekly', label: 'Twice Weekly', description: 'Check in every 3-4 days' },
   { value: 'weekly', label: 'Weekly', description: 'Check in once a week' },

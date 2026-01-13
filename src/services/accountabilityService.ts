@@ -1,7 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, format } from 'date-fns';
 
-export type CheckInCadence = 'daily' | 'twice_weekly' | 'weekly' | 'biweekly';
+export type CheckInCadence = 'none' | 'daily' | 'twice_weekly' | 'weekly' | 'biweekly';
 
 export interface AccountabilityPartner {
   partner_id: string;
@@ -849,6 +849,7 @@ class AccountabilityService {
         
         // Calculate days between check-ins based on cadence
         const cadenceDays: Record<CheckInCadence, number> = {
+          'none': Infinity, // Never due if disabled
           'daily': 1,
           'twice_weekly': 3.5,
           'weekly': 7,
