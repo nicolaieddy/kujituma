@@ -11,7 +11,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 interface FriendCardProps {
@@ -59,6 +59,11 @@ export const FriendCard = ({
   const [requestSent, setRequestSent] = useState(hasPendingPartnerRequest);
   const recentlyActive = isRecentlyActive(friend.last_active_at);
   const lastActiveText = getLastActiveText(friend.last_active_at);
+
+  // Sync local state with prop when it changes (e.g., from real-time updates)
+  useEffect(() => {
+    setRequestSent(hasPendingPartnerRequest);
+  }, [hasPendingPartnerRequest]);
 
   const handleViewProfile = () => {
     navigate(`/profile/${friend.friend_id}`);
