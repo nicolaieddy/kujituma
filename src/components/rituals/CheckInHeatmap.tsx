@@ -16,14 +16,6 @@ interface CheckInHeatmapProps {
   showCard?: boolean;
 }
 
-const moodColors: Record<number, string> = {
-  1: "bg-red-500",
-  2: "bg-orange-400",
-  3: "bg-yellow-400",
-  4: "bg-green-400",
-  5: "bg-emerald-500",
-};
-
 const HeatmapGrid = ({ checkIns, weeks = 52 }: { checkIns: DailyCheckIn[]; weeks: number }) => {
   const today = new Date();
   const startDate = subDays(today, weeks * 7);
@@ -121,20 +113,16 @@ const HeatmapGrid = ({ checkIns, weeks = 52 }: { checkIns: DailyCheckIn[]; weeks
                 const dateStr = format(day, 'yyyy-MM-dd');
                 const checkIn = checkInMap[dateStr];
                 const hasCheckIn = !!checkIn;
-                const mood = checkIn?.mood_rating;
                 const isToday = isSameDay(day, today);
                 
                 return (
-                  // Removed nested TooltipProvider - using App-level provider
                   <Tooltip key={dateStr}>
                     <TooltipTrigger asChild>
                       <div
                         className={cn(
                           "h-3 w-3 rounded-sm transition-colors cursor-pointer hover:ring-2 hover:ring-primary/50",
-                          hasCheckIn && mood
-                            ? moodColors[mood]
-                            : hasCheckIn
-                            ? "bg-primary/60"
+                          hasCheckIn
+                            ? "bg-primary"
                             : "bg-muted/40",
                           isToday && "ring-2 ring-primary"
                         )}
@@ -143,10 +131,7 @@ const HeatmapGrid = ({ checkIns, weeks = 52 }: { checkIns: DailyCheckIn[]; weeks
                     <TooltipContent side="top" className="text-xs">
                       <p className="font-medium">{format(day, 'EEEE, MMM d, yyyy')}</p>
                       {hasCheckIn ? (
-                        <div className="text-muted-foreground space-y-0.5">
-                          {mood && <p>Mood: {['😔', '😕', '😐', '🙂', '😊'][mood - 1]} {mood}/5</p>}
-                          {checkIn.energy_level && <p>Energy: ⚡ {checkIn.energy_level}/5</p>}
-                        </div>
+                        <span className="text-primary">✓ Checked in</span>
                       ) : (
                         <span className="text-muted-foreground">No check-in</span>
                       )}
@@ -159,16 +144,16 @@ const HeatmapGrid = ({ checkIns, weeks = 52 }: { checkIns: DailyCheckIn[]; weeks
         </div>
       </div>
       
-      {/* Legend */}
-      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground">
-        <span>Less</span>
-        <div className="flex gap-1">
+      {/* Legend - simplified to binary */}
+      <div className="flex items-center justify-end gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5">
           <div className="h-3 w-3 rounded-sm bg-muted/40" />
-          {[1, 2, 3, 4, 5].map((level) => (
-            <div key={level} className={cn("h-3 w-3 rounded-sm", moodColors[level])} />
-          ))}
+          <span>No check-in</span>
         </div>
-        <span>More</span>
+        <div className="flex items-center gap-1.5">
+          <div className="h-3 w-3 rounded-sm bg-primary" />
+          <span>Checked in</span>
+        </div>
       </div>
     </div>
   );
