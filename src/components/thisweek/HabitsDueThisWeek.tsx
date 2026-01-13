@@ -189,11 +189,23 @@ export const HabitsDueThisWeek = ({
   };
 
   // Determine if this habit needs daily checkboxes or just a single weekly checkbox
-  const isDailyTracking = (frequency: string): boolean => {
-    return frequency === 'daily' || frequency === 'weekdays';
+  // Custom schedules with specific daysOfWeek should show checkboxes for those days
+  const isDailyTracking = (frequency: string, habitItem?: HabitItem): boolean => {
+    if (frequency === 'daily' || frequency === 'weekdays') return true;
+    // Custom frequency with specific days should show day checkboxes
+    if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+      return true;
+    }
+    return false;
   };
 
-  const getDaysToShow = (frequency: string): number[] => {
+  const getDaysToShow = (frequency: string, habitItem?: HabitItem): number[] => {
+    // For custom schedules with specific days, convert from 0=Sunday to 0=Monday format
+    if (habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+      // customSchedule.daysOfWeek uses 0=Sunday, but our UI uses 0=Monday
+      // Convert: Sun(0)->6, Mon(1)->0, Tue(2)->1, Wed(3)->2, Thu(4)->3, Fri(5)->4, Sat(6)->5
+      return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
+    }
     switch (frequency) {
       case 'daily':
         return [0, 1, 2, 3, 4, 5, 6]; // All days
@@ -423,9 +435,9 @@ export const HabitsDueThisWeek = ({
                 <div className="border-t px-3 py-2 space-y-3">
                   {habitItems.map((item) => {
                     const completionStatus = getCompletionStatus(item.id);
-                    const daysToShow = getDaysToShow(item.frequency);
+                    const daysToShow = getDaysToShow(item.frequency, item);
                     const completedDays = getHabitItemCompletionCount(item);
-                    const showDailyCheckboxes = isDailyTracking(item.frequency);
+                    const showDailyCheckboxes = isDailyTracking(item.frequency, item);
                     const isWeeklyCompleted = isWeeklyHabitCompleted(item.id);
                     
                     // Check if this habit is mapped to an integration
@@ -443,6 +455,7 @@ export const HabitsDueThisWeek = ({
                       : item.frequency === 'monthly' ? 'Monthly'
                       : item.frequency === 'monthly_last_week' ? 'Monthly (last week)'
                       : item.frequency === 'quarterly' ? 'Quarterly'
+                      : item.frequency === 'custom' ? 'Custom'
                       : item.frequency;
                     
                     return (
