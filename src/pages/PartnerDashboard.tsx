@@ -14,7 +14,7 @@ import { PartnerHabitsCard } from '@/components/accountability/PartnerHabitsCard
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
-import { PartnerObjectiveFeedback } from '@/components/accountability/PartnerObjectiveFeedback';
+import { FeedbackCommentPopover } from '@/components/accountability/FeedbackCommentPopover';
 import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
 import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability/PartnerSwitcher';
@@ -85,7 +85,7 @@ const PartnerDashboard = () => {
 
   // Get objective IDs for feedback hook - must be called before any early returns
   const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
-  const { feedback, toggleFeedback, isToggling, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
+  const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
 
   const getWeekStartString = (date: Date) => {
     return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
@@ -538,11 +538,14 @@ const PartnerDashboard = () => {
                           </Badge>
                         )}
                         {/* Partner Feedback Buttons */}
-                        <PartnerObjectiveFeedback
+                        <FeedbackCommentPopover
                           objectiveId={objective.id}
                           feedback={objFeedback}
-                          onToggleFeedback={(feedbackType) => toggleFeedback({ objectiveId: objective.id, feedbackType })}
-                          isToggling={isToggling}
+                          onSubmitFeedback={(feedbackType, comment) => 
+                            submitFeedback({ objectiveId: objective.id, feedbackType, comment })
+                          }
+                          onRemoveFeedback={() => removeFeedback(objective.id)}
+                          isSubmitting={isSubmitting}
                         />
                       </div>
                     );

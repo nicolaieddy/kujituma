@@ -9,6 +9,7 @@ export interface ObjectiveFeedback {
   objective_id: string;
   partner_id: string;
   feedback_type: FeedbackType;
+  comment?: string | null;
   created_at: string;
   partner?: {
     full_name: string;
@@ -39,30 +40,32 @@ export const usePartnerObjectiveFeedback = (objectiveIds: string[]) => {
     staleTime: 30 * 1000,
   });
 
-  const toggleFeedbackMutation = useMutation({
-    mutationFn: async ({ objectiveId, feedbackType }: { objectiveId: string; feedbackType: FeedbackType }) => {
+  const submitFeedbackMutation = useMutation({
+    mutationFn: async ({ 
+      objectiveId, 
+      feedbackType, 
+      comment 
+    }: { 
+      objectiveId: string; 
+      feedbackType: FeedbackType; 
+      comment?: string;
+    }) => {
       const existing = feedback.find(f => f.objective_id === objectiveId);
       
       if (existing) {
-        if (existing.feedback_type === feedbackType) {
-          // Remove feedback if clicking same type
-          const { error } = await supabase
-            .from('objective_partner_feedback')
-            .delete()
-            .eq('id', existing.id);
-          if (error) throw error;
-          return null;
-        } else {
-          // Update to different type
-          const { data, error } = await supabase
-            .from('objective_partner_feedback')
-            .update({ feedback_type: feedbackType, updated_at: new Date().toISOString() })
-            .eq('id', existing.id)
-            .select()
-            .single();
-          if (error) throw error;
-          return data;
-        }
+        // Update existing feedback
+        const { data, error } = await supabase
+          .from('objective_partner_feedback')
+          .update({ 
+            feedback_type: feedbackType, 
+            comment: comment || null,
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', existing.id)
+          .select()
+          .single();
+        if (error) throw error;
+        return data;
       } else {
         // Create new feedback
         const { data, error } = await supabase
@@ -71,12 +74,29 @@ export const usePartnerObjectiveFeedback = (objectiveIds: string[]) => {
             objective_id: objectiveId,
             partner_id: user!.id,
             feedback_type: feedbackType,
+            comment: comment || null,
           })
           .select()
           .single();
         if (error) throw error;
         return data;
       }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['objective-partner-feedback'] });
+    },
+  });
+
+  const removeFeedbackMutation = useMutation({
+    mutationFn: async (objectiveId: string) => {
+      const existing = feedback.find(f => f.objective_id === objectiveId);
+      if (!existing) return;
+      
+      const { error } = await supabase
+        .from('objective_partner_feedback')
+        .delete()
+        .eq('id', existing.id);
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['objective-partner-feedback'] });
@@ -90,8 +110,9 @@ export const usePartnerObjectiveFeedback = (objectiveIds: string[]) => {
   return {
     feedback,
     isLoading,
-    toggleFeedback: toggleFeedbackMutation.mutate,
-    isToggling: toggleFeedbackMutation.isPending,
+    submitFeedback: submitFeedbackMutation.mutate,
+    removeFeedback: removeFeedbackMutation.mutate,
+    isSubmitting: submitFeedbackMutation.isPending || removeFeedbackMutation.isPending,
     getFeedbackForObjective,
   };
 };
@@ -108,7 +129,12 @@ export const useMyObjectivesFeedback = (objectiveIds: string[]) => {
       const { data, error } = await supabase
         .from('objective_partner_feedback')
         .select(`
-          *,
+          id,
+          objective_id,
+          partner_id,
+          feedback_type,
+          comment,
+          created_at,
           partner:profiles!objective_partner_feedback_partner_id_fkey(full_name, avatar_url)
         `)
         .in('objective_id', objectiveIds);
