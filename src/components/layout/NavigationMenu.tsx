@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Target, Users, UserPlus, BarChart3 } from "lucide-react";
+import { Target, Users, UserPlus, BarChart3, Shield } from "lucide-react";
+import { useAdminStatus } from "@/hooks/useAdminStatus";
 
 interface NavigationMenuProps {
   onItemClick?: () => void;
@@ -16,9 +17,11 @@ const navItems = [
 export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenuProps) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isAdmin } = useAdminStatus();
 
   const getCurrentSection = () => {
     const path = location.pathname;
+    if (path.startsWith('/admin')) return 'admin';
     if (path.startsWith('/goals')) return 'goals';
     if (path.startsWith('/community')) return 'community';
     if (path.startsWith('/friends') || path.startsWith('/partner')) return 'friends';
@@ -34,10 +37,15 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     onItemClick?.();
   };
 
+  // Build nav items with optional admin
+  const allNavItems = isAdmin 
+    ? [...navItems, { path: '/admin', label: 'Admin', icon: Shield, section: 'admin' }]
+    : navItems;
+
   if (isMobile) {
     return (
       <>
-        {navItems.map(({ path, label, icon: Icon, section }) => (
+        {allNavItems.map(({ path, label, icon: Icon, section }) => (
           <button
             key={section}
             onClick={() => handleNavigation(path)}
@@ -55,7 +63,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
 
   return (
     <nav className="flex items-center space-x-1">
-      {navItems.map(({ path, label, icon: Icon, section }) => {
+      {allNavItems.map(({ path, label, icon: Icon, section }) => {
         const isActive = currentSection === section;
         return (
           <button
