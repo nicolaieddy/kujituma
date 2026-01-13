@@ -30,7 +30,7 @@ import { useDuePartnerCheckIns } from "@/hooks/useDuePartnerCheckIns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
-import { Zap, Target, AlertTriangle, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock } from "lucide-react";
+import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock } from "lucide-react";
 import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
@@ -96,7 +96,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [moodRating, setMoodRating] = useState<number>(todayCheckIn?.mood_rating || 3);
   const [energyLevel, setEnergyLevel] = useState<number>(todayCheckIn?.energy_level || 3);
   const [focusToday, setFocusToday] = useState(todayCheckIn?.focus_today || "");
-  const [blocker, setBlocker] = useState(todayCheckIn?.blocker || "");
+  const [journalEntry, setJournalEntry] = useState(todayCheckIn?.journal_entry || "");
 
   // Get greeting
   const greeting = useMemo(() => getGreeting(user?.user_metadata?.full_name), [user]);
@@ -251,13 +251,29 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     return { completed: totalCompleted, total: totalExpected, percentage: Math.min(percentage, 100) };
   }, [habitItemsDueToday, todayIndex]);
   
+  // Get dynamic journal prompt based on mood and energy
+  const getJournalPrompt = () => {
+    if (moodRating <= 2 && energyLevel <= 2) {
+      return "It sounds like a tough day. What's weighing on you? Getting it out can help...";
+    } else if (moodRating <= 2) {
+      return "What's on your mind today? Why might you be feeling this way?";
+    } else if (energyLevel <= 2) {
+      return "Energy seems low - what's draining you? What would help recharge?";
+    } else if (moodRating >= 4 && energyLevel >= 4) {
+      return "You're feeling great! What's contributing to this positive energy?";
+    } else if (moodRating >= 4) {
+      return "Good mood today! What's making you feel this way?";
+    }
+    return "What's on your mind? Take a moment to reflect...";
+  };
+  
   const handleSubmit = async () => {
     hapticSuccess();
     await submitCheckIn({
       mood_rating: moodRating,
       energy_level: energyLevel,
       focus_today: focusToday || undefined,
-      blocker: blocker || undefined,
+      journal_entry: journalEntry || undefined,
     });
     onOpenChange(false);
   };
@@ -502,6 +518,25 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         </div>
       </div>
       
+      {/* Private Journal Section */}
+      <div className="space-y-2">
+        <Label className="flex items-center gap-2">
+          <BookOpen className="h-4 w-4" />
+          What's on your mind?
+          <span className="flex items-center gap-1 text-xs text-muted-foreground font-normal">
+            <Lock className="h-3 w-3" />
+            Private
+          </span>
+        </Label>
+        <Textarea
+          value={journalEntry}
+          onChange={(e) => setJournalEntry(e.target.value)}
+          placeholder={getJournalPrompt()}
+          className="resize-none"
+          rows={3}
+        />
+      </div>
+      
       {/* Focus Today */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
@@ -512,21 +547,6 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
           value={focusToday}
           onChange={(e) => setFocusToday(e.target.value)}
           placeholder="e.g., Finish the project proposal..."
-          className="resize-none"
-          rows={2}
-        />
-      </div>
-      
-      {/* Blocker (Optional) */}
-      <div className="space-y-2">
-        <Label className="flex items-center gap-2 text-muted-foreground">
-          <AlertTriangle className="h-4 w-4" />
-          Any blockers to watch for? (optional)
-        </Label>
-        <Textarea
-          value={blocker}
-          onChange={(e) => setBlocker(e.target.value)}
-          placeholder="e.g., Waiting on feedback from..."
           className="resize-none"
           rows={2}
         />

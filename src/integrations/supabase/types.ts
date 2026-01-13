@@ -496,6 +496,7 @@ export type Database = {
           energy_level: number | null
           focus_today: string | null
           id: string
+          journal_entry: string | null
           mood_rating: number | null
           quick_win: string | null
           updated_at: string
@@ -508,6 +509,7 @@ export type Database = {
           energy_level?: number | null
           focus_today?: string | null
           id?: string
+          journal_entry?: string | null
           mood_rating?: number | null
           quick_win?: string | null
           updated_at?: string
@@ -520,6 +522,7 @@ export type Database = {
           energy_level?: number | null
           focus_today?: string | null
           id?: string
+          journal_entry?: string | null
           mood_rating?: number | null
           quick_win?: string | null
           updated_at?: string

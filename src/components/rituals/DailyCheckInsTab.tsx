@@ -8,7 +8,7 @@ import { useRitualsTrigger } from "@/contexts/RitualsContext";
 
 import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle, ChevronRight } from "lucide-react";
+import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, ChevronRight, BookOpen } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 
@@ -240,6 +240,9 @@ export const DailyCheckInsTab = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {checkIn.journal_entry && (
+                    <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+                  )}
                   {checkIn.focus_today && (
                     <p className="text-sm text-muted-foreground truncate max-w-[200px]">
                       {checkIn.focus_today}

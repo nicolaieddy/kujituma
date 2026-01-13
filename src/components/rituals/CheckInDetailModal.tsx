@@ -4,10 +4,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Sun, Zap, Target, AlertCircle, Trophy, X } from "lucide-react";
+import { Sun, Zap, Target, BookOpen } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
 const moodEmojis = ['😔', '😕', '😐', '🙂', '😊'];
@@ -21,6 +19,7 @@ interface CheckIn {
   focus_today: string | null;
   quick_win: string | null;
   blocker: string | null;
+  journal_entry: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -38,7 +37,7 @@ export const CheckInDetailModal = ({ checkIn, open, onOpenChange }: CheckInDetai
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="flex items-center gap-2">
@@ -73,6 +72,20 @@ export const CheckInDetailModal = ({ checkIn, open, onOpenChange }: CheckInDetai
 
           <Separator />
 
+          {/* Journal Entry - Private */}
+          {checkIn.journal_entry && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <BookOpen className="h-4 w-4 text-primary" />
+                Journal
+                <span className="text-xs text-muted-foreground font-normal">(private)</span>
+              </div>
+              <p className="text-sm text-muted-foreground pl-6 whitespace-pre-wrap">
+                {checkIn.journal_entry}
+              </p>
+            </div>
+          )}
+
           {/* Focus Today */}
           {checkIn.focus_today && (
             <div className="space-y-2">
@@ -86,34 +99,8 @@ export const CheckInDetailModal = ({ checkIn, open, onOpenChange }: CheckInDetai
             </div>
           )}
 
-          {/* Quick Win */}
-          {checkIn.quick_win && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Trophy className="h-4 w-4 text-yellow-500" />
-                Quick Win
-              </div>
-              <p className="text-sm text-muted-foreground pl-6">
-                {checkIn.quick_win}
-              </p>
-            </div>
-          )}
-
-          {/* Blocker */}
-          {checkIn.blocker && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <AlertCircle className="h-4 w-4 text-orange-500" />
-                Potential Blocker
-              </div>
-              <p className="text-sm text-muted-foreground pl-6">
-                {checkIn.blocker}
-              </p>
-            </div>
-          )}
-
           {/* No content message */}
-          {!checkIn.focus_today && !checkIn.quick_win && !checkIn.blocker && !checkIn.mood_rating && !checkIn.energy_level && (
+          {!checkIn.focus_today && !checkIn.journal_entry && !checkIn.mood_rating && !checkIn.energy_level && (
             <p className="text-sm text-muted-foreground text-center py-4">
               No details recorded for this check-in.
             </p>
