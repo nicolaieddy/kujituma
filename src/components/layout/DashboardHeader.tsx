@@ -14,18 +14,17 @@ interface DashboardHeaderProps {
   onSignOut: () => void;
 }
 
-const isIOS = () => {
+const isIOSPhone = () => {
   if (typeof navigator === "undefined") return false;
   const ua = navigator.userAgent || "";
-  const platform = (navigator as any).platform || "";
-  const maxTouchPoints = (navigator as any).maxTouchPoints || 0;
-  return /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && maxTouchPoints > 1);
+  // Only detect iPhone/iPod - iPad should get full navigation
+  return /iPhone|iPod/.test(ua);
 };
 
 export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const ios = isIOS();
+  const isIOSPhoneDevice = isIOSPhone();
 
   // iOS Safari/Chrome on iOS can hit stack overflows with Radix focus management
   // (Dialog/DropdownMenu/Popover) even when closed. Use a minimal header on iOS
@@ -65,11 +64,11 @@ export const DashboardHeader = ({ isAdmin, onSignOut }: DashboardHeaderProps) =>
           >
             Kujituma
           </h1>
-          {!isMobile && !ios && <NavigationMenu />}
+          {!isMobile && <NavigationMenu />}
         </div>
 
         <div className="flex items-center justify-end gap-3">
-          {ios ? (
+          {isIOSPhoneDevice ? (
             renderIOSActions()
           ) : (
             <>
