@@ -39,6 +39,9 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
   const [iCanViewTheirGoals, setICanViewTheirGoals] = useState(true);
 
   const handleClick = async () => {
+    // Close popover first to avoid interference with navigation
+    onMarkRead();
+    
     if (!notification.is_read) {
       await onMarkAsRead(notification.id);
     }
@@ -57,8 +60,6 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
     } else if (notification.related_post_id) {
       navigate(`/feed?post=${notification.related_post_id}`);
     }
-
-    onMarkRead();
   };
 
   const handleFriendRequestResponse = async (response: 'accepted' | 'rejected') => {
