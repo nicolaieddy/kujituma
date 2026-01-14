@@ -93,10 +93,25 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const { completions, toggleCompletion, getCompletionStatus, weekDates, isToggling } = useHabitCompletions(currentWeekStart);
   const { objectives, updateObjective, isUpdating } = useWeeklyObjectives(weekStartStr);
   
-  const [moodRating, setMoodRating] = useState<number>(todayCheckIn?.mood_rating || 3);
-  const [energyLevel, setEnergyLevel] = useState<number>(todayCheckIn?.energy_level || 3);
-  const [focusToday, setFocusToday] = useState(todayCheckIn?.focus_today || "");
-  const [journalEntry, setJournalEntry] = useState(todayCheckIn?.journal_entry || "");
+  const [moodRating, setMoodRating] = useState<number>(3);
+  const [energyLevel, setEnergyLevel] = useState<number>(3);
+  const [focusToday, setFocusToday] = useState("");
+  const [journalEntry, setJournalEntry] = useState("");
+  const [hasInitialized, setHasInitialized] = useState(false);
+  
+  // Only initialize from todayCheckIn if it's actually from today
+  useEffect(() => {
+    if (todayCheckIn && !hasInitialized) {
+      const today = format(new Date(), 'yyyy-MM-dd');
+      if (todayCheckIn.check_in_date === today) {
+        setMoodRating(todayCheckIn.mood_rating || 3);
+        setEnergyLevel(todayCheckIn.energy_level || 3);
+        setFocusToday(todayCheckIn.focus_today || "");
+        setJournalEntry(todayCheckIn.journal_entry || "");
+        setHasInitialized(true);
+      }
+    }
+  }, [todayCheckIn, hasInitialized]);
 
   // Get greeting
   const greeting = useMemo(() => getGreeting(user?.user_metadata?.full_name), [user]);
