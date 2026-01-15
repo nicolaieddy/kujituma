@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
-import { Loader2, RefreshCw, Unlink, Zap } from "lucide-react";
+import { Loader2, RefreshCw, Unlink, Zap, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export function StravaConnectionCard() {
@@ -47,11 +47,14 @@ export function StravaConnectionCard() {
                   {connection.athlete_firstname} {connection.athlete_lastname}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {connection.last_synced_at 
-                    ? `Last synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
-                    : `Connected ${formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}`
-                  }
+                  Connected {formatDistanceToNow(new Date(connection.created_at), { addSuffix: true })}
                 </p>
+                {connection.last_synced_at && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                    <Clock className="h-3 w-3" />
+                    Synced {formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}
+                  </p>
+                )}
               </div>
               <div className="flex h-2 w-2 rounded-full bg-green-500" title="Connected" />
             </div>
