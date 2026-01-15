@@ -34,7 +34,7 @@ interface WeekTransitionCardProps {
   onUpdateReflection: (objectiveId: string, reflection: string) => void;
   onCarryOver: (objectiveIds: string[]) => void;
   onSetIntention: (intention: string) => void;
-  onComplete: () => void;
+  onComplete: (intention?: string) => void;
   // State
   isCarryingOver?: boolean;
   intention?: string;
@@ -53,11 +53,11 @@ export const WeekTransitionCard = ({
   lastWeekObjectives,
   lastWeekStart,
   lastWeekReflections,
-  currentWeekStart,
+  // currentWeekStart unused - keeping for potential future use
   goals,
   onUpdateReflection,
   onCarryOver,
-  onSetIntention,
+  // onSetIntention is now handled through onComplete
   onComplete,
   isCarryingOver = false,
   intention = "",
@@ -117,11 +117,8 @@ export const WeekTransitionCard = ({
     if (selectedForCarryOver.size > 0) {
       onCarryOver(Array.from(selectedForCarryOver));
     }
-    // Save intention
-    if (localIntention.trim()) {
-      onSetIntention(localIntention.trim());
-    }
-    onComplete();
+    // Complete with intention (onComplete now handles both planning completion and intention saving)
+    onComplete(localIntention.trim() || undefined);
   };
 
   const getGoalTitle = (goalId: string | null) => {
