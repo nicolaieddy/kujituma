@@ -5,6 +5,26 @@ import { RefreshCw, Flame, Target, CheckCircle2, Circle, ChevronRight, ChevronDo
 import { Button } from "@/components/ui/button";
 import { format, parseISO } from "date-fns";
 import { useState } from "react";
+import { formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
+import { HabitItem } from "@/types/goals";
+
+const frequencyLabels: Record<string, string> = {
+  daily: 'Daily',
+  weekly: 'Weekly',
+  biweekly: 'Biweekly',
+  monthly: 'Monthly',
+  monthly_last_week: 'Monthly (Last Week)',
+  quarterly: 'Quarterly',
+  weekdays: 'Weekdays',
+  custom: 'Custom',
+};
+
+const getFrequencyLabel = (habit: HabitItem): string => {
+  if (habit.frequency === 'custom' && habit.customSchedule) {
+    return formatCustomSchedule(habit.customSchedule);
+  }
+  return frequencyLabels[habit.frequency] || habit.frequency;
+};
 
 interface PartnerHabitStats {
   goal: {
@@ -200,13 +220,21 @@ export const PartnerHabitsCard = ({ habitStats, isLoading }: PartnerHabitsCardPr
 
                   {/* Habit items */}
                   {habitItems.length > 0 && (
-                    <div className="space-y-1.5">
+                    <div className="space-y-2">
                       <p className="text-xs text-muted-foreground font-medium">Habits</p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {habitItems.map((item: any, idx: number) => (
-                          <Badge key={idx} variant="outline" className="text-xs font-normal">
-                            {item.name || item.text || `Habit ${idx + 1}`}
-                          </Badge>
+                      <div className="space-y-1.5">
+                        {habitItems.map((item: HabitItem, idx: number) => (
+                          <div 
+                            key={idx}
+                            className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/30"
+                          >
+                            <span className="text-sm text-foreground">
+                              {item.text || `Habit ${idx + 1}`}
+                            </span>
+                            <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground ml-2 flex-shrink-0">
+                              {getFrequencyLabel(item)}
+                            </Badge>
+                          </div>
                         ))}
                       </div>
                     </div>
