@@ -179,7 +179,7 @@ serve(async (req) => {
 
       const { data: connection, error: fetchError } = await supabase
         .from("strava_connections")
-        .select("strava_athlete_id, athlete_firstname, athlete_lastname, created_at, updated_at")
+        .select("strava_athlete_id, athlete_firstname, athlete_lastname, created_at, updated_at, last_synced_at")
         .eq("user_id", user.id)
         .single();
 
