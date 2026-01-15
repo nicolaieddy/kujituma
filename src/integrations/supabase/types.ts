@@ -1410,6 +1410,7 @@ export type Database = {
           access_token: string
           athlete_firstname: string | null
           athlete_lastname: string | null
+          auto_sync_enabled: boolean
           created_at: string | null
           expires_at: string
           id: string
@@ -1424,6 +1425,7 @@ export type Database = {
           access_token: string
           athlete_firstname?: string | null
           athlete_lastname?: string | null
+          auto_sync_enabled?: boolean
           created_at?: string | null
           expires_at: string
           id?: string
@@ -1438,6 +1440,7 @@ export type Database = {
           access_token?: string
           athlete_firstname?: string | null
           athlete_lastname?: string | null
+          auto_sync_enabled?: boolean
           created_at?: string | null
           expires_at?: string
           id?: string

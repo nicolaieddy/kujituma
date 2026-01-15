@@ -179,7 +179,7 @@ serve(async (req) => {
 
       const { data: connection, error: fetchError } = await supabase
         .from("strava_connections")
-        .select("strava_athlete_id, athlete_firstname, athlete_lastname, created_at, updated_at, last_synced_at")
+        .select("strava_athlete_id, athlete_firstname, athlete_lastname, created_at, updated_at, last_synced_at, auto_sync_enabled")
         .eq("user_id", user.id)
         .single();
 
@@ -191,6 +191,38 @@ serve(async (req) => {
         connected: !!connection,
         connection: connection || null,
       }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // === TOGGLE AUTO-SYNC ===
+    if (action === "toggle-auto-sync") {
+      if (!authHeader) {
+        throw new Error("Authorization required");
+      }
+
+      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) {
+        throw new Error("User not authenticated");
+      }
+
+      const body = await req.json();
+      const enabled = body.enabled === true;
+
+      const { error: updateError } = await supabase
+        .from("strava_connections")
+        .update({ auto_sync_enabled: enabled })
+        .eq("user_id", user.id);
+
+      if (updateError) {
+        throw new Error(`Failed to update: ${updateError.message}`);
+      }
+
+      return new Response(JSON.stringify({ success: true, auto_sync_enabled: enabled }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
