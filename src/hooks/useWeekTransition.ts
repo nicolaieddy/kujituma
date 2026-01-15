@@ -139,13 +139,13 @@ export const useWeekTransition = (currentWeekStart: string) => {
 
   // Save intention mutation
   const saveIntentionMutation = useMutation({
-    mutationFn: async (intention: string) => {
-      // First save the intention
+    mutationFn: async (intention: string | null) => {
+      // Save the intention (even if empty, just to create the session)
       await HabitsService.createOrUpdatePlanningSession({
         week_start: currentWeekStart,
-        week_intention: intention,
+        week_intention: intention || '',
       });
-      // Then complete the planning session
+      // Always complete the planning session
       return HabitsService.completePlanningSession(currentWeekStart);
     },
     onSuccess: () => {
@@ -176,10 +176,13 @@ export const useWeekTransition = (currentWeekStart: string) => {
     }
   }, [saveIntentionMutation]);
 
-  const handleCompleteTransition = useCallback(async () => {
+  const handleCompleteTransition = useCallback(async (intention?: string) => {
     try {
       // Complete last week
       await completeLastWeekMutation.mutateAsync();
+      
+      // Always complete current week's planning session (even if no intention)
+      await saveIntentionMutation.mutateAsync(intention || null);
       
       setIsTransitionComplete(true);
       
@@ -195,7 +198,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
         variant: "destructive",
       });
     }
-  }, [completeLastWeekMutation]);
+  }, [completeLastWeekMutation, saveIntentionMutation]);
 
   const handleDismissTransition = useCallback(() => {
     setIsTransitionDismissed(true);
