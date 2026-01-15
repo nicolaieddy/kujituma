@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAdminStatus } from "@/hooks/useAdminStatus";
-import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { CommunityFeed } from "@/components/community/CommunityFeed";
 import { CreateGoalUpdateModal } from "@/components/community/CreateGoalUpdateModal";
 import { Target, UserPlus, Plus } from "lucide-react";
@@ -33,17 +31,8 @@ const FeedSkeleton = () => (
 
 const Feed = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
-  const { isAdmin } = useAdminStatus();
+  const { user, loading: authLoading } = useAuth();
   const [showCreateModal, setShowCreateModal] = useState(false);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -53,12 +42,9 @@ const Feed = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen min-h-[100dvh] bg-background">
-        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
-        <main className="container max-w-2xl mx-auto px-4 py-6">
-          <FeedSkeleton />
-        </main>
-      </div>
+      <main className="container max-w-2xl mx-auto px-4 py-6">
+        <FeedSkeleton />
+      </main>
     );
   }
 
@@ -67,13 +53,7 @@ const Feed = () => {
   }
 
   return (
-    <div className="min-h-screen min-h-[100dvh] bg-background">
-      <DashboardHeader 
-        isAdmin={isAdmin}
-        onSignOut={handleSignOut}
-      />
-
-      <main className="container max-w-2xl mx-auto px-4 py-6 sm:py-8">
+    <main className="container max-w-2xl mx-auto px-4 py-6 sm:py-8">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-2">
@@ -109,16 +89,15 @@ const Feed = () => {
           </p>
         </div>
 
-        {/* Community Feed */}
-        <CommunityFeed />
-      </main>
+      {/* Community Feed */}
+      <CommunityFeed />
 
       {/* Create Goal Update Modal */}
       <CreateGoalUpdateModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
       />
-    </div>
+    </main>
   );
 };
 

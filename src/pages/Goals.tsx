@@ -13,8 +13,6 @@ import { Goal } from "@/types/goals";
 import { GoalForm } from "@/components/goals/GoalForm";
 import { OrganizedGoalsView } from "@/components/goals/OrganizedGoalsView";
 import { GoalDetailModal } from "@/components/goals/GoalDetailModal";
-import { DashboardHeader } from "@/components/layout/DashboardHeader";
-import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { ThisWeekView } from "@/components/thisweek/ThisWeekView";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -24,8 +22,7 @@ import { GoalsSkeleton, GoalCardSkeleton } from "@/components/skeletons/PageSkel
 
 const Goals = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
-  const { isAdmin } = useAdminStatus();
+  const { user, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const { lastSync, isOffline } = useOfflineStatus();
   const { connection: duolingoConnection } = useDuolingoConnection();
@@ -54,15 +51,6 @@ const Goals = () => {
   );
   const [activeTab, setActiveTab] = useState("weekly");
 
-
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   const handleCreateGoal = (data: any) => {
     createGoal(data);
@@ -174,18 +162,15 @@ const Goals = () => {
   if (authLoading) {
     console.log('[Goals] Auth still loading, showing skeleton');
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
-        <div className="container mx-auto px-4 py-6">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-heading">Goals & Progress</h1>
-            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
-              Manage your long-term goals and track your weekly progress.
-            </p>
-          </div>
-          <div className="max-w-6xl mx-auto">
-            <GoalsSkeleton />
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 font-heading">Goals & Progress</h1>
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto leading-relaxed">
+            Manage your long-term goals and track your weekly progress.
+          </p>
+        </div>
+        <div className="max-w-6xl mx-auto">
+          <GoalsSkeleton />
         </div>
       </div>
     );
@@ -199,14 +184,8 @@ const Goals = () => {
   console.log('[Goals] Rendering for user:', user.email);
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader 
-        isAdmin={isAdmin}
-        onSignOut={handleSignOut}
-      />
-
-      <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
-        <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
+    <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
+      <div className={`text-center ${isMobile ? 'mb-6' : 'mb-8'}`}>
           <div className="flex items-center justify-center gap-2 mb-4">
             <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl sm:text-4xl'} font-bold text-foreground font-heading`}>Goals & Progress</h1>
             <CachedDataIndicator isCached={goalsCached || isOffline} lastSync={lastSync} />
@@ -308,7 +287,6 @@ const Goals = () => {
           </Tabs>
         </div>
       </div>
-    </div>
   );
 };
 
