@@ -11,6 +11,7 @@ interface StravaConnection {
   created_at: string;
   updated_at: string;
   last_synced_at: string | null;
+  auto_sync_enabled: boolean;
 }
 
 interface SyncResult {
@@ -169,7 +170,38 @@ export function useStravaConnection() {
     } finally {
       setIsSyncing(false);
     }
-  }, [session]);
+  }, [session, checkConnectionStatus]);
+
+  const toggleAutoSync = useCallback(async (enabled: boolean) => {
+    if (!session) {
+      toast.error("Please log in first");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/strava-auth?action=toggle-auto-sync`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ enabled }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to update auto-sync setting");
+      }
+
+      await checkConnectionStatus();
+      toast.success(enabled ? "Auto-sync enabled" : "Auto-sync disabled");
+    } catch (error) {
+      console.error("Failed to toggle auto-sync:", error);
+      toast.error("Failed to update auto-sync setting");
+    }
+  }, [session, checkConnectionStatus]);
 
   return {
     isConnected,
@@ -179,6 +211,7 @@ export function useStravaConnection() {
     initiateConnect,
     disconnect,
     syncActivities,
+    toggleAutoSync,
     refreshStatus: checkConnectionStatus,
   };
 }

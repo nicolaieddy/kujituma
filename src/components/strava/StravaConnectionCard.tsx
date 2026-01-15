@@ -1,5 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { Loader2, RefreshCw, Unlink, Zap, Clock } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -12,7 +14,8 @@ export function StravaConnectionCard() {
     isSyncing,
     initiateConnect, 
     disconnect,
-    syncActivities 
+    syncActivities,
+    toggleAutoSync,
   } = useStravaConnection();
 
   if (isLoading) {
@@ -57,6 +60,22 @@ export function StravaConnectionCard() {
                 </p>
               </div>
               <div className="flex h-2 w-2 rounded-full bg-green-500" title="Connected" />
+            </div>
+            
+            <div className="flex items-center justify-between py-2">
+              <div className="space-y-0.5">
+                <Label htmlFor="auto-sync" className="text-sm font-medium">
+                  Auto-sync daily
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Automatically sync new activities every day
+                </p>
+              </div>
+              <Switch
+                id="auto-sync"
+                checked={connection.auto_sync_enabled ?? false}
+                onCheckedChange={(checked) => toggleAutoSync(checked)}
+              />
             </div>
             
             <div className="flex gap-2">
