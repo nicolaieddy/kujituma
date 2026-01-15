@@ -10,6 +10,7 @@ import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { RoutableErrorBoundary } from "@/components/errors/RoutableErrorBoundary";
 import { TosGate } from "@/components/auth/TosGate";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
@@ -181,31 +182,33 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
 
   return (
     <RequireProfileComplete>
-      <Suspense fallback={<LoadingSpinner />}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/community" element={<Feed />} />
-          <Route path="/goals" element={<Goals />} />
-          <Route path="/friends" element={<Friends />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/profile" element={<ProfileEntry />} />
-          <Route path="/profile/:userId" element={<ProfileEntry />} />
-          <Route path="/profile-lite" element={<ProfileLite />} />
-          <Route path="/profile-lite/:userId" element={<ProfileLite />} />
-          {/* Rituals is now part of Analytics page */}
-          <Route path="/install" element={<Install />} />
-          <Route path="/debug" element={<Debug />} />
-          <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
-          <Route path="/partner/:partnerId/check-ins" element={<CheckInHistory />} />
-          <Route path="/privacy" element={<PrivacyPolicy />} />
-          <Route path="/terms" element={<TermsOfService />} />
-          <Route path="/onboarding" element={<Onboarding />} />
-          <Route path="/strava-callback" element={<StravaCallback />} />
-          <Route path="*" element={<Feed />} />
-        </Routes>
-      </Suspense>
+      <DashboardLayout>
+        <Suspense fallback={<LoadingSpinner />}>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/community" element={<Feed />} />
+            <Route path="/goals" element={<Goals />} />
+            <Route path="/friends" element={<Friends />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/profile" element={<ProfileEntry />} />
+            <Route path="/profile/:userId" element={<ProfileEntry />} />
+            <Route path="/profile-lite" element={<ProfileLite />} />
+            <Route path="/profile-lite/:userId" element={<ProfileLite />} />
+            {/* Rituals is now part of Analytics page */}
+            <Route path="/install" element={<Install />} />
+            <Route path="/debug" element={<Debug />} />
+            <Route path="/partner/:partnerId" element={<PartnerDashboard />} />
+            <Route path="/partner/:partnerId/check-ins" element={<CheckInHistory />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/onboarding" element={<Onboarding />} />
+            <Route path="/strava-callback" element={<StravaCallback />} />
+            <Route path="*" element={<Feed />} />
+          </Routes>
+        </Suspense>
+      </DashboardLayout>
     </RequireProfileComplete>
   );
 };

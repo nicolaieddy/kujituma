@@ -1,8 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { DashboardHeader } from "@/components/layout/DashboardHeader";
-import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
@@ -18,15 +16,13 @@ import { Sun, CalendarDays, ClipboardList } from "lucide-react";
 
 const Analytics = () => {
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
-  const { isAdmin } = useAdminStatus();
+  const { user, loading: authLoading } = useAuth();
   const { isOffline } = useOfflineStatus();
   const isMobile = useIsMobile();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get('tab');
   const [activeTab, setActiveTab] = useState(tabParam || 'daily');
 
-  // Sync URL param with tab state
   useEffect(() => {
     if (tabParam && ['daily', 'weekly', 'quarterly'].includes(tabParam)) {
       setActiveTab(tabParam);
@@ -38,32 +34,18 @@ const Analytics = () => {
     setSearchParams({ tab: value });
   };
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
-  // Redirect to auth if not logged in (avoid navigate during render)
   useEffect(() => {
-    console.log('[Analytics] Auth check - loading:', authLoading, 'user:', user?.email);
     if (!authLoading && !user) {
-      console.log('[Analytics] No user, redirecting to /auth');
       navigate('/auth');
     }
   }, [authLoading, user, navigate]);
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
-        <div className="container mx-auto px-4 py-6">
-          <div className="mb-6">
-            <Skeleton className="h-8 w-48 mb-2" />
-            <Skeleton className="h-4 w-64" />
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="mb-6">
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-64" />
         </div>
       </div>
     );
@@ -75,24 +57,15 @@ const Analytics = () => {
 
   if (isOffline) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <OfflineFallback 
-          title="Analytics unavailable offline"
-          description="Analytics data requires an internet connection to load. Please reconnect to view your stats."
-        />
-      </div>
+      <OfflineFallback 
+        title="Analytics unavailable offline"
+        description="Analytics data requires an internet connection to load. Please reconnect to view your stats."
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader 
-        isAdmin={isAdmin}
-        onSignOut={handleSignOut}
-      />
-
-      <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
+    <div className={`container mx-auto ${isMobile ? 'px-4 py-4' : 'px-4 py-6'}`}>
         <div className="mb-6">
           <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-foreground font-heading`}>
             Analytics
@@ -150,9 +123,8 @@ const Analytics = () => {
 
               <TabsContent value="quarterly">
                 <QuarterlyReviewsTab />
-              </TabsContent>
-            </Tabs>
-          </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

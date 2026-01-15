@@ -1,6 +1,5 @@
 import { lazy, Suspense } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminData } from "@/hooks/useAdminData";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
@@ -101,7 +100,6 @@ const AdminPageSkeleton = () => (
 );
 
 const Admin = () => {
-  const { signOut } = useAuth();
   const { isOffline } = useOfflineStatus();
   const {
     posts,
@@ -115,21 +113,13 @@ const Admin = () => {
     handleUserDeleted
   } = useAdminData();
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
-
   if (loading) {
     return <AdminPageSkeleton />;
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="flex items-center justify-center py-20">
         <div className="text-foreground">Access denied. Admin privileges required.</div>
       </div>
     );
@@ -137,24 +127,15 @@ const Admin = () => {
 
   if (isOffline) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <OfflineFallback 
-          title="Admin panel unavailable offline"
-          description="The admin dashboard requires an internet connection to manage posts and users."
-        />
-      </div>
+      <OfflineFallback 
+        title="Admin panel unavailable offline"
+        description="The admin dashboard requires an internet connection to manage posts and users."
+      />
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader 
-        isAdmin={isAdmin}
-        onSignOut={handleSignOut}
-      />
-
-      <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6">
         <div className="text-center mb-8">
           <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">Admin Dashboard</h1>
           <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
