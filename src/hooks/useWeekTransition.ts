@@ -177,6 +177,10 @@ export const useWeekTransition = (currentWeekStart: string) => {
   }, [saveIntentionMutation]);
 
   const handleCompleteTransition = useCallback(async (intention?: string) => {
+    // Set complete state FIRST to immediately hide the card
+    setIsTransitionComplete(true);
+    setIsForceOpen(false);
+    
     try {
       // Complete last week
       await completeLastWeekMutation.mutateAsync();
@@ -184,14 +188,14 @@ export const useWeekTransition = (currentWeekStart: string) => {
       // Always complete current week's planning session (even if no intention)
       await saveIntentionMutation.mutateAsync(intention || null);
       
-      setIsTransitionComplete(true);
-      
       toast({
         title: "Week transition complete! 🎉",
         description: "You're all set for a great week ahead.",
       });
     } catch (error) {
       console.error('Transition completion failed:', error);
+      // Revert on error so user can try again
+      setIsTransitionComplete(false);
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
