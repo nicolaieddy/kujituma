@@ -184,7 +184,6 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
   );
 };
 
