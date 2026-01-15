@@ -11,6 +11,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
   const queryClient = useQueryClient();
   const [isTransitionDismissed, setIsTransitionDismissed] = useState(false);
   const [isTransitionComplete, setIsTransitionComplete] = useState(false);
+  const [isForceOpen, setIsForceOpen] = useState(false);
   const [lastWeekReflections, setLastWeekReflections] = useState<Record<string, string>>({});
 
   // Calculate last week's start date
@@ -43,6 +44,9 @@ export const useWeekTransition = (currentWeekStart: string) => {
 
   // Check if we should show transition
   const shouldShowTransition = useMemo(() => {
+    // Force open overrides all other conditions
+    if (isForceOpen) return true;
+    
     // Don't show if dismissed or already completed this session
     if (isTransitionDismissed || isTransitionComplete) return false;
     
@@ -65,6 +69,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
     
     return isEarlyWeek && !planningSession?.is_completed;
   }, [
+    isForceOpen,
     isTransitionDismissed,
     isTransitionComplete,
     lastWeekLoading,
@@ -74,6 +79,9 @@ export const useWeekTransition = (currentWeekStart: string) => {
     planningSession?.is_completed,
     lastWeekObjectives.length,
   ]);
+
+  // Can re-open: has last week objectives to review
+  const canReopenTransition = lastWeekObjectives.length > 0;
 
   // Initialize reflections from saved data
   useMemo(() => {
@@ -191,6 +199,13 @@ export const useWeekTransition = (currentWeekStart: string) => {
 
   const handleDismissTransition = useCallback(() => {
     setIsTransitionDismissed(true);
+    setIsForceOpen(false);
+  }, []);
+
+  const handleReopenTransition = useCallback(() => {
+    setIsTransitionDismissed(false);
+    setIsTransitionComplete(false);
+    setIsForceOpen(true);
   }, []);
 
   const incompleteObjectives = lastWeekObjectives.filter(obj => !obj.is_completed);
@@ -205,6 +220,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
     
     // State
     shouldShowTransition,
+    canReopenTransition,
     isLoading: lastWeekLoading || lastWeekProgressLoading || planningLoading,
     isCarryingOver: carryOverMutation.isPending,
     isCompleting: completeLastWeekMutation.isPending || saveIntentionMutation.isPending,
@@ -215,5 +231,6 @@ export const useWeekTransition = (currentWeekStart: string) => {
     handleSetIntention,
     handleCompleteTransition,
     handleDismissTransition,
+    handleReopenTransition,
   };
 };

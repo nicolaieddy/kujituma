@@ -1,7 +1,7 @@
 import { useCallback, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, History } from "lucide-react";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,6 +80,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Week transition (combines close last week + planning + reflections)
   const {
     shouldShowTransition,
+    canReopenTransition,
     lastWeekStart,
     lastWeekObjectives,
     lastWeekReflections,
@@ -87,6 +88,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     handleCarryOver,
     handleSetIntention,
     handleCompleteTransition,
+    handleReopenTransition,
     isCarryingOver: isTransitionCarryingOver,
   } = useWeekTransition(currentWeekStart);
 
@@ -282,8 +284,41 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
                   </p>
                 </div>
               </div>
-              <Button onClick={() => setShowCarryOverModal(true)} size="sm">
-                Review & Carry Over
+              <div className="flex items-center gap-2">
+                {canReopenTransition && (
+                  <Button onClick={handleReopenTransition} size="sm" variant="outline" className="gap-2">
+                    <History className="h-4 w-4" />
+                    Review Last Week
+                  </Button>
+                )}
+                <Button onClick={() => setShowCarryOverModal(true)} size="sm">
+                  Review & Carry Over
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Review Last Week button when no carry-over banner but transition can be reopened */}
+      {isCurrentWeek && !shouldShowTransition && canReopenTransition && !hasIncompleteObjectivesFromPastWeeks && (
+        <Card className="border-border/50">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-full bg-muted">
+                  <History className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Review last week's progress</p>
+                  <p className="text-sm text-muted-foreground">
+                    Revisit your objectives, reflections, and carry-over decisions
+                  </p>
+                </div>
+              </div>
+              <Button onClick={handleReopenTransition} size="sm" variant="outline" className="gap-2">
+                <History className="h-4 w-4" />
+                Review Last Week
               </Button>
             </div>
           </CardContent>
