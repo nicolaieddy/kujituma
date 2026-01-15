@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
-import { useAdminStatus } from '@/hooks/useAdminStatus';
-import { DashboardHeader } from '@/components/layout/DashboardHeader';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,8 +39,7 @@ import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, formatDistanceToNo
 const PartnerDashboard = () => {
   const { partnerId } = useParams<{ partnerId: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading, signOut } = useAuth();
-  const { isAdmin } = useAdminStatus();
+  const { user, loading: authLoading } = useAuth();
   
   const [partnerProfile, setPartnerProfile] = useState<{
     id: string;
@@ -216,13 +213,6 @@ const PartnerDashboard = () => {
     }
   }, [authLoading, user, navigate]);
 
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    }
-  };
 
   const handleRecordCheckIn = async (message?: string) => {
     if (!partnershipDetails) return;
@@ -245,14 +235,11 @@ const PartnerDashboard = () => {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={false} onSignOut={() => {}} />
-        <div className="container mx-auto px-4 py-6">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-64 w-full" />
-            <Skeleton className="h-48 w-full" />
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Skeleton className="h-32 w-full" />
+          <Skeleton className="h-64 w-full" />
+          <Skeleton className="h-48 w-full" />
         </div>
       </div>
     );
@@ -262,23 +249,20 @@ const PartnerDashboard = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <div className="container mx-auto px-4 py-6">
-          <div className="max-w-4xl mx-auto">
-            <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-6">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Partners
-            </Button>
-            <Card className="border-destructive/20 bg-destructive/5">
-              <CardContent className="py-12 text-center">
-                <p className="text-destructive font-medium">{error}</p>
-                <p className="text-muted-foreground text-sm mt-2">
-                  Make sure you are connected as accountability partners.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto">
+          <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-6">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Partners
+          </Button>
+          <Card className="border-destructive/20 bg-destructive/5">
+            <CardContent className="py-12 text-center">
+              <p className="text-destructive font-medium">{error}</p>
+              <p className="text-muted-foreground text-sm mt-2">
+                Make sure you are connected as accountability partners.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -287,47 +271,44 @@ const PartnerDashboard = () => {
   // Show access restricted message if partner hasn't granted view permission
   if (!canViewPartner && partnerProfile) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <div className="container mx-auto px-4 py-6">
-          <div className="max-w-4xl mx-auto">
-            <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-6">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Partners
-            </Button>
-            
-            {/* Partner Header */}
-            <Card className="border-border mb-6">
-              <CardContent className="p-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-16 w-16 ring-2 ring-primary/20">
-                    <AvatarImage src={partnerProfile.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
-                      {partnerProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1">
-                    <h1 className="text-2xl font-bold text-foreground">
-                      {partnerProfile.full_name}
-                    </h1>
-                  </div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="max-w-4xl mx-auto">
+          <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-6">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Partners
+          </Button>
+          
+          {/* Partner Header */}
+          <Card className="border-border mb-6">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                  <AvatarImage src={partnerProfile.avatar_url || undefined} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-xl font-semibold">
+                    {partnerProfile.full_name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-foreground">
+                    {partnerProfile.full_name}
+                  </h1>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </CardContent>
+          </Card>
 
-            <Card className="border-muted">
-              <CardContent className="py-12 text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                  <Target className="h-8 w-8 text-muted-foreground" />
-                </div>
-                <p className="text-foreground font-medium mb-2">Access Restricted</p>
-                <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                  {partnerProfile.full_name} hasn't granted you permission to view their goals yet. 
-                  You can adjust visibility settings in your partnership configuration.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
+          <Card className="border-muted">
+            <CardContent className="py-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                <Target className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <p className="text-foreground font-medium mb-2">Access Restricted</p>
+              <p className="text-muted-foreground text-sm max-w-md mx-auto">
+                {partnerProfile.full_name} hasn't granted you permission to view their goals yet. 
+                You can adjust visibility settings in your partnership configuration.
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -345,11 +326,8 @@ const PartnerDashboard = () => {
     .slice(0, 2) || '??';
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-      
-      <div className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto space-y-6">
+    <div className="container mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto space-y-6">
           {/* Partner Switcher */}
           {partnerId && <PartnerSwitcher ref={partnerSwitcherRef} currentPartnerId={partnerId} />}
           
@@ -586,7 +564,6 @@ const PartnerDashboard = () => {
               user2Id={partnershipDetails.user2_id}
             />
           )}
-        </div>
       </div>
     </div>
   );

@@ -1,11 +1,9 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { supabase } from "@/integrations/supabase/client";
 import { accountabilityService } from "@/services/accountabilityService";
-import { DashboardHeader } from "@/components/layout/DashboardHeader";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
@@ -100,7 +98,6 @@ const Profile = () => {
   const { user, signOut, isNewUser, markProfileComplete } = useAuth();
   const navigate = useNavigate();
   const { userId } = useParams();
-  const { isAdmin } = useAdminStatus();
   const { isOffline } = useOfflineStatus();
 
   // ── Local state ───────────────────────────────────────────────────────────
@@ -131,10 +128,6 @@ const Profile = () => {
   const { is_partner, can_view_partner_goals, request_status: partner_request_status } = partnershipStatus;
 
   // ── Handlers ──────────────────────────────────────────────────────────────
-  const handleSignOut = useCallback(async () => {
-    await signOut();
-    navigate("/auth");
-  }, [signOut, navigate]);
 
   const handleTabChange = useCallback((tab: "profile" | "integrations") => {
     setActiveTab(tab);
@@ -302,23 +295,17 @@ const Profile = () => {
 
   if (isOffline && !profile) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <OfflineFallback
-          title="Profile unavailable offline"
-          description="Profile data requires an internet connection to load. Please reconnect to view this profile."
-        />
-      </div>
+      <OfflineFallback
+        title="Profile unavailable offline"
+        description="Profile data requires an internet connection to load. Please reconnect to view this profile."
+      />
     );
   }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <div className="container mx-auto px-4 py-8">
-          <ProfileSkeleton />
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <ProfileSkeleton />
       </div>
     );
   }
@@ -547,29 +534,23 @@ const Profile = () => {
   // If editing mode, render ProfileEditForm
   if (isEditing && isOwnProfile && profile) {
     return (
-      <div className="min-h-screen bg-background">
-        <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-        <div className="container mx-auto px-4 py-8">
-          <ProfileEditForm
-            profile={profile}
-            onUpdate={(updated: Profile) => {
-              setProfile(updated);
-              setIsEditing(false);
-              deleteSearchParam("setup");
-              if (isNewUser) markProfileComplete();
-            }}
-            onCancel={() => setIsEditing(false)}
-          />
-        </div>
+      <div className="container mx-auto px-4 py-8">
+        <ProfileEditForm
+          profile={profile}
+          onUpdate={(updated: Profile) => {
+            setProfile(updated);
+            setIsEditing(false);
+            deleteSearchParam("setup");
+            if (isNewUser) markProfileComplete();
+          }}
+          onCancel={() => setIsEditing(false)}
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <DashboardHeader isAdmin={isAdmin} onSignOut={handleSignOut} />
-
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         {profile && isOwnProfile && (
           <>
             {/* Simple tab bar (no Radix Tabs) */}
@@ -621,7 +602,6 @@ const Profile = () => {
 
         {/* Viewing someone else's profile */}
         {profile && !isOwnProfile && renderProfileView()}
-      </div>
     </div>
   );
 };
