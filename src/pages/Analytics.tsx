@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
+import { CategoryRadarChart } from "@/components/analytics/CategoryRadarChart";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -77,6 +78,9 @@ const Analytics = () => {
 
         <div className="max-w-5xl space-y-8">
           <AnalyticsDashboard />
+          
+          {/* Life Balance Radar Chart */}
+          <CategoryRadarChart />
           
           {/* Rituals Section */}
           <div className="pt-6 border-t border-border">
