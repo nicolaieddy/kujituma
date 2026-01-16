@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
@@ -25,6 +26,7 @@ interface SyncResult {
 
 export function useStravaConnection() {
   const { user, session } = useAuth();
+  const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const [connection, setConnection] = useState<StravaConnection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,6 +154,13 @@ export function useStravaConnection() {
 
       // Refresh connection status to get updated last_synced_at
       await checkConnectionStatus();
+
+      // Invalidate habit completions and synced activities to update UI
+      if (result.matched > 0 || result.rematched > 0 || result.synced > 0) {
+        queryClient.invalidateQueries({ queryKey: ["habit-completions"] });
+        queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
+        queryClient.invalidateQueries({ queryKey: ["daily-streaks"] });
+      }
 
       if (result.matched > 0 || result.rematched > 0) {
         const total = (result.matched || 0) + (result.rematched || 0);
