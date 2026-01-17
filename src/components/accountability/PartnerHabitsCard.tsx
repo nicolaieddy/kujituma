@@ -1,12 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Checkbox } from "@/components/ui/checkbox";
 import { RefreshCw, Flame, Target, CheckCircle2, Circle, ChevronRight, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { format, parseISO } from "date-fns";
-import { useState } from "react";
+import { format, parseISO, startOfWeek, eachDayOfInterval, endOfWeek, isToday, isBefore } from "date-fns";
+import { useState, useEffect, useMemo } from "react";
 import { formatCustomSchedule } from "@/components/habits/CustomRecurrencePicker";
 import { HabitItem } from "@/types/goals";
+import { accountabilityService } from "@/services/accountabilityService";
+import { cn } from "@/lib/utils";
 
 const frequencyLabels: Record<string, string> = {
   daily: 'Daily',
@@ -18,6 +21,8 @@ const frequencyLabels: Record<string, string> = {
   weekdays: 'Weekdays',
   custom: 'Custom',
 };
+
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 const getFrequencyLabel = (habit: HabitItem): string => {
   if (habit.frequency === 'custom' && habit.customSchedule) {
@@ -42,10 +47,64 @@ interface PartnerHabitStats {
 interface PartnerHabitsCardProps {
   habitStats: PartnerHabitStats[];
   isLoading?: boolean;
+  partnerId: string;
+  weekStart?: Date;
 }
 
-export const PartnerHabitsCard = ({ habitStats, isLoading }: PartnerHabitsCardProps) => {
+// Helper to check if a frequency should show daily checkboxes
+const isDailyTracking = (frequency: string, habitItem?: HabitItem): boolean => {
+  if (frequency === 'daily' || frequency === 'weekdays') return true;
+  if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+    return true;
+  }
+  return false;
+};
+
+// Helper to get which days should be active based on frequency
+const getDaysToShow = (frequency: string, habitItem?: HabitItem): number[] => {
+  if (habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+    // Convert from 0=Sunday to 0=Monday format
+    return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
+  }
+  switch (frequency) {
+    case 'daily':
+      return [0, 1, 2, 3, 4, 5, 6];
+    case 'weekdays':
+      return [0, 1, 2, 3, 4];
+    default:
+      return [0, 1, 2, 3, 4, 5, 6];
+  }
+};
+
+export const PartnerHabitsCard = ({ habitStats, isLoading, partnerId, weekStart: propWeekStart }: PartnerHabitsCardProps) => {
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+  const [completions, setCompletions] = useState<{ habit_item_id: string; completion_date: string }[]>([]);
+  const [completionsLoading, setCompletionsLoading] = useState(true);
+
+  const currentWeekStart = propWeekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
+  const weekDates = eachDayOfInterval({
+    start: currentWeekStart,
+    end: endOfWeek(currentWeekStart, { weekStartsOn: 1 })
+  });
+
+  // Fetch partner's habit completions for the week
+  useEffect(() => {
+    const fetchCompletions = async () => {
+      if (!partnerId) return;
+      
+      setCompletionsLoading(true);
+      try {
+        const data = await accountabilityService.getPartnerHabitCompletions(partnerId, currentWeekStart);
+        setCompletions(data);
+      } catch (err) {
+        console.error('Error fetching partner completions:', err);
+      } finally {
+        setCompletionsLoading(false);
+      }
+    };
+
+    fetchCompletions();
+  }, [partnerId, currentWeekStart]);
 
   const toggleGoalExpanded = (goalId: string) => {
     const newExpanded = new Set(expandedGoals);
@@ -55,6 +114,25 @@ export const PartnerHabitsCard = ({ habitStats, isLoading }: PartnerHabitsCardPr
       newExpanded.add(goalId);
     }
     setExpandedGoals(newExpanded);
+  };
+
+  // Get completion status for a specific habit item
+  const getCompletionStatus = (habitItemId: string): boolean[] => {
+    const status: boolean[] = [false, false, false, false, false, false, false];
+    
+    completions
+      .filter(c => c.habit_item_id === habitItemId)
+      .forEach(c => {
+        const date = parseISO(c.completion_date);
+        const dayIndex = weekDates.findIndex(d => 
+          format(d, 'yyyy-MM-dd') === format(date, 'yyyy-MM-dd')
+        );
+        if (dayIndex >= 0) {
+          status[dayIndex] = true;
+        }
+      });
+    
+    return status;
   };
 
   if (isLoading) {
@@ -218,24 +296,87 @@ export const PartnerHabitsCard = ({ habitStats, isLoading }: PartnerHabitsCardPr
                     </div>
                   )}
 
-                  {/* Habit items */}
+                  {/* Habit items with daily checkboxes */}
                   {habitItems.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs text-muted-foreground font-medium">Habits</p>
-                      <div className="space-y-1.5">
-                        {habitItems.map((item: HabitItem, idx: number) => (
-                          <div 
-                            key={idx}
-                            className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/30"
-                          >
-                            <span className="text-sm text-foreground">
-                              {item.text || `Habit ${idx + 1}`}
-                            </span>
-                            <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground ml-2 flex-shrink-0">
-                              {getFrequencyLabel(item)}
-                            </Badge>
-                          </div>
-                        ))}
+                      <div className="space-y-3">
+                        {habitItems.map((item: HabitItem, idx: number) => {
+                          const showDailyCheckboxes = isDailyTracking(item.frequency, item);
+                          const daysToShow = getDaysToShow(item.frequency, item);
+                          const completionStatus = getCompletionStatus(item.id);
+                          const completedDays = completionStatus.filter(Boolean).length;
+                          
+                          return (
+                            <div 
+                              key={item.id || idx}
+                              className="space-y-1.5"
+                            >
+                              <div className="flex items-center justify-between p-2 rounded-lg bg-muted/30 border border-border/30">
+                                <span className="text-sm text-foreground">
+                                  {item.text || `Habit ${idx + 1}`}
+                                </span>
+                                <div className="flex items-center gap-2">
+                                  {showDailyCheckboxes && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      {completedDays}/{daysToShow.length}
+                                    </Badge>
+                                  )}
+                                  <Badge variant="outline" className="text-xs bg-muted/50 text-muted-foreground">
+                                    {getFrequencyLabel(item)}
+                                  </Badge>
+                                </div>
+                              </div>
+                              
+                              {/* Day checkboxes for daily/weekday habits */}
+                              {showDailyCheckboxes && (
+                                <div className="flex items-center gap-1 pl-2">
+                                  {DAY_LABELS.map((label, dayIndex) => {
+                                    const isActiveDay = daysToShow.includes(dayIndex);
+                                    const isChecked = completionStatus[dayIndex];
+                                    const date = weekDates[dayIndex];
+                                    const isTodayDate = date && isToday(date);
+                                    
+                                    return (
+                                      <Tooltip key={dayIndex}>
+                                        <TooltipTrigger asChild>
+                                          <div
+                                            className={cn(
+                                              "flex flex-col items-center gap-0.5",
+                                              !isActiveDay && "opacity-30"
+                                            )}
+                                          >
+                                            <span className={cn(
+                                              "text-[10px] font-medium",
+                                              isTodayDate ? "text-primary" : "text-muted-foreground"
+                                            )}>
+                                              {label}
+                                            </span>
+                                            <Checkbox
+                                              checked={isChecked}
+                                              disabled
+                                              className={cn(
+                                                "h-6 w-6 rounded cursor-default",
+                                                isTodayDate && "ring-2 ring-primary/30 ring-offset-1",
+                                                isChecked && "bg-success border-success"
+                                              )}
+                                            />
+                                          </div>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>{date ? format(date, 'EEEE, MMM d') : label}</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            {isChecked ? 'Completed' : 'Not completed'}
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

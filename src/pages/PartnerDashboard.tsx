@@ -538,7 +538,7 @@ const PartnerDashboard = () => {
           </Card>
 
           {/* Habits Review */}
-          <PartnerHabitsCard habitStats={habitStats} isLoading={loading} />
+          <PartnerHabitsCard habitStats={habitStats} isLoading={loading} partnerId={partnerId || ''} />
 
           {/* Goals Kanban */}
           <Card className="border-border">
