@@ -178,6 +178,20 @@ export const PartnerCheckInsCard = () => {
   const getInitials = (name: string) =>
     name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
 
+  // When collapsed and no new check-ins, show minimal compact view
+  if (!isExpanded && newCheckInsCount === 0) {
+    return (
+      <button
+        onClick={() => setIsExpanded(true)}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 px-1"
+      >
+        <Users className="h-4 w-4" />
+        <span>{partnerCheckIns.length} accountability partner{partnerCheckIns.length !== 1 ? 's' : ''}</span>
+        <ChevronRight className="h-3 w-3" />
+      </button>
+    );
+  }
+
   return (
     <Card className="border-border">
       <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
@@ -338,6 +352,19 @@ export const PartnerCheckInsCard = () => {
                 className="w-full text-xs text-muted-foreground"
               >
                 +{partnerCheckIns.length - 3} more partners
+              </Button>
+            )}
+
+            {/* Collapse button when no new check-ins */}
+            {newCheckInsCount === 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(false)}
+                className="w-full text-xs text-muted-foreground"
+              >
+                <ChevronDown className="h-3 w-3 mr-1" />
+                Collapse
               </Button>
             )}
           </CardContent>
