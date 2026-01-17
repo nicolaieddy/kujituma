@@ -1,5 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
-import { startOfWeek, format } from 'date-fns';
+import { startOfWeek, format, addDays } from 'date-fns';
 
 export type CheckInCadence = 'none' | 'daily' | 'twice_weekly' | 'weekly' | 'biweekly';
 
@@ -994,6 +994,43 @@ class AccountabilityService {
         weeklyHistory,
       };
     });
+  }
+
+  /**
+   * Get partner's habit completions for a specific week
+   * Returns daily completion status for each habit item
+   */
+  async getPartnerHabitCompletions(
+    partnerId: string,
+    weekStart: Date
+  ): Promise<{ habit_item_id: string; completion_date: string }[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('Not authenticated');
+
+    // First verify they are accountability partners with visibility permissions
+    const partners = await this.getPartners();
+    const partner = partners.find(p => p.partner_id === partnerId);
+    
+    if (!partner || !partner.can_view_partner_goals) {
+      // If not a partner or no visibility permission, return empty
+      return [];
+    }
+
+    const weekEnd = addDays(weekStart, 6);
+    
+    const { data, error } = await supabase
+      .from('habit_completions')
+      .select('habit_item_id, completion_date')
+      .eq('user_id', partnerId)
+      .gte('completion_date', format(weekStart, 'yyyy-MM-dd'))
+      .lte('completion_date', format(weekEnd, 'yyyy-MM-dd'));
+
+    if (error) {
+      console.error('Error fetching partner habit completions:', error);
+      return [];
+    }
+
+    return data || [];
   }
 }
 
