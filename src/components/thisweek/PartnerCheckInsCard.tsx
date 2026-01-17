@@ -1,16 +1,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { accountabilityService, AccountabilityPartner, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { MessageSquare, Clock, ChevronRight, ChevronDown, Users, Send, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, Loader2, ChevronRight, Users } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
@@ -18,7 +17,7 @@ import { toast } from '@/hooks/use-toast';
 interface PartnerCheckIn {
   partner: AccountabilityPartner;
   latestCheckIn: CheckInRecord | null;
-  hasNewCheckIn: boolean; // Check-in from partner that user hasn't replied to
+  hasNewCheckIn: boolean;
 }
 
 export const PartnerCheckInsCard = () => {
@@ -26,7 +25,6 @@ export const PartnerCheckInsCard = () => {
   const navigate = useNavigate();
   const [partnerCheckIns, setPartnerCheckIns] = useState<PartnerCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isExpanded, setIsExpanded] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -37,13 +35,10 @@ export const PartnerCheckInsCard = () => {
     try {
       const partners = await accountabilityService.getPartners();
       
-      // Fetch latest check-in for each partner
       const checkInsPromises = partners.map(async (partner) => {
         const checkIns = await accountabilityService.getCheckInHistory(partner.partnership_id);
         const latestCheckIn = checkIns[0] || null;
         
-        // Check if the latest check-in is from the partner (not the user)
-        // and check if the user has replied to it
         const hasNewCheckIn = latestCheckIn 
           && latestCheckIn.initiated_by !== user.id
           && !latestCheckIn.replies?.some(r => r.initiated_by === user.id);
@@ -56,23 +51,13 @@ export const PartnerCheckInsCard = () => {
       });
 
       const results = await Promise.all(checkInsPromises);
-      // Sort: new check-ins first, then by most recent
       results.sort((a, b) => {
         if (a.hasNewCheckIn && !b.hasNewCheckIn) return -1;
         if (!a.hasNewCheckIn && b.hasNewCheckIn) return 1;
-        if (!a.latestCheckIn && !b.latestCheckIn) return 0;
-        if (!a.latestCheckIn) return 1;
-        if (!b.latestCheckIn) return -1;
-        return new Date(b.latestCheckIn.created_at).getTime() - new Date(a.latestCheckIn.created_at).getTime();
+        return 0;
       });
       
       setPartnerCheckIns(results);
-      
-      // Auto-expand if there are new check-ins
-      const hasAnyNew = results.some(pc => pc.hasNewCheckIn);
-      if (hasAnyNew) {
-        setIsExpanded(true);
-      }
     } catch (err) {
       console.error('Error fetching partner check-ins:', err);
     } finally {
@@ -84,7 +69,6 @@ export const PartnerCheckInsCard = () => {
     fetchData();
   }, [user]);
 
-  // Set up real-time subscription for check-ins
   useEffect(() => {
     if (!user || partnerCheckIns.length === 0) return;
 
@@ -102,7 +86,6 @@ export const PartnerCheckInsCard = () => {
         (payload) => {
           const newCheckIn = payload.new as any;
           if (partnershipIds.includes(newCheckIn.partnership_id)) {
-            // Refetch data when a new check-in is added
             fetchData();
           }
         }
@@ -150,226 +133,155 @@ export const PartnerCheckInsCard = () => {
     [partnerCheckIns]
   );
 
-  if (loading) {
-    return (
-      <Card className="border-border">
-        <CardHeader className="pb-3">
-          <Skeleton className="h-5 w-40" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {[1, 2].map(i => (
-            <div key={i} className="flex items-center gap-3">
-              <Skeleton className="h-10 w-10 rounded-full" />
-              <div className="flex-1 space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-3 w-48" />
-              </div>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
-  }
+  const partnersWithNew = partnerCheckIns.filter(pc => pc.hasNewCheckIn);
 
-  if (partnerCheckIns.length === 0) {
-    return null; // Don't show the card if no partners
+  if (loading || partnerCheckIns.length === 0) {
+    return null;
   }
 
   const getInitials = (name: string) =>
     name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
 
-  // When collapsed and no new check-ins, show minimal compact view
-  if (!isExpanded && newCheckInsCount === 0) {
+  // If no new check-ins, show minimal link
+  if (newCheckInsCount === 0) {
     return (
       <button
-        onClick={() => setIsExpanded(true)}
-        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-2 px-1"
+        onClick={() => navigate('/friends?tab=partners')}
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
       >
-        <Users className="h-4 w-4" />
-        <span>{partnerCheckIns.length} accountability partner{partnerCheckIns.length !== 1 ? 's' : ''}</span>
+        <div className="flex -space-x-2">
+          {partnerCheckIns.slice(0, 3).map(({ partner }) => (
+            <Avatar key={partner.partner_id} className="h-6 w-6 border-2 border-background">
+              <AvatarImage src={partner.avatar_url || undefined} />
+              <AvatarFallback className="text-[10px] bg-muted">
+                {getInitials(partner.full_name)}
+              </AvatarFallback>
+            </Avatar>
+          ))}
+        </div>
+        <span>{partnerCheckIns.length} partner{partnerCheckIns.length !== 1 ? 's' : ''}</span>
         <ChevronRight className="h-3 w-3" />
       </button>
     );
   }
 
+  // If there are new check-ins, show compact interactive section
   return (
-    <Card className="border-border">
-      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CollapsibleTrigger asChild>
-              <button className="flex items-center gap-2 text-left hover:opacity-80 transition-opacity">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <Users className="h-4 w-4" />
-                  Partner Check-ins
-                </CardTitle>
-                {newCheckInsCount > 0 && (
-                  <Badge variant="default" className="text-[10px] px-1.5 py-0 bg-primary">
-                    {newCheckInsCount} new
-                  </Badge>
-                )}
-                {isExpanded ? (
-                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                )}
-              </button>
-            </CollapsibleTrigger>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/friends?tab=partners')}
-              className="text-xs gap-1"
-            >
-              View All
-              <ChevronRight className="h-3 w-3" />
-            </Button>
-          </div>
-        </CardHeader>
-        
-        <CollapsibleContent>
-          <CardContent className="space-y-3 pt-0">
-            {partnerCheckIns.slice(0, 3).map(({ partner, latestCheckIn, hasNewCheckIn }) => (
-              <div
-                key={partner.partner_id}
-                className={cn(
-                  "rounded-lg border p-3 transition-colors",
-                  hasNewCheckIn ? "border-primary/30 bg-primary/5" : "border-border"
-                )}
-              >
-                <button
-                  onClick={() => navigate(`/partner/${partner.partner_id}`)}
-                  className="w-full flex items-start gap-3 text-left hover:opacity-80 transition-opacity"
-                >
-                  <Avatar className="h-10 w-10 flex-shrink-0">
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex items-center gap-2">
+        <div className="flex -space-x-1.5">
+          {partnersWithNew.slice(0, 4).map(({ partner, latestCheckIn }) => (
+            <Popover key={partner.partner_id}>
+              <PopoverTrigger asChild>
+                <button className="relative focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 rounded-full">
+                  <Avatar className="h-8 w-8 border-2 border-background ring-2 ring-primary/20 hover:ring-primary/50 transition-all cursor-pointer">
                     <AvatarImage src={partner.avatar_url || undefined} />
-                    <AvatarFallback className="bg-primary/10 text-primary text-sm">
+                    <AvatarFallback className="text-xs bg-primary/10 text-primary">
                       {getInitials(partner.full_name)}
                     </AvatarFallback>
                   </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-foreground truncate">
-                        {partner.full_name}
-                      </span>
-                      {hasNewCheckIn && (
-                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                          New
-                        </Badge>
+                  <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary border-2 border-background" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-3" align="start">
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
+                      <AvatarImage src={partner.avatar_url || undefined} />
+                      <AvatarFallback className="text-xs">
+                        {getInitials(partner.full_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm">{partner.full_name}</p>
+                      {latestCheckIn && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          "{latestCheckIn.message?.slice(0, 60)}{latestCheckIn.message && latestCheckIn.message.length > 60 ? '...' : ''}"
+                        </p>
+                      )}
+                      {latestCheckIn && (
+                        <p className="text-[10px] text-muted-foreground/70 mt-1">
+                          {formatDistanceToNow(new Date(latestCheckIn.created_at), { addSuffix: true })}
+                        </p>
                       )}
                     </div>
-                    {latestCheckIn ? (
-                      <div className="text-xs text-muted-foreground mt-0.5">
-                        <div className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
-                          <span className="truncate">
-                            {latestCheckIn.initiated_by === user?.id ? 'You' : partner.full_name.split(' ')[0]}
-                            {': '}
-                            {latestCheckIn.message 
-                              ? (latestCheckIn.message.length > 40 
-                                  ? latestCheckIn.message.slice(0, 40) + '...' 
-                                  : latestCheckIn.message)
-                              : 'checked in'}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1 mt-0.5 text-muted-foreground/70">
-                          <Clock className="h-2.5 w-2.5" />
-                          <span>{formatDistanceToNow(new Date(latestCheckIn.created_at), { addSuffix: true })}</span>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground/70 mt-0.5">
-                        No check-ins yet
-                      </p>
-                    )}
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground/50 flex-shrink-0 mt-1" />
-                </button>
-
-                {/* Inline reply section for new check-ins */}
-                {hasNewCheckIn && latestCheckIn && (
-                  <div className="mt-3 pt-3 border-t border-border">
-                    {replyingTo === partner.partner_id ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder={`Reply to ${partner.full_name.split(' ')[0]}...`}
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          className="min-h-[60px] text-sm"
-                          autoFocus
-                        />
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setReplyingTo(null);
-                              setReplyText('');
-                            }}
-                            disabled={isSending}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleReply(partner.partner_id, partner.partnership_id, latestCheckIn.id)}
-                            disabled={!replyText.trim() || isSending}
-                            className="gap-1"
-                          >
-                            {isSending ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Send className="h-3 w-3" />
-                            )}
-                            Reply
-                          </Button>
-                        </div>
+                  
+                  {replyingTo === partner.partner_id ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        placeholder="Quick reply..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="min-h-[60px] text-sm resize-none"
+                        autoFocus
+                      />
+                      <div className="flex justify-end gap-1.5">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => {
+                            setReplyingTo(null);
+                            setReplyText('');
+                          }}
+                          disabled={isSending}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs gap-1"
+                          onClick={() => latestCheckIn && handleReply(partner.partner_id, partner.partnership_id, latestCheckIn.id)}
+                          disabled={!replyText.trim() || isSending}
+                        >
+                          {isSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                          Send
+                        </Button>
                       </div>
-                    ) : (
+                    </div>
+                  ) : (
+                    <div className="flex gap-1.5">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setReplyingTo(partner.partner_id);
-                        }}
-                        className="w-full text-xs"
+                        className="flex-1 h-7 text-xs"
+                        onClick={() => setReplyingTo(partner.partner_id)}
                       >
                         <MessageSquare className="h-3 w-3 mr-1" />
-                        Reply to check-in
+                        Reply
                       </Button>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
-            
-            {partnerCheckIns.length > 3 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/friends?tab=partners')}
-                className="w-full text-xs text-muted-foreground"
-              >
-                +{partnerCheckIns.length - 3} more partners
-              </Button>
-            )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        onClick={() => navigate(`/partner/${partner.partner_id}`)}
+                      >
+                        View
+                        <ChevronRight className="h-3 w-3 ml-0.5" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </PopoverContent>
+            </Popover>
+          ))}
+        </div>
+        
+        {partnersWithNew.length > 0 && (
+          <Badge variant="default" className="text-[10px] px-1.5 h-5 bg-primary">
+            {newCheckInsCount} new
+          </Badge>
+        )}
+      </div>
 
-            {/* Collapse button when no new check-ins */}
-            {newCheckInsCount === 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsExpanded(false)}
-                className="w-full text-xs text-muted-foreground"
-              >
-                <ChevronDown className="h-3 w-3 mr-1" />
-                Collapse
-              </Button>
-            )}
-          </CardContent>
-        </CollapsibleContent>
-      </Collapsible>
-    </Card>
+      <button
+        onClick={() => navigate('/friends?tab=partners')}
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 ml-auto"
+      >
+        All partners
+        <ChevronRight className="h-3 w-3" />
+      </button>
+    </div>
   );
 };
