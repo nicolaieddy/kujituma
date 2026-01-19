@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { accountabilityService, AccountabilityPartner, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronRight, Send, Loader2, MessageSquare } from 'lucide-react';
+import { ChevronRight, Send, Loader2, MessageSquare, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDuePartnerCheckIns } from '@/hooks/useDuePartnerCheckIns';
 import { formatDistanceToNow } from 'date-fns';
@@ -174,6 +174,33 @@ export const PartnerCheckInsCard = () => {
     }
   };
 
+  const handleMarkAsRead = async (partnershipId: string, checkInId: string) => {
+    setIsSending(true);
+    try {
+      // Record an acknowledgment reply to mark as read
+      await accountabilityService.recordCheckIn(
+        partnershipId,
+        '👀', // Read acknowledgment
+        checkInId
+      );
+      
+      toast({
+        title: "Marked as read",
+      });
+      
+      setOpenPopover(null);
+      await fetchData();
+    } catch (err) {
+      console.error('Failed to mark as read:', err);
+      toast({
+        title: "Failed to mark as read",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const actionCount = useMemo(() => {
     const newMessages = partnerCheckIns.filter(pc => pc.hasNewMessage).length;
     const needsCheckIn = partnerCheckIns.filter(pc => pc.needsCheckIn && !pc.hasNewMessage).length;
@@ -327,6 +354,18 @@ export const PartnerCheckInsCard = () => {
                           <MessageSquare className="h-3 w-3 mr-1" />
                           {hasNewMessage ? 'Reply' : 'Check in'}
                         </Button>
+                        {hasNewMessage && latestCheckIn && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs"
+                            onClick={() => handleMarkAsRead(partner.partnership_id, latestCheckIn.id)}
+                            disabled={isSending}
+                          >
+                            {isSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-0.5" />}
+                            Read
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
