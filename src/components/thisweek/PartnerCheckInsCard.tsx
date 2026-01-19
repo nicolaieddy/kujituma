@@ -14,11 +14,18 @@ import { useDuePartnerCheckIns } from '@/hooks/useDuePartnerCheckIns';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from '@/hooks/use-toast';
 
+interface MessagePreview {
+  message: string;
+  created_at: string;
+  is_mine: boolean;
+}
+
 interface PartnerCheckIn {
   partner: AccountabilityPartner;
   latestCheckIn: CheckInRecord | null;
   hasNewMessage: boolean;
   needsCheckIn: boolean;
+  recentMessages: MessagePreview[];
 }
 
 export const PartnerCheckInsCard = () => {
@@ -49,11 +56,40 @@ export const PartnerCheckInsCard = () => {
         
         const needsCheckIn = duePartnerIds.includes(partner.partner_id);
         
+        // Build recent messages from both sides
+        const recentMessages: MessagePreview[] = [];
+        
+        // Get the last message from partner
+        const partnerMessage = checkIns.find(c => c.initiated_by === partner.partner_id);
+        if (partnerMessage) {
+          recentMessages.push({
+            message: partnerMessage.message || '',
+            created_at: partnerMessage.created_at,
+            is_mine: false,
+          });
+        }
+        
+        // Get the last message from me
+        const myMessage = checkIns.find(c => c.initiated_by === user.id);
+        if (myMessage) {
+          recentMessages.push({
+            message: myMessage.message || '',
+            created_at: myMessage.created_at,
+            is_mine: true,
+          });
+        }
+        
+        // Sort by date, most recent first
+        recentMessages.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        
         return {
           partner,
           latestCheckIn,
           hasNewMessage: !!hasNewMessage,
           needsCheckIn,
+          recentMessages: recentMessages.slice(0, 2),
         };
       });
 
@@ -155,7 +191,7 @@ export const PartnerCheckInsCard = () => {
     <div className="flex items-center gap-3 py-1">
       <div className="flex items-center gap-2">
         <div className="flex -space-x-1.5">
-          {partnerCheckIns.map(({ partner, hasNewMessage, needsCheckIn, latestCheckIn }) => {
+          {partnerCheckIns.map(({ partner, hasNewMessage, needsCheckIn, latestCheckIn, recentMessages }) => {
             const status = hasNewMessage ? 'new-message' : needsCheckIn ? 'needs-checkin' : 'none';
             
             return (
@@ -195,35 +231,53 @@ export const PartnerCheckInsCard = () => {
                     )}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-72 p-3" align="start">
+                <PopoverContent className="w-80 p-3" align="start">
                   <div className="space-y-3">
-                    <div className="flex items-start gap-2">
-                      <Avatar className="h-8 w-8 flex-shrink-0">
-                        <AvatarImage src={partner.avatar_url || undefined} />
-                        <AvatarFallback className="text-xs">
-                          {getInitials(partner.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-7 w-7 flex-shrink-0">
+                          <AvatarImage src={partner.avatar_url || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(partner.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
                         <p className="font-medium text-sm">{partner.full_name}</p>
-                        {hasNewMessage && latestCheckIn && (
-                          <>
-                            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                              "{latestCheckIn.message}"
-                            </p>
-                            <p className="text-[10px] text-muted-foreground/70 mt-1">
-                              {formatDistanceToNow(new Date(latestCheckIn.created_at), { addSuffix: true })}
-                            </p>
-                          </>
-                        )}
-                        {needsCheckIn && !hasNewMessage && (
-                          <p className="text-xs text-amber-500 mt-0.5">Check-in due</p>
-                        )}
-                        {!hasNewMessage && !needsCheckIn && (
-                          <p className="text-xs text-muted-foreground mt-0.5">No action needed</p>
-                        )}
                       </div>
+                      {needsCheckIn && !hasNewMessage && (
+                        <span className="text-[10px] text-amber-500 font-medium">Check-in due</span>
+                      )}
                     </div>
+                    
+                    {/* Message history */}
+                    {recentMessages.length > 0 ? (
+                      <div className="space-y-2 max-h-32 overflow-y-auto">
+                        {recentMessages.map((msg, idx) => (
+                          <div 
+                            key={idx} 
+                            className={cn(
+                              "text-xs p-2 rounded-lg",
+                              msg.is_mine 
+                                ? "bg-primary/10 ml-4" 
+                                : "bg-muted mr-4"
+                            )}
+                          >
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              <span className="font-medium text-[10px]">
+                                {msg.is_mine ? 'You' : partner.full_name.split(' ')[0]}
+                              </span>
+                              <span className="text-muted-foreground/60 text-[9px]">
+                                {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                              </span>
+                            </div>
+                            <p className="text-muted-foreground line-clamp-2">{msg.message}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground text-center py-2">
+                        No messages yet
+                      </p>
+                    )}
                     
                     {replyingTo === partner.partner_id ? (
                       <div className="space-y-2">
