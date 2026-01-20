@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MessageSquare } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CheckInDialogProps {
   open: boolean;
@@ -28,16 +29,64 @@ export const CheckInDialog = ({
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const mountedRef = useRef(true);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  const promiseWithTimeout = <T,>(promise: Promise<T>, ms: number) => {
+    return new Promise<T>((resolve, reject) => {
+      const timeoutId = window.setTimeout(() => {
+        reject(new Error('timeout'));
+      }, ms);
+
+      promise
+        .then((value) => {
+          window.clearTimeout(timeoutId);
+          resolve(value);
+        })
+        .catch((err) => {
+          window.clearTimeout(timeoutId);
+          reject(err);
+        });
+    });
+  };
+
   const handleConfirm = async () => {
+    if (isSubmitting) return;
+
+    const requestId = ++requestIdRef.current;
     setIsSubmitting(true);
-    await onConfirm(message.trim() || undefined);
-    setIsSubmitting(false);
-    setMessage('');
-    onOpenChange(false);
+
+    try {
+      await promiseWithTimeout(onConfirm(message.trim() || undefined), 20000);
+
+      // Only update state if this is still the latest request
+      if (!mountedRef.current || requestIdRef.current !== requestId) return;
+
+      setMessage('');
+      onOpenChange(false);
+    } catch (err) {
+      console.error('Error recording check-in:', err);
+
+      const isTimeout = err instanceof Error && err.message === 'timeout';
+      toast.error(isTimeout ? 'This is taking longer than expected. Check your connection and try again.' : 'Failed to record check-in');
+    } finally {
+      if (!mountedRef.current || requestIdRef.current !== requestId) return;
+      setIsSubmitting(false);
+    }
   };
 
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
+      // Cancel any in-flight submission UI
+      requestIdRef.current += 1;
+      setIsSubmitting(false);
       setMessage('');
     }
     onOpenChange(newOpen);
@@ -77,7 +126,6 @@ export const CheckInDialog = ({
           <Button 
             variant="outline" 
             onClick={() => handleOpenChange(false)}
-            disabled={isSubmitting}
           >
             Cancel
           </Button>
