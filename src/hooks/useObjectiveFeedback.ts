@@ -82,7 +82,42 @@ export const usePartnerObjectiveFeedback = (objectiveIds: string[]) => {
         return data;
       }
     },
-    onSuccess: () => {
+    onMutate: async ({ objectiveId, feedbackType, comment }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['objective-partner-feedback', user?.id, objectiveIds] });
+      
+      // Snapshot previous value
+      const previousFeedback = queryClient.getQueryData(['objective-partner-feedback', user?.id, objectiveIds]);
+      
+      // Optimistically update
+      queryClient.setQueryData(['objective-partner-feedback', user?.id, objectiveIds], (old: ObjectiveFeedback[] = []) => {
+        const existing = old.find(f => f.objective_id === objectiveId);
+        if (existing) {
+          return old.map(f => 
+            f.objective_id === objectiveId 
+              ? { ...f, feedback_type: feedbackType, comment: comment || null }
+              : f
+          );
+        }
+        return [...old, {
+          id: `temp-${objectiveId}`,
+          objective_id: objectiveId,
+          partner_id: user!.id,
+          feedback_type: feedbackType,
+          comment: comment || null,
+          created_at: new Date().toISOString(),
+        }];
+      });
+      
+      return { previousFeedback };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previousFeedback) {
+        queryClient.setQueryData(['objective-partner-feedback', user?.id, objectiveIds], context.previousFeedback);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['objective-partner-feedback'] });
     },
   });
@@ -98,7 +133,27 @@ export const usePartnerObjectiveFeedback = (objectiveIds: string[]) => {
         .eq('id', existing.id);
       if (error) throw error;
     },
-    onSuccess: () => {
+    onMutate: async (objectiveId) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['objective-partner-feedback', user?.id, objectiveIds] });
+      
+      // Snapshot previous value
+      const previousFeedback = queryClient.getQueryData(['objective-partner-feedback', user?.id, objectiveIds]);
+      
+      // Optimistically remove
+      queryClient.setQueryData(['objective-partner-feedback', user?.id, objectiveIds], (old: ObjectiveFeedback[] = []) => {
+        return old.filter(f => f.objective_id !== objectiveId);
+      });
+      
+      return { previousFeedback };
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback on error
+      if (context?.previousFeedback) {
+        queryClient.setQueryData(['objective-partner-feedback', user?.id, objectiveIds], context.previousFeedback);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['objective-partner-feedback'] });
     },
   });

@@ -6,6 +6,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { ThumbsUp, HelpCircle, Send, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeedbackType, ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
@@ -28,6 +38,7 @@ export const FeedbackCommentPopover = ({
   const [comment, setComment] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [activeType, setActiveType] = useState<FeedbackType | null>(null);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isAgree = feedback?.feedback_type === 'agree';
@@ -48,9 +59,8 @@ export const FeedbackCommentPopover = ({
 
   const handleButtonClick = (type: FeedbackType) => {
     if (feedback?.feedback_type === type) {
-      // Already has this feedback - remove it
-      onRemoveFeedback();
-      setIsOpen(false);
+      // Already has this feedback - show confirmation before removing
+      setShowRemoveConfirm(true);
     } else {
       // Immediately submit the feedback (without comment)
       onSubmitFeedback(type, undefined);
@@ -59,6 +69,12 @@ export const FeedbackCommentPopover = ({
       setComment("");
       setIsOpen(true);
     }
+  };
+
+  const handleConfirmRemove = () => {
+    onRemoveFeedback();
+    setShowRemoveConfirm(false);
+    setIsOpen(false);
   };
 
   const handleAddComment = () => {
@@ -197,6 +213,24 @@ export const FeedbackCommentPopover = ({
           "{feedback.comment.slice(0, 15)}{feedback.comment.length > 15 ? '...' : ''}"
         </span>
       )}
+
+      {/* Confirmation dialog for removing feedback */}
+      <AlertDialog open={showRemoveConfirm} onOpenChange={setShowRemoveConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove feedback?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove your {feedback?.feedback_type === 'agree' ? 'agreement' : 'question'} from this objective? Your partner will no longer see this feedback.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmRemove}>
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
