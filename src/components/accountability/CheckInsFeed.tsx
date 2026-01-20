@@ -28,8 +28,20 @@ import { toast } from 'sonner';
 
 const REACTIONS = ['👍', '❤️', '🔥', '👏', '💪'];
 
+export interface OptimisticCheckIn {
+  message?: string;
+  week_start: string;
+  initiator_profile: {
+    full_name: string;
+    avatar_url: string | null;
+  };
+}
+
 export interface CheckInsFeedRef {
   refresh: () => Promise<void>;
+  addOptimisticCheckIn: (checkIn: OptimisticCheckIn) => string;
+  confirmOptimisticCheckIn: (tempId: string) => void;
+  removeOptimisticCheckIn: (tempId: string) => void;
 }
 
 interface CheckInsFeedProps {
@@ -54,6 +66,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
 }, ref) => {
   const { user } = useAuth();
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
+  const [optimisticIds, setOptimisticIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
   
@@ -79,14 +92,62 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
 
   const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
-    setCheckIns(data);
+    // Keep optimistic check-ins that haven't been confirmed yet
+    setCheckIns(prev => {
+      const optimisticEntries = prev.filter(c => optimisticIds.has(c.id));
+      // Merge: optimistic at top, then real data (excluding duplicates)
+      const realIds = new Set(data.map(c => c.id));
+      const stillPendingOptimistic = optimisticEntries.filter(c => !realIds.has(c.id));
+      return [...stillPendingOptimistic, ...data];
+    });
     setLoading(false);
-  }, [partnershipId]);
+  }, [partnershipId, optimisticIds]);
 
-  // Expose refresh method via ref
+  const addOptimisticCheckIn = useCallback((optimistic: OptimisticCheckIn): string => {
+    const tempId = `optimistic-${Date.now()}`;
+    const optimisticRecord: CheckInRecord = {
+      id: tempId,
+      partnership_id: partnershipId,
+      initiated_by: currentUserId,
+      week_start: optimistic.week_start,
+      message: optimistic.message || null,
+      created_at: new Date().toISOString(),
+      reply_to_id: null,
+      initiator_profile: optimistic.initiator_profile,
+      reactions: [],
+      replies: [],
+    };
+    
+    setOptimisticIds(prev => new Set(prev).add(tempId));
+    setCheckIns(prev => [optimisticRecord, ...prev]);
+    return tempId;
+  }, [partnershipId, currentUserId]);
+
+  const confirmOptimisticCheckIn = useCallback((tempId: string) => {
+    setOptimisticIds(prev => {
+      const next = new Set(prev);
+      next.delete(tempId);
+      return next;
+    });
+    // The real-time subscription or refresh will replace with actual data
+  }, []);
+
+  const removeOptimisticCheckIn = useCallback((tempId: string) => {
+    setOptimisticIds(prev => {
+      const next = new Set(prev);
+      next.delete(tempId);
+      return next;
+    });
+    setCheckIns(prev => prev.filter(c => c.id !== tempId));
+  }, []);
+
+  // Expose ref methods
   useImperativeHandle(ref, () => ({
-    refresh: fetchCheckIns
-  }), [fetchCheckIns]);
+    refresh: fetchCheckIns,
+    addOptimisticCheckIn,
+    confirmOptimisticCheckIn,
+    removeOptimisticCheckIn,
+  }), [fetchCheckIns, addOptimisticCheckIn, confirmOptimisticCheckIn, removeOptimisticCheckIn]);
 
   useEffect(() => {
     setLoading(true);
@@ -419,6 +480,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
           <div className="space-y-4">
             {visibleCheckIns.map((checkIn, index) => {
               const isCurrentUser = checkIn.initiated_by === currentUserId;
+              const isOptimistic = optimisticIds.has(checkIn.id);
               const initiatorName = isCurrentUser 
                 ? (currentUserProfile?.full_name || 'You')
                 : (checkIn.initiator_profile?.full_name || partnerName);
@@ -435,11 +497,11 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
               );
 
               return (
-                <div key={checkIn.id} className="relative pl-10">
+                <div key={checkIn.id} className={cn("relative pl-10", isOptimistic && "opacity-70")}>
                   {/* Timeline dot */}
                   <div className={cn(
                     "absolute left-2.5 w-3 h-3 rounded-full border-2 border-background",
-                    isCurrentUser ? "bg-primary" : "bg-muted-foreground"
+                    isOptimistic ? "bg-muted-foreground animate-pulse" : (isCurrentUser ? "bg-primary" : "bg-muted-foreground")
                   )} />
                   
                   <div className={cn(
@@ -475,21 +537,27 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                     
                     {/* Combined timestamp with week context */}
                     <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground ml-8 flex-wrap">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-2.5 w-2.5" />
-                        <span>{formatDistanceToNow(new Date(checkIn.created_at), { addSuffix: true })}</span>
-                      </div>
-                      <span className="text-muted-foreground/50">•</span>
-                      <div className="flex items-center gap-1">
-                        <CalendarIcon className="h-2.5 w-2.5" />
-                        <span className={cn(
-                          weekLabel === 'This Week' && "text-primary font-medium"
-                        )}>
-                          for {weekLabel === 'This Week' || weekLabel === 'Last Week' 
-                            ? weekLabel.toLowerCase() 
-                            : `week of ${format(new Date(checkIn.week_start), 'MMM d')}`}
-                        </span>
-                      </div>
+                      {isOptimistic ? (
+                        <span className="text-primary font-medium animate-pulse">Saving...</span>
+                      ) : (
+                        <>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            <span>{formatDistanceToNow(new Date(checkIn.created_at), { addSuffix: true })}</span>
+                          </div>
+                          <span className="text-muted-foreground/50">•</span>
+                          <div className="flex items-center gap-1">
+                            <CalendarIcon className="h-2.5 w-2.5" />
+                            <span className={cn(
+                              weekLabel === 'This Week' && "text-primary font-medium"
+                            )}>
+                              for {weekLabel === 'This Week' || weekLabel === 'Last Week' 
+                                ? weekLabel.toLowerCase() 
+                                : `week of ${format(new Date(checkIn.week_start), 'MMM d')}`}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                     
                     {/* Message - with edit mode */}
