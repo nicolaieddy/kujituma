@@ -197,19 +197,68 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     await fetchCheckIns(); // Refresh to show updated reaction
   };
 
-  const handleReply = async (checkInId: string) => {
+  const handleReply = async (parentCheckInId: string) => {
     if (!replyMessage.trim() || isSubmittingReply) return;
+    
+    const tempId = `optimistic-reply-${Date.now()}`;
+    const optimisticReply: CheckInRecord = {
+      id: tempId,
+      partnership_id: partnershipId,
+      initiated_by: currentUserId,
+      week_start: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+      message: replyMessage.trim(),
+      created_at: new Date().toISOString(),
+      reply_to_id: parentCheckInId,
+      initiator_profile: currentUserProfile || { full_name: 'You', avatar_url: null },
+      reactions: [],
+      replies: [],
+    };
+    
+    // Add optimistic reply immediately
+    setOptimisticIds(prev => new Set(prev).add(tempId));
+    setCheckIns(prev => prev.map(checkIn => {
+      if (checkIn.id === parentCheckInId) {
+        return {
+          ...checkIn,
+          replies: [...(checkIn.replies || []), optimisticReply],
+        };
+      }
+      return checkIn;
+    }));
+    
+    const messageToSend = replyMessage.trim();
+    setReplyMessage('');
+    setReplyingToId(null);
     
     try {
       setIsSubmittingReply(true);
-      // Pass the checkInId as replyToId to link the reply to this check-in
-      await accountabilityService.recordCheckIn(partnershipId, replyMessage.trim(), checkInId);
-      setReplyMessage('');
-      setReplyingToId(null);
+      await accountabilityService.recordCheckIn(partnershipId, messageToSend, parentCheckInId);
+      
+      // Confirm optimistic and refresh
+      setOptimisticIds(prev => {
+        const next = new Set(prev);
+        next.delete(tempId);
+        return next;
+      });
       await fetchCheckIns();
       toast.success('Reply sent!');
     } catch (error) {
       console.error('Error sending reply:', error);
+      // Remove optimistic reply on failure
+      setOptimisticIds(prev => {
+        const next = new Set(prev);
+        next.delete(tempId);
+        return next;
+      });
+      setCheckIns(prev => prev.map(checkIn => {
+        if (checkIn.id === parentCheckInId) {
+          return {
+            ...checkIn,
+            replies: (checkIn.replies || []).filter(r => r.id !== tempId),
+          };
+        }
+        return checkIn;
+      }));
       toast.error('Failed to send reply');
     } finally {
       setIsSubmittingReply(false);
@@ -741,6 +790,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                       <div className="mt-3 ml-8 space-y-2 border-l-2 border-primary/20 pl-3">
                         {checkIn.replies.map(reply => {
                           const isReplyFromCurrentUser = reply.initiated_by === currentUserId;
+                          const isReplyOptimistic = optimisticIds.has(reply.id);
                           const replyName = isReplyFromCurrentUser 
                             ? (currentUserProfile?.full_name || 'You')
                             : (reply.initiator_profile?.full_name || partnerName);
@@ -750,8 +800,8 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                           const isEditingReply = editingId === reply.id;
                           
                           return (
-                            <div key={reply.id} className="flex gap-2 items-start group">
-                              <Avatar className="h-5 w-5 flex-shrink-0">
+                            <div key={reply.id} className={cn("flex gap-2 items-start group", isReplyOptimistic && "opacity-70")}>
+                              <Avatar className={cn("h-5 w-5 flex-shrink-0", isReplyOptimistic && "animate-pulse")}>
                                 {replyAvatar && <AvatarImage src={replyAvatar} />}
                                 <AvatarFallback className={cn(
                                   "text-[8px] font-medium",
@@ -763,9 +813,13 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
                                   <span className="text-xs font-medium text-foreground">{replyName}</span>
-                                  <span className="text-[10px] text-muted-foreground">
-                                    {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
-                                  </span>
+                                  {isReplyOptimistic ? (
+                                    <span className="text-[10px] text-primary font-medium animate-pulse">Saving...</span>
+                                  ) : (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      {formatDistanceToNow(new Date(reply.created_at), { addSuffix: true })}
+                                    </span>
+                                  )}
                                   {/* Edit/Delete buttons for own replies */}
                                   {isReplyFromCurrentUser && !isEditingReply && (
                                     <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ml-auto">
