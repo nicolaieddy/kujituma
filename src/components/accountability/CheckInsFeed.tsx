@@ -531,9 +531,9 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
                         </div>
                       </div>
                     ) : checkIn.message ? (
-                      <div className="mt-2 ml-8 text-sm text-foreground bg-background/50 rounded-md p-2.5 border border-border/50">
+                      <p className="mt-2 ml-8 text-sm text-foreground whitespace-pre-wrap">
                         {checkIn.message}
-                      </div>
+                      </p>
                     ) : null}
                     
                     {/* Reactions and Reply */}
