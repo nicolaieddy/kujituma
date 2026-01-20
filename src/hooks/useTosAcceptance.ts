@@ -22,25 +22,24 @@ export const useTosAcceptance = () => {
     }
 
     try {
-      // Use type casting since the table was just created and types aren't regenerated yet
-      const result = await (supabase
-        .from('tos_acceptances' as any)
+      const { data, error } = await supabase
+        .from('tos_acceptances')
         .select('tos_version, accepted_at')
         .eq('user_id', user.id)
         .order('accepted_at', { ascending: false })
         .limit(1)
-        .maybeSingle() as unknown as Promise<{ data: TosAcceptance | null; error: any }>);
+        .maybeSingle();
 
-      if (result.error) {
-        console.error('Error checking ToS acceptance:', result.error);
+      if (error) {
+        console.error('Error checking ToS acceptance:', error);
         setHasAcceptedCurrentTos(false);
         setLoading(false);
         return;
       }
 
-      if (result.data) {
-        setLatestAcceptance(result.data);
-        setHasAcceptedCurrentTos(result.data.tos_version === CURRENT_TOS_VERSION);
+      if (data) {
+        setLatestAcceptance(data);
+        setHasAcceptedCurrentTos(data.tos_version === CURRENT_TOS_VERSION);
       } else {
         setHasAcceptedCurrentTos(false);
       }
@@ -60,17 +59,16 @@ export const useTosAcceptance = () => {
     if (!user) return false;
 
     try {
-      // Use type casting since the table was just created and types aren't regenerated yet
-      const result = await (supabase
-        .from('tos_acceptances' as any)
+      const { error } = await supabase
+        .from('tos_acceptances')
         .insert({
           user_id: user.id,
           tos_version: CURRENT_TOS_VERSION,
           user_agent: navigator.userAgent
-        }) as unknown as Promise<{ error: any }>);
+        });
 
-      if (result.error) {
-        console.error('Error accepting ToS:', result.error);
+      if (error) {
+        console.error('Error accepting ToS:', error);
         return false;
       }
 
