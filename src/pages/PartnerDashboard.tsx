@@ -554,11 +554,29 @@ const PartnerDashboard = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Target className="h-5 w-5" />
-                Goals ({goals.length})
+                Goals {!loading && `(${goals.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <PartnerGoalsKanban goals={goals} />
+              {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {['In Progress', 'Paused', 'Completed'].map((column) => (
+                    <div key={column} className="space-y-3">
+                      <Skeleton className="h-5 w-24" />
+                      <div className="space-y-2">
+                        {[1, 2].map((i) => (
+                          <div key={i} className="p-3 rounded-lg border border-border bg-card">
+                            <Skeleton className="h-4 w-3/4 mb-2" />
+                            <Skeleton className="h-3 w-1/2" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <PartnerGoalsKanban goals={goals} />
+              )}
             </CardContent>
           </Card>
 
