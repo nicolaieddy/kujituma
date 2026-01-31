@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState, useCallback } from 'react';
+import { ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTosAcceptance } from '@/hooks/useTosAcceptance';
 import { TosAcceptanceModal } from './TosAcceptanceModal';
@@ -11,28 +11,49 @@ interface TosGateProps {
 export const TosGate = ({ children }: TosGateProps) => {
   const { user, loading: authLoading } = useAuth();
   const { hasAcceptedCurrentTos, loading: tosLoading, acceptTos, latestAcceptance, refetch } = useTosAcceptance();
-  const [pendingSignupTos, setPendingSignupTos] = useState(false);
-  const [isNewSignup, setIsNewSignup] = useState(false);
+  const [isProcessingSignup, setIsProcessingSignup] = useState(false);
+  const hasCheckedSignupFlag = useRef(false);
 
-  // Check for signup flags on mount and when user changes
+  // Check for signup flags on mount - this runs once
   useEffect(() => {
-    const tosVersion = sessionStorage.getItem('tos_accepted_during_signup');
-    const newSignupFlag = sessionStorage.getItem('is_new_signup');
+    if (hasCheckedSignupFlag.current) return;
     
-    if (tosVersion || newSignupFlag) {
-      setPendingSignupTos(true);
-      setIsNewSignup(!!newSignupFlag);
+    const newSignupFlag = sessionStorage.getItem('is_new_signup');
+    const tosAcceptedFlag = sessionStorage.getItem('tos_accepted_during_signup');
+    
+    // If this is a new signup, the user already accepted ToS during auth
+    // We need to wait for the ToS record to be created in the database
+    if (newSignupFlag || tosAcceptedFlag) {
+      hasCheckedSignupFlag.current = true;
+      setIsProcessingSignup(true);
       
-      // Wait for Auth.tsx to record the ToS acceptance, then refetch and clear flags
-      const timeout = setTimeout(() => {
-        refetch();
-        setPendingSignupTos(false);
-        // Clear the signup flag after processing
+      // Give Auth.tsx time to record the ToS acceptance, then refetch
+      const checkInterval = setInterval(async () => {
+        await refetch();
+        
+        // Check if ToS has been recorded now
+        const stillHasFlag = sessionStorage.getItem('is_new_signup');
+        if (!stillHasFlag) {
+          // Flag was cleared by Auth.tsx or onboarding, stop checking
+          clearInterval(checkInterval);
+          setIsProcessingSignup(false);
+        }
+      }, 500);
+      
+      // Failsafe: stop after 10 seconds regardless
+      const failsafe = setTimeout(() => {
+        clearInterval(checkInterval);
+        setIsProcessingSignup(false);
         sessionStorage.removeItem('is_new_signup');
-      }, 1500);
-      return () => clearTimeout(timeout);
+        sessionStorage.removeItem('tos_accepted_during_signup');
+      }, 10000);
+      
+      return () => {
+        clearInterval(checkInterval);
+        clearTimeout(failsafe);
+      };
     }
-  }, [user, refetch]);
+  }, [refetch]);
 
   // Wrapper for acceptTos that clears any lingering flags
   const handleAcceptTos = useCallback(async () => {
@@ -49,9 +70,9 @@ export const TosGate = ({ children }: TosGateProps) => {
     return <>{children}</>;
   }
 
-  // If there's a pending ToS acceptance from signup, skip the modal
+  // If we're processing a new signup, skip the modal entirely
   // The ToS was already accepted during the signup flow
-  if (pendingSignupTos) {
+  if (isProcessingSignup) {
     return <>{children}</>;
   }
 
@@ -69,9 +90,14 @@ export const TosGate = ({ children }: TosGateProps) => {
   }
 
   // Show ToS modal only if user hasn't accepted current version
-  // This handles: (1) returning users who need to accept updated ToS
-  //               (2) edge case where sign-in user somehow has no ToS record
+  // AND this is not a new signup (where ToS was accepted on auth page)
   if (hasAcceptedCurrentTos === false) {
+    // Double-check: if signup flag still exists, don't show modal
+    const stillProcessingSignup = sessionStorage.getItem('is_new_signup');
+    if (stillProcessingSignup) {
+      return <>{children}</>;
+    }
+    
     // Determine context: no acceptance = edge case, has old acceptance = ToS updated
     const needsToSUpdate = !!latestAcceptance;
     
