@@ -19,11 +19,22 @@ const Auth = () => {
   const [tosAccepted, setTosAccepted] = useState(false);
   const [isNewUserFlow, setIsNewUserFlow] = useState(false);
 
-  const returnTo = useMemo(() => {
-    const raw = new URLSearchParams(location.search).get('returnTo');
-    if (!raw) return null;
-    return raw.startsWith('/') ? raw : null;
+  const { returnTo, initialSignupMode } = useMemo(() => {
+    const params = new URLSearchParams(location.search);
+    const raw = params.get('returnTo');
+    const mode = params.get('mode');
+    return {
+      returnTo: raw && raw.startsWith('/') ? raw : null,
+      initialSignupMode: mode === 'signup'
+    };
   }, [location.search]);
+
+  // Auto-set signup mode if coming from "Get Started"
+  useEffect(() => {
+    if (initialSignupMode) {
+      setIsNewUserFlow(true);
+    }
+  }, [initialSignupMode]);
 
   useEffect(() => {
     console.log('Auth page mounted, user:', user, 'loading:', loading, 'isNewUser:', isNewUser);

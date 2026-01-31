@@ -10,6 +10,11 @@ const LandingPage = () => {
   const handleSignIn = () => {
     navigate("/auth");
   };
+
+  const handleGetStarted = () => {
+    // Navigate to auth with signup mode pre-selected
+    navigate("/auth?mode=signup");
+  };
   
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -22,9 +27,14 @@ const LandingPage = () => {
                 Kujituma
               </h1>
             </div>
-            <Button variant="ghost" onClick={handleSignIn} className="border border-border">
-              Sign In
-            </Button>
+            <div className="flex items-center gap-3">
+              <Button variant="ghost" onClick={handleSignIn} className="text-muted-foreground hover:text-foreground">
+                Sign In
+              </Button>
+              <Button onClick={handleGetStarted}>
+                Get Started
+              </Button>
+            </div>
           </div>
         </div>
       </nav>
