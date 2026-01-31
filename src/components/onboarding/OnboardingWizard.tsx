@@ -240,12 +240,15 @@ export const OnboardingWizard = ({ profile, onComplete }: OnboardingWizardProps)
       const success = await saveGoal();
       if (success) {
         markProfileComplete();
+        // Clear any remaining signup flags
+        sessionStorage.removeItem('is_new_signup');
+        sessionStorage.removeItem('tos_accepted_during_signup');
         toast({
           title: "Welcome to Kujituma!",
           description: "Your profile and first goal have been set up.",
         });
         onComplete();
-        navigate('/goals');
+        navigate('/goals?tab=longterm');
       }
     }
 
@@ -262,12 +265,15 @@ export const OnboardingWizard = ({ profile, onComplete }: OnboardingWizardProps)
     setLoading(true);
     // Just mark profile complete and go to goals
     markProfileComplete();
+    // Clear any remaining signup flags
+    sessionStorage.removeItem('is_new_signup');
+    sessionStorage.removeItem('tos_accepted_during_signup');
     toast({
       title: "Welcome to Kujituma!",
       description: "You can add goals anytime from your dashboard.",
     });
     onComplete();
-    navigate('/goals');
+    navigate('/goals?tab=longterm');
     setLoading(false);
   };
 
