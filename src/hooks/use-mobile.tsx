@@ -3,111 +3,75 @@ import * as React from "react"
 const MOBILE_BREAKPOINT = 768
 const TABLET_BREAKPOINT = 1024
 
-// Singleton state to prevent multiple instances from causing loops
-let cachedIsMobile: boolean | null = null
-let cachedIsTablet: boolean | null = null
-
-// Get value once synchronously and cache it
+// Get initial values synchronously to avoid flash
 const getIsMobile = (): boolean => {
   if (typeof window === 'undefined') return false
-  if (cachedIsMobile === null) {
-    cachedIsMobile = window.innerWidth < MOBILE_BREAKPOINT
-  }
-  return cachedIsMobile
+  return window.innerWidth < MOBILE_BREAKPOINT
 }
 
 const getIsTablet = (): boolean => {
   if (typeof window === 'undefined') return false
-  if (cachedIsTablet === null) {
-    const width = window.innerWidth
-    cachedIsTablet = width < TABLET_BREAKPOINT && width >= MOBILE_BREAKPOINT
-  }
-  return cachedIsTablet
-}
-
-// Update cache - called from effect
-const updateCache = () => {
-  if (typeof window === 'undefined') return
   const width = window.innerWidth
-  cachedIsMobile = width < MOBILE_BREAKPOINT
-  cachedIsTablet = width < TABLET_BREAKPOINT && width >= MOBILE_BREAKPOINT
-}
-
-// Single resize listener setup - shared across all hook instances
-let resizeListenerAttached = false
-const subscribers = new Set<() => void>()
-
-const setupResizeListener = () => {
-  if (resizeListenerAttached || typeof window === 'undefined') return
-  resizeListenerAttached = true
-  
-  // Debounced handler to prevent rapid firing
-  let timeoutId: number | null = null
-  const handleResize = () => {
-    if (timeoutId) {
-      window.clearTimeout(timeoutId)
-    }
-    timeoutId = window.setTimeout(() => {
-      updateCache()
-      subscribers.forEach(callback => callback())
-    }, 150) // Debounce 150ms
-  }
-  
-  window.addEventListener('resize', handleResize, { passive: true })
+  return width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT
 }
 
 export function useIsMobile(): boolean {
-  // Initialize with cached/computed value - never undefined
+  // Initialize with actual value to prevent hydration mismatch
   const [isMobile, setIsMobile] = React.useState<boolean>(getIsMobile)
   
   React.useEffect(() => {
-    setupResizeListener()
+    // Create a stable handler that's debounced
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     
-    const callback = () => {
-      const newValue = getIsMobile()
-      setIsMobile(prev => prev !== newValue ? newValue : prev)
+    const handleResize = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      timeoutId = setTimeout(() => {
+        const newValue = window.innerWidth < MOBILE_BREAKPOINT
+        setIsMobile(prev => prev === newValue ? prev : newValue)
+      }, 150)
     }
     
-    subscribers.add(callback)
-    
-    // Sync initial value (in case cache was updated)
-    const currentValue = getIsMobile()
-    if (currentValue !== isMobile) {
-      setIsMobile(currentValue)
-    }
+    window.addEventListener('resize', handleResize, { passive: true })
     
     return () => {
-      subscribers.delete(callback)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      window.removeEventListener('resize', handleResize)
     }
-  }, []) // Empty deps - only run once
+  }, [])
   
   return isMobile
 }
 
 export function useIsTablet(): boolean {
-  // Initialize with cached/computed value - never undefined
   const [isTablet, setIsTablet] = React.useState<boolean>(getIsTablet)
   
   React.useEffect(() => {
-    setupResizeListener()
+    let timeoutId: ReturnType<typeof setTimeout> | null = null
     
-    const callback = () => {
-      const newValue = getIsTablet()
-      setIsTablet(prev => prev !== newValue ? newValue : prev)
+    const handleResize = () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      timeoutId = setTimeout(() => {
+        const width = window.innerWidth
+        const newValue = width >= MOBILE_BREAKPOINT && width < TABLET_BREAKPOINT
+        setIsTablet(prev => prev === newValue ? prev : newValue)
+      }, 150)
     }
     
-    subscribers.add(callback)
-    
-    // Sync initial value (in case cache was updated)
-    const currentValue = getIsTablet()
-    if (currentValue !== isTablet) {
-      setIsTablet(currentValue)
-    }
+    window.addEventListener('resize', handleResize, { passive: true })
     
     return () => {
-      subscribers.delete(callback)
+      if (timeoutId) {
+        clearTimeout(timeoutId)
+      }
+      window.removeEventListener('resize', handleResize)
     }
-  }, []) // Empty deps - only run once
+  }, [])
   
   return isTablet
 }
