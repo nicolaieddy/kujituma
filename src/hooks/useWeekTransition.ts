@@ -5,6 +5,7 @@ import { HabitsService } from "@/services/habitsService";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { addDays, parseISO, format } from "date-fns";
+import { useWeeklyDashboardData } from "./useWeeklyDashboardData";
 
 export const useWeekTransition = (currentWeekStart: string) => {
   const { user } = useAuth();
@@ -14,33 +15,14 @@ export const useWeekTransition = (currentWeekStart: string) => {
   const [isForceOpen, setIsForceOpen] = useState(false);
   const [lastWeekReflections, setLastWeekReflections] = useState<Record<string, string>>({});
 
-  // Calculate last week's start date
-  const lastWeekStart = useMemo(() => {
-    const currentDate = parseISO(currentWeekStart);
-    const lastWeekDate = addDays(currentDate, -7);
-    return format(lastWeekDate, 'yyyy-MM-dd');
-  }, [currentWeekStart]);
-
-  // Fetch last week's objectives
-  const { data: lastWeekObjectives = [], isLoading: lastWeekLoading } = useQuery({
-    queryKey: ['weekly-objectives', user?.id, lastWeekStart],
-    queryFn: () => WeeklyProgressService.getWeeklyObjectives(lastWeekStart),
-    enabled: !!user && !!lastWeekStart,
-  });
-
-  // Fetch last week's progress post (to check if completed and get saved reflections)
-  const { data: lastWeekProgressPost, isLoading: lastWeekProgressLoading } = useQuery({
-    queryKey: ['weekly-progress-post', user?.id, lastWeekStart],
-    queryFn: () => WeeklyProgressService.getWeeklyProgressPost(lastWeekStart),
-    enabled: !!user && !!lastWeekStart,
-  });
-
-  // Fetch current week's planning session
-  const { data: planningSession, isLoading: planningLoading } = useQuery({
-    queryKey: ['weekly-planning', user?.id, currentWeekStart],
-    queryFn: () => HabitsService.getWeeklyPlanningSession(currentWeekStart),
-    enabled: !!user && !!currentWeekStart,
-  });
+  // Use consolidated dashboard data (single RPC call instead of 3 queries)
+  const { 
+    lastWeekObjectives, 
+    lastWeekPost: lastWeekProgressPost, 
+    lastWeekPlanning: planningSession,
+    lastWeekStart,
+    isLoading: dashboardLoading 
+  } = useWeeklyDashboardData(currentWeekStart);
 
   // Check if we should show transition
   const shouldShowTransition = useMemo(() => {
@@ -51,7 +33,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
     if (isTransitionDismissed || isTransitionComplete) return false;
     
     // Don't show if still loading
-    if (lastWeekLoading || lastWeekProgressLoading || planningLoading) return false;
+    if (dashboardLoading) return false;
     
     // Don't show if last week was already marked complete
     if (lastWeekProgressPost?.is_completed) return false;
@@ -72,9 +54,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
     isForceOpen,
     isTransitionDismissed,
     isTransitionComplete,
-    lastWeekLoading,
-    lastWeekProgressLoading,
-    planningLoading,
+    dashboardLoading,
     lastWeekProgressPost?.is_completed,
     planningSession?.is_completed,
     lastWeekObjectives.length,
@@ -228,7 +208,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
     // State
     shouldShowTransition,
     canReopenTransition,
-    isLoading: lastWeekLoading || lastWeekProgressLoading || planningLoading,
+    isLoading: dashboardLoading,
     isCarryingOver: carryOverMutation.isPending,
     isCompleting: completeLastWeekMutation.isPending || saveIntentionMutation.isPending,
     

@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { HabitStreaksService, HabitStats } from "@/services/habitStreaksService";
 import { useAuth } from "@/contexts/AuthContext";
 import { Goal } from "@/types/goals";
 import { parseGoals } from "@/utils/goalUtils";
+import { HabitStreaksService, HabitStats } from "@/services/habitStreaksService";
 import { startOfWeek, parseISO, isAfter } from "date-fns";
 
 interface HabitStatsData {
@@ -11,25 +11,21 @@ interface HabitStatsData {
   habit_objectives: any[];
 }
 
-type UseHabitStatsOptions = {
-  enabled?: boolean;
-};
-
 /**
  * Optimized hook that fetches habit stats data in a single database call.
  * Uses the get_habit_stats_data RPC function.
  */
-export const useHabitStats = (options: UseHabitStatsOptions = {}) => {
+export const useHabitStatsOptimized = (options: { enabled?: boolean } = {}) => {
   const { user } = useAuth();
   const enabled = (options.enabled ?? true) && !!user;
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ["habit-stats", user?.id],
+    queryKey: ["habit-stats-optimized", user?.id],
     queryFn: async (): Promise<{ habitStats: HabitStats[]; futureHabits: Goal[] }> => {
       const { data: result, error: rpcError } = await supabase.rpc('get_habit_stats_data');
 
       if (rpcError) {
-        console.error('[useHabitStats] RPC error:', rpcError);
+        console.error('[useHabitStatsOptimized] RPC error:', rpcError);
         throw rpcError;
       }
 
@@ -103,4 +99,3 @@ export const useHabitStats = (options: UseHabitStatsOptions = {}) => {
     totalCurrentStreak,
   };
 };
-
