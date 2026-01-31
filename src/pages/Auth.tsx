@@ -268,10 +268,7 @@ const Auth = () => {
             }}
             className="w-full text-center py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            {isNewUserFlow 
-              ? "Already have an account? Sign in" 
-              : "New to Kujituma? Create an account"
-            }
+            {isNewUserFlow ? "Sign in instead" : "Create an account"}
           </button>
 
         </CardContent>
