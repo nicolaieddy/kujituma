@@ -19,6 +19,7 @@ import { useStreakCelebration } from "@/hooks/useStreakCelebration";
 import { useAuth } from "@/contexts/AuthContext";
 import { lazy, Suspense, useEffect } from "react";
 import { GoalsService } from "@/services/goalsService";
+import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // Wrapper to redirect new users to onboarding wizard
@@ -137,20 +138,59 @@ const LoadingSpinner = () => (
   </div>
 );
 
-// Prefetch goals data when user is authenticated
-const usePrefetchGoals = (queryClient: QueryClient) => {
+// Prefetch dashboard data when user is authenticated
+const usePrefetchDashboardData = (queryClient: QueryClient) => {
   const { user } = useAuth();
   
   useEffect(() => {
     if (user?.id) {
-      // Prefetch goals data in background
-      queryClient.prefetchQuery({
-        queryKey: ['goals', user.id],
-        queryFn: GoalsService.getGoals,
-        staleTime: 1000 * 60 * 5,
+      // Calculate current and last week starts
+      const currentWeekStart = getWeekStart();
+      const lastWeekStart = getWeekStart(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+      
+      // Prefetch all dashboard data in parallel
+      Promise.all([
+        queryClient.prefetchQuery({
+          queryKey: ['goals', user.id],
+          queryFn: GoalsService.getGoals,
+          staleTime: 1000 * 60 * 5,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['weekly-dashboard', user.id, currentWeekStart],
+          queryFn: async () => {
+            const { data } = await supabase.rpc('get_weekly_dashboard_data', {
+              p_week_start: currentWeekStart,
+              p_last_week_start: lastWeekStart,
+            });
+            return data;
+          },
+          staleTime: 1000 * 60 * 2,
+        }),
+        queryClient.prefetchQuery({
+          queryKey: ['habit-stats-optimized', user.id],
+          queryFn: async () => {
+            const { data } = await supabase.rpc('get_habit_stats_data');
+            return data;
+          },
+          staleTime: 1000 * 60 * 2,
+        }),
+      ]).catch(err => {
+        console.error('[usePrefetchDashboardData] Prefetch failed:', err);
       });
     }
   }, [user?.id, queryClient]);
+};
+
+// Helper function to get week start (Monday) in YYYY-MM-DD format
+const getWeekStart = (date: Date = new Date()): string => {
+  const d = new Date(date.getTime());
+  const dayOfWeek = d.getDay();
+  const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  d.setDate(d.getDate() - daysToSubtract);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 // Component to conditionally render landing page or dashboard based on auth
@@ -175,8 +215,8 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
   useSessionTracking();
   // Track online presence for real-time status
   useOnlinePresence();
-  // Prefetch goals data when user is authenticated
-  usePrefetchGoals(queryClient);
+  // Prefetch dashboard data when user is authenticated
+  usePrefetchDashboardData(queryClient);
   // Monitor streaks and celebrate milestones
   useStreakCelebration();
 

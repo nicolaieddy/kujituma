@@ -1888,7 +1888,12 @@ export type Database = {
           total_time_seconds: number
         }[]
       }
+      get_carryover_data: {
+        Args: { p_current_week_start: string }
+        Returns: Json
+      }
       get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
+      get_habit_stats_data: { Args: never; Returns: Json }
       get_profile_visibility_level: {
         Args: { profile_user_id: string; requesting_user_id: string }
         Returns: string
@@ -1915,6 +1920,10 @@ export type Database = {
           last_active_at: string
           mutual_friends_count: number
         }[]
+      }
+      get_weekly_dashboard_data: {
+        Args: { p_last_week_start: string; p_week_start: string }
+        Returns: Json
       }
       has_role: {
         Args: {
