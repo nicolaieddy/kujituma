@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTosAcceptance } from '@/hooks/useTosAcceptance';
 import { TosAcceptanceModal } from './TosAcceptanceModal';
@@ -12,20 +12,37 @@ export const TosGate = ({ children }: TosGateProps) => {
   const { user, loading: authLoading } = useAuth();
   const { hasAcceptedCurrentTos, loading: tosLoading, acceptTos, latestAcceptance, refetch } = useTosAcceptance();
   const [pendingSignupTos, setPendingSignupTos] = useState(false);
+  const [isNewSignup, setIsNewSignup] = useState(false);
 
-  // Check if there's a pending ToS acceptance from signup flow
+  // Check for signup flags on mount and when user changes
   useEffect(() => {
     const tosVersion = sessionStorage.getItem('tos_accepted_during_signup');
-    if (tosVersion) {
+    const newSignupFlag = sessionStorage.getItem('is_new_signup');
+    
+    if (tosVersion || newSignupFlag) {
       setPendingSignupTos(true);
-      // Wait a moment for Auth.tsx to record the acceptance, then refetch
+      setIsNewSignup(!!newSignupFlag);
+      
+      // Wait for Auth.tsx to record the ToS acceptance, then refetch and clear flags
       const timeout = setTimeout(() => {
         refetch();
         setPendingSignupTos(false);
+        // Clear the signup flag after processing
+        sessionStorage.removeItem('is_new_signup');
       }, 1500);
       return () => clearTimeout(timeout);
     }
   }, [user, refetch]);
+
+  // Wrapper for acceptTos that clears any lingering flags
+  const handleAcceptTos = useCallback(async () => {
+    const result = await acceptTos();
+    if (result) {
+      sessionStorage.removeItem('is_new_signup');
+      sessionStorage.removeItem('tos_accepted_during_signup');
+    }
+    return result;
+  }, [acceptTos]);
 
   // Don't gate if not authenticated
   if (!user) {
@@ -33,6 +50,7 @@ export const TosGate = ({ children }: TosGateProps) => {
   }
 
   // If there's a pending ToS acceptance from signup, skip the modal
+  // The ToS was already accepted during the signup flow
   if (pendingSignupTos) {
     return <>{children}</>;
   }
@@ -50,18 +68,20 @@ export const TosGate = ({ children }: TosGateProps) => {
     );
   }
 
-  // Show ToS modal if user hasn't accepted current version
+  // Show ToS modal only if user hasn't accepted current version
+  // This handles: (1) returning users who need to accept updated ToS
+  //               (2) edge case where sign-in user somehow has no ToS record
   if (hasAcceptedCurrentTos === false) {
-    // Determine if this is a new user (never accepted any ToS) or returning user (accepted old version)
-    const isNewUser = !latestAcceptance;
+    // Determine context: no acceptance = edge case, has old acceptance = ToS updated
+    const needsToSUpdate = !!latestAcceptance;
     
     return (
       <>
         {children}
         <TosAcceptanceModal 
           open={true} 
-          onAccept={acceptTos}
-          isNewUser={isNewUser}
+          onAccept={handleAcceptTos}
+          isNewUser={!needsToSUpdate}
         />
       </>
     );

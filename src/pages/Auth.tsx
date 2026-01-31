@@ -34,11 +34,11 @@ const Auth = () => {
       }
 
       if (isNewUser) {
-        console.log('New user detected, redirecting to profile');
-        navigate('/profile');
+        console.log('New user detected, redirecting to onboarding');
+        navigate('/onboarding', { replace: true });
       } else {
-        console.log('User detected, redirecting to community');
-        navigate('/community');
+        console.log('Returning user, redirecting to goals');
+        navigate('/goals?tab=longterm', { replace: true });
       }
     }
   }, [user, isNewUser, navigate, loading, returnTo]);
@@ -55,12 +55,14 @@ const Auth = () => {
       setSigningIn(true);
       setError(null);
 
-      // Only store ToS acceptance for new users signing up
+      // For new user sign-up flow, store flag so TosGate knows to skip the modal
       if (isNewUserFlow) {
         sessionStorage.setItem('tos_accepted_during_signup', CURRENT_TOS_VERSION);
+        sessionStorage.setItem('is_new_signup', 'true');
       }
 
-      await signInWithGoogle(returnTo ?? '/');
+      // Redirect destination: new users will go to /onboarding, returning users to /goals
+      await signInWithGoogle(returnTo ?? '/goals?tab=longterm');
     } catch (error) {
       console.error('Sign in error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred during sign in');

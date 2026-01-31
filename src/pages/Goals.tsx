@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus } from "lucide-react";
@@ -22,6 +22,8 @@ import { GoalsSkeleton, GoalCardSkeleton } from "@/components/skeletons/PageSkel
 
 const Goals = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const isMobile = useIsMobile();
   const { lastSync, isOffline } = useOfflineStatus();
@@ -49,7 +51,31 @@ const Goals = () => {
   const [currentWeekStart, setCurrentWeekStart] = useState<string>(
     WeeklyProgressService.getWeekStart()
   );
-  const [activeTab, setActiveTab] = useState("weekly");
+  
+  // Read tab from URL parameter, default to "weekly"
+  const tabParam = searchParams.get('tab');
+  const initialTab = tabParam === 'longterm' || tabParam === 'weekly' ? tabParam : 'weekly';
+  const [activeTab, setActiveTab] = useState(initialTab);
+  
+  // Handle tab changes and sync with URL
+  const handleTabChange = (newTab: string) => {
+    setActiveTab(newTab);
+    // Clean up URL - remove the tab param after reading it
+    if (searchParams.has('tab')) {
+      searchParams.delete('tab');
+      setSearchParams(searchParams, { replace: true });
+    }
+  };
+  
+  // Sync tab state with URL on mount (for direct navigation)
+  useEffect(() => {
+    if (tabParam && (tabParam === 'longterm' || tabParam === 'weekly')) {
+      setActiveTab(tabParam);
+      // Clean up URL after setting the tab
+      searchParams.delete('tab');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, []);
 
 
   const handleCreateGoal = (data: any) => {
@@ -196,7 +222,7 @@ const Goals = () => {
         </div>
 
         <div className={`${isMobile ? 'max-w-full' : 'max-w-6xl'} mx-auto`}>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className={`grid w-full grid-cols-2 bg-muted ${isMobile ? 'h-11' : 'h-12'}`}>
               <TabsTrigger 
                 value="weekly" 
