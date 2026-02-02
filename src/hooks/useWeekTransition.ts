@@ -168,6 +168,9 @@ export const useWeekTransition = (currentWeekStart: string) => {
       // Always complete current week's planning session (even if no intention)
       await saveIntentionMutation.mutateAsync(intention || null);
       
+      // Invalidate the dashboard cache to ensure fresh data
+      queryClient.invalidateQueries({ queryKey: ['weekly-dashboard', user?.id, currentWeekStart] });
+      
       toast({
         title: "Week transition complete! 🎉",
         description: "You're all set for a great week ahead.",
@@ -182,7 +185,7 @@ export const useWeekTransition = (currentWeekStart: string) => {
         variant: "destructive",
       });
     }
-  }, [completeLastWeekMutation, saveIntentionMutation]);
+  }, [completeLastWeekMutation, saveIntentionMutation, queryClient, user?.id, currentWeekStart]);
 
   const handleDismissTransition = useCallback(() => {
     setIsTransitionDismissed(true);
