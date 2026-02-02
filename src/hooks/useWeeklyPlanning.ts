@@ -121,6 +121,8 @@ export const useWeeklyPlanning = (weekStart: string) => {
         offlineDataService.cacheWeeklyPlanning(result, weekStart);
       }
       queryClient.invalidateQueries({ queryKey: ['weekly-planning'] });
+      // Also invalidate the dashboard cache so WeekTransitionCard sees the update
+      queryClient.invalidateQueries({ queryKey: ['weekly-dashboard'] });
       toast({
         title: "Planning complete! 📅",
         description: wasOffline ? "Saved offline - will sync when online." : "You're ready to crush this week!",
