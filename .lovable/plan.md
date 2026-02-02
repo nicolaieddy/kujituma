@@ -1,175 +1,168 @@
 
 
-# Database Query Performance Optimization Plan
+# Carry-Over Objectives Deduplication UX Improvement
 
-## ✅ COMPLETED IMPLEMENTATION
+## Problem Statement
+The carry-over modal currently displays the same objective multiple times when it has been carried over through several weeks. For example:
+- "Deal with incident NL" appears in Week Jan 26-Feb 1 AND Week Jan 19-Jan 25
+- "2025 Year in Review" appears in 3 different weeks
+- "BMW 1250GSA Insurance" appears in 4 different weeks
 
-### Summary
-Successfully implemented performance optimizations to reduce database round-trips from 8-12 sequential queries to 2-3 parallel queries.
+This creates a cluttered, confusing experience and makes the list unnecessarily long.
 
-### Changes Made
+## Solution: Show Only the Most Recent Instance
 
-#### 1. Database Migration (DONE)
-Created new RPC functions:
-- `get_weekly_dashboard_data(p_week_start, p_last_week_start)` - Returns objectives, progress post, planning session, and last week data in one call
-- `get_habit_stats_data()` - Returns goals with habits and all habit objectives in one call
-- `get_carryover_data(p_current_week_start)` - Returns incomplete, carried-over, and dismissed objectives in one call
+Instead of grouping by week and showing duplicates, we will:
 
-Added performance indexes:
-- `idx_goals_user_status` - Partial index on goals for user/status lookups
-- `idx_weekly_objectives_user_week` - Index for weekly objectives by user/week
-- `idx_weekly_progress_posts_user_week` - Index for progress posts by user/week
+1. **Deduplicate by objective text + goal_id** - Only show each unique objective once
+2. **Show the most recent week as context** - Display when the objective was "last scheduled"
+3. **Show carry-over count badge** - Indicate how many times it's been carried over (e.g., "Carried over 3x")
+4. **Remove week grouping entirely** - Present a flat list sorted by recency
 
-#### 2. New Hooks (DONE)
-- `src/hooks/useWeeklyDashboardData.ts` - Consolidated hook using `get_weekly_dashboard_data` RPC
-- `src/hooks/useHabitStatsOptimized.ts` - Optimized habit stats hook using `get_habit_stats_data` RPC
-- `src/hooks/useCarryOverDataOptimized.ts` - Optimized carry-over data hook using `get_carryover_data` RPC
+### New UX Design
 
-#### 3. Updated Hooks (DONE)
-- `src/hooks/useHabitStats.ts` - Now uses `get_habit_stats_data` RPC instead of multiple queries
-- `src/hooks/useWeekTransition.ts` - Now uses `useWeeklyDashboardData` instead of 3 separate queries
+```text
++----------------------------------------------------------+
+|  [Checkbox] Deal with incident NL                        |
+|  Goal: Build a...  |  Last: Jan 26  |  Carried 3x       |
+|  > Move to: [Week 6 (Feb 2 - Feb 8) v]                   |
++----------------------------------------------------------+
 
-#### 4. Enhanced Prefetching (DONE)
-- `src/App.tsx` - Updated `usePrefetchDashboardData` to prefetch goals, dashboard data, and habit stats in parallel on user authentication
-
-### Expected Performance Improvement
-- **Before**: 8-12 sequential database queries (800-1200ms on slow connections)
-- **After**: 2-3 parallel queries using RPCs (200-400ms)
-- **Perceived improvement**: 60-70% faster initial load
-
-### Testing Checklist
-- [ ] Goals page loads within 500ms on fast connections
-- [ ] All data displays correctly (objectives, habits, carry-over)
-- [ ] Week navigation still works
-- [ ] Real-time updates still function
-- [ ] Offline mode still caches data correctly
-- [ ] No regressions in existing functionality
-
-### Solution 3: Parallel Query Hook (Medium Impact)
-Create a custom hook that uses React Query's `useQueries` for parallel execution:
-
-```typescript
-// New hook: useWeeklyDashboardData
-export const useWeeklyDashboardData = (weekStart: string) => {
-  const { user } = useAuth();
-  const lastWeekStart = useMemo(() => {
-    // Calculate last week
-  }, [weekStart]);
-
-  return useQuery({
-    queryKey: ['weekly-dashboard', user?.id, weekStart],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc('get_weekly_dashboard_data', {
-        p_week_start: weekStart,
-        p_last_week_start: lastWeekStart
-      });
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!user,
-    staleTime: 2 * 60 * 1000,
-  });
-};
++----------------------------------------------------------+
+|  [Checkbox] BMW 1250GSA Insurance                        |
+|  No goal  |  Last: Jan 26  |  Carried 4x                |
+|  > Move to: [Week 6 (Feb 2 - Feb 8) v]                   |
++----------------------------------------------------------+
 ```
 
-### Solution 4: Eliminate Redundant Auth Calls (Low-Medium Impact)
-Pass user ID from hooks to service methods instead of re-fetching:
+Benefits:
+- Much shorter list (4 items instead of 12+ in the example)
+- Clear indication of how "stale" an objective is
+- Less overwhelming for users
+- Easier decision-making
 
-```typescript
-// Before (in service)
-static async getGoals(): Promise<Goal[]> {
-  const { data: user } = await supabase.auth.getUser(); // ← Removed
-  // ...
-}
+---
 
-// After (with userId parameter)
-static async getGoals(userId: string): Promise<Goal[]> {
-  const { data: goals, error } = await supabase
-    .from('goals')
-    .select('*')
-    .eq('user_id', userId)  // ← Use passed userId
-    // ...
-}
-```
+## Technical Implementation
 
-**Note**: This requires updating all service methods and their callers.
+### 1. Modify Database RPC Function
 
-### Solution 5: Add Missing Index for Goals User Lookup (Low Impact)
-Currently missing a basic index for the most common query pattern:
+Update `get_carryover_data` to deduplicate and include carry-over count:
 
 ```sql
-CREATE INDEX IF NOT EXISTS idx_goals_user_status 
-ON goals(user_id, status) 
-WHERE status != 'deleted';
+-- In incomplete_objectives, group by text+goal_id and return:
+-- - The most recent week_start
+-- - Count of how many weeks it appeared in
+-- - The original objective id from the most recent week
 ```
 
-### Solution 6: Prefetch More Data on Auth (Medium Impact)
-Expand `usePrefetchGoals` to prefetch all dashboard data:
+### 2. Update Types
 
-```typescript
-const usePrefetchDashboardData = (queryClient: QueryClient) => {
-  const { user } = useAuth();
-  
-  useEffect(() => {
-    if (user?.id) {
-      const currentWeekStart = WeeklyProgressService.getWeekStart();
-      
-      // Prefetch all in parallel
-      Promise.all([
-        queryClient.prefetchQuery({
-          queryKey: ['goals', user.id],
-          queryFn: GoalsService.getGoals,
-        }),
-        queryClient.prefetchQuery({
-          queryKey: ['weekly-objectives', user.id, currentWeekStart],
-          queryFn: () => WeeklyProgressService.getWeeklyObjectives(currentWeekStart),
-        }),
-        queryClient.prefetchQuery({
-          queryKey: ['habit-stats', user.id],
-          queryFn: HabitStreaksService.getAllHabitStats,
-        }),
-      ]);
-    }
-  }, [user?.id, queryClient]);
-};
+Add new fields to the carry-over objective type:
+- `carry_over_count: number` - How many times this has been scheduled
+- `original_week: string` - The oldest week it appeared (optional)
+
+### 3. Update CarryOverObjectivesModal.tsx
+
+Key changes:
+- Remove week-based grouping (`objectivesByWeek` logic)
+- Display flat list of deduplicated objectives
+- Show "Carried Nx" badge when count > 1
+- Show "Last scheduled: [date]" instead of week group headers
+- Sort by most recent week_start (newest first)
+
+### 4. Update Service Layer
+
+Modify `getIncompleteObjectivesFromPreviousWeeks` to:
+- Return deduplicated objectives with aggregated metadata
+- Or rely on the updated RPC function
+
+---
+
+## Files to Modify
+
+1. **`supabase/migrations/[new]_carryover_deduplication.sql`**
+   - Update `get_carryover_data` RPC to deduplicate and add carry-over count
+
+2. **`src/components/goals/CarryOverObjectivesModal.tsx`**
+   - Remove week grouping display logic
+   - Add carry-over count badge display
+   - Show "Last scheduled: X" context
+   - Flatten the list display
+
+3. **`src/hooks/useCarryOverDataOptimized.ts`**
+   - Update to handle new RPC response format with aggregated data
+
+4. **`src/services/weeklyProgressService.ts`**
+   - Update `getIncompleteObjectivesFromPreviousWeeks` to deduplicate results
+   - Add carry-over count calculation
+
+5. **`src/types/weeklyProgress.ts`** (optional)
+   - Add `CarryOverObjective` type with additional metadata fields
+
+---
+
+## Example Query Logic
+
+```sql
+-- Deduplicated incomplete objectives with carry-over count
+SELECT DISTINCT ON (text, COALESCE(goal_id, '00000000-0000-0000-0000-000000000000'))
+  id,
+  text,
+  goal_id,
+  MAX(week_start) as most_recent_week,
+  COUNT(*) as carry_over_count
+FROM weekly_objectives
+WHERE user_id = auth.uid()
+  AND is_completed = false
+  AND week_start < current_week_start
+GROUP BY text, goal_id
+ORDER BY most_recent_week DESC
 ```
 
-## Implementation Priority
+---
 
-| Solution | Impact | Effort | Priority |
-|----------|--------|--------|----------|
-| 1. Combined RPC Function | High | Medium | 1st |
-| 6. Enhanced Prefetching | Medium | Low | 2nd |
-| 2. Habit Stats RPC | Medium | Medium | 3rd |
-| 3. Parallel Query Hook | Medium | Low | 4th |
-| 4. Eliminate Auth Calls | Low-Med | High | 5th |
-| 5. Add Missing Index | Low | Low | 6th |
+## Visual Mockup
 
-## Technical Details
+**Before (confusing):**
+```
+From: Jan 26 - Feb 1
+  [x] Deal with incident NL
+  [x] 2025 Year in Review
+  [x] Deal with incident CM
+  [x] BMW 1250GSA Insurance
 
-### Files to Create
-1. **New migration file**: Create `get_weekly_dashboard_data` and `get_habit_stats_data` RPC functions
-2. **`src/hooks/useWeeklyDashboardData.ts`**: New consolidated hook
+From: Jan 19 - Jan 25
+  [ ] Deal with incident NL    <-- duplicate
+  [ ] 2025 Year in Review      <-- duplicate
+  [ ] Deal with incident CM    <-- duplicate
+```
 
-### Files to Modify
-1. **`src/App.tsx`**: Expand prefetching to include more data
-2. **`src/hooks/useWeeklyProgress.ts`**: Use new RPC function
-3. **`src/components/thisweek/ThisWeekView.tsx`**: Consume consolidated data
-4. **`src/services/weeklyProgressService.ts`**: Add method for RPC call
-5. **`src/hooks/useHabitStats.ts`**: Use RPC function for combined data
+**After (clean):**
+```
+Select objectives to carry over:
 
-### Expected Performance Improvement
-- **Before**: 8-12 sequential database queries (800-1200ms on slow connections)
-- **After**: 2-3 parallel queries using RPCs (200-400ms)
-- **Perceived improvement**: 60-70% faster initial load
+  [x] Deal with incident NL
+      Goal: Build a...  ·  Last: Jan 26  ·  [3x badge]
+      > Move to: Week 6 (Feb 2 - Feb 8)
+
+  [x] 2025 Year in Review  
+      No goal  ·  Last: Jan 26  ·  [3x badge]
+      > Move to: Week 6 (Feb 2 - Feb 8)
+
+  [x] BMW 1250GSA Insurance
+      No goal  ·  Last: Jan 26  ·  [4x badge]
+      > Move to: Week 6 (Feb 2 - Feb 8)
+```
+
+---
 
 ## Testing Checklist
 
-After implementation:
-- [ ] Goals page loads within 500ms on fast connections
-- [ ] All data displays correctly (objectives, habits, carry-over)
-- [ ] Week navigation still works
-- [ ] Real-time updates still function
-- [ ] Offline mode still caches data correctly
-- [ ] No regressions in existing functionality
+- Objectives appearing in multiple weeks show only once
+- Carry-over count badge displays correctly
+- "Last scheduled" date shows the most recent week
+- Selecting and carrying over still works correctly
+- Dismiss functionality still works (dismisses all instances)
+- Performance is maintained or improved (fewer items to render)
 
