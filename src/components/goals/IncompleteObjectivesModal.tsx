@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { WeeklyObjective } from "@/types/weeklyProgress";
-import { AlertTriangle, CheckCircle, ArrowRight, RotateCcw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { WeeklyObjective, CarryOverObjective } from "@/types/weeklyProgress";
+import { AlertTriangle, CheckCircle, ArrowRight, RotateCcw, Clock } from "lucide-react";
 
 interface IncompleteObjectivesModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  incompleteObjectives: WeeklyObjective[];
+  incompleteObjectives: WeeklyObjective[] | CarryOverObjective[];
   onConfirmPost: (reflections: Record<string, string>, carryOverIds: string[]) => void;
   isPosting: boolean;
 }

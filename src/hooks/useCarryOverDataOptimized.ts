@@ -1,17 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { WeeklyObjective } from "@/types/weeklyProgress";
+import { CarryOverObjective } from "@/types/weeklyProgress";
 
 interface CarryOverData {
-  incompleteObjectives: WeeklyObjective[];
+  incompleteObjectives: CarryOverObjective[];
   carriedOverSet: Set<string>;
   dismissedSet: Set<string>;
 }
 
 /**
  * Optimized hook that fetches carry-over data in a single database call.
- * Uses the get_carryover_data RPC function instead of 3 separate queries.
+ * Uses the get_carryover_data RPC function which returns deduplicated objectives
+ * with carry_over_count (how many weeks the objective appeared).
  */
 export const useCarryOverDataOptimized = (currentWeekStart: string) => {
   const { user } = useAuth();
@@ -29,8 +30,9 @@ export const useCarryOverDataOptimized = (currentWeekStart: string) => {
         throw rpcError;
       }
 
+      // The RPC now returns deduplicated objectives with carry_over_count
       const parsed = result as unknown as {
-        incomplete_objectives: WeeklyObjective[];
+        incomplete_objectives: CarryOverObjective[];
         current_future_objectives: { text: string; goal_id: string | null }[];
         dismissed_objectives: { objective_text: string; goal_id: string | null }[];
       };
@@ -48,7 +50,8 @@ export const useCarryOverDataOptimized = (currentWeekStart: string) => {
         dismissedSet.add(key);
       });
 
-      // Filter incomplete objectives
+      // Filter out already carried over or dismissed objectives
+      // Note: The RPC already deduplicates, so we just filter
       const filteredIncomplete = (parsed.incomplete_objectives || []).filter(obj => {
         const key = `${obj.text}|${obj.goal_id || ''}`;
         return !carriedOverSet.has(key) && !dismissedSet.has(key);
