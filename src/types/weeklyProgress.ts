@@ -13,6 +13,12 @@ export interface WeeklyObjective {
   updated_at: string;
 }
 
+// Extended type for carry-over objectives with deduplication metadata
+export interface CarryOverObjective extends WeeklyObjective {
+  carry_over_count?: number;
+  oldest_week?: string;
+}
+
 export interface WeeklyProgressPost {
   id: string;
   user_id: string;

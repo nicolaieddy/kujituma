@@ -5,16 +5,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { WeeklyObjective } from "@/types/weeklyProgress";
+import { Badge } from "@/components/ui/badge";
+import { CarryOverObjective, WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
-import { RotateCcw, Target, Calendar, ChevronRight, EyeOff, Eye, ChevronDown } from "lucide-react";
+import { RotateCcw, Target, ChevronRight, EyeOff, Eye, ChevronDown, Clock } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { DismissedObjective } from "@/hooks/useCarryOverObjectives";
 
 interface CarryOverObjectivesModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  incompleteObjectives: WeeklyObjective[];
+  incompleteObjectives: CarryOverObjective[] | WeeklyObjective[];
   goals: Goal[];
   onConfirmCarryOver: (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => void;
   onDismissObjective?: (objectiveText: string, goalId: string | null) => void;
@@ -23,7 +24,7 @@ interface CarryOverObjectivesModalProps {
   isCarryingOver: boolean;
   title?: string;
   description?: string;
-  defaultTargetWeek?: string; // If provided, use this; otherwise calculate next week from current date
+  defaultTargetWeek?: string;
 }
 
 export const CarryOverObjectivesModal = ({
@@ -81,7 +82,6 @@ export const CarryOverObjectivesModal = ({
     if (newSelected.has(objectiveId)) {
       newSelected.delete(objectiveId);
     } else {
-      // Default to next week when selecting
       newSelected.set(objectiveId, nextWeekStart);
     }
     setSelectedObjectives(newSelected);
@@ -120,20 +120,11 @@ export const CarryOverObjectivesModal = ({
     return goal?.title || null;
   };
 
-  const formatWeekDisplay = (weekStart: string) => {
-    return WeeklyProgressService.formatWeekRange(weekStart);
+  const formatLastScheduled = (weekStart: string) => {
+    const [year, month, day] = weekStart.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
-
-  // Group objectives by their source week
-  const objectivesByWeek = incompleteObjectives.reduce((acc, obj) => {
-    if (!acc[obj.week_start]) {
-      acc[obj.week_start] = [];
-    }
-    acc[obj.week_start].push(obj);
-    return acc;
-  }, {} as Record<string, WeeklyObjective[]>);
-
-  const sortedWeeks = Object.keys(objectivesByWeek).sort((a, b) => b.localeCompare(a));
 
   // Summary of where objectives will go
   const targetWeekSummary = useMemo(() => {
@@ -184,101 +175,111 @@ export const CarryOverObjectivesModal = ({
                     </Button>
                   </div>
 
-                  {sortedWeeks.map(weekStart => (
-                    <div key={weekStart} className="space-y-3">
-                      <h4 className="text-foreground font-medium text-sm flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        From: {formatWeekDisplay(weekStart)}
-                      </h4>
+                  {/* Flat list of deduplicated objectives (sorted by most recent week) */}
+                  <div className="space-y-3">
+                    {incompleteObjectives.map((objective) => {
+                      const goalName = getGoalName(objective.goal_id);
+                      const isSelected = selectedObjectives.has(objective.id);
+                      const targetWeek = selectedObjectives.get(objective.id) || nextWeekStart;
+                      const carryOverCount = objective.carry_over_count || 1;
                       
-                      {objectivesByWeek[weekStart].map((objective) => {
-                        const goalName = getGoalName(objective.goal_id);
-                        const isSelected = selectedObjectives.has(objective.id);
-                        const targetWeek = selectedObjectives.get(objective.id) || nextWeekStart;
-                        
-                          return (
-                          <div 
-                            key={objective.id} 
-                            className={`p-4 rounded-lg border transition-all ${
-                              isSelected 
-                                ? 'bg-primary/10 border-primary/40' 
-                                : 'bg-muted/30 border-border hover:bg-muted/50'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3">
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={() => handleToggleObjective(objective.id)}
-                                className="mt-1"
-                              />
-                              <div className="flex-1 min-w-0 space-y-2">
-                                <div 
-                                  className="cursor-pointer"
-                                  onClick={() => handleToggleObjective(objective.id)}
-                                >
-                                  <p className="text-foreground font-medium">{objective.text}</p>
+                      return (
+                        <div 
+                          key={objective.id} 
+                          className={`p-4 rounded-lg border transition-all ${
+                            isSelected 
+                              ? 'bg-primary/10 border-primary/40' 
+                              : 'bg-muted/30 border-border hover:bg-muted/50'
+                          }`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => handleToggleObjective(objective.id)}
+                              className="mt-1"
+                            />
+                            <div className="flex-1 min-w-0 space-y-2">
+                              <div 
+                                className="cursor-pointer"
+                                onClick={() => handleToggleObjective(objective.id)}
+                              >
+                                <p className="text-foreground font-medium">{objective.text}</p>
+                                
+                                {/* Metadata row: Goal, Last scheduled, Carry-over count */}
+                                <div className="flex flex-wrap items-center gap-2 mt-1.5">
                                   {goalName && (
-                                    <div className="flex items-center gap-1 mt-1">
+                                    <div className="flex items-center gap-1">
                                       <Target className="h-3 w-3 text-muted-foreground" />
                                       <span className="text-xs text-muted-foreground">{goalName}</span>
                                     </div>
                                   )}
-                                </div>
-                                
-                                {/* Target week selector - only show when selected */}
-                                {isSelected && (
-                                  <div className="flex items-center gap-2 pt-2 border-t border-border/50">
-                                    <ChevronRight className="h-4 w-4 text-primary" />
-                                    <span className="text-xs text-muted-foreground">Move to:</span>
-                                    <Select
-                                      value={targetWeek}
-                                      defaultValue={nextWeekStart}
-                                      onValueChange={(value) => handleChangeTargetWeek(objective.id, value)}
-                                    >
-                                      <SelectTrigger className="h-8 w-auto min-w-[200px] text-xs">
-                                        <SelectValue placeholder={futureWeeks[0]?.label || "Select week"} />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {futureWeeks.map((week) => (
-                                          <SelectItem key={week.value} value={week.value} className="text-xs">
-                                            {week.label}
-                                          </SelectItem>
-                                        ))}
-                                      </SelectContent>
-                                    </Select>
+                                  
+                                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                    <Clock className="h-3 w-3" />
+                                    <span>Last: {formatLastScheduled(objective.week_start)}</span>
                                   </div>
-                                )}
+                                  
+                                  {carryOverCount > 1 && (
+                                    <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                                      {carryOverCount}x
+                                    </Badge>
+                                  )}
+                                </div>
                               </div>
                               
-                              {/* Dismiss button */}
-                              {onDismissObjective && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          onDismissObjective(objective.text, objective.goal_id);
-                                        }}
-                                      >
-                                        <EyeOff className="h-4 w-4" />
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent side="left">
-                                      <p>Don't show this again</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                              {/* Target week selector - only show when selected */}
+                              {isSelected && (
+                                <div className="flex items-center gap-2 pt-2 border-t border-border/50">
+                                  <ChevronRight className="h-4 w-4 text-primary" />
+                                  <span className="text-xs text-muted-foreground">Move to:</span>
+                                  <Select
+                                    value={targetWeek}
+                                    defaultValue={nextWeekStart}
+                                    onValueChange={(value) => handleChangeTargetWeek(objective.id, value)}
+                                  >
+                                    <SelectTrigger className="h-8 w-auto min-w-[200px] text-xs">
+                                      <SelectValue placeholder={futureWeeks[0]?.label || "Select week"} />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {futureWeeks.map((week) => (
+                                        <SelectItem key={week.value} value={week.value} className="text-xs">
+                                          {week.label}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
                               )}
                             </div>
+                            
+                            {/* Dismiss button */}
+                            {onDismissObjective && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDismissObjective(objective.text, objective.goal_id);
+                                      }}
+                                    >
+                                      <EyeOff className="h-4 w-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left">
+                                    <p>Don't show this again</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
-                  ))}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
