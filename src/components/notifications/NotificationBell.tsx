@@ -7,8 +7,7 @@ import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useFriends } from '@/hooks/useFriends';
-import { useAccountabilityPartners } from '@/hooks/useAccountabilityPartners';
-import { useDuePartnerCheckIns } from '@/hooks/useDuePartnerCheckIns';
+import { useAccountabilityData, useDueCheckIns } from '@/hooks/useAccountabilityData';
 import { NotificationItem } from './NotificationItem';
 import { Bell, Users, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,14 +17,14 @@ import { cn } from '@/lib/utils';
 export const NotificationBell = () => {
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();
   const { friendRequests } = useFriends();
-  const { partnerRequests } = useAccountabilityPartners();
-  const { overdueCheckIns, dueTodayCheckIns, hasOverdue, hasDueToday } = useDuePartnerCheckIns();
+  const { receivedRequests: partnerRequestsReceived } = useAccountabilityData();
+  const { overdueCheckIns, dueTodayCheckIns, hasOverdue, hasDueToday } = useDueCheckIns();
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
   // Calculate pending requests count
   const pendingFriendRequests = friendRequests.received?.length || 0;
-  const pendingPartnerRequests = partnerRequests.received?.length || 0;
+  const pendingPartnerRequests = partnerRequestsReceived?.length || 0;
   const totalPendingRequests = pendingFriendRequests + pendingPartnerRequests;
   
   // Count overdue partner check-ins as urgent notifications

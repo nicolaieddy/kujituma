@@ -1833,6 +1833,7 @@ export type Database = {
       delete_own_account: { Args: never; Returns: boolean }
       delete_user_gdpr: { Args: { target_user_id: string }; Returns: boolean }
       end_session: { Args: { _session_token: string }; Returns: boolean }
+      get_accountability_data: { Args: never; Returns: Json }
       get_accountability_groups: {
         Args: never
         Returns: {
@@ -1894,6 +1895,10 @@ export type Database = {
       }
       get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
       get_habit_stats_data: { Args: never; Returns: Json }
+      get_partner_dashboard_data: {
+        Args: { p_partner_id: string; p_week_start: string }
+        Returns: Json
+      }
       get_profile_page_data: {
         Args: { p_profile_user_id: string }
         Returns: Json
