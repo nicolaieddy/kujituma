@@ -520,13 +520,42 @@ export class WeeklyProgressService {
       goals.forEach(g => goalTitleMap.set(g.id, g.title));
     }
 
-    const objectivesToCreate = originalObjectives.map(obj => ({
+    const potentialObjectives = originalObjectives.map(obj => ({
       user_id: user.id,
       goal_id: obj.goal_id,
       text: obj.text,
       week_start: targetWeekMap.get(obj.id) || '',
       is_completed: false
     })).filter(obj => obj.week_start); // Filter out any without a target week
+
+    // Check which objectives already exist in target weeks to avoid duplicate key errors
+    const targetWeeks = [...new Set(potentialObjectives.map(o => o.week_start))];
+    const { data: existingObjectives, error: existingError } = await supabase
+      .from('weekly_objectives')
+      .select('text, goal_id, week_start')
+      .eq('user_id', user.id)
+      .in('week_start', targetWeeks);
+
+    if (existingError) throw existingError;
+
+    // Build a set of existing objective keys: "text|goal_id|week_start"
+    const existingSet = new Set<string>();
+    (existingObjectives || []).forEach(obj => {
+      const key = `${obj.text}|${obj.goal_id || ''}|${obj.week_start}`;
+      existingSet.add(key);
+    });
+
+    // Filter out objectives that already exist in target week
+    const objectivesToCreate = potentialObjectives.filter(obj => {
+      const key = `${obj.text}|${obj.goal_id || ''}|${obj.week_start}`;
+      return !existingSet.has(key);
+    });
+
+    if (objectivesToCreate.length === 0) {
+      // All objectives already exist - return empty but don't error
+      console.log('[WeeklyProgressService] All objectives already exist in target weeks, skipping insert');
+      return [];
+    }
 
     const { data: newObjectives, error: createError } = await supabase
       .from('weekly_objectives')
