@@ -16,12 +16,8 @@ import { FeedbackCommentPopover } from '@/components/accountability/FeedbackComm
 import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
 import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability/PartnerSwitcher';
-import { 
-  accountabilityService, 
-  PartnerGoal, 
-  PartnerWeeklyObjective,
-  CheckInCadence
-} from '@/services/accountabilityService';
+import { accountabilityService } from '@/services/accountabilityService';
+import { usePartnerDashboardData } from '@/hooks/usePartnerDashboardData';
 import { usePartnerObjectiveFeedback } from '@/hooks/useObjectiveFeedback';
 import { toast } from 'sonner';
 import { 
@@ -41,37 +37,11 @@ const PartnerDashboard = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   
-  const [partnerProfile, setPartnerProfile] = useState<{
-    id: string;
-    full_name: string;
-    avatar_url: string | null;
-    email: string;
-    about_me: string | null;
-  } | null>(null);
-  const [goals, setGoals] = useState<PartnerGoal[]>([]);
-  const [weeklyObjectives, setWeeklyObjectives] = useState<PartnerWeeklyObjective[]>([]);
-  const [habitStats, setHabitStats] = useState<any[]>([]);
-  const [loadingHabits, setLoadingHabits] = useState(false);
-  const [partnershipDetails, setPartnershipDetails] = useState<{
-    id: string;
-    user1_id: string;
-    user2_id: string;
-    last_check_in_at: string | null;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadingObjectives, setLoadingObjectives] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [canViewPartner, setCanViewPartner] = useState(true);
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(() => 
     startOfWeek(new Date(), { weekStartsOn: 1 })
   );
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [partnerVisibility, setPartnerVisibility] = useState<{
-    canViewPartnerGoals: boolean;
-    partnerCanViewMyGoals: boolean;
-    myCheckInCadence: CheckInCadence;
-  }>({ canViewPartnerGoals: false, partnerCanViewMyGoals: false, myCheckInCadence: 'weekly' });
   const [currentUserProfile, setCurrentUserProfile] = useState<{
     full_name: string;
     avatar_url: string | null;
@@ -80,13 +50,25 @@ const PartnerDashboard = () => {
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
 
+  // Use consolidated hook - replaces 18 queries with 1
+  const { data, isLoading, error, refetch } = usePartnerDashboardData(partnerId, selectedWeekStart);
+
+  // Extract data from consolidated response
+  const partnerProfile = data?.profile || null;
+  const goals = data?.goals || [];
+  const weeklyObjectives = data?.objectives || [];
+  const habitStats = data?.habit_stats || [];
+  const partnershipDetails = data?.partnership || null;
+  const canViewPartner = data?.can_view_partner_goals ?? true;
+  const partnerVisibility = {
+    canViewPartnerGoals: data?.can_view_partner_goals ?? false,
+    partnerCanViewMyGoals: data?.partner_can_view_my_goals ?? false,
+    myCheckInCadence: data?.my_check_in_cadence ?? 'weekly',
+  };
+
   // Get objective IDs for feedback hook - must be called before any early returns
   const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
   const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
-
-  const getWeekStartString = (date: Date) => {
-    return format(startOfWeek(date, { weekStartsOn: 1 }), 'yyyy-MM-dd');
-  };
 
   const isCurrentWeek = isSameWeek(selectedWeekStart, new Date(), { weekStartsOn: 1 });
 
@@ -101,92 +83,6 @@ const PartnerDashboard = () => {
   const handleCurrentWeek = () => {
     setSelectedWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
-
-  // Fetch initial data
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!partnerId) return;
-      
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // First check if we have permission to view this partner
-        const partners = await accountabilityService.getPartners();
-        const partnerData = partners.find(p => p.partner_id === partnerId);
-        
-        if (!partnerData) {
-          setError('Partner not found or partnership not active');
-          return;
-        }
-        
-        // Store visibility settings
-        setPartnerVisibility({
-          canViewPartnerGoals: partnerData.can_view_partner_goals,
-          partnerCanViewMyGoals: partnerData.partner_can_view_my_goals,
-          myCheckInCadence: partnerData.my_check_in_cadence || 'weekly',
-        });
-        
-        if (!partnerData.can_view_partner_goals) {
-          setCanViewPartner(false);
-          // Still fetch profile for display
-          const profile = await accountabilityService.getPartnerProfile(partnerId);
-          setPartnerProfile(profile);
-          return;
-        }
-        
-        setCanViewPartner(true);
-        
-        const [profile, goalsData, objectivesData, partnership, habitsData] = await Promise.all([
-          accountabilityService.getPartnerProfile(partnerId),
-          accountabilityService.getPartnerGoals(partnerId),
-          accountabilityService.getPartnerWeeklyObjectives(partnerId, getWeekStartString(selectedWeekStart)),
-          accountabilityService.getPartnershipDetails(partnerId),
-          accountabilityService.getPartnerHabitStats(partnerId)
-        ]);
-        
-        if (!profile) {
-          setError('Partner not found');
-          return;
-        }
-        
-        setPartnerProfile(profile);
-        setGoals(goalsData);
-        setWeeklyObjectives(objectivesData);
-        setPartnershipDetails(partnership);
-        setHabitStats(habitsData);
-      } catch (err) {
-        console.error('Error fetching partner data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to load partner data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [partnerId]);
-
-  // Fetch objectives when week changes
-  useEffect(() => {
-    const fetchObjectives = async () => {
-      if (!partnerId || !canViewPartner || loading) return;
-      
-      try {
-        setLoadingObjectives(true);
-        const objectivesData = await accountabilityService.getPartnerWeeklyObjectives(
-          partnerId, 
-          getWeekStartString(selectedWeekStart)
-        );
-        setWeeklyObjectives(objectivesData);
-      } catch (err) {
-        console.error('Error fetching objectives:', err);
-      } finally {
-        setLoadingObjectives(false);
-      }
-    };
-
-    fetchObjectives();
-  }, [selectedWeekStart, partnerId, canViewPartner, loading]);
 
   // Fetch current user's profile
   useEffect(() => {
@@ -213,7 +109,6 @@ const PartnerDashboard = () => {
     }
   }, [authLoading, user, navigate]);
 
-
   const handleRecordCheckIn = async (message?: string) => {
     if (!partnershipDetails || !currentUserProfile) return;
     
@@ -228,13 +123,11 @@ const PartnerDashboard = () => {
       await accountabilityService.recordCheckIn(partnershipDetails.id, message);
       // Confirm the optimistic update
       if (tempId) checkInsFeedRef.current?.confirmOptimisticCheckIn(tempId);
-      // Refresh partnership details to get updated last_check_in_at
-      const updatedPartnership = await accountabilityService.getPartnershipDetails(partnerId!);
-      setPartnershipDetails(updatedPartnership);
       // Refresh the check-ins feed and partner switcher
       await Promise.all([
         checkInsFeedRef.current?.refresh(),
-        partnerSwitcherRef.current?.refresh()
+        partnerSwitcherRef.current?.refresh(),
+        refetch()
       ]);
       toast.success('Check-in recorded!');
     } catch (err) {
@@ -245,7 +138,7 @@ const PartnerDashboard = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || isLoading) {
     return (
       <div className="container mx-auto px-4 py-6">
         <div className="max-w-4xl mx-auto space-y-6">
@@ -269,7 +162,7 @@ const PartnerDashboard = () => {
           </Button>
           <Card className="border-destructive/20 bg-destructive/5">
             <CardContent className="py-12 text-center">
-              <p className="text-destructive font-medium">{error}</p>
+              <p className="text-destructive font-medium">{error instanceof Error ? error.message : 'Failed to load partner data'}</p>
               <p className="text-muted-foreground text-sm mt-2">
                 Make sure you are connected as accountability partners.
               </p>
@@ -423,7 +316,7 @@ const PartnerDashboard = () => {
             partnerCanViewMyGoals={partnerVisibility.partnerCanViewMyGoals}
             onSettingsChange={() => {
               // Refetch data when settings change
-              window.location.reload();
+              refetch();
             }}
           />
 
@@ -491,20 +384,7 @@ const PartnerDashboard = () => {
               <CardTitle className="text-foreground">Weekly Focus</CardTitle>
             </CardHeader>
             <CardContent>
-              {loadingObjectives ? (
-                <div className="space-y-2">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                      <Skeleton className="h-5 w-5 rounded-full flex-shrink-0" />
-                      <div className="flex-1 space-y-2">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/3" />
-                      </div>
-                      <Skeleton className="h-7 w-16" />
-                    </div>
-                  ))}
-                </div>
-              ) : weeklyObjectives.length > 0 ? (
+              {weeklyObjectives.length > 0 ? (
                 <div className="space-y-2">
                   {weeklyObjectives.map((objective) => {
                     const objFeedback = getFeedbackForObjective(objective.id);
@@ -559,18 +439,18 @@ const PartnerDashboard = () => {
           </Card>
 
           {/* Habits Review */}
-          <PartnerHabitsCard habitStats={habitStats} isLoading={loading} partnerId={partnerId || ''} />
+          <PartnerHabitsCard habitStats={habitStats} isLoading={isLoading} partnerId={partnerId || ''} />
 
           {/* Goals Kanban */}
           <Card className="border-border">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Target className="h-5 w-5" />
-                Goals {!loading && `(${goals.length})`}
+                Goals {!isLoading && `(${goals.length})`}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {loading ? (
+              {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {['In Progress', 'Paused', 'Completed'].map((column) => (
                     <div key={column} className="space-y-3">
