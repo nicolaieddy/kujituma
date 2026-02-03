@@ -1,219 +1,231 @@
 
-# Profile Page & App-Wide Database Optimization Plan
+# Database & Query Optimization Plan (Non-Caching)
 
 ## Problem Summary
-The Profile page currently makes **9-12 separate database calls**, causing slow load times. Other areas of the app have similar patterns of multiple sequential or N+1 queries that could be consolidated.
+
+After analyzing the codebase, I found several areas with inefficient database access patterns:
+
+1. **Partner Dashboard** makes 15+ queries when it could make 1
+2. **`getPartners()` is called 4x** on the Partner Dashboard (once directly + 3x via verification in other methods)
+3. **`supabase.auth.getUser()`** is called excessively - 395+ times across services
+4. **Missing RPC consolidation** for accountability and partner data
+5. **Missing database indexes** for frequently queried columns
 
 ---
 
-## Solution Overview
-
-Create **consolidated RPC functions** that return all related data in single database calls, similar to the `get_weekly_dashboard_data` pattern we successfully implemented earlier.
-
----
-
-## Part 1: Profile Page Optimization
-
-### New Database Function: `get_profile_page_data`
-
-This RPC will return all profile page data in one call:
-
-**Input parameters:**
-- `p_profile_user_id` (the profile being viewed)
-
-**Returns a JSONB object containing:**
-- `profile` - The profile record (filtered by viewer permissions)
-- `stats` - Goals completed count, streak data, weeks shared count
-- `friendship_status` - Whether viewer is a friend, pending request status
-- `partnership_status` - Whether viewer is an accountability partner, can view goals
-- `visible_goals` - Goals visible to the viewer (based on friendship/visibility)
-
-### Files to Create/Modify
-
-1. **New Migration**: `supabase/migrations/[timestamp]_get_profile_page_data.sql`
-   - Creates `get_profile_page_data(p_profile_user_id uuid)` RPC function
-   - Handles all permission logic server-side
-   - Returns consolidated JSONB response
-
-2. **New Hook**: `src/hooks/useProfilePageData.ts`
-   - Single React Query hook that calls the RPC
-   - Returns typed profile page data
-   - Replaces multiple separate queries
-
-3. **Modify**: `src/pages/Profile.tsx`
-   - Replace the manual `fetchProfileData` useEffect with `useProfilePageData` hook
-   - Remove friendship/partnership checking logic (handled by RPC)
-   - Simplify component significantly
-
-4. **Modify**: `src/hooks/useProfileStats.ts`
-   - Either integrate into the new RPC or mark as unused
-   - Stats will now come from consolidated query
-
-5. **Modify**: `src/components/profile/ProfileGoals.tsx`
-   - Accept goals as prop from parent instead of fetching
-   - Or use goals from the consolidated data hook
-
----
-
-## Part 2: Friends Service N+1 Query Fix
+## Priority 1: Partner Dashboard Consolidation (Biggest Impact)
 
 ### Problem
-`getFriendRequests()` fetches profiles one-by-one in a loop:
-```typescript
-const sentWithProfiles = await Promise.all(
-  sentRequests.map(async (request) => {
-    const { data: profile } = await supabase
-      .from('profiles').select(...).eq('id', request.receiver_id)
+The PartnerDashboard page makes these calls:
 ```
+getPartners() → 3 queries
+getPartnerProfile() → 1 query
+getPartnerGoals() → getPartners() + 1 query = 4 queries
+getPartnerWeeklyObjectives() → getPartners() + 1 query = 4 queries  
+getPartnershipDetails() → 1 query
+getPartnerHabitStats() → getPartners() + 2 queries = 5 queries
+```
+**Total: ~18 database queries for one page load!**
 
-### Solution
-Batch the profile lookups:
+### Solution: Create `get_partner_dashboard_data` RPC
 
-1. **Modify**: `src/services/friendsService.ts`
-   - Collect all profile IDs first
-   - Make a single query with `.in('id', profileIds)`
-   - Map profiles back to requests
+This single RPC will:
+- Verify partnership exists and viewer has permission (1 check)
+- Return partner profile
+- Return partner's visible goals
+- Return weekly objectives for the requested week
+- Return partnership details
+- Return habit stats
 
-**Before**: N+1 queries (N profiles fetched individually)
-**After**: 3 queries total (sent requests, received requests, all profiles)
-
----
-
-## Part 3: Accountability Partners Consolidation
-
-### New Database Function: `get_accountability_data`
-
-Consolidates the 3+ queries in `accountabilityService.getPartners()` into one RPC.
-
-**Returns:**
-- Partners list with cadence settings
-- User's last check-in timestamps
-- Pending partner requests (sent and received)
-
-### Files to Modify
-
-1. **New Migration**: Create `get_accountability_data()` RPC
-2. **Modify**: `src/services/accountabilityService.ts` - Use new RPC
-3. **Modify**: `src/hooks/useAccountabilityPartners.ts` - Simplified data fetching
-
----
-
-## Part 4: Partner Dashboard Consolidation
-
-### New Database Function: `get_partner_dashboard_data`
-
-Consolidates the 5 parallel queries in PartnerDashboard.
-
-**Input:** `p_partner_id uuid`, `p_week_start text`
-
-**Returns:**
-- Partner profile
-- Partner's visible goals
-- Partner's weekly objectives for the week
-- Partnership details
-- Partner's habit stats
-
-### Files to Modify
-
-1. **New Migration**: Create RPC function
-2. **Modify**: `src/pages/PartnerDashboard.tsx` - Use single data hook
-
----
-
-## Implementation Priority
-
-| Priority | Optimization | Queries Saved | Impact |
-|----------|-------------|---------------|--------|
-| **1st** | Profile page RPC | 8-10 → 1 | High (frequent page) |
-| **2nd** | Friends N+1 fix | N+2 → 3 | Medium |
-| **3rd** | Accountability RPC | 4 → 1 | Medium |
-| **4th** | Partner Dashboard RPC | 5 → 1 | Lower (less frequent) |
-
----
-
-## Technical Details
-
-### Profile Page RPC Structure
-
+**Database Migration:**
 ```sql
-CREATE OR REPLACE FUNCTION get_profile_page_data(p_profile_user_id uuid)
-RETURNS jsonb
+CREATE OR REPLACE FUNCTION get_partner_dashboard_data(
+  p_partner_id uuid,
+  p_week_start text
+) RETURNS jsonb
 LANGUAGE plpgsql
 SECURITY DEFINER
-SET search_path TO 'public'
 AS $$
 DECLARE
-  result JSONB;
   v_user_id UUID := auth.uid();
-  v_is_owner BOOLEAN;
-  v_is_friend BOOLEAN;
-  v_is_partner BOOLEAN;
+  v_partnership RECORD;
+  v_can_view BOOLEAN;
 BEGIN
-  v_is_owner := (v_user_id = p_profile_user_id);
+  -- Single query to get partnership and verify permissions
+  SELECT * INTO v_partnership
+  FROM accountability_partnerships
+  WHERE status = 'active'
+    AND ((user1_id = v_user_id AND user2_id = p_partner_id)
+      OR (user1_id = p_partner_id AND user2_id = v_user_id));
   
-  -- Check friendship in one query
-  SELECT EXISTS(
-    SELECT 1 FROM friends 
-    WHERE user1_id = LEAST(v_user_id, p_profile_user_id)
-      AND user2_id = GREATEST(v_user_id, p_profile_user_id)
-  ) INTO v_is_friend;
+  IF v_partnership IS NULL THEN
+    RETURN jsonb_build_object('error', 'Partnership not found');
+  END IF;
   
-  -- Build consolidated response
-  SELECT jsonb_build_object(
-    'profile', (SELECT row_to_json(p) FROM profiles p WHERE p.id = p_profile_user_id),
-    'stats', jsonb_build_object(
-      'goals_completed', (SELECT COUNT(*) FROM goals WHERE user_id = p_profile_user_id AND status = 'completed'),
-      'current_streak', COALESCE((SELECT current_weekly_streak FROM user_streaks WHERE user_id = p_profile_user_id), 0),
-      'weeks_shared', (SELECT COUNT(*) FROM posts WHERE user_id = p_profile_user_id AND hidden = false)
-    ),
-    'friendship', CASE 
-      WHEN v_is_owner THEN jsonb_build_object('is_owner', true)
-      WHEN v_is_friend THEN jsonb_build_object('is_friend', true)
-      ELSE (SELECT ... FROM friend_requests ...)
-    END,
-    'partnership', (...),
-    'visible_goals', (SELECT jsonb_agg(...) FROM goals WHERE ...)
-  ) INTO result;
-  
-  RETURN result;
+  -- Build and return consolidated response
+  RETURN jsonb_build_object(
+    'profile', (SELECT row_to_json(p) FROM profiles p WHERE id = p_partner_id),
+    'goals', (SELECT jsonb_agg(...) FROM goals WHERE user_id = p_partner_id),
+    'objectives', (SELECT jsonb_agg(...) FROM weekly_objectives WHERE ...),
+    'partnership', row_to_json(v_partnership),
+    'habit_stats', (...computed stats...)
+  );
 END;
 $$;
 ```
 
+**Files to modify:**
+- New migration file for RPC
+- New `usePartnerDashboardData.ts` hook
+- Update `PartnerDashboard.tsx` to use single hook
+
+**Result: 18 queries → 1 query**
+
 ---
 
-## Expected Performance Improvement
+## Priority 2: Accountability Partners Data Consolidation
 
-| Page | Before | After | Improvement |
-|------|--------|-------|-------------|
-| Profile | 9-12 queries | 1 query | ~90% reduction |
-| Friends list | N+2 queries | 3 queries | Variable (N dependent) |
-| Partner Dashboard | 5 queries | 1 query | 80% reduction |
+### Problem
+`useAccountabilityPartners` and `useDuePartnerCheckIns` both call `getPartners()` which makes 3 queries:
+1. RPC call `get_accountability_partners`
+2. Query for cadence settings
+3. Query for check-in timestamps
+
+The NotificationBell component uses both hooks, causing 6+ queries just to show the bell icon.
+
+### Solution: Create `get_accountability_data` RPC
+
+This RPC will return everything in one call:
+- Partners list with cadence and check-in timestamps
+- Pending requests (sent and received) with profiles
+- Due/overdue check-in indicators (computed server-side)
+
+**Database Migration:**
+```sql
+CREATE OR REPLACE FUNCTION get_accountability_data()
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN jsonb_build_object(
+    'partners', (SELECT jsonb_agg(...) WITH cadence and check-ins),
+    'sent_requests', (SELECT jsonb_agg(...) WITH receiver profiles),
+    'received_requests', (SELECT jsonb_agg(...) WITH sender profiles),
+    'due_check_ins', (computed array of overdue partner IDs)
+  );
+END;
+$$;
+```
+
+**Files to modify:**
+- New migration file
+- Update `accountabilityService.ts` 
+- Update `useAccountabilityPartners.ts`
+- Update `useDuePartnerCheckIns.ts`
+
+**Result: 6+ queries → 1 query per component mount**
+
+---
+
+## Priority 3: Eliminate Redundant Partner Verification
+
+### Problem
+Every partner-related method in `accountabilityService.ts` calls `getPartners()` to verify the user is allowed to access that partner's data:
+- `getPartnerGoals()` → calls `getPartners()`
+- `getPartnerWeeklyObjectives()` → calls `getPartners()`
+- `getPartnerHabitStats()` → calls `getPartners()`
+- `getPartnerHabitCompletions()` → calls `getPartners()`
+
+### Solution: Use RLS Policies Instead
+
+Move authorization logic to Row Level Security policies so we don't need to verify in application code:
+
+```sql
+-- Policy: Users can view partner's goals if they have an active partnership with visibility enabled
+CREATE POLICY "partner_can_view_goals" ON goals
+FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM accountability_partnerships ap
+    WHERE ap.status = 'active'
+      AND ((ap.user1_id = auth.uid() AND ap.user2_id = goals.user_id AND ap.user1_can_view_user2_goals)
+        OR (ap.user2_id = auth.uid() AND ap.user1_id = goals.user_id AND ap.user2_can_view_user1_goals))
+  )
+);
+```
+
+Then the methods can directly query without calling `getPartners()` first.
+
+---
+
+## Priority 4: Add Database Indexes
+
+Add composite indexes for frequently queried patterns:
+
+```sql
+-- Weekly objectives lookup (used constantly)
+CREATE INDEX IF NOT EXISTS idx_weekly_objectives_user_week 
+ON weekly_objectives(user_id, week_start);
+
+-- Goals by user and status (used on many pages)
+CREATE INDEX IF NOT EXISTS idx_goals_user_status 
+ON goals(user_id, status);
+
+-- Partnership lookups
+CREATE INDEX IF NOT EXISTS idx_partnerships_users 
+ON accountability_partnerships(user1_id, user2_id, status);
+
+-- Friend lookups  
+CREATE INDEX IF NOT EXISTS idx_friends_user1 ON friends(user1_id);
+CREATE INDEX IF NOT EXISTS idx_friends_user2 ON friends(user2_id);
+
+-- Check-ins by partnership
+CREATE INDEX IF NOT EXISTS idx_check_ins_partnership 
+ON accountability_check_ins(partnership_id, created_at DESC);
+```
 
 ---
 
 ## Files Summary
 
 ### New Files
-1. `supabase/migrations/[timestamp]_get_profile_page_data.sql`
-2. `src/hooks/useProfilePageData.ts`
+1. `supabase/migrations/[timestamp]_partner_dashboard_rpc.sql` - Partner dashboard RPC
+2. `supabase/migrations/[timestamp]_accountability_data_rpc.sql` - Accountability data RPC  
+3. `supabase/migrations/[timestamp]_performance_indexes.sql` - Database indexes
+4. `src/hooks/usePartnerDashboardData.ts` - New consolidated hook
 
 ### Modified Files
-1. `src/pages/Profile.tsx` - Use consolidated hook
-2. `src/services/friendsService.ts` - Fix N+1 query
-3. `src/components/profile/ProfileGoals.tsx` - Accept props instead of fetching
-4. `src/components/profile/ProfileStats.tsx` - Use data from parent or hook
-5. (Future) `src/services/accountabilityService.ts`
-6. (Future) `src/pages/PartnerDashboard.tsx`
+1. `src/pages/PartnerDashboard.tsx` - Use new consolidated hook
+2. `src/services/accountabilityService.ts` - Update to use new RPCs, remove redundant verification
+3. `src/hooks/useAccountabilityPartners.ts` - Simplified to use RPC
+4. `src/hooks/useDuePartnerCheckIns.ts` - Get data from consolidated RPC
+
+---
+
+## Expected Performance Improvements
+
+| Area | Before | After | Reduction |
+|------|--------|-------|-----------|
+| Partner Dashboard | ~18 queries | 1 query | 94% |
+| Notification Bell | 6+ queries | 1 query | 83% |
+| Accountability Tab | 4 queries | 1 query | 75% |
+
+---
+
+## Implementation Order
+
+1. **Add database indexes** (quick win, no code changes)
+2. **Create Partner Dashboard RPC** (biggest impact)
+3. **Create Accountability Data RPC** (affects notification bell)
+4. **Add RLS policies for partner data** (cleaner long-term)
 
 ---
 
 ## Testing Checklist
 
-- Profile page loads significantly faster
-- Own profile shows all data correctly
-- Friend's profile shows appropriate visibility
-- Non-friend profile shows limited data
-- Partnership status displays correctly
-- Stats (goals, streaks, weeks shared) are accurate
-- Goals visibility respects public/friends/private settings
+- Partner Dashboard loads correctly with all data
+- Notification bell shows overdue check-ins
+- Accountability partners tab works
+- Partner requests can be sent/received
+- Check-ins can be recorded
+- Goals/objectives visibility respects permissions
