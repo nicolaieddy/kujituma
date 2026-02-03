@@ -1894,6 +1894,10 @@ export type Database = {
       }
       get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
       get_habit_stats_data: { Args: never; Returns: Json }
+      get_profile_page_data: {
+        Args: { p_profile_user_id: string }
+        Returns: Json
+      }
       get_profile_visibility_level: {
         Args: { profile_user_id: string; requesting_user_id: string }
         Returns: string
