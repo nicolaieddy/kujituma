@@ -1,9 +1,8 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
-import { supabase } from "@/integrations/supabase/client";
-import { accountabilityService } from "@/services/accountabilityService";
+import { useProfilePageData, ProfileData, ProfileGoal } from "@/hooks/useProfilePageData";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
@@ -34,40 +33,7 @@ import {
 import { Link } from "react-router-dom";
 import { useFriends } from "@/hooks/useFriends";
 import { useAccountabilityPartners } from "@/hooks/useAccountabilityPartners";
-
-// ────────────────────────────────────────────────────────────────────────────
-// Types
-// ────────────────────────────────────────────────────────────────────────────
-
-interface Profile {
-  id: string;
-  full_name: string;
-  avatar_url?: string;
-  cover_photo_url?: string;
-  cover_photo_position?: number;
-  about_me?: string;
-  linkedin_url?: string;
-  instagram_url?: string;
-  tiktok_url?: string;
-  twitter_url?: string;
-  social_links_order?: string[];
-  created_at: string;
-  last_active_at?: string;
-}
-
-interface FriendshipStatus {
-  is_friend: boolean;
-  friend_request_status?: "sent" | "received";
-  request_id?: string;
-}
-
-interface PartnershipStatus {
-  is_partner: boolean;
-  partnership_id?: string;
-  can_view_partner_goals?: boolean;
-  request_status?: "sent" | "received";
-  request_id?: string;
-}
+import { useQueryClient } from "@tanstack/react-query";
 
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers (no hooks / no heavy deps)
@@ -99,33 +65,61 @@ const Profile = () => {
   const navigate = useNavigate();
   const { userId } = useParams();
   const { isOffline } = useOfflineStatus();
+  const queryClient = useQueryClient();
 
-  // ── Local state ───────────────────────────────────────────────────────────
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [friendshipStatus, setFriendshipStatus] = useState<FriendshipStatus>({ is_friend: false });
-  const [partnershipStatus, setPartnershipStatus] = useState<PartnershipStatus>({ is_partner: false });
-  const [loading, setLoading] = useState(true);
+  // Determine target user
+  const targetUserId = userId || user?.id;
+  const isOwnProfile = !userId || userId === user?.id;
 
-  // Tabs: "profile" | "integrations" – avoiding Radix Tabs to prevent iOS stack overflows
+  // ── Consolidated data fetch ───────────────────────────────────────────────
+  const { data: pageData, isLoading, error } = useProfilePageData(targetUserId);
+
+  // Extract data from consolidated response
+  const profile = pageData?.profile as (ProfileData & { [key: string]: unknown }) | null;
+  const stats = pageData?.stats;
+  const friendship = pageData?.friendship || { is_friend: false };
+  const partnership = pageData?.partnership || { is_partner: false };
+  const goals = pageData?.goals || [];
+  const viewerContext = pageData?.viewer_context;
+
+  // ── Local UI state ────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<"profile" | "integrations">(() => {
     const p = getSearchParams().get("tab");
     return p === "integrations" ? "integrations" : "profile";
   });
-
-  // Editing
   const [isEditing, setIsEditing] = useState(false);
-
-  // Friend actions
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [sendingPartnerRequest, setSendingPartnerRequest] = useState(false);
+
+  // Local state for optimistic updates
+  const [localFriendship, setLocalFriendship] = useState(friendship);
+  const [localPartnership, setLocalPartnership] = useState(partnership);
+
+  // Sync local state when data changes
+  useEffect(() => {
+    setLocalFriendship(friendship);
+  }, [friendship]);
+
+  useEffect(() => {
+    setLocalPartnership(partnership);
+  }, [partnership]);
 
   const { sendFriendRequest, respondToFriendRequest, removeFriend } = useFriends();
   const { sendPartnerRequest } = useAccountabilityPartners();
 
-  // ── Derived ───────────────────────────────────────────────────────────────
-  const isOwnProfile = !userId || userId === user?.id;
-  const { is_friend, friend_request_status } = friendshipStatus;
-  const { is_partner, can_view_partner_goals, request_status: partner_request_status } = partnershipStatus;
+  // ── Derived values ────────────────────────────────────────────────────────
+  const { is_friend, friend_request_status } = localFriendship as {
+    is_friend?: boolean;
+    friend_request_status?: 'sent' | 'received';
+    request_id?: string;
+  };
+  const { is_partner, can_view_partner_goals, request_status: partner_request_status } = localPartnership as {
+    is_partner?: boolean;
+    partnership_id?: string;
+    can_view_partner_goals?: boolean;
+    request_status?: 'sent' | 'received';
+    request_id?: string;
+  };
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
@@ -135,143 +129,37 @@ const Profile = () => {
   }, []);
 
   const handleSendFriendRequest = async () => {
-    await sendFriendRequest(profile!.id);
-    setFriendshipStatus({ is_friend: false, friend_request_status: "sent" });
+    if (!profile) return;
+    await sendFriendRequest(profile.id);
+    setLocalFriendship({ is_friend: false, friend_request_status: "sent" });
   };
 
   const handleRespondToRequest = async (response: "accepted" | "rejected") => {
-    await respondToFriendRequest(friendshipStatus.request_id || "", response);
-    setFriendshipStatus(response === "accepted" ? { is_friend: true } : { is_friend: false });
+    const requestId = (localFriendship as { request_id?: string }).request_id;
+    await respondToFriendRequest(requestId || "", response);
+    setLocalFriendship(response === "accepted" ? { is_friend: true } : { is_friend: false });
+    // Invalidate to refresh data
+    queryClient.invalidateQueries({ queryKey: ['profile-page-data', targetUserId] });
   };
 
   const handleUnfriend = async () => {
+    if (!profile) return;
     setShowUnfriendDialog(false);
-    await removeFriend(profile!.id);
-    setFriendshipStatus({ is_friend: false });
+    await removeFriend(profile.id);
+    setLocalFriendship({ is_friend: false });
+    queryClient.invalidateQueries({ queryKey: ['profile-page-data', targetUserId] });
   };
 
   const handleSendPartnerRequest = async () => {
+    if (!profile) return;
     setSendingPartnerRequest(true);
     try {
-      await sendPartnerRequest(profile!.id, "", { senderCanViewReceiverGoals: true, receiverCanViewSenderGoals: true });
-      setPartnershipStatus({ is_partner: false, request_status: "sent" });
+      await sendPartnerRequest(profile.id, "", { senderCanViewReceiverGoals: true, receiverCanViewSenderGoals: true });
+      setLocalPartnership({ is_partner: false, request_status: "sent" });
     } finally {
       setSendingPartnerRequest(false);
     }
   };
-
-  // ── Data fetch ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-
-    const fetchProfileData = async () => {
-      const targetUserId = userId || user?.id;
-      if (!targetUserId) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const isOwner = user?.id === targetUserId;
-        const isAuthenticated = !!user;
-
-        let selectColumns = "";
-        if (isOwner) {
-          selectColumns = "*";
-        } else if (isAuthenticated) {
-          selectColumns =
-            "id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, linkedin_url, instagram_url, tiktok_url, twitter_url, social_links_order, created_at, last_active_at";
-        } else {
-          selectColumns = "id, full_name, avatar_url, cover_photo_url, cover_photo_position, about_me, created_at";
-        }
-
-        const [profileResult, friendshipResult, partnershipResult] = await Promise.all([
-          supabase.from("profiles").select(selectColumns).eq("id", targetUserId).maybeSingle(),
-
-          isAuthenticated && !isOwner
-            ? (async () => {
-                const { data: friendData } = await supabase
-                  .from("friends")
-                  .select("*")
-                  .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
-                  .or(`user1_id.eq.${targetUserId},user2_id.eq.${targetUserId}`)
-                  .maybeSingle();
-
-                if (friendData) return { is_friend: true };
-
-                const { data: requestData } = await supabase
-                  .from("friend_requests")
-                  .select("id, sender_id, receiver_id, status")
-                  .eq("status", "pending")
-                  .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
-                  .or(`sender_id.eq.${targetUserId},receiver_id.eq.${targetUserId}`)
-                  .maybeSingle();
-
-                if (requestData) {
-                  return requestData.sender_id === user.id
-                    ? { is_friend: false, friend_request_status: "sent" as const, request_id: requestData.id }
-                    : { is_friend: false, friend_request_status: "received" as const, request_id: requestData.id };
-                }
-
-                return { is_friend: false };
-              })()
-            : Promise.resolve({ is_friend: false }),
-
-          isAuthenticated && !isOwner
-            ? (async () => {
-                const partnership = await accountabilityService.getPartnershipDetails(targetUserId).catch(() => null);
-                if (partnership) {
-                  return {
-                    is_partner: true,
-                    partnership_id: partnership.id,
-                    can_view_partner_goals: partnership.can_view_partner_goals,
-                  };
-                }
-
-                const requests = await accountabilityService.getPartnerRequests().catch(() => ({ sent: [], received: [] }));
-                const sentReq = requests.sent.find((r) => r.receiver_id === targetUserId);
-                const recvReq = requests.received.find((r) => r.sender_id === targetUserId);
-
-                if (sentReq) return { is_partner: false, request_status: "sent" as const, request_id: sentReq.id };
-                if (recvReq) return { is_partner: false, request_status: "received" as const, request_id: recvReq.id };
-
-                return { is_partner: false };
-              })()
-            : Promise.resolve({ is_partner: false }),
-        ]);
-
-        if (cancelled) return;
-
-        const { data: profileData, error: profileError } = profileResult;
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          setLoading(false);
-          return;
-        }
-
-        if (!profileData) {
-          setLoading(false);
-          return;
-        }
-
-        setProfile(profileData as unknown as Profile);
-        setFriendshipStatus(friendshipResult);
-        setPartnershipStatus(partnershipResult);
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    if (user !== null || userId) {
-      fetchProfileData();
-    }
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, userId]);
 
   // ── Sync URL on initial setup / new user ─────────────────────────────────
   useEffect(() => {
@@ -302,7 +190,7 @@ const Profile = () => {
     );
   }
 
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <ProfileSkeleton />
@@ -311,7 +199,7 @@ const Profile = () => {
   }
 
   // ────────────────────────────────────────────────────────────────────────────
-  // Sub-render: profile view (no Radix Tabs – just conditional rendering)
+  // Sub-render: profile view
   // ────────────────────────────────────────────────────────────────────────────
 
   const formatDate = (dateString: string) =>
@@ -322,7 +210,7 @@ const Profile = () => {
 
     const socialLinks: Record<string, string> = {};
     SOCIAL_PLATFORMS.forEach((platform) => {
-      const value = (profile as unknown as Record<string, unknown>)[platform.id];
+      const value = profile[platform.id];
       if (typeof value === "string" && value) socialLinks[platform.id] = value;
     });
     const hasSocialLinks = Object.keys(socialLinks).length > 0;
@@ -417,7 +305,7 @@ const Profile = () => {
               )}
             </div>
 
-            {/* Stats */}
+            {/* Stats - now using data from consolidated query */}
             <div className="mt-6">
               <ProfileStats userId={profile.id} />
             </div>
@@ -510,11 +398,12 @@ const Profile = () => {
           </CardContent>
         </Card>
 
-        {/* Goals */}
+        {/* Goals - pass pre-fetched goals to avoid additional query */}
         <ProfileGoals
           userId={profile.id}
           isOwnProfile={isOwnProfile}
           viewerType={isOwnProfile ? "owner" : is_friend ? "friend" : "public"}
+          prefetchedGoals={goals}
         />
 
         <UnfriendConfirmDialog
@@ -536,9 +425,9 @@ const Profile = () => {
     return (
       <div className="container mx-auto px-4 py-8">
         <ProfileEditForm
-          profile={profile}
-          onUpdate={(updated: Profile) => {
-            setProfile(updated);
+          profile={profile as any}
+          onUpdate={(updated) => {
+            queryClient.invalidateQueries({ queryKey: ['profile-page-data', targetUserId] });
             setIsEditing(false);
             deleteSearchParam("setup");
             if (isNewUser) markProfileComplete();

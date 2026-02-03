@@ -161,6 +161,7 @@ class FriendsService {
   }
 
   // Get pending friend requests (sent and received)
+  // Optimized to batch profile lookups instead of N+1 queries
   async getFriendRequests(): Promise<{
     sent: FriendRequest[];
     received: FriendRequest[];
@@ -169,53 +170,61 @@ class FriendsService {
       const { data: currentUser } = await supabase.auth.getUser();
       if (!currentUser.user) return { sent: [], received: [] };
 
-      const { data: sentRequests, error: sentError } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('sender_id', currentUser.user.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      // Fetch sent and received requests in parallel
+      const [sentResult, receivedResult] = await Promise.all([
+        supabase
+          .from('friend_requests')
+          .select('*')
+          .eq('sender_id', currentUser.user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('friend_requests')
+          .select('*')
+          .eq('receiver_id', currentUser.user.id)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+      ]);
 
-      const { data: receivedRequests, error: receivedError } = await supabase
-        .from('friend_requests')
-        .select('*')
-        .eq('receiver_id', currentUser.user.id)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
+      if (sentResult.error) throw sentResult.error;
+      if (receivedResult.error) throw receivedResult.error;
 
-      if (sentError) throw sentError;
-      if (receivedError) throw receivedError;
+      const sentRequests = sentResult.data || [];
+      const receivedRequests = receivedResult.data || [];
 
-      // Fetch profiles separately
-      const sentWithProfiles = await Promise.all(
-        (sentRequests || []).map(async (request) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', request.receiver_id)
-            .single();
-          
-          return {
-            ...request,
-            receiver_profile: profile
-          } as FriendRequest;
-        })
-      );
+      // Collect all profile IDs we need to fetch
+      const profileIds = new Set<string>();
+      sentRequests.forEach(r => profileIds.add(r.receiver_id));
+      receivedRequests.forEach(r => profileIds.add(r.sender_id));
 
-      const receivedWithProfiles = await Promise.all(
-        (receivedRequests || []).map(async (request) => {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name, avatar_url')
-            .eq('id', request.sender_id)
-            .single();
-          
-          return {
-            ...request,
-            sender_profile: profile
-          } as FriendRequest;
-        })
-      );
+      // Batch fetch all profiles in a single query
+      let profilesMap = new Map<string, { full_name: string; avatar_url: string | null }>();
+      
+      if (profileIds.size > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, full_name, avatar_url')
+          .in('id', Array.from(profileIds));
+        
+        if (profiles) {
+          profiles.forEach(p => {
+            profilesMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
+          });
+        }
+      }
+
+      // Map profiles to requests
+      const sentWithProfiles = sentRequests.map(request => ({
+        ...request,
+        status: request.status as 'pending' | 'accepted' | 'rejected',
+        receiver_profile: profilesMap.get(request.receiver_id) || undefined
+      })) as FriendRequest[];
+
+      const receivedWithProfiles = receivedRequests.map(request => ({
+        ...request,
+        status: request.status as 'pending' | 'accepted' | 'rejected',
+        sender_profile: profilesMap.get(request.sender_id) || undefined
+      })) as FriendRequest[];
 
       return {
         sent: sentWithProfiles,

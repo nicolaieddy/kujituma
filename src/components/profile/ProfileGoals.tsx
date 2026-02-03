@@ -9,11 +9,27 @@ import { supabase } from "@/integrations/supabase/client";
 import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2, Users, Trophy, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 // Removed framer-motion AnimatePresence to prevent "Maximum call stack size exceeded" on iOS Safari
+
+interface ProfileGoal {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  visibility: string;
+  timeframe: string;
+  category: string | null;
+  target_date: string | null;
+  created_at: string;
+  completed_at: string | null;
+  is_recurring: boolean;
+}
+
 interface ProfileGoalsProps {
   userId: string;
   isOwnProfile?: boolean;
   viewerType?: 'owner' | 'friend' | 'public';
   onGoalUpdate?: () => void;
+  prefetchedGoals?: ProfileGoal[];
 }
 
 const COLUMNS = [
@@ -49,9 +65,9 @@ const getGoalYear = (goal: Goal): number => {
   return new Date(goal.created_at).getFullYear();
 };
 
-export const ProfileGoals = memo(({ userId, isOwnProfile = false, viewerType = 'owner', onGoalUpdate }: ProfileGoalsProps) => {
+export const ProfileGoals = memo(({ userId, isOwnProfile = false, viewerType = 'owner', onGoalUpdate, prefetchedGoals }: ProfileGoalsProps) => {
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!prefetchedGoals);
   const [togglingGoalId, setTogglingGoalId] = useState<string | null>(null);
   const [previousYearsOpen, setPreviousYearsOpen] = useState(false);
   
@@ -61,7 +77,45 @@ export const ProfileGoals = memo(({ userId, isOwnProfile = false, viewerType = '
   const effectiveIsOwner = viewerType === 'owner' || isOwnProfile;
   const showPrivateGoals = viewerType === 'owner' || isOwnProfile;
 
+  // Use prefetched goals if available, otherwise fetch
   useEffect(() => {
+    // If we have prefetched goals, use them directly
+    if (prefetchedGoals && prefetchedGoals.length > 0) {
+      // Convert ProfileGoal[] to Goal[] format with all required fields
+      const convertedGoals: Goal[] = prefetchedGoals.map(g => ({
+        id: g.id,
+        title: g.title,
+        description: g.description || '',
+        status: g.status as GoalStatus,
+        visibility: g.visibility as GoalVisibility,
+        timeframe: g.timeframe as Goal['timeframe'],
+        category: g.category || '',
+        target_date: g.target_date,
+        created_at: g.created_at,
+        completed_at: g.completed_at,
+        is_recurring: g.is_recurring,
+        user_id: userId,
+        updated_at: g.created_at,
+        is_paused: false,
+        start_date: null,
+        notes: '',
+        deprioritized_at: null,
+        order_index: 0,
+        paused_at: null,
+        habit_items: [],
+      }));
+      setGoals(convertedGoals);
+      setLoading(false);
+      return;
+    }
+    
+    // If prefetchedGoals is an empty array (explicitly passed), just set empty and stop loading
+    if (prefetchedGoals !== undefined) {
+      setGoals([]);
+      setLoading(false);
+      return;
+    }
+
     let mounted = true;
     
     const fetchGoals = async () => {
@@ -98,7 +152,7 @@ export const ProfileGoals = memo(({ userId, isOwnProfile = false, viewerType = '
     return () => {
       mounted = false;
     };
-  }, [userId, effectiveIsOwner, viewerType]);
+  }, [userId, effectiveIsOwner, viewerType, prefetchedGoals]);
 
   // Memoized visibility change handler to prevent re-renders
   const handleVisibilityChange = useCallback(async (goalId: string, currentGoals: Goal[], newVisibility: GoalVisibility) => {
