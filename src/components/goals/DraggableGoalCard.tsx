@@ -17,6 +17,8 @@ interface DraggableGoalCardProps {
   isDeprioritized?: boolean;
   currentStreak?: number;
   duolingoStreak?: number;
+  objectivesCount?: number;
+  completedObjectivesCount?: number;
 }
 
 export const DraggableGoalCard = ({ 
@@ -31,7 +33,9 @@ export const DraggableGoalCard = ({
   onVisibilityChange,
   isDeprioritized,
   currentStreak,
-  duolingoStreak
+  duolingoStreak,
+  objectivesCount,
+  completedObjectivesCount,
 }: DraggableGoalCardProps) => {
   const {
     attributes,
@@ -91,6 +95,8 @@ export const DraggableGoalCard = ({
           isDeprioritized={isDeprioritized}
           currentStreak={currentStreak}
           duolingoStreak={duolingoStreak}
+          objectivesCount={objectivesCount}
+          completedObjectivesCount={completedObjectivesCount}
         />
       </div>
     </div>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { MoreHorizontal, Calendar, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff, Flame } from "lucide-react";
+import { MoreHorizontal, Calendar, StickyNote, Edit, Trash2, CheckCircle, Play, Clock, MousePointer, Archive, RotateCcw, RefreshCw, Pause, PlayCircle, Eye, Users, EyeOff, Flame, ListChecks } from "lucide-react";
 import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -41,6 +41,8 @@ interface GoalCardProps {
   isDeprioritized?: boolean;
   currentStreak?: number;
   duolingoStreak?: number;
+  objectivesCount?: number;
+  completedObjectivesCount?: number;
 }
 
 const STATUS_CONFIG = {
@@ -78,7 +80,9 @@ export const GoalCard = ({
   onVisibilityChange,
   isDeprioritized = false,
   currentStreak = 0,
-  duolingoStreak
+  duolingoStreak,
+  objectivesCount = 0,
+  completedObjectivesCount = 0,
 }: GoalCardProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -454,6 +458,22 @@ export const GoalCard = ({
                   <StickyNote className="h-3 w-3" />
                   <span>Has notes</span>
                 </div>
+              )}
+              
+              {objectivesCount > 0 && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center gap-1 cursor-help">
+                      <ListChecks className="h-3 w-3" />
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                        {completedObjectivesCount}/{objectivesCount}
+                      </Badge>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{completedObjectivesCount} of {objectivesCount} objectives completed ({objectivesCount > 0 ? Math.round((completedObjectivesCount / objectivesCount) * 100) : 0}%)</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
             

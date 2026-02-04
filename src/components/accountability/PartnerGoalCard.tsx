@@ -1,18 +1,22 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
 import { PartnerGoal } from '@/services/accountabilityService';
-import { Target, Calendar, TrendingUp } from 'lucide-react';
+import { Target, Calendar, ListChecks } from 'lucide-react';
 import { format } from 'date-fns';
 import { getCategoryConfig, CustomCategoryIcon } from '@/types/customCategories';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PartnerGoalCardProps {
-  goal: PartnerGoal;
-  objectivesCount?: number;
-  completedObjectivesCount?: number;
+  goal: PartnerGoal & {
+    objectives_count?: number;
+    completed_objectives_count?: number;
+  };
 }
 
-export const PartnerGoalCard = ({ goal, objectivesCount = 0, completedObjectivesCount = 0 }: PartnerGoalCardProps) => {
+export const PartnerGoalCard = ({ goal }: PartnerGoalCardProps) => {
+  const objectivesCount = goal.objectives_count ?? 0;
+  const completedObjectivesCount = goal.completed_objectives_count ?? 0;
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'active':
@@ -89,10 +93,19 @@ export const PartnerGoalCard = ({ goal, objectivesCount = 0, completedObjectives
               )}
 
               {objectivesCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  {completedObjectivesCount}/{objectivesCount} objectives ({progressPercentage}%)
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="flex items-center gap-1 cursor-help">
+                      <ListChecks className="h-3 w-3" />
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0">
+                        {completedObjectivesCount}/{objectivesCount}
+                      </Badge>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>{completedObjectivesCount} of {objectivesCount} historical objectives completed ({progressPercentage}%)</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
             </div>
           </div>

@@ -13,6 +13,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter, DragOverEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
+import { useGoalObjectiveCounts } from "@/hooks/useGoalObjectiveCounts";
 
 interface OrganizedGoalsViewProps {
   activeGoals: Goal[];
@@ -67,6 +68,7 @@ export const OrganizedGoalsView = ({
   const currentYear = new Date().getFullYear();
   const [filters, setFilters] = useState<GoalFilters>(initialFilters);
   const [activeGoal, setActiveGoal] = useState<Goal | null>(null);
+  const { getCountsForGoal } = useGoalObjectiveCounts();
 
   // Drag and drop sensors
   const sensors = useSensors(
@@ -347,22 +349,27 @@ export const OrganizedGoalsView = ({
                             </p>
                           </div>
                         ) : (
-                          notStartedGoals.map((goal) => (
-                            <DraggableGoalCard
-                              key={goal.id}
-                              goal={goal}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onStatusChange={onStatusChange}
-                              onClick={onGoalClick}
-                              onDeprioritize={onDeprioritize}
-                              onReprioritize={onReprioritize}
-                              onPauseToggle={onPauseToggle}
-                              onVisibilityChange={onVisibilityChange}
-                              currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
-                              duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
-                            />
-                          ))
+                          notStartedGoals.map((goal) => {
+                            const counts = getCountsForGoal(goal.id);
+                            return (
+                              <DraggableGoalCard
+                                key={goal.id}
+                                goal={goal}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                onStatusChange={onStatusChange}
+                                onClick={onGoalClick}
+                                onDeprioritize={onDeprioritize}
+                                onReprioritize={onReprioritize}
+                                onPauseToggle={onPauseToggle}
+                                onVisibilityChange={onVisibilityChange}
+                                currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
+                                duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
+                                objectivesCount={counts.total}
+                                completedObjectivesCount={counts.completed}
+                              />
+                            );
+                          })
                         )}
                       </DroppableColumn>
                     </SortableContext>
@@ -387,22 +394,27 @@ export const OrganizedGoalsView = ({
                             </p>
                           </div>
                         ) : (
-                          inProgressGoals.map((goal) => (
-                            <DraggableGoalCard
-                              key={goal.id}
-                              goal={goal}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onStatusChange={onStatusChange}
-                              onClick={onGoalClick}
-                              onDeprioritize={onDeprioritize}
-                              onReprioritize={onReprioritize}
-                              onPauseToggle={onPauseToggle}
-                              onVisibilityChange={onVisibilityChange}
-                              currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
-                              duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
-                            />
-                          ))
+                          inProgressGoals.map((goal) => {
+                            const counts = getCountsForGoal(goal.id);
+                            return (
+                              <DraggableGoalCard
+                                key={goal.id}
+                                goal={goal}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                onStatusChange={onStatusChange}
+                                onClick={onGoalClick}
+                                onDeprioritize={onDeprioritize}
+                                onReprioritize={onReprioritize}
+                                onPauseToggle={onPauseToggle}
+                                onVisibilityChange={onVisibilityChange}
+                                currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
+                                duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
+                                objectivesCount={counts.total}
+                                completedObjectivesCount={counts.completed}
+                              />
+                            );
+                          })
                         )}
                       </DroppableColumn>
                     </SortableContext>
@@ -427,22 +439,27 @@ export const OrganizedGoalsView = ({
                             </p>
                           </div>
                         ) : (
-                          currentYearCompletedGoals.map((goal) => (
-                            <DraggableGoalCard
-                              key={goal.id}
-                              goal={goal}
-                              onEdit={onEdit}
-                              onDelete={onDelete}
-                              onStatusChange={onStatusChange}
-                              onClick={onGoalClick}
-                              onDeprioritize={onDeprioritize}
-                              onReprioritize={onReprioritize}
-                              onPauseToggle={onPauseToggle}
-                              onVisibilityChange={onVisibilityChange}
-                              currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
-                              duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
-                            />
-                          ))
+                          currentYearCompletedGoals.map((goal) => {
+                            const counts = getCountsForGoal(goal.id);
+                            return (
+                              <DraggableGoalCard
+                                key={goal.id}
+                                goal={goal}
+                                onEdit={onEdit}
+                                onDelete={onDelete}
+                                onStatusChange={onStatusChange}
+                                onClick={onGoalClick}
+                                onDeprioritize={onDeprioritize}
+                                onReprioritize={onReprioritize}
+                                onPauseToggle={onPauseToggle}
+                                onVisibilityChange={onVisibilityChange}
+                                currentStreak={goal.habit_items && goal.habit_items.length > 0 ? habitStreaks[goal.id] : undefined}
+                                duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
+                                objectivesCount={counts.total}
+                                completedObjectivesCount={counts.completed}
+                              />
+                            );
+                          })
                         )}
                       </DroppableColumn>
                     </SortableContext>
@@ -477,22 +494,27 @@ export const OrganizedGoalsView = ({
                 defaultOpen={hasActiveFilters ? true : false}
               >
                 <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-3'} gap-3`}>
-                  {filteredDeprioritizedGoals.map((goal) => (
-                    <GoalCard
-                      key={goal.id}
-                      goal={goal}
-                      onEdit={onEdit}
-                      onDelete={onDelete}
-                      onStatusChange={onStatusChange}
-                      onClick={onGoalClick}
-                      onDeprioritize={onDeprioritize}
-                      onReprioritize={onReprioritize}
-                      onPauseToggle={onPauseToggle}
-                      onVisibilityChange={onVisibilityChange}
-                      isDeprioritized
-                      duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
-                    />
-                  ))}
+                  {filteredDeprioritizedGoals.map((goal) => {
+                    const counts = getCountsForGoal(goal.id);
+                    return (
+                      <GoalCard
+                        key={goal.id}
+                        goal={goal}
+                        onEdit={onEdit}
+                        onDelete={onDelete}
+                        onStatusChange={onStatusChange}
+                        onClick={onGoalClick}
+                        onDeprioritize={onDeprioritize}
+                        onReprioritize={onReprioritize}
+                        onPauseToggle={onPauseToggle}
+                        onVisibilityChange={onVisibilityChange}
+                        isDeprioritized
+                        duolingoStreak={goal.category === 'Language Learning' ? duolingoStreak : undefined}
+                        objectivesCount={counts.total}
+                        completedObjectivesCount={counts.completed}
+                      />
+                    );
+                  })}
                 </div>
               </CollapsibleGoalSection>
             </section>
