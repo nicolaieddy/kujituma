@@ -1,9 +1,10 @@
-import { useEffect, useState, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useCallback, useImperativeHandle, forwardRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { accountabilityService, AccountabilityPartner } from '@/services/accountabilityService';
+import { useAccountabilityData } from '@/hooks/useAccountabilityData';
+import { AccountabilityPartner } from '@/services/accountabilityService';
 import { Check, AlertCircle, Ban } from 'lucide-react';
 import { startOfWeek, isAfter, parseISO } from 'date-fns';
 import {
@@ -11,6 +12,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { CheckInCadence } from '@/services/accountabilityService';
 
 export interface PartnerSwitcherRef {
   refresh: () => Promise<void>;
@@ -24,29 +26,19 @@ type CheckInStatus = 'checked-in' | 'needs-check-in' | 'disabled';
 
 export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherProps>(({ currentPartnerId }, ref) => {
   const navigate = useNavigate();
-  const [partners, setPartners] = useState<AccountabilityPartner[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use the consolidated hook - shares cache with other accountability components
+  const { partners, isLoading, refetch } = useAccountabilityData();
 
-  const fetchPartners = useCallback(async () => {
-    try {
-      const data = await accountabilityService.getPartners();
-      setPartners(data);
-    } catch (err) {
-      console.error('Failed to fetch partners:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const handleRefresh = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   useImperativeHandle(ref, () => ({
-    refresh: fetchPartners
-  }), [fetchPartners]);
+    refresh: handleRefresh
+  }), [handleRefresh]);
 
-  useEffect(() => {
-    fetchPartners();
-  }, [fetchPartners]);
-
-  if (loading || partners.length <= 1) {
+  if (isLoading || partners.length <= 1) {
     return null;
   }
 
