@@ -1,13 +1,19 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Clock, Play, CheckCircle, Target, Calendar } from "lucide-react";
+import { Clock, Play, CheckCircle, Target, Calendar, ListChecks } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PartnerGoal } from "@/services/accountabilityService";
 import { format } from "date-fns";
 import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+interface PartnerGoalWithCounts extends PartnerGoal {
+  objectives_count?: number;
+  completed_objectives_count?: number;
+}
 
 interface PartnerGoalsKanbanProps {
-  goals: PartnerGoal[];
+  goals: PartnerGoalWithCounts[];
 }
 
 type GoalStatus = 'not_started' | 'in_progress' | 'completed';
@@ -33,16 +39,34 @@ const COLUMNS = [
   }
 ];
 
-const PartnerGoalCard = ({ goal }: { goal: PartnerGoal }) => {
+const PartnerGoalCard = ({ goal }: { goal: PartnerGoalWithCounts }) => {
   const categoryConfig = goal.category ? getCategoryConfig(goal.category) : null;
   const CategoryIcon = categoryConfig?.icon || CustomCategoryIcon;
+  const objectivesCount = goal.objectives_count ?? 0;
+  const completedCount = goal.completed_objectives_count ?? 0;
+  const progressPercentage = objectivesCount > 0 ? Math.round((completedCount / objectivesCount) * 100) : 0;
 
   return (
     <Card className="p-3 sm:p-4 bg-background hover:shadow-md transition-shadow">
       <div className="space-y-2">
-        <h4 className="font-medium text-sm text-foreground line-clamp-2">
-          {goal.title}
-        </h4>
+        <div className="flex items-start justify-between gap-2">
+          <h4 className="font-medium text-sm text-foreground line-clamp-2">
+            {goal.title}
+          </h4>
+          {objectivesCount > 0 && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Badge variant="secondary" className="text-xs px-1.5 py-0 flex-shrink-0 cursor-help">
+                  <ListChecks className="h-3 w-3 mr-1" />
+                  {completedCount}/{objectivesCount}
+                </Badge>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{completedCount} of {objectivesCount} objectives completed ({progressPercentage}%)</p>
+              </TooltipContent>
+            </Tooltip>
+          )}
+        </div>
 
         {goal.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">

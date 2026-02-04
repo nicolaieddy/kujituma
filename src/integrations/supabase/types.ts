@@ -1894,6 +1894,7 @@ export type Database = {
         Returns: Json
       }
       get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
+      get_goals_objective_counts: { Args: never; Returns: Json }
       get_habit_stats_data: { Args: never; Returns: Json }
       get_partner_dashboard_data: {
         Args: { p_partner_id: string; p_week_start: string }

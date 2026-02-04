@@ -2,6 +2,7 @@ import { Goal, GoalStatus } from "@/types/goals";
 import { GoalCard } from "./GoalCard";
 import { CollapsibleGoalSection } from "./CollapsibleGoalSection";
 import { CheckCircle } from "lucide-react";
+import { useGoalObjectiveCounts } from "@/hooks/useGoalObjectiveCounts";
 
 interface GoalYearGroupProps {
   year: number;
@@ -27,6 +28,7 @@ export const GoalYearGroup = ({
   onReprioritize
 }: GoalYearGroupProps) => {
   const isCurrentYear = year === currentYear;
+  const { getCountsForGoal } = useGoalObjectiveCounts();
 
   return (
     <CollapsibleGoalSection
@@ -37,18 +39,23 @@ export const GoalYearGroup = ({
       variant="success"
     >
       <div className="space-y-3">
-        {goals.map((goal) => (
-          <GoalCard
-            key={goal.id}
-            goal={goal}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onStatusChange={onStatusChange}
-            onClick={onClick}
-            onDeprioritize={onDeprioritize}
-            onReprioritize={onReprioritize}
-          />
-        ))}
+        {goals.map((goal) => {
+          const counts = getCountsForGoal(goal.id);
+          return (
+            <GoalCard
+              key={goal.id}
+              goal={goal}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onStatusChange={onStatusChange}
+              onClick={onClick}
+              onDeprioritize={onDeprioritize}
+              onReprioritize={onReprioritize}
+              objectivesCount={counts.total}
+              completedObjectivesCount={counts.completed}
+            />
+          );
+        })}
       </div>
     </CollapsibleGoalSection>
   );
