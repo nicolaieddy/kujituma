@@ -66,16 +66,21 @@ export const CheckInDialog = ({
     try {
       await promiseWithTimeout(onConfirm(message.trim() || undefined), 20000);
 
-      // Only update state if this is still the latest request
+      // Only update state if this is still the latest request and component is mounted
       if (!mountedRef.current || requestIdRef.current !== requestId) return;
 
       setMessage('');
       onOpenChange(false);
     } catch (err) {
+      // Only show error if component is mounted and request is current
+      if (!mountedRef.current || requestIdRef.current !== requestId) return;
+      
       console.error('Error recording check-in:', err);
 
       const isTimeout = err instanceof Error && err.message === 'timeout';
-      toast.error(isTimeout ? 'This is taking longer than expected. Check your connection and try again.' : 'Failed to record check-in');
+      toast.error(isTimeout 
+        ? 'This is taking longer than expected. Check your connection and try again.' 
+        : 'Failed to record check-in. Please try again.');
     } finally {
       if (!mountedRef.current || requestIdRef.current !== requestId) return;
       setIsSubmitting(false);
