@@ -383,65 +383,26 @@ class AccountabilityService {
   }
 
   async recordCheckIn(partnershipId: string, message?: string, replyToId?: string): Promise<{ success: boolean; error?: string; checkInId?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return { success: false, error: 'Not authenticated' };
-
     try {
-      // Get current week start (Monday) using date-fns for reliability
-      const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-
-      const { data: checkIn, error } = await supabase
-        .from('accountability_check_ins')
-        .insert({
-          partnership_id: partnershipId,
-          initiated_by: user.id,
-          week_start: format(weekStart, 'yyyy-MM-dd'),
-          message: message || null,
-          reply_to_id: replyToId || null,
-        })
-        .select('id')
-        .single();
+      // Single optimized RPC call that handles insert, update timestamp, and notification
+      const { data, error } = await supabase.rpc('record_accountability_check_in', {
+        p_partnership_id: partnershipId,
+        p_message: message || null,
+        p_reply_to_id: replyToId || null,
+      });
 
       if (error) {
         return { success: false, error: error.message };
       }
 
-      // Update last check-in timestamp on partnership
-      await supabase
-        .from('accountability_partnerships')
-        .update({ last_check_in_at: new Date().toISOString() })
-        .eq('id', partnershipId);
-
-      // Get the partner's user ID and current user's name to send notification
-      const { data: partnership } = await supabase
-        .from('accountability_partnerships')
-        .select('user1_id, user2_id')
-        .eq('id', partnershipId)
-        .single();
-
-      if (partnership) {
-        const partnerId = partnership.user1_id === user.id ? partnership.user2_id : partnership.user1_id;
-        
-        // Get current user's name
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-
-        const userName = profile?.full_name || 'Your accountability partner';
-
-        // Create notification for the partner
-        await supabase.rpc('create_notification', {
-          _user_id: partnerId,
-          _type: 'accountability_check_in',
-          _message: `${userName} recorded a check-in${message ? ': "' + message.slice(0, 50) + (message.length > 50 ? '...' : '') + '"' : ''}`,
-          _triggered_by_user_id: user.id,
-          _related_request_id: partnershipId,
-        });
+      // RPC returns jsonb with success/error/check_in_id
+      const result = data as { success: boolean; error?: string; check_in_id?: string };
+      
+      if (!result.success) {
+        return { success: false, error: result.error || 'Unknown error' };
       }
 
-      return { success: true, checkInId: checkIn?.id };
+      return { success: true, checkInId: result.check_in_id };
     } catch (err) {
       return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
     }

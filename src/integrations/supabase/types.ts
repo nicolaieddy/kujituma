@@ -1959,6 +1959,14 @@ export type Database = {
         Returns: boolean
       }
       normalize_to_monday: { Args: { d: string }; Returns: string }
+      record_accountability_check_in: {
+        Args: {
+          p_message?: string
+          p_partnership_id: string
+          p_reply_to_id?: string
+        }
+        Returns: Json
+      }
       remove_friend: { Args: { _friend_id: string }; Returns: boolean }
       respond_to_accountability_partner_request: {
         Args: {
