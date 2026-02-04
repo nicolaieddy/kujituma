@@ -9,7 +9,8 @@ export const LandingHero = () => {
           sizes="100vw"
           alt="Mount Kilimanjaro"
           className="w-full h-full object-cover"
-          fetchPriority="high"
+          // @ts-expect-error fetchpriority is a valid HTML attribute
+          fetchpriority="high"
         />
         {/* Gradient overlay for text readability */}
         <div className="absolute inset-0 bg-gradient-to-b from-background/90 via-background/70 to-background" />
