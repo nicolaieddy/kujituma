@@ -557,12 +557,38 @@ export class WeeklyProgressService {
       return [];
     }
 
-    const { data: newObjectives, error: createError } = await supabase
-      .from('weekly_objectives')
-      .insert(objectivesToCreate)
-      .select();
+    // Insert objectives one by one to handle partial failures gracefully
+    // This prevents a single duplicate from failing the entire batch
+    const insertedObjectives: any[] = [];
+    
+    for (const obj of objectivesToCreate) {
+      try {
+        const { data: newObj, error: insertError } = await supabase
+          .from('weekly_objectives')
+          .insert(obj)
+          .select()
+          .single();
 
-    if (createError) throw createError;
+        if (insertError) {
+          // If it's a duplicate key error (409/23505), skip this one but continue
+          if (insertError.code === '23505' || insertError.message?.includes('duplicate')) {
+            console.log('[WeeklyProgressService] Skipping duplicate objective:', obj.text);
+            continue;
+          }
+          // For other errors, log but continue
+          console.error('[WeeklyProgressService] Insert error for objective:', obj.text, insertError);
+          continue;
+        }
+        
+        if (newObj) {
+          insertedObjectives.push(newObj);
+        }
+      } catch (err) {
+        console.error('[WeeklyProgressService] Unexpected error inserting objective:', obj.text, err);
+      }
+    }
+
+    const newObjectives = insertedObjectives;
 
     // Log the carry-over actions
     try {
