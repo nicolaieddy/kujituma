@@ -110,7 +110,9 @@ const PartnerDashboard = () => {
   }, [authLoading, user, navigate]);
 
   const handleRecordCheckIn = async (message?: string) => {
-    if (!partnershipDetails || !currentUserProfile) return;
+    if (!partnershipDetails || !currentUserProfile) {
+      throw new Error('Missing partnership details');
+    }
     
     // Add optimistic check-in immediately
     const tempId = checkInsFeedRef.current?.addOptimisticCheckIn({
@@ -120,21 +122,28 @@ const PartnerDashboard = () => {
     });
     
     try {
-      await accountabilityService.recordCheckIn(partnershipDetails.id, message);
+      const result = await accountabilityService.recordCheckIn(partnershipDetails.id, message);
+      
+      // Check if the service returned an error
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to record check-in');
+      }
+      
       // Confirm the optimistic update
       if (tempId) checkInsFeedRef.current?.confirmOptimisticCheckIn(tempId);
-      // Refresh the check-ins feed and partner switcher
-      await Promise.all([
+      // Refresh the check-ins feed and partner switcher (don't await to keep dialog responsive)
+      Promise.all([
         checkInsFeedRef.current?.refresh(),
         partnerSwitcherRef.current?.refresh(),
         refetch()
-      ]);
+      ]).catch(console.error);
       toast.success('Check-in recorded!');
     } catch (err) {
       console.error('Error recording check-in:', err);
       // Remove the optimistic entry on failure
       if (tempId) checkInsFeedRef.current?.removeOptimisticCheckIn(tempId);
-      toast.error('Failed to record check-in');
+      // Re-throw so the dialog knows it failed
+      throw err;
     }
   };
 
