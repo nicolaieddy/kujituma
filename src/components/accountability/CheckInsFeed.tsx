@@ -155,6 +155,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   }, [partnershipId]);
 
   // Real-time subscription for new check-ins and reactions
+  // IMPORTANT: Only depend on partnershipId to avoid infinite re-subscription loops
   useEffect(() => {
     const channel = supabase
       .channel(`check-ins-feed-${partnershipId}`)
@@ -177,12 +178,9 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
           schema: 'public',
           table: 'check_in_reactions',
         },
-        (payload) => {
-          const checkInIds = checkIns.map(c => c.id);
-          const checkInId = (payload.new as any)?.check_in_id || (payload.old as any)?.check_in_id;
-          if (checkInIds.includes(checkInId)) {
-            fetchCheckIns();
-          }
+        () => {
+          // Refresh on any reaction change - simpler than tracking IDs
+          fetchCheckIns();
         }
       )
       .subscribe();
@@ -190,7 +188,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [partnershipId, checkIns.map(c => c.id).join(',')]);
+  }, [partnershipId, fetchCheckIns]);
 
   const handleToggleReaction = async (checkInId: string, reaction: string) => {
     await accountabilityService.toggleReaction(checkInId, reaction);

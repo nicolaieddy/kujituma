@@ -42,10 +42,6 @@ const PartnerDashboard = () => {
   );
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [currentUserProfile, setCurrentUserProfile] = useState<{
-    full_name: string;
-    avatar_url: string | null;
-  } | null>(null);
   
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
@@ -65,6 +61,12 @@ const PartnerDashboard = () => {
     partnerCanViewMyGoals: data?.partner_can_view_my_goals ?? false,
     myCheckInCadence: data?.my_check_in_cadence ?? 'weekly',
   };
+  
+  // Get current user's profile from auth context
+  const currentUserProfile = user ? {
+    full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'You',
+    avatar_url: user.user_metadata?.avatar_url || null,
+  } : null;
 
   // Get objective IDs for feedback hook - must be called before any early returns
   const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
@@ -84,24 +86,7 @@ const PartnerDashboard = () => {
     setSelectedWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
 
-  // Fetch current user's profile
-  useEffect(() => {
-    const fetchCurrentUserProfile = async () => {
-      if (!user) return;
-      
-      const { data } = await supabase
-        .from('profiles')
-        .select('full_name, avatar_url')
-        .eq('id', user.id)
-        .single();
-      
-      if (data) {
-        setCurrentUserProfile(data);
-      }
-    };
-    
-    fetchCurrentUserProfile();
-  }, [user]);
+  // Note: currentUserProfile derived from auth context above - no extra query needed
 
   useEffect(() => {
     if (!authLoading && !user) {
