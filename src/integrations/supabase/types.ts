@@ -363,6 +363,7 @@ export type Database = {
           check_in_id: string
           created_at: string
           id: string
+          partnership_id: string
           reaction: string
           user_id: string
         }
@@ -370,6 +371,7 @@ export type Database = {
           check_in_id: string
           created_at?: string
           id?: string
+          partnership_id: string
           reaction: string
           user_id: string
         }
@@ -377,6 +379,7 @@ export type Database = {
           check_in_id?: string
           created_at?: string
           id?: string
+          partnership_id?: string
           reaction?: string
           user_id?: string
         }
@@ -386,6 +389,13 @@ export type Database = {
             columns: ["check_in_id"]
             isOneToOne: false
             referencedRelation: "accountability_check_ins"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "check_in_reactions_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
             referencedColumns: ["id"]
           },
         ]

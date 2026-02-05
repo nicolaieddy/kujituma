@@ -37,33 +37,37 @@ export const WeekCheckInsSection = ({
     fetchCheckIns();
   }, [partnershipId, weekStart]);
 
-  // Real-time subscription for reactions
+  // Real-time subscription for reactions - use partnership_id filter for efficiency
   useEffect(() => {
-    const checkInIds = checkIns.map(c => c.id);
-    if (checkInIds.length === 0) return;
+    if (!partnershipId) return;
+
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => {
+        fetchCheckIns();
+      }, 500);
+    };
 
     const channel = supabase
-      .channel(`check-in-reactions-${partnershipId}`)
+      .channel(`week-check-in-reactions-${partnershipId}-${weekStart}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'check_in_reactions',
+          filter: `partnership_id=eq.${partnershipId}`,
         },
-        (payload) => {
-          const checkInId = (payload.new as any)?.check_in_id || (payload.old as any)?.check_in_id;
-          if (checkInIds.includes(checkInId)) {
-            fetchCheckIns();
-          }
-        }
+        scheduleRefresh
       )
       .subscribe();
 
     return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       supabase.removeChannel(channel);
     };
-  }, [checkIns.map(c => c.id).join(','), partnershipId]);
+  }, [partnershipId, weekStart]); // Stable dependencies only
 
   const handleToggleReaction = async (checkInId: string, reaction: string) => {
     await accountabilityService.toggleReaction(checkInId, reaction);

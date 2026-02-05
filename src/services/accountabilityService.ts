@@ -568,18 +568,51 @@ class AccountabilityService {
 
     // Organize into parent check-ins with nested replies
     const allCheckIns = (data || []) as CheckInRecord[];
+    const checkInIds = allCheckIns.map(c => c.id);
+    
+    // Fetch reactions for all check-ins in one query
+    let reactions: CheckInReaction[] = [];
+    if (checkInIds.length > 0) {
+      const { data: reactionsData } = await supabase
+        .from('check_in_reactions')
+        .select(`
+          id,
+          check_in_id,
+          user_id,
+          reaction,
+          created_at,
+          reactor:profiles!check_in_reactions_user_id_fkey (
+            full_name
+          )
+        `)
+        .in('check_in_id', checkInIds);
+      
+      reactions = (reactionsData || []).map(r => ({
+        id: r.id,
+        check_in_id: r.check_in_id,
+        user_id: r.user_id,
+        reaction: r.reaction,
+        created_at: r.created_at,
+        reactor_name: (r.reactor as any)?.full_name || 'Unknown',
+      })) as CheckInReaction[];
+    }
+
     const parentCheckIns = allCheckIns.filter(c => !c.reply_to_id);
     const repliesMap = new Map<string, CheckInRecord[]>();
     
     allCheckIns.filter(c => c.reply_to_id).forEach(reply => {
       const existing = repliesMap.get(reply.reply_to_id!) || [];
-      existing.push(reply);
+      existing.push({
+        ...reply,
+        reactions: reactions.filter(r => r.check_in_id === reply.id),
+      });
       repliesMap.set(reply.reply_to_id!, existing);
     });
 
-    // Attach replies to their parents and sort replies by created_at ascending
+    // Attach replies and reactions to their parents
     return parentCheckIns.map(parent => ({
       ...parent,
+      reactions: reactions.filter(r => r.check_in_id === parent.id),
       replies: (repliesMap.get(parent.id) || []).sort((a, b) => 
         new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
       ),
@@ -649,13 +682,14 @@ class AccountabilityService {
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
+      // Note: partnership_id is auto-set by trigger from check_in_id
       const { error } = await supabase
         .from('check_in_reactions')
         .insert({
           check_in_id: checkInId,
           user_id: user.id,
           reaction,
-        });
+        } as any); // Type bypass: trigger auto-sets partnership_id
 
       if (error) {
         // If it's a unique constraint violation, the user already reacted

@@ -69,12 +69,19 @@ const CheckInHistory = () => {
     fetchData();
   }, [partnerId, user, navigate]);
 
-  // Real-time subscription for reactions
+  // Real-time subscription for reactions - use partnership_id filter for efficiency
   useEffect(() => {
-    if (!partnershipId || checkIns.length === 0) return;
+    if (!partnershipId) return;
 
-    const checkInIds = checkIns.map(c => c.id);
-    
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(async () => {
+        const history = await accountabilityService.getCheckInHistory(partnershipId);
+        setCheckIns(history);
+      }, 500);
+    };
+
     const channel = supabase
       .channel(`check-in-history-reactions-${partnershipId}`)
       .on(
@@ -83,21 +90,17 @@ const CheckInHistory = () => {
           event: '*',
           schema: 'public',
           table: 'check_in_reactions',
+          filter: `partnership_id=eq.${partnershipId}`,
         },
-        async (payload) => {
-          const checkInId = (payload.new as any)?.check_in_id || (payload.old as any)?.check_in_id;
-          if (checkInIds.includes(checkInId)) {
-            const history = await accountabilityService.getCheckInHistory(partnershipId);
-            setCheckIns(history);
-          }
-        }
+        scheduleRefresh
       )
       .subscribe();
 
     return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       supabase.removeChannel(channel);
     };
-  }, [partnershipId, checkIns.map(c => c.id).join(',')]);
+  }, [partnershipId]); // Stable dependency only
 
   const getInitials = (name: string) =>
     name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);

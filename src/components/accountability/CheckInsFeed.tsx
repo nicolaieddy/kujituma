@@ -154,9 +154,24 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     fetchCheckIns();
   }, [partnershipId]);
 
+  // Debounced refresh to collapse rapid realtime events
+  const debouncedRefresh = useCallback(async () => {
+    await fetchCheckIns();
+  }, [partnershipId]); // Only depend on partnershipId for stable identity
+
   // Real-time subscription for new check-ins and reactions
   // IMPORTANT: Only depend on partnershipId to avoid infinite re-subscription loops
   useEffect(() => {
+    if (!partnershipId) return;
+
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => {
+        fetchCheckIns();
+      }, 500); // Debounce 500ms
+    };
+
     const channel = supabase
       .channel(`check-ins-feed-${partnershipId}`)
       .on(
@@ -167,9 +182,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
           table: 'accountability_check_ins',
           filter: `partnership_id=eq.${partnershipId}`,
         },
-        () => {
-          fetchCheckIns();
-        }
+        scheduleRefresh
       )
       .on(
         'postgres_changes',
@@ -177,18 +190,17 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
           event: '*',
           schema: 'public',
           table: 'check_in_reactions',
+          filter: `partnership_id=eq.${partnershipId}`,
         },
-        () => {
-          // Refresh on any reaction change - simpler than tracking IDs
-          fetchCheckIns();
-        }
+        scheduleRefresh
       )
       .subscribe();
 
     return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       supabase.removeChannel(channel);
     };
-  }, [partnershipId, fetchCheckIns]);
+  }, [partnershipId]); // Stable dependency - no fetchCheckIns
 
   const handleToggleReaction = async (checkInId: string, reaction: string) => {
     await accountabilityService.toggleReaction(checkInId, reaction);
