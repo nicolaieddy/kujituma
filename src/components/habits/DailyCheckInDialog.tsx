@@ -609,10 +609,12 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     </div>
   );
 
+  const hasExistingCheckIn = !!todayCheckIn;
+
   const footer = (
     <>
       <Button variant="outline" onClick={() => onOpenChange(false)}>
-        Skip for now
+        {hasExistingCheckIn ? "Close" : "Skip for now"}
       </Button>
       <Button onClick={handleSubmit} disabled={isSubmitting}>
         {isSubmitting ? (
@@ -620,10 +622,10 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
             Saving...
           </>
+        ) : hasExistingCheckIn ? (
+          "Save Changes ✓"
         ) : (
-          <>
-            Let's Go! 🚀
-          </>
+          "Let's Go! 🚀"
         )}
       </Button>
     </>
