@@ -30,7 +30,7 @@ import { useDuePartnerCheckIns } from "@/hooks/useDuePartnerCheckIns";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
-import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock } from "lucide-react";
+import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil } from "lucide-react";
 import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
@@ -98,6 +98,8 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [focusToday, setFocusToday] = useState("");
   const [journalEntry, setJournalEntry] = useState("");
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [isEditingJournal, setIsEditingJournal] = useState(false);
+  const [isEditingFocus, setIsEditingFocus] = useState(false);
   
   // Only initialize from todayCheckIn if it's actually from today
   useEffect(() => {
@@ -542,14 +544,33 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             <Lock className="h-3 w-3" />
             Private
           </span>
+          {todayCheckIn && journalEntry && !isEditingJournal && (
+            <button
+              onClick={() => setIsEditingJournal(true)}
+              className="ml-auto p-1 rounded hover:bg-accent transition-colors"
+              aria-label="Edit journal entry"
+            >
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
         </Label>
-        <Textarea
-          value={journalEntry}
-          onChange={(e) => setJournalEntry(e.target.value)}
-          placeholder={getJournalPrompt()}
-          className="resize-none"
-          rows={3}
-        />
+        {todayCheckIn && journalEntry && !isEditingJournal ? (
+          <div 
+            className="rounded-md border border-input bg-muted/50 px-3 py-2 text-sm whitespace-pre-wrap min-h-[80px] cursor-pointer hover:bg-muted/70 transition-colors"
+            onClick={() => setIsEditingJournal(true)}
+          >
+            {journalEntry}
+          </div>
+        ) : (
+          <Textarea
+            value={journalEntry}
+            onChange={(e) => setJournalEntry(e.target.value)}
+            placeholder={getJournalPrompt()}
+            className="resize-none"
+            rows={3}
+            autoFocus={isEditingJournal}
+          />
+        )}
       </div>
       
       {/* Focus Today */}
@@ -557,14 +578,33 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         <Label className="flex items-center gap-2">
           <Target className="h-4 w-4" />
           What's your #1 focus today?
+          {todayCheckIn && focusToday && !isEditingFocus && (
+            <button
+              onClick={() => setIsEditingFocus(true)}
+              className="ml-auto p-1 rounded hover:bg-accent transition-colors"
+              aria-label="Edit focus"
+            >
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+            </button>
+          )}
         </Label>
-        <Textarea
-          value={focusToday}
-          onChange={(e) => setFocusToday(e.target.value)}
-          placeholder="e.g., Finish the project proposal..."
-          className="resize-none"
-          rows={2}
-        />
+        {todayCheckIn && focusToday && !isEditingFocus ? (
+          <div 
+            className="rounded-md border border-input bg-muted/50 px-3 py-2 text-sm whitespace-pre-wrap min-h-[60px] cursor-pointer hover:bg-muted/70 transition-colors"
+            onClick={() => setIsEditingFocus(true)}
+          >
+            {focusToday}
+          </div>
+        ) : (
+          <Textarea
+            value={focusToday}
+            onChange={(e) => setFocusToday(e.target.value)}
+            placeholder="e.g., Finish the project proposal..."
+            className="resize-none"
+            rows={2}
+            autoFocus={isEditingFocus}
+          />
+        )}
       </div>
     </div>
   );
