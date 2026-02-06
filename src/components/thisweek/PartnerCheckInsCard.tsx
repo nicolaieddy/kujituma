@@ -147,11 +147,23 @@ export const PartnerCheckInsCard = () => {
     
     setIsSending(true);
     try {
-      await accountabilityService.recordCheckIn(
-        partnershipId,
-        replyText.trim(),
-        parentCheckInId
-      );
+      // Add a timeout to prevent hanging forever on network issues
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), 15000);
+      });
+      
+      const result = await Promise.race([
+        accountabilityService.recordCheckIn(
+          partnershipId,
+          replyText.trim(),
+          parentCheckInId
+        ),
+        timeoutPromise
+      ]);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to send check-in');
+      }
       
       toast({
         title: "Message sent!",
@@ -164,9 +176,12 @@ export const PartnerCheckInsCard = () => {
       await fetchData();
     } catch (err) {
       console.error('Failed to send:', err);
+      const message = err instanceof Error ? err.message : 'Please try again.';
       toast({
         title: "Failed to send",
-        description: "Please try again.",
+        description: message.includes('timeout') 
+          ? "Connection is slow. Please check your network and try again." 
+          : message,
         variant: "destructive",
       });
     } finally {
@@ -177,12 +192,23 @@ export const PartnerCheckInsCard = () => {
   const handleMarkAsRead = async (partnershipId: string, checkInId: string) => {
     setIsSending(true);
     try {
-      // Record an acknowledgment reply to mark as read
-      await accountabilityService.recordCheckIn(
-        partnershipId,
-        '👀', // Read acknowledgment
-        checkInId
-      );
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), 15000);
+      });
+      
+      const result = await Promise.race([
+        accountabilityService.recordCheckIn(
+          partnershipId,
+          '👀', // Read acknowledgment
+          checkInId
+        ),
+        timeoutPromise
+      ]);
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to mark as read');
+      }
       
       toast({
         title: "Marked as read",
@@ -194,6 +220,9 @@ export const PartnerCheckInsCard = () => {
       console.error('Failed to mark as read:', err);
       toast({
         title: "Failed to mark as read",
+        description: err instanceof Error && err.message.includes('timeout') 
+          ? "Connection is slow. Please try again." 
+          : undefined,
         variant: "destructive",
       });
     } finally {

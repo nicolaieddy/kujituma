@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -17,16 +17,41 @@ const goalsChannelState = new Map<
     channel: RealtimeChannel;
     refCount: number;
     lastInvalidationAt: number;
+    lastErrorLogAt: number;
   }
 >();
+
+// Rate limit error logging to once per 30 seconds
+const ERROR_LOG_THROTTLE_MS = 30000;
 
 export const useRealtimeGoals = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const debounceMs = 1000;
+  const isOnlineRef = useRef(navigator.onLine);
+
+  // Track online/offline status
+  useEffect(() => {
+    const handleOnline = () => { isOnlineRef.current = true; };
+    const handleOffline = () => { isOnlineRef.current = false; };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
+    
+    // Don't attempt to subscribe if offline
+    if (!navigator.onLine) {
+      console.log('[Realtime] Skipping goals subscription - offline');
+      return;
+    }
 
     const userId = user.id;
     const existing = goalsChannelState.get(userId);
@@ -64,8 +89,7 @@ export const useRealtimeGoals = () => {
           const state = goalsChannelState.get(userId);
           const now = Date.now();
           if (state && now - state.lastInvalidationAt < debounceMs) {
-            console.log('[Realtime] Skipping goals invalidation - debounced');
-            return;
+            return; // Debounce - skip logging too
           }
           if (state) state.lastInvalidationAt = now;
 
@@ -79,10 +103,19 @@ export const useRealtimeGoals = () => {
         }
       )
       .subscribe((status, err) => {
+        const state = goalsChannelState.get(userId);
+        const now = Date.now();
+        
         if (status === 'SUBSCRIBED') {
           console.log('[Realtime] Goals subscription active');
         } else if (status === 'CHANNEL_ERROR') {
-          console.warn('[Realtime] Goals channel error:', err?.message);
+          // Rate-limit error logging to prevent console spam
+          if (state && now - state.lastErrorLogAt < ERROR_LOG_THROTTLE_MS) {
+            return; // Skip logging
+          }
+          if (state) state.lastErrorLogAt = now;
+          
+          console.warn('[Realtime] Goals channel error (throttled):', err?.message || 'connection failed');
         }
       });
 
@@ -90,6 +123,7 @@ export const useRealtimeGoals = () => {
       channel,
       refCount: 1,
       lastInvalidationAt: 0,
+      lastErrorLogAt: 0,
     });
 
     return () => {
@@ -104,4 +138,3 @@ export const useRealtimeGoals = () => {
     };
   }, [user?.id, queryClient]);
 };
-
