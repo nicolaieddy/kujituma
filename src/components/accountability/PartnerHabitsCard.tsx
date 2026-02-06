@@ -57,6 +57,10 @@ const isDailyTracking = (frequency: string, habitItem?: HabitItem): boolean => {
   if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
     return true;
   }
+  // Custom frequency with multiple times per week (no specific days) should also show day checkboxes
+  if (frequency === 'custom' && habitItem?.customSchedule?.timesPerWeek && habitItem.customSchedule.timesPerWeek > 1) {
+    return true;
+  }
   return false;
 };
 
@@ -65,6 +69,10 @@ const getDaysToShow = (frequency: string, habitItem?: HabitItem): number[] => {
   if (habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
     // Convert from 0=Sunday to 0=Monday format
     return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
+  }
+  // For "X times per week" without specific days, show all days as available
+  if (habitItem?.customSchedule?.timesPerWeek && habitItem.customSchedule.timesPerWeek > 1) {
+    return [0, 1, 2, 3, 4, 5, 6]; // All days available
   }
   switch (frequency) {
     case 'daily':
