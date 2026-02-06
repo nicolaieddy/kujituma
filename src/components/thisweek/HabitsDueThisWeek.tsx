@@ -200,11 +200,15 @@ export const HabitsDueThisWeek = ({
   };
 
   // Determine if this habit needs daily checkboxes or just a single weekly checkbox
-  // Custom schedules with specific daysOfWeek should show checkboxes for those days
+  // Custom schedules with specific daysOfWeek OR multiple times per week should show checkboxes
   const isDailyTracking = (frequency: string, habitItem?: HabitItem): boolean => {
     if (frequency === 'daily' || frequency === 'weekdays') return true;
     // Custom frequency with specific days should show day checkboxes
     if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
+      return true;
+    }
+    // Custom frequency with multiple times per week (no specific days) should also show day checkboxes
+    if (frequency === 'custom' && habitItem?.customSchedule?.timesPerWeek && habitItem.customSchedule.timesPerWeek > 1) {
       return true;
     }
     return false;
@@ -216,6 +220,10 @@ export const HabitsDueThisWeek = ({
       // customSchedule.daysOfWeek uses 0=Sunday, but our UI uses 0=Monday
       // Convert: Sun(0)->6, Mon(1)->0, Tue(2)->1, Wed(3)->2, Thu(4)->3, Fri(5)->4, Sat(6)->5
       return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
+    }
+    // For "X times per week" without specific days, show all days as available
+    if (habitItem?.customSchedule?.timesPerWeek && habitItem.customSchedule.timesPerWeek > 1) {
+      return [0, 1, 2, 3, 4, 5, 6]; // All days available - user picks which days
     }
     switch (frequency) {
       case 'daily':
