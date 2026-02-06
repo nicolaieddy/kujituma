@@ -79,9 +79,9 @@ export const PartnerCheckInsCard = () => {
           });
         }
         
-        // Sort by date, most recent first
+        // Sort by date, oldest first (chronological chat order)
         recentMessages.sort((a, b) => 
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         );
         
         return {
