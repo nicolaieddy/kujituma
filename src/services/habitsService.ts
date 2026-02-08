@@ -9,20 +9,21 @@ import {
   CreateWeeklyPlanningSession
 } from "@/types/habits";
 import { getLocalDateString } from "@/utils/dateUtils";
+import { authStore } from "@/stores/authStore";
 
 export class HabitsService {
   // ============ DAILY CHECK-INS ============
   
   static async getTodayCheckIn(): Promise<DailyCheckIn | null> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return null;
+    const user = authStore.getUser();
+    if (!user) return null;
     
     const today = getLocalDateString();
     
     const { data, error } = await supabase
       .from('daily_check_ins')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .eq('check_in_date', today)
       .maybeSingle();
     
@@ -31,15 +32,14 @@ export class HabitsService {
   }
   
   static async createOrUpdateCheckIn(checkIn: CreateDailyCheckIn): Promise<DailyCheckIn> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const today = getLocalDateString();
     
     const { data, error } = await supabase
       .from('daily_check_ins')
       .upsert({
-        user_id: user.user.id,
+        user_id: userId,
         check_in_date: today,
         ...checkIn
       }, { onConflict: 'user_id,check_in_date' })
@@ -55,8 +55,8 @@ export class HabitsService {
   }
   
   static async getRecentCheckIns(days: number = 7): Promise<DailyCheckIn[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return [];
+    const user = authStore.getUser();
+    if (!user) return [];
     
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
@@ -64,7 +64,7 @@ export class HabitsService {
     const { data, error } = await supabase
       .from('daily_check_ins')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .gte('check_in_date', getLocalDateString(startDate))
       .order('check_in_date', { ascending: false });
     
@@ -73,13 +73,13 @@ export class HabitsService {
   }
 
   static async getAllDailyCheckIns(limit: number = 30): Promise<DailyCheckIn[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return [];
+    const user = authStore.getUser();
+    if (!user) return [];
     
     const { data, error } = await supabase
       .from('daily_check_ins')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .order('check_in_date', { ascending: false })
       .limit(limit);
     
@@ -90,13 +90,13 @@ export class HabitsService {
   // ============ STREAKS ============
   
   static async getStreaks(): Promise<UserStreaks | null> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return null;
+    const user = authStore.getUser();
+    if (!user) return null;
     
     const { data, error } = await supabase
       .from('user_streaks')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .maybeSingle();
     
     if (error) throw error;
@@ -104,8 +104,7 @@ export class HabitsService {
   }
   
   static async updateDailyStreak(): Promise<UserStreaks> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const today = getLocalDateString();
     const yesterday = new Date();
@@ -120,7 +119,7 @@ export class HabitsService {
       const { data, error } = await supabase
         .from('user_streaks')
         .insert({
-          user_id: user.user.id,
+          user_id: userId,
           current_daily_streak: 1,
           longest_daily_streak: 1,
           current_weekly_streak: 0,
@@ -155,7 +154,7 @@ export class HabitsService {
         longest_daily_streak: longestDaily,
         last_check_in_date: today
       })
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -164,8 +163,7 @@ export class HabitsService {
   }
   
   static async updateWeeklyStreak(weekStart: string): Promise<UserStreaks> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     let streaks = await this.getStreaks();
     
@@ -179,7 +177,7 @@ export class HabitsService {
       const { data, error } = await supabase
         .from('user_streaks')
         .insert({
-          user_id: user.user.id,
+          user_id: userId,
           current_daily_streak: 0,
           longest_daily_streak: 0,
           current_weekly_streak: 1,
@@ -214,7 +212,7 @@ export class HabitsService {
         longest_weekly_streak: longestWeekly,
         last_week_completed: weekStart
       })
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -241,13 +239,13 @@ export class HabitsService {
   }
   
   static async getQuarterlyReview(year: number, quarter: number): Promise<QuarterlyReview | null> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return null;
+    const user = authStore.getUser();
+    if (!user) return null;
     
     const { data, error } = await supabase
       .from('quarterly_reviews')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .eq('year', year)
       .eq('quarter', quarter)
       .maybeSingle();
@@ -257,13 +255,13 @@ export class HabitsService {
   }
   
   static async getAllQuarterlyReviews(): Promise<QuarterlyReview[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return [];
+    const user = authStore.getUser();
+    if (!user) return [];
     
     const { data, error } = await supabase
       .from('quarterly_reviews')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .order('year', { ascending: false })
       .order('quarter', { ascending: false });
     
@@ -272,8 +270,7 @@ export class HabitsService {
   }
   
   static async createOrUpdateQuarterlyReview(review: CreateQuarterlyReview): Promise<QuarterlyReview> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const { year, quarter } = review;
     const quarterStartMonth = (quarter - 1) * 3;
@@ -282,7 +279,7 @@ export class HabitsService {
     const { data, error } = await supabase
       .from('quarterly_reviews')
       .upsert({
-        user_id: user.user.id,
+        user_id: userId,
         quarter_start: quarterStart,
         ...review
       }, { onConflict: 'user_id,year,quarter' })
@@ -294,8 +291,7 @@ export class HabitsService {
   }
   
   static async completeQuarterlyReview(year: number, quarter: number): Promise<QuarterlyReview> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const { data, error } = await supabase
       .from('quarterly_reviews')
@@ -303,7 +299,7 @@ export class HabitsService {
         is_completed: true,
         completed_at: new Date().toISOString()
       })
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .eq('year', year)
       .eq('quarter', quarter)
       .select()
@@ -318,8 +314,7 @@ export class HabitsService {
   }
   
   static async updateQuarterlyStreak(year: number, quarter: number): Promise<UserStreaks> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const quarterKey = `${year}-Q${quarter}`;
     
@@ -338,7 +333,7 @@ export class HabitsService {
       const { data, error } = await supabase
         .from('user_streaks')
         .insert({
-          user_id: user.user.id,
+          user_id: userId,
           current_daily_streak: 0,
           longest_daily_streak: 0,
           current_weekly_streak: 0,
@@ -375,7 +370,7 @@ export class HabitsService {
         longest_quarterly_streak: longestQuarterly,
         last_quarter_completed: quarterKey
       })
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -386,13 +381,13 @@ export class HabitsService {
   // ============ WEEKLY PLANNING SESSIONS ============
 
   static async getAllWeeklyPlanningSessions(): Promise<WeeklyPlanningSession[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return [];
+    const user = authStore.getUser();
+    if (!user) return [];
     
     const { data, error } = await supabase
       .from('weekly_planning_sessions')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .order('week_start', { ascending: false });
     
     if (error) throw error;
@@ -400,13 +395,13 @@ export class HabitsService {
   }
   
   static async getWeeklyPlanningSession(weekStart: string): Promise<WeeklyPlanningSession | null> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) return null;
+    const user = authStore.getUser();
+    if (!user) return null;
     
     const { data, error } = await supabase
       .from('weekly_planning_sessions')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .eq('week_start', weekStart)
       .maybeSingle();
     
@@ -415,13 +410,12 @@ export class HabitsService {
   }
   
   static async createOrUpdatePlanningSession(session: CreateWeeklyPlanningSession): Promise<WeeklyPlanningSession> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const { data, error } = await supabase
       .from('weekly_planning_sessions')
       .upsert({
-        user_id: user.user.id,
+        user_id: userId,
         ...session
       }, { onConflict: 'user_id,week_start' })
       .select()
@@ -432,8 +426,7 @@ export class HabitsService {
   }
   
   static async completePlanningSession(weekStart: string): Promise<WeeklyPlanningSession> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
     
     const { data, error } = await supabase
       .from('weekly_planning_sessions')
@@ -441,7 +434,7 @@ export class HabitsService {
         is_completed: true,
         completed_at: new Date().toISOString()
       })
-      .eq('user_id', user.user.id)
+      .eq('user_id', userId)
       .eq('week_start', weekStart)
       .select()
       .single();

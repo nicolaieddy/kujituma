@@ -12,6 +12,7 @@ import {
   differenceInDays
 } from "date-fns";
 import { parseGoals } from "@/utils/goalUtils";
+import { authStore } from "@/stores/authStore";
 
 export interface DailyStreakStats {
   habitItemId: string;
@@ -193,14 +194,13 @@ export class DailyStreakService {
    * Get all daily streak stats for the current user's habits
    */
   static async getAllHabitStreaks(): Promise<DailyStreakStats[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const userId = authStore.requireUserId();
 
     // Get all goals with habit_items
     const { data: goalsData, error: goalsError } = await supabase
       .from('goals')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .neq('status', 'deleted')
       .not('habit_items', 'is', null);
 
@@ -214,7 +214,7 @@ export class DailyStreakService {
     const { data: completionsData, error: completionsError } = await supabase
       .from('habit_completions')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('completion_date', { ascending: false });
 
     if (completionsError) throw completionsError;
@@ -261,13 +261,12 @@ export class DailyStreakService {
     habitItem: HabitItem, 
     goalStartDate: string | null
   ): Promise<{ currentStreak: number; longestStreak: number; freezesUsedThisWeek: number; freezesRemaining: number; streakStatus: 'active' | 'at_risk' | 'broken' }> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase
       .from('habit_completions')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('habit_item_id', habitItemId)
       .order('completion_date', { ascending: false });
 

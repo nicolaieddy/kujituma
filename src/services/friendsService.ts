@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { authStore } from '@/stores/authStore';
 
 export interface FriendRequest {
   id: string;
@@ -48,8 +49,8 @@ class FriendsService {
   // Cancel a sent friend request (delete it)
   async cancelFriendRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
     try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) {
+      const user = authStore.getUser();
+      if (!user) {
         return { success: false, error: 'Not authenticated' };
       }
 
@@ -58,7 +59,7 @@ class FriendsService {
         .from('friend_requests')
         .delete()
         .eq('id', requestId)
-        .eq('sender_id', currentUser.user.id)
+        .eq('sender_id', user.id)
         .eq('status', 'pending');
 
       if (error) {
@@ -167,21 +168,21 @@ class FriendsService {
     received: FriendRequest[];
   }> {
     try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) return { sent: [], received: [] };
+      const user = authStore.getUser();
+      if (!user) return { sent: [], received: [] };
 
       // Fetch sent and received requests in parallel
       const [sentResult, receivedResult] = await Promise.all([
         supabase
           .from('friend_requests')
           .select('*')
-          .eq('sender_id', currentUser.user.id)
+          .eq('sender_id', user.id)
           .eq('status', 'pending')
           .order('created_at', { ascending: false }),
         supabase
           .from('friend_requests')
           .select('*')
-          .eq('receiver_id', currentUser.user.id)
+          .eq('receiver_id', user.id)
           .eq('status', 'pending')
           .order('created_at', { ascending: false })
       ]);
@@ -245,8 +246,8 @@ class FriendsService {
         return [];
       }
 
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) return [];
+      const user = authStore.getUser();
+      if (!user) return [];
 
       // Get user's friends and pending requests
       const [friends, friendRequests] = await Promise.all([
@@ -258,7 +259,7 @@ class FriendsService {
       const sentRequestIds = friendRequests.sent.map(r => r.receiver_id);
       const receivedRequestIds = friendRequests.received.map(r => r.sender_id);
       const excludeIds = [
-        currentUser.user.id,
+        user.id,
         ...friendIds,
         ...sentRequestIds,
         ...receivedRequestIds
@@ -316,13 +317,13 @@ class FriendsService {
     request_id?: string;
   }> {
     try {
-      const { data: currentUser } = await supabase.auth.getUser();
-      if (!currentUser.user) {
+      const user = authStore.getUser();
+      if (!user) {
         return { is_friend: false };
       }
 
       // Check if they're friends
-      const areFriends = await this.areFriends(currentUser.user.id, userId);
+      const areFriends = await this.areFriends(user.id, userId);
       if (areFriends) {
         return { is_friend: true };
       }
@@ -331,14 +332,14 @@ class FriendsService {
       const { data: pendingRequest, error } = await supabase
         .from('friend_requests')
         .select('id, sender_id, receiver_id')
-        .or(`and(sender_id.eq.${currentUser.user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.user.id})`)
+        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${user.id})`)
         .eq('status', 'pending')
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
 
       if (pendingRequest) {
-        const status = pendingRequest.sender_id === currentUser.user.id ? 'sent' : 'received';
+        const status = pendingRequest.sender_id === user.id ? 'sent' : 'received';
         return {
           is_friend: false,
           friend_request_status: status,

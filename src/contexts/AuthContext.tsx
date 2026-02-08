@@ -1,7 +1,7 @@
-
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { authStore } from '@/stores/authStore';
 
 interface AuthContextType {
   user: User | null;
@@ -73,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setIsNewUser(false);
           hasCheckedProfile.current = null;
+          authStore.clear();
           setLoading(false);
           return;
         }
@@ -82,12 +83,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setIsNewUser(false);
           hasCheckedProfile.current = null;
+          authStore.clear();
           setLoading(false);
           return;
         }
         
         setSession(session);
         setUser(session?.user ?? null);
+        // Sync to authStore for synchronous access in services
+        authStore.setAuth(session?.user ?? null, session);
         setLoading(false);
         
         // Check profile completion after auth state change (defer to avoid deadlock)
@@ -129,6 +133,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AuthContext] Initial session:', session?.user?.email || 'No session');
       setSession(session);
       setUser(session?.user ?? null);
+      // Sync to authStore for synchronous access in services
+      authStore.setAuth(session?.user ?? null, session);
       setLoading(false);
       
       // Check profile completion for initial session
@@ -180,6 +186,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Error signing out:', error);
         throw error;
       }
+      // Clear authStore before redirect
+      authStore.clear();
       // Force page reload for clean state and redirect to home
       window.location.href = '/';
     } catch (error) {
