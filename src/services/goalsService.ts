@@ -160,16 +160,16 @@ export class GoalsService {
   }
 
   static async reorderGoals(reorderedGoals: { id: string; order_index: number }[]): Promise<void> {
-    // Update all goals with their new order indices
-    const promises = reorderedGoals.map(({ id, order_index }) =>
-      supabase
-        .from('goals')
-        .update({ order_index })
-        .eq('id', id)
-    );
+    // Convert to object format for batch RPC: { "goal-id-1": 0, "goal-id-2": 1, ... }
+    const goalOrders: Record<string, number> = {};
+    reorderedGoals.forEach(({ id, order_index }) => {
+      goalOrders[id] = order_index;
+    });
 
-    const results = await Promise.all(promises);
-    const error = results.find(r => r.error)?.error;
+    const { error } = await supabase.rpc('reorder_goals', {
+      p_goal_orders: goalOrders
+    });
+
     if (error) throw error;
   }
 }

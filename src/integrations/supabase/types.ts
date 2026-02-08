@@ -1978,6 +1978,7 @@ export type Database = {
         Returns: Json
       }
       remove_friend: { Args: { _friend_id: string }; Returns: boolean }
+      reorder_goals: { Args: { p_goal_orders: Json }; Returns: undefined }
       respond_to_accountability_partner_request: {
         Args: {
           _override_receiver_can_view_sender_goals?: boolean
