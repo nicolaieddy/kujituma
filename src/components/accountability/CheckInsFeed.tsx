@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useImperativeHandle, forwardRef, useRef } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -90,18 +90,23 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
+  // Use ref to access optimisticIds without re-creating the callback
+  const optimisticIdsRef = useRef(optimisticIds);
+  optimisticIdsRef.current = optimisticIds;
+
   const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
     // Keep optimistic check-ins that haven't been confirmed yet
     setCheckIns(prev => {
-      const optimisticEntries = prev.filter(c => optimisticIds.has(c.id));
+      const currentOptimisticIds = optimisticIdsRef.current;
+      const optimisticEntries = prev.filter(c => currentOptimisticIds.has(c.id));
       // Merge: optimistic at top, then real data (excluding duplicates)
       const realIds = new Set(data.map(c => c.id));
       const stillPendingOptimistic = optimisticEntries.filter(c => !realIds.has(c.id));
       return [...stillPendingOptimistic, ...data];
     });
     setLoading(false);
-  }, [partnershipId, optimisticIds]);
+  }, [partnershipId]); // Stable dependency - no optimisticIds
 
   const addOptimisticCheckIn = useCallback((optimistic: OptimisticCheckIn): string => {
     const tempId = `optimistic-${Date.now()}`;
