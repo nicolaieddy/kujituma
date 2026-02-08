@@ -2,7 +2,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GoalCard } from "./GoalCard";
 import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
-import { GripVertical } from "lucide-react";
 
 interface DraggableGoalCardProps {
   goal: Goal;
@@ -61,7 +60,9 @@ export const DraggableGoalCard = ({
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="relative group"
+      className="relative"
+      {...attributes}
+      {...listeners}
     >
       {/* Drop indicator line - shows above the card when hovering */}
       {isOver && !isDragging && (
@@ -72,16 +73,7 @@ export const DraggableGoalCard = ({
         </div>
       )}
       
-      {/* Always visible drag handle on the left side */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute left-0 top-0 bottom-0 w-8 cursor-grab active:cursor-grabbing z-10 flex items-center justify-center bg-gradient-to-r from-muted/50 to-transparent opacity-60 hover:opacity-100 transition-opacity rounded-l-lg touch-none"
-      >
-        <GripVertical className="h-5 w-5 text-muted-foreground" />
-      </div>
-      
-      <div className="pl-6">
+      <div className={`cursor-grab active:cursor-grabbing ${isDragging ? 'shadow-lg' : ''}`}>
         <GoalCard
           goal={goal}
           onEdit={onEdit}
