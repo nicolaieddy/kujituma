@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { GoalsService } from "@/services/goalsService";
-import { supabase } from "@/integrations/supabase/client";
+import { authStore } from "@/stores/authStore";
 import { Clock, Play, CheckCircle, Target, Calendar, EyeOff, HelpCircle, Eye, Loader2, Users, Trophy, ChevronRight } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 // Removed framer-motion AnimatePresence to prevent "Maximum call stack size exceeded" on iOS Safari
@@ -122,7 +122,7 @@ export const ProfileGoals = memo(({ userId, isOwnProfile = false, viewerType = '
       try {
         let fetchedGoals: Goal[];
         if (effectiveIsOwner) {
-          const { data: { user } } = await supabase.auth.getUser();
+          const user = authStore.getUser();
           if (user?.id === userId) {
             fetchedGoals = await GoalsService.getGoals();
           } else {

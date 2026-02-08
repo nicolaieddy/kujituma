@@ -1,6 +1,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { getDateFromPeriod } from '@/utils/dateUtils';
 import { lightweightCache } from './lightweightCache';
+import { authStore } from '@/stores/authStore';
 
 export type FilterPeriod = "1day" | "3days" | "7days" | "14days" | "30days" | "all";
 
@@ -48,9 +49,8 @@ export interface UnifiedComment {
 }
 
 class UnifiedPostsService {
-  private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+  private getCurrentUser() {
+    return authStore.getUser();
   }
 
   private likesCache = new Map<string, { postLikes: any[], commentLikes: any[], timestamp: number }>();
