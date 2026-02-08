@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
 import { startOfWeek, format, addDays } from 'date-fns';
+import { authStore } from '@/stores/authStore';
 
 export type CheckInCadence = 'none' | 'daily' | 'twice_weekly' | 'weekly' | 'biweekly';
 
@@ -91,7 +92,7 @@ export interface CheckInReaction {
 
 class AccountabilityService {
   async getPartners(): Promise<AccountabilityPartner[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
     const { data, error } = await supabase.rpc('get_accountability_partners');
@@ -160,7 +161,7 @@ class AccountabilityService {
     sent: AccountabilityPartnerRequest[];
     received: AccountabilityPartnerRequest[];
   }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
     // Fetch sent requests
@@ -265,7 +266,7 @@ class AccountabilityService {
   }
 
   async cancelPartnerRequest(requestId: string): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -287,7 +288,7 @@ class AccountabilityService {
   }
 
   async removePartner(partnerId: string): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -308,7 +309,7 @@ class AccountabilityService {
   }
 
   async getPartnerGoals(partnerId: string): Promise<PartnerGoal[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
     // First verify they are accountability partners
@@ -335,7 +336,7 @@ class AccountabilityService {
   }
 
   async getPartnerWeeklyObjectives(partnerId: string, weekStart: string): Promise<PartnerWeeklyObjective[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
     // First verify they are accountability partners
@@ -409,7 +410,7 @@ class AccountabilityService {
   }
 
   async updateCheckIn(checkInId: string, message: string): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -430,7 +431,7 @@ class AccountabilityService {
   }
 
   async deleteCheckIn(checkInId: string): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -461,7 +462,7 @@ class AccountabilityService {
     partnerId: string, 
     settings: { canViewPartnerGoals?: boolean; partnerCanViewMyGoals?: boolean }
   ): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -512,7 +513,7 @@ class AccountabilityService {
     can_view_partner_goals: boolean;
     last_check_in_at: string | null;
   } | null> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return null;
 
     const { data, error } = await supabase
@@ -678,7 +679,7 @@ class AccountabilityService {
   }
 
   async addReactionToCheckIn(checkInId: string, reaction: string): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -732,7 +733,7 @@ class AccountabilityService {
   }
 
   async removeReactionFromCheckIn(checkInId: string, reaction: string): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -754,7 +755,7 @@ class AccountabilityService {
   }
 
   async toggleReaction(checkInId: string, reaction: string): Promise<{ success: boolean; added: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, added: false, error: 'Not authenticated' };
 
     // Check if reaction exists
@@ -779,7 +780,7 @@ class AccountabilityService {
     partnerId: string, 
     cadence: CheckInCadence
   ): Promise<{ success: boolean; error?: string }> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
 
     try {
@@ -825,7 +826,7 @@ class AccountabilityService {
     is_overdue: boolean;
     days_until_due: number;
   }[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return [];
 
     try {
@@ -892,7 +893,7 @@ class AccountabilityService {
     completedWeeks: number;
     weeklyHistory: { weekStart: string; isCompleted: boolean }[];
   }[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
     // First verify they are accountability partners
@@ -999,7 +1000,7 @@ class AccountabilityService {
     partnerId: string,
     weekStart: Date
   ): Promise<{ habit_item_id: string; completion_date: string }[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
     // First verify they are accountability partners with visibility permissions

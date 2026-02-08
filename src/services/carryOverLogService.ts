@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { authStore } from "@/stores/authStore";
 
 export interface CarryOverLog {
   id: string;
@@ -23,12 +24,11 @@ export interface CarryOverLogInput {
 
 export const CarryOverLogService = {
   async logCarryOver(logs: CarryOverLogInput[]): Promise<void> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
+    const userId = authStore.requireUserId();
 
     const logsWithUser = logs.map(log => ({
       ...log,
-      user_id: user.id,
+      user_id: userId,
     }));
 
     const { error } = await supabase
@@ -42,7 +42,7 @@ export const CarryOverLogService = {
   },
 
   async getRecentLogs(limit = 50): Promise<CarryOverLog[]> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return [];
 
     const { data, error } = await supabase

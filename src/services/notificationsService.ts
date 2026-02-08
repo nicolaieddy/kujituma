@@ -1,14 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
 import { Notification } from '@/types/notifications';
+import { authStore } from '@/stores/authStore';
 
 class NotificationsService {
-  private async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
-  }
-
   async getNotifications(limit = 20, offset = 0): Promise<Notification[]> {
-    const user = await this.getCurrentUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
@@ -40,7 +36,7 @@ class NotificationsService {
   }
 
   async getUnreadCount(): Promise<number> {
-    const user = await this.getCurrentUser();
+    const user = authStore.getUser();
     if (!user) return 0;
 
     const { count, error } = await supabase
@@ -54,7 +50,7 @@ class NotificationsService {
   }
 
   async markAsRead(notificationId: string): Promise<void> {
-    const user = await this.getCurrentUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { error } = await supabase.rpc('mark_notification_read', {
@@ -66,7 +62,7 @@ class NotificationsService {
   }
 
   async markAllAsRead(): Promise<void> {
-    const user = await this.getCurrentUser();
+    const user = authStore.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { error } = await supabase.rpc('mark_all_notifications_read', {
@@ -80,7 +76,7 @@ class NotificationsService {
     onInsert: (notification: Notification) => void,
     onUpdate?: (notification: Notification) => void
   ) {
-    const user = await this.getCurrentUser();
+    const user = authStore.getUser();
     if (!user) return null;
 
     const channel = supabase

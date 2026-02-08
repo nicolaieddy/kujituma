@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import { HabitCompletion } from "@/types/goals";
 import { startOfWeek, endOfWeek, format, eachDayOfInterval, parseISO } from "date-fns";
+import { authStore } from "@/stores/authStore";
 
 export class HabitCompletionsService {
   /**
@@ -10,13 +11,12 @@ export class HabitCompletionsService {
     startDate: Date,
     endDate: Date
   ): Promise<HabitCompletion[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("User not authenticated");
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase
       .from("habit_completions")
       .select("*")
-      .eq("user_id", user.user.id)
+      .eq("user_id", userId)
       .gte("completion_date", format(startDate, "yyyy-MM-dd"))
       .lte("completion_date", format(endDate, "yyyy-MM-dd"))
       .order("completion_date", { ascending: true });
@@ -42,8 +42,7 @@ export class HabitCompletionsService {
     habitItemId: string,
     date: Date
   ): Promise<boolean> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("User not authenticated");
+    const userId = authStore.requireUserId();
 
     const dateStr = format(date, "yyyy-MM-dd");
 
@@ -51,7 +50,7 @@ export class HabitCompletionsService {
     const { data: existing, error: checkError } = await supabase
       .from("habit_completions")
       .select("id")
-      .eq("user_id", user.user.id)
+      .eq("user_id", userId)
       .eq("goal_id", goalId)
       .eq("habit_item_id", habitItemId)
       .eq("completion_date", dateStr)
@@ -64,7 +63,7 @@ export class HabitCompletionsService {
       const { error: deleteError } = await supabase
         .from("habit_completions")
         .delete()
-        .eq("user_id", user.user.id)
+        .eq("user_id", userId)
         .eq("goal_id", goalId)
         .eq("habit_item_id", habitItemId)
         .eq("completion_date", dateStr);
@@ -74,7 +73,7 @@ export class HabitCompletionsService {
         const { data: stillExists } = await supabase
           .from("habit_completions")
           .select("id")
-          .eq("user_id", user.user.id)
+          .eq("user_id", userId)
           .eq("goal_id", goalId)
           .eq("habit_item_id", habitItemId)
           .eq("completion_date", dateStr)
@@ -92,7 +91,7 @@ export class HabitCompletionsService {
       const { error: insertError } = await supabase
         .from("habit_completions")
         .insert({
-          user_id: user.user.id,
+          user_id: userId,
           goal_id: goalId,
           habit_item_id: habitItemId,
           completion_date: dateStr,
@@ -150,13 +149,12 @@ export class HabitCompletionsService {
   static async getHabitItemCompletions(
     habitItemId: string
   ): Promise<HabitCompletion[]> {
-    const { data: user } = await supabase.auth.getUser();
-    if (!user.user) throw new Error("User not authenticated");
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase
       .from("habit_completions")
       .select("*")
-      .eq("user_id", user.user.id)
+      .eq("user_id", userId)
       .eq("habit_item_id", habitItemId)
       .order("completion_date", { ascending: false });
 

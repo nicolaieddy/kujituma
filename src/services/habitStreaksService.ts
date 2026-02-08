@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Goal } from "@/types/goals";
 import { parseGoal, parseGoals } from "@/utils/goalUtils";
 import { startOfWeek, format, parseISO, isBefore, isAfter } from "date-fns";
+import { authStore } from "@/stores/authStore";
 
 export interface HabitStats {
   goal: Goal;
@@ -32,13 +33,12 @@ export class HabitStreaksService {
    * Get all goals with habits for the current user
    */
   static async getGoalsWithHabits(): Promise<Goal[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase
       .from('goals')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .neq('status', 'deleted')
       .order('created_at', { ascending: false });
 
@@ -53,13 +53,12 @@ export class HabitStreaksService {
   static async getHabitObjectives(goalIds: string[]): Promise<any[]> {
     if (goalIds.length === 0) return [];
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase
       .from('weekly_objectives')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .in('goal_id', goalIds)
       .order('week_start', { ascending: false });
 
@@ -210,7 +209,7 @@ export class HabitStreaksService {
    * Call this BEFORE marking the objective as complete
    */
   static async checkStreakMilestone(objectiveId: string): Promise<StreakCheckResult | null> {
-    const { data: { user } } = await supabase.auth.getUser();
+    const user = authStore.getUser();
     if (!user) return null;
 
     // Get the objective

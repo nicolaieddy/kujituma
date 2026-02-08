@@ -1,10 +1,12 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Goal, CreateGoalData, UpdateGoalData, GoalStatusHistory } from "@/types/goals";
 import { parseGoal, parseGoals } from "@/utils/goalUtils";
+import { authStore } from "@/stores/authStore";
 
 export class GoalsService {
   static async createGoal(data: CreateGoalData): Promise<Goal> {
+    const userId = authStore.requireUserId();
+    
     const { data: goal, error } = await supabase
       .from('goals')
       .insert({
@@ -16,7 +18,7 @@ export class GoalsService {
         category: data.category || '',
         visibility: data.visibility ?? 'public',
         habit_items: data.habit_items ? JSON.parse(JSON.stringify(data.habit_items)) : [],
-        user_id: (await supabase.auth.getUser()).data.user?.id
+        user_id: userId
       })
       .select()
       .single();
@@ -26,14 +28,8 @@ export class GoalsService {
   }
 
   static async getGoals(): Promise<Goal[]> {
-    const { data: user, error: authError } = await supabase.auth.getUser();
-    
-    if (authError) {
-      console.error('GoalsService.getGoals auth error:', authError);
-      throw authError;
-    }
-    
-    if (!user.user) {
+    const user = authStore.getUser();
+    if (!user) {
       console.warn('GoalsService.getGoals: No user found, returning empty array');
       return [];
     }
@@ -41,7 +37,7 @@ export class GoalsService {
     const { data: goals, error } = await supabase
       .from('goals')
       .select('*')
-      .eq('user_id', user.user.id)
+      .eq('user_id', user.id)
       .neq('status', 'deleted')
       .order('order_index', { ascending: true })
       .order('created_at', { ascending: false });

@@ -1,21 +1,17 @@
 import { supabase } from '@/integrations/supabase/client';
+import { authStore } from '@/stores/authStore';
 
 export class AuthUtils {
-  static async getCurrentUser() {
-    const { data: { user } } = await supabase.auth.getUser();
-    return user;
+  static getCurrentUser() {
+    return authStore.getUser();
   }
 
-  static async requireAuth() {
-    const user = await this.getCurrentUser();
-    if (!user) {
-      throw new Error('User not authenticated');
-    }
-    return user;
+  static requireAuth() {
+    return authStore.requireUser();
   }
 
   static async getUserProfile(userId?: string) {
-    const user = userId ? { id: userId } : await this.getCurrentUser();
+    const user = userId ? { id: userId } : authStore.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { data: profile, error } = await supabase

@@ -2,19 +2,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { WeeklyObjective, WeeklyProgressPost, CreateWeeklyObjectiveData, UpdateWeeklyObjectiveData } from "@/types/weeklyProgress";
 import { parseISO, startOfWeek, isBefore } from "date-fns";
 import { CarryOverLogService } from "@/services/carryOverLogService";
+import { authStore } from "@/stores/authStore";
 
 export class WeeklyProgressService {
   static async getWeeklyObjectives(weekStart: string): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
     
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
       .select('*, goals(start_date)')
       .eq('week_start', weekStart)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('order_index', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
@@ -47,10 +45,7 @@ export class WeeklyProgressService {
    * Fetch objectives for multiple weeks in a single query (faster than per-week calls).
    */
   static async getWeeklyObjectivesForWeeks(weekStarts: string[]): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     if (!weekStarts.length) return [];
 
@@ -58,7 +53,7 @@ export class WeeklyProgressService {
       .from('weekly_objectives')
       .select('*, goals(start_date)')
       .in('week_start', weekStarts)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('week_start', { ascending: false })
       .order('order_index', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
@@ -83,14 +78,12 @@ export class WeeklyProgressService {
   }
 
   static async createWeeklyObjective(data: CreateWeeklyObjectiveData): Promise<WeeklyObjective> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
-
+    const userId = authStore.requireUserId();
 
     const { data: objective, error } = await supabase
       .from('weekly_objectives')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         goal_id: data.goal_id || null,
         text: data.text,
         week_start: data.week_start,
@@ -124,11 +117,10 @@ export class WeeklyProgressService {
   }
 
   static async deleteAllWeeklyObjectives(weekStart: string): Promise<number> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase.rpc('delete_all_weekly_objectives', {
-      _user_id: user.id,
+      _user_id: userId,
       _week_start: weekStart
     });
 
@@ -137,17 +129,14 @@ export class WeeklyProgressService {
   }
 
   static async getWeeklyProgressPost(weekStart: string): Promise<WeeklyProgressPost | null> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     // Use maybeSingle() to avoid 406 "Not Acceptable" when no row exists yet.
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .select('*')
       .eq('week_start', weekStart)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
 
     if (error) throw error;
@@ -155,13 +144,12 @@ export class WeeklyProgressService {
   }
 
   static async upsertWeeklyProgressPost(weekStart: string, notes: string): Promise<WeeklyProgressPost> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         week_start: weekStart,
         notes: notes,
         updated_at: new Date().toISOString()
@@ -181,13 +169,12 @@ export class WeeklyProgressService {
     notes: string, 
     incompleteReflections?: Record<string, string>
   ): Promise<WeeklyProgressPost> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         week_start: weekStart,
         notes: notes,
         incomplete_reflections: incompleteReflections || {},
@@ -203,13 +190,12 @@ export class WeeklyProgressService {
   }
 
   static async completeWeek(weekStart: string): Promise<WeeklyProgressPost> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         week_start: weekStart,
         is_completed: true,
         completed_at: new Date().toISOString(),
@@ -225,8 +211,7 @@ export class WeeklyProgressService {
   }
 
   static async uncompleteWeek(weekStart: string): Promise<WeeklyProgressPost> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('User not authenticated');
+    const userId = authStore.requireUserId();
 
     const { data: post, error } = await supabase
       .from('weekly_progress_posts')
@@ -234,7 +219,7 @@ export class WeeklyProgressService {
         is_completed: false,
         completed_at: null,
       })
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('week_start', weekStart)
       .select()
       .single();
@@ -334,16 +319,13 @@ export class WeeklyProgressService {
   }
 
   static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
     
     // Get all incomplete objectives from previous weeks
     const { data: incompleteObjectives, error: incompleteError } = await supabase
       .from('weekly_objectives')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('is_completed', false)
       .lt('week_start', currentWeekStart)
       .order('week_start', { ascending: false })
@@ -359,7 +341,7 @@ export class WeeklyProgressService {
     const { data: currentAndFutureObjectives, error: futureError } = await supabase
       .from('weekly_objectives')
       .select('text, goal_id')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .gte('week_start', currentWeekStart);
 
     if (futureError) throw futureError;
@@ -368,7 +350,7 @@ export class WeeklyProgressService {
     const { data: dismissedObjectives, error: dismissedError } = await supabase
       .from('dismissed_carryover_objectives')
       .select('objective_text, goal_id')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (dismissedError) throw dismissedError;
 
@@ -396,15 +378,12 @@ export class WeeklyProgressService {
   }
 
   static async dismissObjectiveFromCarryOver(objectiveText: string, goalId: string | null): Promise<void> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     const { error } = await supabase
       .from('dismissed_carryover_objectives')
       .insert({
-        user_id: user.id,
+        user_id: userId,
         objective_text: objectiveText,
         goal_id: goalId,
       });
@@ -413,15 +392,12 @@ export class WeeklyProgressService {
   }
 
   static async undismissObjectiveFromCarryOver(objectiveText: string, goalId: string | null): Promise<void> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     let query = supabase
       .from('dismissed_carryover_objectives')
       .delete()
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('objective_text', objectiveText);
 
     if (goalId) {
@@ -435,15 +411,12 @@ export class WeeklyProgressService {
   }
 
   static async getDismissedCarryOverObjectives(): Promise<{ id: string; objective_text: string; goal_id: string | null; dismissed_at: string }[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     const { data, error } = await supabase
       .from('dismissed_carryover_objectives')
       .select('id, objective_text, goal_id, dismissed_at')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .order('dismissed_at', { ascending: false });
 
     if (error) throw error;
@@ -451,16 +424,13 @@ export class WeeklyProgressService {
   }
 
   static async carryOverObjectives(objectiveIds: string[], newWeekStart: string): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     const { data: originalObjectives, error: fetchError } = await supabase
       .from('weekly_objectives')
       .select('*')
       .in('id', objectiveIds)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (fetchError) throw fetchError;
 
@@ -469,7 +439,7 @@ export class WeeklyProgressService {
     }
 
     const objectivesToCreate = originalObjectives.map(obj => ({
-      user_id: user.id,
+      user_id: userId,
       goal_id: obj.goal_id,
       text: obj.text,
       week_start: newWeekStart,
@@ -492,10 +462,7 @@ export class WeeklyProgressService {
     objectivesWithWeeks: { objectiveId: string; targetWeek: string }[],
     goals?: { id: string; title: string }[]
   ): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     if (objectivesWithWeeks.length === 0) return [];
 
@@ -506,7 +473,7 @@ export class WeeklyProgressService {
       .from('weekly_objectives')
       .select('*')
       .in('id', objectiveIds)
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
 
     if (fetchError) throw fetchError;
 
@@ -521,7 +488,7 @@ export class WeeklyProgressService {
     }
 
     const potentialObjectives = originalObjectives.map(obj => ({
-      user_id: user.id,
+      user_id: userId,
       goal_id: obj.goal_id,
       text: obj.text,
       week_start: targetWeekMap.get(obj.id) || '',
@@ -533,7 +500,7 @@ export class WeeklyProgressService {
     const { data: existingObjectives, error: existingError } = await supabase
       .from('weekly_objectives')
       .select('text, goal_id, week_start')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .in('week_start', targetWeeks);
 
     if (existingError) throw existingError;
@@ -613,10 +580,7 @@ export class WeeklyProgressService {
   }
 
   static async getObjectivesForQuarter(year: number, quarter: number): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     const startMonth = (quarter - 1) * 3;
     const quarterStart = new Date(year, startMonth, 1);
@@ -628,7 +592,7 @@ export class WeeklyProgressService {
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .gte('week_start', startDate)
       .lte('week_start', endDate)
       .order('week_start', { ascending: true });
@@ -641,15 +605,12 @@ export class WeeklyProgressService {
    * Fetch ALL objectives for a specific goal (no date limit)
    */
   static async getObjectivesForGoal(goalId: string): Promise<WeeklyObjective[]> {
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
+    const userId = authStore.requireUserId();
 
     const { data: objectives, error } = await supabase
       .from('weekly_objectives')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .eq('goal_id', goalId)
       .order('week_start', { ascending: false })
       .order('created_at', { ascending: true });
