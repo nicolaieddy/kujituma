@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
-import { Loader2, RefreshCw, Unlink, Zap, Clock } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { Loader2, RefreshCw, Unlink, Zap, Clock, AlertCircle } from "lucide-react";
+import { formatDistanceToNow, differenceInDays } from "date-fns";
 
 export function StravaConnectionCard() {
   const { 
@@ -27,6 +27,11 @@ export function StravaConnectionCard() {
       </Card>
     );
   }
+
+  // Calculate if sync is stale (more than 2 days old when auto-sync is enabled)
+  const lastSyncDate = connection?.last_synced_at ? new Date(connection.last_synced_at) : null;
+  const daysSinceSync = lastSyncDate ? differenceInDays(new Date(), lastSyncDate) : null;
+  const isSyncStale = connection?.auto_sync_enabled && daysSinceSync !== null && daysSinceSync > 1;
 
   return (
     <Card>
@@ -55,12 +60,24 @@ export function StravaConnectionCard() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <Clock className="h-3 w-3" />
                   {connection.last_synced_at
-                    ? `Synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
+                    ? `Last synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
                     : "Not yet synced"}
                 </p>
               </div>
-              <div className="flex h-2 w-2 rounded-full bg-green-500" title="Connected" />
+              <div className="flex h-2 w-2 rounded-full bg-emerald-500" title="Connected" />
             </div>
+            
+            {isSyncStale && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-amber-700 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                <div className="text-xs">
+                  <p className="font-medium">Sync may need attention</p>
+                  <p className="opacity-80">
+                    Auto-sync is enabled but last sync was {daysSinceSync} days ago. Try syncing manually.
+                  </p>
+                </div>
+              </div>
+            )}
             
             <div className="flex items-center justify-between py-2">
               <div className="space-y-0.5">
@@ -68,7 +85,7 @@ export function StravaConnectionCard() {
                   Auto-sync daily
                 </Label>
                 <p className="text-xs text-muted-foreground">
-                  Automatically sync new activities every day
+                  Sync new activities when you open the app
                 </p>
               </div>
               <Switch
