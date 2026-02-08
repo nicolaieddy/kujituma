@@ -2,7 +2,6 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GoalCard } from "./GoalCard";
 import { Goal, GoalStatus } from "@/types/goals";
-import { GripVertical } from "lucide-react";
 
 interface SortableGoalCardProps {
   goal: Goal;
@@ -29,14 +28,13 @@ export const SortableGoalCard = ({ goal, onEdit, onDelete, onStatusChange, onCli
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative group">
-      <div
-        {...attributes}
-        {...listeners}
-        className="absolute left-2 top-2 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity z-10"
-      >
-        <GripVertical className="h-5 w-5 text-muted-foreground hover:text-foreground" />
-      </div>
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className="cursor-grab active:cursor-grabbing"
+      {...attributes}
+      {...listeners}
+    >
       <GoalCard
         goal={goal}
         onEdit={onEdit}
