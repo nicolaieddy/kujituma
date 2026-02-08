@@ -101,19 +101,31 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
   
-  // Only initialize from todayCheckIn if it's actually from today
+  // Reset form state when dialog opens - only populate if todayCheckIn matches today's date
   useEffect(() => {
-    if (todayCheckIn && !hasInitialized) {
+    if (open) {
       const today = format(new Date(), 'yyyy-MM-dd');
-      if (todayCheckIn.check_in_date === today) {
+      const hasTodayCheckIn = todayCheckIn && todayCheckIn.check_in_date === today;
+      
+      if (hasTodayCheckIn) {
+        // Populate with today's saved data
         setMoodRating(todayCheckIn.mood_rating || 3);
         setEnergyLevel(todayCheckIn.energy_level || 3);
         setFocusToday(todayCheckIn.focus_today || "");
         setJournalEntry(todayCheckIn.journal_entry || "");
-        setHasInitialized(true);
+      } else {
+        // Clear form for new day
+        setMoodRating(3);
+        setEnergyLevel(3);
+        setFocusToday("");
+        setJournalEntry("");
       }
+      // Reset edit states
+      setIsEditingJournal(false);
+      setIsEditingFocus(false);
+      setHasInitialized(true);
     }
-  }, [todayCheckIn, hasInitialized]);
+  }, [open, todayCheckIn]);
 
   // Get greeting
   const greeting = useMemo(() => getGreeting(user?.user_metadata?.full_name), [user]);
