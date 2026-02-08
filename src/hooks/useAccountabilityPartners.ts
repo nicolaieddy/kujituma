@@ -50,8 +50,18 @@ export const useAccountabilityPartners = () => {
   }, [fetchData]);
 
   // Real-time subscription for accountability partner requests
+  // Note: We subscribe to user-specific changes only to avoid global refetch loops
   useEffect(() => {
     if (!user) return;
+
+    // Debounce to prevent rapid-fire refetches
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefresh = () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
+      refreshTimeout = setTimeout(() => {
+        fetchDataRef.current();
+      }, 500);
+    };
 
     const channel = supabase
       .channel('partner-requests-realtime')
@@ -63,10 +73,7 @@ export const useAccountabilityPartners = () => {
           table: 'accountability_partner_requests',
           filter: `receiver_id=eq.${user.id}`,
         },
-        () => {
-          // Refetch when we receive a new request or status changes
-          fetchDataRef.current();
-        }
+        scheduleRefresh
       )
       .on(
         'postgres_changes',
@@ -76,10 +83,7 @@ export const useAccountabilityPartners = () => {
           table: 'accountability_partner_requests',
           filter: `sender_id=eq.${user.id}`,
         },
-        () => {
-          // Refetch when our sent requests change
-          fetchDataRef.current();
-        }
+        scheduleRefresh
       )
       .on(
         'postgres_changes',
@@ -87,18 +91,27 @@ export const useAccountabilityPartners = () => {
           event: '*',
           schema: 'public',
           table: 'accountability_partnerships',
+          filter: `user1_id=eq.${user.id}`,
         },
-        () => {
-          // Refetch when partnerships change
-          fetchDataRef.current();
-        }
+        scheduleRefresh
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'accountability_partnerships',
+          filter: `user2_id=eq.${user.id}`,
+        },
+        scheduleRefresh
       )
       .subscribe();
 
     return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       supabase.removeChannel(channel);
     };
-  }, [user]); // Removed fetchData from deps - using ref instead
+  }, [user]);
 
   const sendPartnerRequest = useCallback(async (
     userId: string, 
