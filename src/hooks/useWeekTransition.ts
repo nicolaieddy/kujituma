@@ -19,7 +19,8 @@ export const useWeekTransition = (currentWeekStart: string) => {
   const { 
     lastWeekObjectives, 
     lastWeekPost: lastWeekProgressPost, 
-    lastWeekPlanning: planningSession,
+    planningSession,      // CURRENT week's planning (for checking if done)
+    lastWeekPlanning,     // LAST week's planning (kept for reference)
     lastWeekStart,
     isLoading: dashboardLoading 
   } = useWeeklyDashboardData(currentWeekStart);
