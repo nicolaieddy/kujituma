@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -41,7 +42,7 @@
     --input: 158 10% 88%;
     --ring: 158 65% 22%;
 
-    --radius: 0.5rem;
+    --radius: 1.5rem;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(158, 65%, 22%) 0%, hsl(158, 65%, 32%) 100%);
@@ -57,6 +58,10 @@
     --sidebar-border: 158 10% 85%;
     --sidebar-ring: 158 65% 22%;
   }
+  .dark {
+    --radius: 1.5rem;
+
+  }
 
 }
 
@@ -65,24 +70,24 @@
   .glass-effect {
     @apply bg-white/10 backdrop-blur-md border border-white/20;
   }
-  
+
   .glass-card {
     @apply bg-card/95 backdrop-blur-sm border-border/50;
   }
-  
+
   .gradient-primary {
     background: var(--gradient-primary);
   }
-  
+
   .gradient-text {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-primary);
   }
-  
+
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Content visibility for off-screen optimization */
   .content-auto {
     content-visibility: auto;
@@ -125,7 +130,7 @@
       min-height: 44px;
       min-width: 44px;
     }
-    
+
     input, textarea, select {
       font-size: 16px !important; /* Prevent iOS zoom on focus */
     }
@@ -156,7 +161,7 @@
   .safe-bottom {
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
-  
+
   .safe-top {
     padding-top: max(0.5rem, env(safe-area-inset-top));
   }
