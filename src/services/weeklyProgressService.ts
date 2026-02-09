@@ -321,7 +321,24 @@ export class WeeklyProgressService {
   static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {
     const userId = authStore.requireUserId();
     
-    // Get all incomplete objectives from previous weeks
+    // Step 1: Get all completed objective signatures (text + goal_id)
+    // This is the KEY FIX: if an objective is completed in ANY week, it shouldn't appear in carry-over
+    const { data: completedObjectives, error: completedError } = await supabase
+      .from('weekly_objectives')
+      .select('text, goal_id')
+      .eq('user_id', userId)
+      .eq('is_completed', true);
+
+    if (completedError) throw completedError;
+
+    // Build set of completed signatures
+    const completedSet = new Set<string>();
+    (completedObjectives || []).forEach(obj => {
+      const key = `${obj.text}|${obj.goal_id || ''}`;
+      completedSet.add(key);
+    });
+
+    // Step 2: Get all incomplete objectives from previous weeks
     const { data: incompleteObjectives, error: incompleteError } = await supabase
       .from('weekly_objectives')
       .select('*')
@@ -337,7 +354,7 @@ export class WeeklyProgressService {
       return [];
     }
 
-    // Get all objectives from current and future weeks to check for already-carried-over items
+    // Step 3: Get all objectives from current and future weeks to check for already-carried-over items
     const { data: currentAndFutureObjectives, error: futureError } = await supabase
       .from('weekly_objectives')
       .select('text, goal_id')
@@ -368,10 +385,13 @@ export class WeeklyProgressService {
       dismissedSet.add(key);
     });
 
-    // Filter out objectives that are already carried over OR dismissed
+    // Step 4: Filter out objectives that are:
+    // - Already carried over to current/future weeks
+    // - Dismissed objectives
+    // - NEWLY: Objectives where ANY version has been completed (the key bug fix)
     const filteredObjectives = incompleteObjectives.filter(obj => {
       const key = `${obj.text}|${obj.goal_id || ''}`;
-      return !carriedOverSet.has(key) && !dismissedSet.has(key);
+      return !carriedOverSet.has(key) && !dismissedSet.has(key) && !completedSet.has(key);
     });
 
     return filteredObjectives as WeeklyObjective[];
