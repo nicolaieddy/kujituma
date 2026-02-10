@@ -1,105 +1,82 @@
 
-# Weekly Transition Logic Bug Fix
+# Improve Partner Dashboard: Weekly Performance Review Experience
 
-## Problem Summary
+## Problem
 
-The Week Transition card keeps appearing even after the user has completed it. The user filled out the transition (reviewing last week, setting intention), but the card still shows on subsequent page loads.
+When viewing an accountability partner's page, it's hard to see how their past week went and hard to provide feedback. The check-in history dominates the screen, the actual performance data (objectives, habits) is buried below the fold, and there's no consolidated "weekly scorecard" view.
 
-## Root Cause
+## Proposed Changes
 
-In `useWeekTransition.ts`, there's a variable aliasing bug where the wrong planning session is being checked:
+### 1. Reorder the Page Layout (High Impact, Low Effort)
 
-| What the code does | What it should do |
-|-------------------|------------------|
-| Checks **last week's** planning session completion | Should check **current week's** planning session completion |
+Move the weekly performance content above the check-in history so you immediately see what matters:
 
-The destructuring on line 22 aliases `lastWeekPlanning` as `planningSession`:
-```javascript
-lastWeekPlanning: planningSession,  // Renames wrong variable
+```
+Current order:              New order:
+1. Partner Header           1. Partner Header
+2. Check-in History  <--    2. Weekly Performance Card (merged)
+3. Week Navigator           3. Habits Review (week-aware)
+4. Weekly Focus             4. Check-in History (collapsed)
+5. Habits Review            5. Goals Kanban
+6. Goals Kanban             6. Visibility Timeline
 ```
 
-But `planningSession` (current week's data) already exists in the dashboard hook and is not being used.
+### 2. Merge Week Navigator + Objectives into a Single "Weekly Performance Card"
 
-## Solution
+Combine the currently separate "week header" card and "Weekly Focus" card into one unified card with:
 
-### 1. Fix the hook destructuring
+- Week navigation arrows and date range at the top
+- A **progress summary row** showing: completion rate (e.g., "5/8 done -- 63%"), a small progress bar, and the number of habits completed that week
+- The objectives list below the summary
+- Feedback buttons remain on each objective
 
-Update `src/hooks/useWeekTransition.ts` to properly get both planning sessions:
+This gives an instant at-a-glance view of how the week went before diving into details.
 
-```javascript
-// Before (broken):
-const { 
-  lastWeekObjectives, 
-  lastWeekPost: lastWeekProgressPost, 
-  lastWeekPlanning: planningSession,  // WRONG: This is LAST week's planning
-  lastWeekStart,
-  isLoading: dashboardLoading 
-} = useWeeklyDashboardData(currentWeekStart);
+### 3. Make Habits Follow Week Navigation
 
-// After (fixed):
-const { 
-  lastWeekObjectives, 
-  lastWeekPost: lastWeekProgressPost, 
-  planningSession,         // CURRENT week's planning (for checking if done)
-  lastWeekPlanning,        // LAST week's planning (for reference if needed)
-  lastWeekStart,
-  isLoading: dashboardLoading 
-} = useWeeklyDashboardData(currentWeekStart);
-```
+Currently `PartnerHabitsCard` always shows the current week. Pass the `selectedWeekStart` state to it so that when you navigate to a past week, you see that week's habit completions -- not today's.
 
-### 2. The Logic Already Works
+### 4. Collapse Check-in History by Default
 
-The `shouldShowTransition` logic on lines 28-61 is **already correct** - it just needs the right data:
+Since the check-in history is now below the performance content, keep it collapsed by default (showing just the header with count), and expand on click. This keeps the page focused on performance review.
 
-```javascript
-// Don't show if last week was already marked complete
-if (lastWeekProgressPost?.is_completed) return false;
+### 5. Add a "Weekly Note" Quick Action
 
-// Don't show if planning for CURRENT week is already complete  
-if (planningSession?.is_completed) return false;  // Now checks correct session
-```
-
-### 3. Update the return statement
-
-The hook currently returns `planningSession` but it's actually `lastWeekPlanning`. After the fix, update if any consumers expect last week's planning:
-
-```javascript
-return {
-  // Data
-  lastWeekStart,
-  lastWeekObjectives,
-  incompleteObjectives,
-  lastWeekReflections,
-  planningSession,        // Now correctly refers to CURRENT week
-  // Or if you need both:
-  // lastWeekPlanning,     // Add if needed
-```
-
-## Why This Fix Works
-
-After the transition is completed:
-1. `handleCompleteTransition()` calls `saveIntentionMutation.mutate()` 
-2. This creates/updates the planning session for the **current week** and marks it complete
-3. The fix ensures `planningSession?.is_completed` checks the **current week's** session
-4. Since it's complete, `shouldShowTransition` returns `false`
+Add a small text input at the bottom of the Weekly Performance Card that lets you quickly leave a general note about the whole week (e.g., "Great progress this week!" or "Let's discuss the missed habits"). This sends a check-in message tagged with the viewed week context, so it shows up in the check-in history with the correct week label.
 
 ---
 
 ## Technical Details
 
-**File to modify:** `src/hooks/useWeekTransition.ts`
+### Files to Modify
 
-**Change summary:**
-- Line 22: Fix destructuring to get `planningSession` (current week) instead of aliasing `lastWeekPlanning`
-- Optionally keep `lastWeekPlanning` if needed elsewhere
+| File | Change |
+|------|--------|
+| `src/pages/PartnerDashboard.tsx` | Reorder sections, merge week nav + objectives into one card, add progress summary row, add quick note input, pass `selectedWeekStart` to PartnerHabitsCard |
+| `src/components/accountability/PartnerHabitsCard.tsx` | Already accepts `weekStart` prop -- just needs the parent to pass the selected week instead of defaulting to current |
 
-**No database changes required** - this is purely a client-side variable naming issue.
+### No New Files or Database Changes
 
-## Testing Checklist
+This is purely a UI restructuring and prop-wiring change. All the data is already being fetched -- it just needs to be presented differently.
 
-After the fix:
-1. Complete the week transition flow
-2. Navigate away from the page
-3. Return to the page - transition card should NOT appear
-4. Refresh the browser - transition card should still NOT appear
-5. Test "Review Last Week" button still works when manually reopened
+### Progress Summary Row (New UI Element)
+
+Inside the merged card, add a row like:
+
+```text
+[==========------]  5/8 objectives  |  3/4 habits  |  63% complete
+```
+
+Built from existing data:
+- `completedObjectives / totalObjectives` (already calculated)
+- `habitStats` completion counts (already available)
+
+### Quick Note Input
+
+A simple inline form at the bottom of the performance card:
+
+```text
+[Leave a note about this week...        ] [Send]
+```
+
+On submit, calls `handleRecordCheckIn(message)` with the note text. The check-in is automatically tagged with the viewed week.
