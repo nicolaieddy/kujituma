@@ -7,6 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PartnerGoalsKanban } from '@/components/accountability/PartnerGoalsKanban';
 import { PartnerHabitsCard } from '@/components/accountability/PartnerHabitsCard';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
@@ -27,8 +30,13 @@ import {
   Circle,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Clock,
-  Settings
+  Settings,
+  MessageSquare,
+  Send,
+  ListChecks,
+  RefreshCw
 } from 'lucide-react';
 import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, formatDistanceToNow } from 'date-fns';
 
@@ -42,6 +50,9 @@ const PartnerDashboard = () => {
   );
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+  const [checkInsOpen, setCheckInsOpen] = useState(false);
+  const [weeklyNote, setWeeklyNote] = useState('');
+  const [isSendingNote, setIsSendingNote] = useState(false);
   
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
@@ -86,8 +97,6 @@ const PartnerDashboard = () => {
     setSelectedWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
   };
 
-  // Note: currentUserProfile derived from auth context above - no extra query needed
-
   useEffect(() => {
     if (!authLoading && !user) {
       navigate('/auth');
@@ -99,7 +108,6 @@ const PartnerDashboard = () => {
       throw new Error('Missing partnership details');
     }
     
-    // Add optimistic check-in immediately
     const tempId = checkInsFeedRef.current?.addOptimisticCheckIn({
       message,
       week_start: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
@@ -109,14 +117,11 @@ const PartnerDashboard = () => {
     try {
       const result = await accountabilityService.recordCheckIn(partnershipDetails.id, message);
       
-      // Check if the service returned an error
       if (!result.success) {
         throw new Error(result.error || 'Failed to record check-in');
       }
       
-      // Confirm the optimistic update
       if (tempId) checkInsFeedRef.current?.confirmOptimisticCheckIn(tempId);
-      // Refresh the check-ins feed and partner switcher (don't await to keep dialog responsive)
       Promise.all([
         checkInsFeedRef.current?.refresh(),
         partnerSwitcherRef.current?.refresh(),
@@ -125,10 +130,22 @@ const PartnerDashboard = () => {
       toast.success('Check-in recorded!');
     } catch (err) {
       console.error('Error recording check-in:', err);
-      // Remove the optimistic entry on failure
       if (tempId) checkInsFeedRef.current?.removeOptimisticCheckIn(tempId);
-      // Re-throw so the dialog knows it failed
       throw err;
+    }
+  };
+
+  const handleSendWeeklyNote = async () => {
+    if (!weeklyNote.trim()) return;
+    setIsSendingNote(true);
+    try {
+      await handleRecordCheckIn(weeklyNote.trim());
+      setWeeklyNote('');
+      setCheckInsOpen(true);
+    } catch (err) {
+      // Error already handled in handleRecordCheckIn
+    } finally {
+      setIsSendingNote(false);
     }
   };
 
@@ -177,7 +194,6 @@ const PartnerDashboard = () => {
             Back to Partners
           </Button>
           
-          {/* Partner Header */}
           <Card className="border-border mb-6">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
@@ -216,6 +232,10 @@ const PartnerDashboard = () => {
   const completedObjectives = weeklyObjectives.filter(o => o.is_completed).length;
   const totalObjectives = weeklyObjectives.length;
   const progressPercentage = totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0;
+
+  // Calculate habit completion stats for the summary row
+  const totalHabits = habitStats.reduce((sum, h) => sum + (h.goal.habit_items?.length || 1), 0);
+  const completedHabitsCount = habitStats.filter(h => h.completionRate > 0).length;
 
   const initials = partnerProfile?.full_name
     .split(' ')
@@ -261,7 +281,6 @@ const PartnerDashboard = () => {
                 </Button>
               </div>
               
-              {/* Subtle check-in action row */}
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-border">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="h-4 w-4" />
@@ -309,31 +328,14 @@ const PartnerDashboard = () => {
             canViewPartnerGoals={partnerVisibility.canViewPartnerGoals}
             partnerCanViewMyGoals={partnerVisibility.partnerCanViewMyGoals}
             onSettingsChange={() => {
-              // Refetch data when settings change
               refetch();
             }}
           />
 
-          {/* Check-ins Feed - Full History - Moved to top */}
-          {partnershipDetails && partnerProfile && (
-            <Card className="border-border">
-              <CardContent className="pt-6">
-                <CheckInsFeed
-                  ref={checkInsFeedRef}
-                  partnershipId={partnershipDetails.id}
-                  currentUserId={user.id}
-                  currentUserProfile={currentUserProfile || undefined}
-                  partnerName={partnerProfile.full_name}
-                  maxVisible={2}
-                  onRecordCheckIn={() => setCheckInDialogOpen(true)}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Weekly Progress - matching ThisWeekView style */}
+          {/* ===== WEEKLY PERFORMANCE CARD (merged week nav + objectives + summary) ===== */}
           <Card className="border-border">
-            <CardHeader>
+            <CardHeader className="pb-3">
+              {/* Week Navigation */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <div className="flex items-center space-x-2">
@@ -363,21 +365,42 @@ const PartnerDashboard = () => {
                     </p>
                   </div>
                 </div>
-                {totalObjectives > 0 && (
-                  <div className="text-sm text-muted-foreground">
-                    {completedObjectives}/{totalObjectives} completed
-                  </div>
+                {!isCurrentWeek && (
+                  <Button variant="ghost" size="sm" onClick={handleCurrentWeek} className="text-xs">
+                    Today
+                  </Button>
                 )}
               </div>
-            </CardHeader>
-          </Card>
 
-          {/* Weekly Objectives List */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">Weekly Focus</CardTitle>
+              {/* Progress Summary Row */}
+              {(totalObjectives > 0 || totalHabits > 0) && (
+                <div className="mt-4 pt-3 border-t border-border space-y-2">
+                  <div className="flex items-center gap-3">
+                    <Progress value={progressPercentage} className="flex-1 h-2" animated={false} />
+                    <span className="text-sm font-semibold text-foreground whitespace-nowrap">
+                      {progressPercentage}%
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    {totalObjectives > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <ListChecks className="h-3.5 w-3.5" />
+                        <span>{completedObjectives}/{totalObjectives} objectives</span>
+                      </div>
+                    )}
+                    {totalHabits > 0 && (
+                      <div className="flex items-center gap-1.5">
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span>{completedHabitsCount} active habit{completedHabitsCount !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardHeader>
-            <CardContent>
+
+            {/* Objectives List */}
+            <CardContent className="pt-0">
               {weeklyObjectives.length > 0 ? (
                 <div className="space-y-2">
                   {weeklyObjectives.map((objective) => {
@@ -410,7 +433,6 @@ const PartnerDashboard = () => {
                             {objective.scheduled_day}
                           </Badge>
                         )}
-                        {/* Partner Feedback Buttons */}
                         <FeedbackCommentPopover
                           objectiveId={objective.id}
                           feedback={objFeedback}
@@ -429,11 +451,87 @@ const PartnerDashboard = () => {
                   No objectives set for this week.
                 </div>
               )}
+
+              {/* Weekly Note Quick Action */}
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="flex gap-2">
+                  <Textarea
+                    placeholder={`Leave a note about ${isCurrentWeek ? 'this' : 'that'} week...`}
+                    value={weeklyNote}
+                    onChange={(e) => setWeeklyNote(e.target.value)}
+                    className="min-h-[40px] h-10 resize-none text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendWeeklyNote();
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={handleSendWeeklyNote}
+                    disabled={!weeklyNote.trim() || isSendingNote}
+                    className="px-3 self-end"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Habits Review */}
-          <PartnerHabitsCard habitStats={habitStats} isLoading={isLoading} partnerId={partnerId || ''} />
+          {/* Habits Review - now week-aware */}
+          <PartnerHabitsCard 
+            habitStats={habitStats} 
+            isLoading={isLoading} 
+            partnerId={partnerId || ''} 
+            weekStart={selectedWeekStart}
+          />
+
+          {/* Check-ins Feed - Collapsible */}
+          {partnershipDetails && partnerProfile && (
+            <Collapsible open={checkInsOpen} onOpenChange={setCheckInsOpen}>
+              <Card className="border-border">
+                <CollapsibleTrigger asChild>
+                  <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                        <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                        Check-in History
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCheckInDialogOpen(true);
+                          }}
+                          className="text-xs"
+                        >
+                          New Check-in
+                        </Button>
+                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${checkInsOpen ? 'rotate-180' : ''}`} />
+                      </div>
+                    </div>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <CardContent className="pt-0">
+                    <CheckInsFeed
+                      ref={checkInsFeedRef}
+                      partnershipId={partnershipDetails.id}
+                      currentUserId={user.id}
+                      currentUserProfile={currentUserProfile || undefined}
+                      partnerName={partnerProfile.full_name}
+                      maxVisible={2}
+                      onRecordCheckIn={() => setCheckInDialogOpen(true)}
+                    />
+                  </CardContent>
+                </CollapsibleContent>
+              </Card>
+            </Collapsible>
+          )}
 
           {/* Goals Kanban */}
           <Card className="border-border">
