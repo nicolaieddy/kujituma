@@ -1078,7 +1078,6 @@ export type Database = {
       }
       objective_partner_feedback: {
         Row: {
-          comment: string | null
           created_at: string
           feedback_type: string
           id: string
@@ -1087,7 +1086,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          comment?: string | null
           created_at?: string
           feedback_type: string
           id?: string
@@ -1096,7 +1094,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          comment?: string | null
           created_at?: string
           feedback_type?: string
           id?: string

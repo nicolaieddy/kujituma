@@ -63,13 +63,8 @@ export const ObjectiveFeedbackIndicator = ({
               </p>
               <ul className="text-xs space-y-1.5">
                 {agreeFeedback.map(f => (
-                  <li key={f.id} className="flex flex-col gap-0.5">
+                  <li key={f.id}>
                     <span className="font-medium">{f.partner?.full_name}</span>
-                    {f.comment && (
-                      <span className="text-muted-foreground italic pl-2 border-l-2 border-emerald-500/30">
-                        "{f.comment}"
-                      </span>
-                    )}
                   </li>
                 ))}
               </ul>
@@ -108,13 +103,8 @@ export const ObjectiveFeedbackIndicator = ({
               </p>
               <ul className="text-xs space-y-1.5">
                 {questionFeedback.map(f => (
-                  <li key={f.id} className="flex flex-col gap-0.5">
+                  <li key={f.id}>
                     <span className="font-medium">{f.partner?.full_name}</span>
-                    {f.comment && (
-                      <span className="text-muted-foreground italic pl-2 border-l-2 border-amber-500/30">
-                        "{f.comment}"
-                      </span>
-                    )}
                   </li>
                 ))}
               </ul>
