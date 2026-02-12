@@ -36,6 +36,7 @@ interface ObjectiveItemProps {
   agreeFeedback?: ObjectiveFeedback[];
   questionFeedback?: ObjectiveFeedback[];
   commentCount?: number;
+  unreadCount?: number;
   onToggleObjective: (id: string, isCompleted: boolean) => void;
   onEditObjective: (objective: WeeklyObjective) => void;
   onEditingTextChange: (text: string) => void;
@@ -68,6 +69,7 @@ export const ObjectiveItem = memo(({
   agreeFeedback = [],
   questionFeedback = [],
   commentCount = 0,
+  unreadCount = 0,
   onToggleObjective,
   onEditObjective,
   onEditingTextChange,
@@ -153,6 +155,7 @@ export const ObjectiveItem = memo(({
               agreeFeedback={agreeFeedback}
               questionFeedback={questionFeedback}
               commentCount={commentCount}
+              unreadCount={unreadCount}
               onEditGoal={onEditGoal}
               onGoalChange={onGoalChange}
               onUpdateObjectiveSchedule={onUpdateObjectiveSchedule}
@@ -194,6 +197,7 @@ interface ObjectiveContentProps {
   agreeFeedback: ObjectiveFeedback[];
   questionFeedback: ObjectiveFeedback[];
   commentCount: number;
+  unreadCount: number;
   onEditGoal: (objectiveId: string, currentGoalId: string | null) => void;
   onGoalChange: (objectiveId: string, goalId: string) => void;
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
@@ -216,6 +220,7 @@ const ObjectiveContent = ({
   agreeFeedback,
   questionFeedback,
   commentCount,
+  unreadCount,
   onEditGoal,
   onGoalChange,
   onUpdateObjectiveSchedule,
@@ -312,6 +317,7 @@ const ObjectiveContent = ({
           agreeFeedback={agreeFeedback}
           questionFeedback={questionFeedback}
           commentCount={commentCount}
+          unreadCount={unreadCount}
           onClick={onOpenComments ? () => onOpenComments(objective.id, objective.text) : undefined}
         />
       )}

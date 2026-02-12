@@ -8,6 +8,7 @@ interface ObjectiveFeedbackIndicatorProps {
   agreeFeedback: ObjectiveFeedback[];
   questionFeedback: ObjectiveFeedback[];
   commentCount?: number;
+  unreadCount?: number;
   onClick?: () => void;
 }
 
@@ -15,6 +16,7 @@ export const ObjectiveFeedbackIndicator = ({
   agreeFeedback,
   questionFeedback,
   commentCount = 0,
+  unreadCount = 0,
   onClick,
 }: ObjectiveFeedbackIndicatorProps) => {
   if (agreeFeedback.length === 0 && questionFeedback.length === 0 && commentCount === 0) {
@@ -123,9 +125,14 @@ export const ObjectiveFeedbackIndicator = ({
 
       {/* Comment count badge */}
       {commentCount > 0 && (
-        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 border border-primary/20">
+        <div className="relative flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 border border-primary/20">
           <MessageCircle className="h-3 w-3 text-primary" />
           <span className="text-[10px] text-primary font-medium">{commentCount}</span>
+          {unreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground px-0.5">
+              {unreadCount}
+            </span>
+          )}
         </div>
       )}
     </div>

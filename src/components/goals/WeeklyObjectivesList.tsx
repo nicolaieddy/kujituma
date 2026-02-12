@@ -68,7 +68,7 @@ export const WeeklyObjectivesList = ({
   // Get feedback for all objectives
   const objectiveIds = useMemo(() => objectives.map(o => o.id), [objectives]);
   const { getAgreeFeedback, getQuestionFeedback } = useMyObjectivesFeedback(objectiveIds);
-  const { counts: commentCounts } = useObjectiveCommentCounts(objectiveIds);
+  const { counts: commentCounts, unreadCounts } = useObjectiveCommentCounts(objectiveIds);
 
   // Comments sheet state
   const [commentsObjectiveId, setCommentsObjectiveId] = useState<string | null>(null);
@@ -223,6 +223,7 @@ export const WeeklyObjectivesList = ({
                   agreeFeedback={getAgreeFeedback(objective.id)}
                   questionFeedback={getQuestionFeedback(objective.id)}
                   commentCount={commentCounts[objective.id] || 0}
+                  unreadCount={unreadCounts[objective.id] || 0}
                   onToggleObjective={onToggleObjective}
                   onEditObjective={handleEditObjective}
                   onEditingTextChange={setEditingText}

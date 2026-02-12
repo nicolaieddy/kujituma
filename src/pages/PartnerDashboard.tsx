@@ -86,7 +86,7 @@ const PartnerDashboard = () => {
   // Get objective IDs for feedback hook - must be called before any early returns
   const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
   const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
-  const { counts: commentCounts } = useObjectiveCommentCounts(objectiveIds);
+  const { counts: commentCounts, unreadCounts } = useObjectiveCommentCounts(objectiveIds);
 
   const isCurrentWeek = isSameWeek(selectedWeekStart, new Date(), { weekStartsOn: 1 });
 

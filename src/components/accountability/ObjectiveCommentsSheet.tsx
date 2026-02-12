@@ -24,9 +24,16 @@ export const ObjectiveCommentsSheet = ({
   objectiveText,
 }: ObjectiveCommentsSheetProps) => {
   const { user } = useAuth();
-  const { comments, isLoading, addComment, isAdding } = useObjectiveComments(open ? objectiveId : null);
+  const { comments, isLoading, addComment, isAdding, markAsRead } = useObjectiveComments(open ? objectiveId : null);
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Mark as read when sheet opens and has comments
+  useEffect(() => {
+    if (open && objectiveId && comments.length > 0) {
+      markAsRead();
+    }
+  }, [open, objectiveId, comments.length]);
 
   // Scroll to bottom when comments change
   useEffect(() => {
