@@ -16,7 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ThumbsUp, HelpCircle, Send, X } from "lucide-react";
+import { ThumbsUp, HelpCircle, Send, X, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FeedbackType, ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
 
@@ -26,6 +26,8 @@ interface FeedbackCommentPopoverProps {
   onSubmitFeedback: (feedbackType: FeedbackType, comment?: string) => void;
   onRemoveFeedback: () => void;
   isSubmitting: boolean;
+  commentCount?: number;
+  onOpenComments?: () => void;
 }
 
 export const FeedbackCommentPopover = ({
@@ -34,6 +36,8 @@ export const FeedbackCommentPopover = ({
   onSubmitFeedback,
   onRemoveFeedback,
   isSubmitting,
+  commentCount = 0,
+  onOpenComments,
 }: FeedbackCommentPopoverProps) => {
   const [comment, setComment] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -207,8 +211,21 @@ export const FeedbackCommentPopover = ({
         </PopoverContent>
       </Popover>
 
-      {/* Show existing comment indicator */}
-      {feedback?.comment && (
+      {/* View thread / comment count */}
+      {onOpenComments && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onOpenComments}
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-primary gap-1"
+        >
+          <MessageCircle className="h-3 w-3" />
+          {commentCount > 0 ? `${commentCount}` : 'Chat'}
+        </Button>
+      )}
+
+      {/* Show existing comment indicator (only if no thread link) */}
+      {!onOpenComments && feedback?.comment && (
         <span className="text-xs text-muted-foreground italic truncate max-w-[80px]" title={feedback.comment}>
           "{feedback.comment.slice(0, 15)}{feedback.comment.length > 15 ? '...' : ''}"
         </span>

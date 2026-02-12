@@ -16,12 +16,14 @@ import { VisibilityHistoryTimeline } from '@/components/accountability/Visibilit
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
 import { FeedbackCommentPopover } from '@/components/accountability/FeedbackCommentPopover';
+import { ObjectiveCommentsSheet } from '@/components/accountability/ObjectiveCommentsSheet';
 import { supabase } from '@/integrations/supabase/client';
 import { PartnershipSettingsModal } from '@/components/accountability/PartnershipSettingsModal';
 import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability/PartnerSwitcher';
 import { accountabilityService } from '@/services/accountabilityService';
 import { usePartnerDashboardData } from '@/hooks/usePartnerDashboardData';
 import { usePartnerObjectiveFeedback } from '@/hooks/useObjectiveFeedback';
+import { useObjectiveCommentCounts } from '@/hooks/useObjectiveComments';
 import { toast } from 'sonner';
 import { 
   ArrowLeft, 
@@ -53,6 +55,8 @@ const PartnerDashboard = () => {
   const [checkInsOpen, setCheckInsOpen] = useState(false);
   const [weeklyNote, setWeeklyNote] = useState('');
   const [isSendingNote, setIsSendingNote] = useState(false);
+  const [commentsObjectiveId, setCommentsObjectiveId] = useState<string | null>(null);
+  const [commentsObjectiveText, setCommentsObjectiveText] = useState('');
   
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
@@ -82,6 +86,7 @@ const PartnerDashboard = () => {
   // Get objective IDs for feedback hook - must be called before any early returns
   const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
   const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
+  const { counts: commentCounts } = useObjectiveCommentCounts(objectiveIds);
 
   const isCurrentWeek = isSameWeek(selectedWeekStart, new Date(), { weekStartsOn: 1 });
 
@@ -441,6 +446,11 @@ const PartnerDashboard = () => {
                           }
                           onRemoveFeedback={() => removeFeedback(objective.id)}
                           isSubmitting={isSubmitting}
+                          commentCount={commentCounts[objective.id] || 0}
+                          onOpenComments={() => {
+                            setCommentsObjectiveId(objective.id);
+                            setCommentsObjectiveText(objective.text);
+                          }}
                         />
                       </div>
                     );
@@ -575,6 +585,14 @@ const PartnerDashboard = () => {
               user2Id={partnershipDetails.user2_id}
             />
           )}
+
+          {/* Objective Comments Sheet */}
+          <ObjectiveCommentsSheet
+            open={!!commentsObjectiveId}
+            onOpenChange={(open) => { if (!open) setCommentsObjectiveId(null); }}
+            objectiveId={commentsObjectiveId}
+            objectiveText={commentsObjectiveText}
+          />
       </div>
     </div>
   );

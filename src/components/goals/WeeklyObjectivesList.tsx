@@ -12,6 +12,8 @@ import { ObjectiveItem } from "./ObjectiveItem";
 import { InlineAddObjective } from "./InlineAddObjective";
 import { EmptyObjectivesState } from "./EmptyObjectivesState";
 import { useMyObjectivesFeedback } from "@/hooks/useObjectiveFeedback";
+import { useObjectiveCommentCounts } from "@/hooks/useObjectiveComments";
+import { ObjectiveCommentsSheet } from "@/components/accountability/ObjectiveCommentsSheet";
 
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
@@ -66,6 +68,16 @@ export const WeeklyObjectivesList = ({
   // Get feedback for all objectives
   const objectiveIds = useMemo(() => objectives.map(o => o.id), [objectives]);
   const { getAgreeFeedback, getQuestionFeedback } = useMyObjectivesFeedback(objectiveIds);
+  const { counts: commentCounts } = useObjectiveCommentCounts(objectiveIds);
+
+  // Comments sheet state
+  const [commentsObjectiveId, setCommentsObjectiveId] = useState<string | null>(null);
+  const [commentsObjectiveText, setCommentsObjectiveText] = useState("");
+
+  const handleOpenComments = useCallback((objectiveId: string, objectiveText: string) => {
+    setCommentsObjectiveId(objectiveId);
+    setCommentsObjectiveText(objectiveText);
+  }, []);
 
   useEffect(() => {
     setLocalObjectives(objectives);
@@ -210,6 +222,7 @@ export const WeeklyObjectivesList = ({
                   allObjectives={localObjectives}
                   agreeFeedback={getAgreeFeedback(objective.id)}
                   questionFeedback={getQuestionFeedback(objective.id)}
+                  commentCount={commentCounts[objective.id] || 0}
                   onToggleObjective={onToggleObjective}
                   onEditObjective={handleEditObjective}
                   onEditingTextChange={setEditingText}
@@ -222,6 +235,7 @@ export const WeeklyObjectivesList = ({
                   onMoveObjectiveToWeek={onMoveObjectiveToWeek}
                   onCreateNewGoal={handleCreateNewGoal}
                   getGoalName={getGoalName}
+                  onOpenComments={handleOpenComments}
                 />
               ))}
             </AnimatePresence>
@@ -233,6 +247,13 @@ export const WeeklyObjectivesList = ({
           isWeekCompleted={isWeekCompleted}
         />
       </div>
+
+      <ObjectiveCommentsSheet
+        open={!!commentsObjectiveId}
+        onOpenChange={(open) => { if (!open) setCommentsObjectiveId(null); }}
+        objectiveId={commentsObjectiveId}
+        objectiveText={commentsObjectiveText}
+      />
     </div>
   );
 };
