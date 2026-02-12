@@ -441,8 +441,8 @@ const PartnerDashboard = () => {
                         <FeedbackCommentPopover
                           objectiveId={objective.id}
                           feedback={objFeedback}
-                          onSubmitFeedback={(feedbackType, comment) => 
-                            submitFeedback({ objectiveId: objective.id, feedbackType, comment })
+                          onSubmitFeedback={(feedbackType) => 
+                            submitFeedback({ objectiveId: objective.id, feedbackType })
                           }
                           onRemoveFeedback={() => removeFeedback(objective.id)}
                           isSubmitting={isSubmitting}
