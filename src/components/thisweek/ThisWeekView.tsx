@@ -27,6 +27,8 @@ import { CarryOverActivityLog } from "@/components/goals/CarryOverActivityLog";
 import { useCarryOverObjectives } from "@/hooks/useCarryOverObjectives";
 import { useWeekClose } from "@/hooks/useWeekClose";
 import { toast } from "@/hooks/use-toast";
+import { HistoricalWeekSummary } from "@/components/thisweek/HistoricalWeekSummary";
+import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 
 // Extracted hooks for better code organization
 import { useWeeklyShare } from "@/hooks/useWeeklyShare";
@@ -76,6 +78,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
   const isEndOfWeekTime = HabitsService.isEndOfWeek();
+
+  // Planning session data for historical summary
+  const { planningSession } = useWeeklyPlanning(currentWeekStart);
 
   // Week transition (combines close last week + planning + reflections)
   const {
@@ -265,6 +270,19 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         isRefetching={isRefetching}
         onRefresh={refetchObjectives}
       />
+
+      {/* Historical Week Summary - shown when viewing past weeks */}
+      {!isCurrentWeek && (
+        <HistoricalWeekSummary
+          weekStart={currentWeekStart}
+          objectives={objectives || []}
+          reflectionNotes={progressPost?.notes || ""}
+          incompleteReflections={
+            (progressPost?.incomplete_reflections as Record<string, string>) || {}
+          }
+          weekIntention={planningSession?.week_intention}
+        />
+      )}
 
       {/* Carry Over Banner - prominent call to action when there are incomplete objectives from past weeks */}
       {isCurrentWeek && !isReadOnly && hasIncompleteObjectivesFromPastWeeks && !shouldShowTransition && (
