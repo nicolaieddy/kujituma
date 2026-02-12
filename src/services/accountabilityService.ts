@@ -581,10 +581,7 @@ class AccountabilityService {
           check_in_id,
           user_id,
           reaction,
-          created_at,
-          reactor:profiles!check_in_reactions_user_id_fkey (
-            full_name
-          )
+          created_at
         `)
         .in('check_in_id', checkInIds);
       
@@ -594,7 +591,7 @@ class AccountabilityService {
         user_id: r.user_id,
         reaction: r.reaction,
         created_at: r.created_at,
-        reactor_name: (r.reactor as any)?.full_name || 'Unknown',
+        reactor_name: 'Unknown', // FK to profiles not available on check_in_reactions
       })) as CheckInReaction[];
     }
 
@@ -656,10 +653,7 @@ class AccountabilityService {
           check_in_id,
           user_id,
           reaction,
-          created_at,
-          reactor:profiles!check_in_reactions_user_id_fkey (
-            full_name
-          )
+          created_at
         `)
         .in('check_in_id', checkInIds);
       reactions = (reactionsData || []).map(r => ({
@@ -668,7 +662,7 @@ class AccountabilityService {
         user_id: r.user_id,
         reaction: r.reaction,
         created_at: r.created_at,
-        reactor_name: (r.reactor as any)?.full_name || 'Unknown',
+        reactor_name: 'Unknown',
       })) as CheckInReaction[];
     }
 
