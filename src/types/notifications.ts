@@ -23,6 +23,7 @@ export interface Notification {
   related_comment_id?: string | null;
   related_request_id?: string | null;
   related_goal_update_id?: string | null;
+  related_objective_id?: string | null;
   triggered_by_user_id: string;
   is_read: boolean;
   created_at: string;

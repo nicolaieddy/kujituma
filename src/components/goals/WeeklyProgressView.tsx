@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useGoals } from "@/hooks/useGoals";
@@ -22,13 +23,15 @@ export const WeeklyProgressView = () => {
   const { user } = useAuth();
   const { goals } = useGoals();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
   const [progressNotes, setProgressNotes] = useState("");
   const [isPostingToFeed, setIsPostingToFeed] = useState(false);
   const [showIncompleteModal, setShowIncompleteModal] = useState(false);
   const [showCarryOverModal, setShowCarryOverModal] = useState(false);
-  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
-    WeeklyProgressService.getWeekStart()
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(() => {
+    const weekParam = searchParams.get('week');
+    return weekParam || WeeklyProgressService.getWeekStart();
+  });
   
   const {
     objectives,
