@@ -19,6 +19,7 @@ import { useAccountabilityPartners } from '@/hooks/useAccountabilityPartners';
 
 import { useNavigate } from 'react-router-dom';
 import { User, UserCheck, UserMinus, Loader2, CheckCircle, Target, Eye, EyeOff } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface NotificationItemProps {
   notification: Notification;
@@ -58,7 +59,24 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
         destination = `/partner/${notification.triggered_by_user_id}`;
         break;
       case 'partner_objective_feedback':
-        destination = '/goals?tab=weekly';
+        if (notification.related_objective_id) {
+          try {
+            const { data } = await supabase
+              .from('weekly_objectives')
+              .select('week_start')
+              .eq('id', notification.related_objective_id)
+              .single();
+            if (data?.week_start) {
+              destination = `/goals?tab=weekly&week=${data.week_start}`;
+            } else {
+              destination = '/goals?tab=weekly';
+            }
+          } catch {
+            destination = '/goals?tab=weekly';
+          }
+        } else {
+          destination = '/goals?tab=weekly';
+        }
         break;
       case 'goal_update_cheer':
       case 'goal_update_comment':

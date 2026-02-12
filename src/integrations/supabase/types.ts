@@ -966,6 +966,7 @@ export type Database = {
           is_read: boolean
           message: string
           related_comment_id: string | null
+          related_objective_id: string | null
           related_post_id: string | null
           related_request_id: string | null
           triggered_by_user_id: string
@@ -979,6 +980,7 @@ export type Database = {
           is_read?: boolean
           message: string
           related_comment_id?: string | null
+          related_objective_id?: string | null
           related_post_id?: string | null
           related_request_id?: string | null
           triggered_by_user_id: string
@@ -992,6 +994,7 @@ export type Database = {
           is_read?: boolean
           message?: string
           related_comment_id?: string | null
+          related_objective_id?: string | null
           related_post_id?: string | null
           related_request_id?: string | null
           triggered_by_user_id?: string
