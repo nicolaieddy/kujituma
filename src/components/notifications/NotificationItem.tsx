@@ -39,24 +39,50 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
   const [iCanViewTheirGoals, setICanViewTheirGoals] = useState(true);
 
   const handleClick = async () => {
-    // Determine destination before closing popover
     let destination: string | null = null;
 
-    if (notification.type === 'friend_request') {
-      destination = '/friends?tab=requests';
-    } else if (notification.type === 'friend_request_accepted') {
-      destination = `/profile/${notification.triggered_by_user_id}`;
-    } else if (notification.type === 'accountability_partner_request') {
-      destination = '/friends?tab=accountability';
-    } else if (notification.type === 'accountability_partner_accepted') {
-      destination = `/profile/${notification.triggered_by_user_id}`;
-    } else if (notification.type === 'partner_objective_feedback') {
-      destination = '/goals?tab=weekly';
-    } else if (notification.related_post_id) {
-      destination = `/feed?post=${notification.related_post_id}`;
+    switch (notification.type) {
+      case 'friend_request':
+        destination = '/friends?tab=requests';
+        break;
+      case 'friend_request_accepted':
+        destination = `/profile/${notification.triggered_by_user_id}`;
+        break;
+      case 'accountability_partner_request':
+        destination = '/friends?tab=accountability';
+        break;
+      case 'accountability_partner_accepted':
+        destination = `/profile/${notification.triggered_by_user_id}`;
+        break;
+      case 'accountability_check_in':
+        destination = `/partner/${notification.triggered_by_user_id}`;
+        break;
+      case 'partner_objective_feedback':
+        destination = '/goals?tab=weekly';
+        break;
+      case 'goal_update_cheer':
+      case 'goal_update_comment':
+      case 'goal_milestone':
+      case 'goal_help_request':
+        destination = '/goals';
+        break;
+      case 'post_like':
+      case 'comment_added':
+      case 'comment_like':
+      case 'mention':
+        if (notification.related_post_id) {
+          destination = `/feed?post=${notification.related_post_id}`;
+        } else {
+          destination = '/feed';
+        }
+        break;
+      default:
+        if (notification.related_post_id) {
+          destination = `/feed?post=${notification.related_post_id}`;
+        }
+        break;
     }
 
-    // Navigate first, then close popover
     if (destination) {
       navigate(destination);
     }
@@ -155,8 +181,18 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
         return '🎯';
       case 'accountability_partner_accepted':
         return '🤝';
+      case 'accountability_check_in':
+        return '📋';
       case 'partner_objective_feedback':
         return '💡';
+      case 'goal_update_cheer':
+        return '🎉';
+      case 'goal_milestone':
+        return '🏆';
+      case 'goal_help_request':
+        return '🆘';
+      case 'goal_update_comment':
+        return '💬';
       default:
         return '🔔';
     }
