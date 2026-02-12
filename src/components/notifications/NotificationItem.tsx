@@ -39,26 +39,31 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
   const [iCanViewTheirGoals, setICanViewTheirGoals] = useState(true);
 
   const handleClick = async () => {
-    // Close popover first to avoid interference with navigation
-    onMarkRead();
-    
-    if (!notification.is_read) {
-      await onMarkAsRead(notification.id);
+    // Determine destination before closing popover
+    let destination: string | null = null;
+
+    if (notification.type === 'friend_request') {
+      destination = '/friends?tab=requests';
+    } else if (notification.type === 'friend_request_accepted') {
+      destination = `/profile/${notification.triggered_by_user_id}`;
+    } else if (notification.type === 'accountability_partner_request') {
+      destination = '/friends?tab=accountability';
+    } else if (notification.type === 'accountability_partner_accepted') {
+      destination = `/profile/${notification.triggered_by_user_id}`;
+    } else if (notification.type === 'partner_objective_feedback') {
+      destination = '/goals?tab=weekly';
+    } else if (notification.related_post_id) {
+      destination = `/feed?post=${notification.related_post_id}`;
     }
 
-    // Navigate based on notification type
-    if (notification.type === 'friend_request') {
-      navigate('/friends?tab=requests');
-    } else if (notification.type === 'friend_request_accepted') {
-      navigate(`/profile/${notification.triggered_by_user_id}`);
-    } else if (notification.type === 'accountability_partner_request') {
-      navigate('/friends?tab=accountability');
-    } else if (notification.type === 'accountability_partner_accepted') {
-      navigate(`/profile/${notification.triggered_by_user_id}`);
-    } else if (notification.type === 'partner_objective_feedback') {
-      navigate('/goals?tab=weekly');
-    } else if (notification.related_post_id) {
-      navigate(`/feed?post=${notification.related_post_id}`);
+    // Navigate first, then close popover
+    if (destination) {
+      navigate(destination);
+    }
+    onMarkRead();
+
+    if (!notification.is_read) {
+      onMarkAsRead(notification.id).catch(() => {});
     }
   };
 
