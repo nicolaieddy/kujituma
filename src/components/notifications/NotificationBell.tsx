@@ -92,61 +92,55 @@ export const NotificationBell = () => {
           )}
         </div>
         <ScrollArea className="max-h-96 overflow-y-auto">
-          {/* Overdue Partner Check-ins Section */}
+          {/* Overdue & Due Partner Check-ins - Compact */}
           {(hasOverdue || hasDueToday) && (
             <div className="p-3 space-y-2">
               <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
                 <Users className="h-3 w-3" />
                 Partner Check-ins
               </div>
-              {overdueCheckIns.map((checkIn) => (
-                <div
-                  key={checkIn.partner_id}
-                  className="flex items-center gap-3 p-2 rounded-md bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
-                  onClick={() => {
-                    setIsOpen(false);
-                    navigate(`/partner/${checkIn.partner_id}`);
-                  }}
-                >
-                  <Avatar className="h-8 w-8">
-                    {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
-                    <AvatarFallback className="text-xs bg-destructive/20 text-destructive">
-                      {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{checkIn.partner_name}</p>
-                    <p className="text-xs text-destructive flex items-center gap-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      {Math.abs(checkIn.days_until_due)} day{Math.abs(checkIn.days_until_due) !== 1 ? 's' : ''} overdue
-                    </p>
+              <div className="flex flex-wrap gap-2">
+                {overdueCheckIns.map((checkIn) => (
+                  <div
+                    key={checkIn.partner_id}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-destructive/10 border border-destructive/20 cursor-pointer hover:bg-destructive/15 transition-colors"
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate(`/partner/${checkIn.partner_id}`);
+                    }}
+                  >
+                    <Avatar className="h-5 w-5">
+                      {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
+                      <AvatarFallback className="text-[9px] bg-destructive/20 text-destructive">
+                        {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium truncate max-w-[100px]">{checkIn.partner_name.split(' ')[0]}</span>
+                    <span className="text-[10px] text-destructive font-medium whitespace-nowrap">
+                      {Math.abs(checkIn.days_until_due)}d overdue
+                    </span>
                   </div>
-                </div>
-              ))}
-              {dueTodayCheckIns.map((checkIn) => (
-                <div
-                  key={checkIn.partner_id}
-                  className="flex items-center gap-3 p-2 rounded-md bg-warning/10 border border-warning/20 cursor-pointer hover:bg-warning/15 transition-colors"
-                  onClick={() => {
-                    setIsOpen(false);
-                    navigate(`/partner/${checkIn.partner_id}`);
-                  }}
-                >
-                  <Avatar className="h-8 w-8">
-                    {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
-                    <AvatarFallback className="text-xs bg-warning/20">
-                      {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{checkIn.partner_name}</p>
-                    <p className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Due today
-                    </p>
+                ))}
+                {dueTodayCheckIns.map((checkIn) => (
+                  <div
+                    key={checkIn.partner_id}
+                    className="flex items-center gap-2 px-2.5 py-1.5 rounded-full bg-warning/10 border border-warning/20 cursor-pointer hover:bg-warning/15 transition-colors"
+                    onClick={() => {
+                      setIsOpen(false);
+                      navigate(`/partner/${checkIn.partner_id}`);
+                    }}
+                  >
+                    <Avatar className="h-5 w-5">
+                      {checkIn.avatar_url && <AvatarImage src={checkIn.avatar_url} />}
+                      <AvatarFallback className="text-[9px] bg-warning/20">
+                        {checkIn.partner_name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="text-xs font-medium truncate max-w-[100px]">{checkIn.partner_name.split(' ')[0]}</span>
+                    <span className="text-[10px] text-muted-foreground whitespace-nowrap">Due today</span>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
               <Separator className="my-2" />
             </div>
           )}
