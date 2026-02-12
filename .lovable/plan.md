@@ -1,56 +1,100 @@
 
 
-# Deep-Link Objective Comment Notifications to the Correct Week
+# Historical Week Summary Card
 
-## Problem
+## Overview
 
-When clicking a `partner_objective_feedback` notification, the app navigates to `/goals?tab=weekly` which always shows the current week. If the commented objective belongs to a previous week, the user lands on the wrong week and can't find it.
+When viewing a past week (not the current week), a new "Week in Review" summary card appears at the top of the weekly plan view. It consolidates key metrics and reflections from that week into a compact, read-only dashboard. This replaces the need to scroll through the full weekly layout to understand how the week went.
 
-## Solution
+## What It Shows
 
-Three changes are needed:
+The summary card has four sections, each shown only when data exists:
 
-1. **Store the objective ID in the notification** so we know which objective was commented on
-2. **Look up the objective's `week_start` at click time** and include it in the navigation URL
-3. **Have `WeeklyProgressView` read a `week` query param** to initialize on the correct week
+### 1. Objectives Performance (from `weekly_objectives`)
+- Completion rate as a progress bar (e.g., "5/8 completed - 63%")
+- Count of completed vs incomplete objectives
+- Visual indicator: green for high completion, amber for moderate, red for low
 
----
+### 2. Habit Completions (from `habit_completions`)
+- Total habit completions for the 7 days of that week
+- Completion rate across all habits (e.g., "22/35 completed - 63%")
+- Mini day-by-day indicator (7 dots, colored by how many habits were completed that day)
 
-### 1. Database: Add `related_objective_id` column to `notifications`
+### 3. Daily Check-ins (from `daily_check_ins`)
+- How many days the user checked in that week (e.g., "5/7 days")
+- Average mood and energy ratings with small emoji/icon indicators
+- Quick wins or blockers mentioned (collapsed, expandable)
 
-Add a nullable `related_objective_id uuid` column to the `notifications` table. Update the `notify_objective_comment` trigger to populate it with `NEW.objective_id` when inserting the notification.
+### 4. Weekly Reflection (from `weekly_progress_posts.notes`)
+- Shows the user's written weekly reflection if one exists
+- Read-only preview, truncated with "show more" if long
+- Includes incomplete objective reflections if recorded
 
-### 2. Update the trigger function
+## Implementation
 
-Modify `notify_objective_comment()` to include `related_objective_id` in both INSERT paths (partner-commented and owner-replied).
+### New Component: `HistoricalWeekSummary.tsx`
+- Located in `src/components/thisweek/`
+- Accepts `weekStart: string` prop
+- Only renders when the viewed week is not the current week
+- Uses existing hooks to fetch data:
+  - `useWeeklyProgress(weekStart)` for objectives and reflection notes
+  - `useHabitCompletions(weekStartDate)` for habit data
+  - Direct Supabase query for daily check-ins in the date range (Mon-Sun)
+  - `useWeeklyPlanning(weekStart)` for planning session data (intention)
 
-### 3. Update TypeScript types
+### New Hook: `useHistoricalWeekData.ts`
+- Fetches daily check-ins for a specific week date range
+- Fetches habit completions count for the week
+- Combines with already-available objectives data
+- Computes summary metrics (averages, counts, rates)
 
-Add `related_objective_id?: string | null` to the `Notification` interface in `src/types/notifications.ts` and `src/integrations/supabase/types.ts`.
+### Integration Point: `ThisWeekView.tsx`
+- Add `<HistoricalWeekSummary weekStart={currentWeekStart} />` right after the `WeekHeader`
+- Only shown when `!isCurrentWeek`
+- Collapsible via a chevron toggle, defaults to expanded
 
-### 4. NotificationItem: Look up week_start on click
+## Technical Details
 
-In `NotificationItem.tsx`, for `partner_objective_feedback` notifications that have a `related_objective_id`:
-- Query `weekly_objectives` for the objective's `week_start`
-- Navigate to `/goals?tab=weekly&week={week_start}`
+### Data Queries (in `useHistoricalWeekData`)
 
-### 5. WeeklyProgressView: Read `week` query param
+**Daily check-ins for the week:**
+```sql
+SELECT * FROM daily_check_ins
+WHERE user_id = auth.uid()
+  AND check_in_date >= weekStart
+  AND check_in_date <= weekEnd
+ORDER BY check_in_date ASC
+```
 
-In `WeeklyProgressView.tsx`, read a `week` search param from the URL. If present, use it as the initial `currentWeekStart` instead of the current week. This ensures the view opens on the correct week.
+**Habit completions for the week:**
+```sql
+SELECT * FROM habit_completions
+WHERE user_id = auth.uid()
+  AND completion_date >= weekStart
+  AND completion_date <= weekEnd
+```
 
-### 6. Goals page: Pass through the `week` param
+**Goals with habits (for total count):** reuse existing `useHabitStats` data or query goals with `is_recurring = true`.
 
-The Goals page already reads `tab` from search params. The `week` param will flow through to `WeeklyProgressView` via URL search params (read directly inside `WeeklyProgressView`).
+### No database changes needed
+All data already exists in existing tables. This is purely a frontend feature that queries existing data in a week-scoped way.
 
----
+### Files to Create
+| File | Purpose |
+|------|---------|
+| `src/hooks/useHistoricalWeekData.ts` | Fetches and computes check-ins + habit stats for a specific week |
+| `src/components/thisweek/HistoricalWeekSummary.tsx` | The summary card component |
 
-## Files to Change
-
+### Files to Modify
 | File | Change |
 |------|--------|
-| New migration SQL | Add `related_objective_id` column; update trigger to populate it |
-| `src/types/notifications.ts` | Add `related_objective_id` field |
-| `src/integrations/supabase/types.ts` | Update generated types |
-| `src/components/notifications/NotificationItem.tsx` | Fetch objective's `week_start` on click, navigate with `&week=` param |
-| `src/components/goals/WeeklyProgressView.tsx` | Read `week` search param to set initial `currentWeekStart` |
+| `src/components/thisweek/ThisWeekView.tsx` | Add `HistoricalWeekSummary` after `WeekHeader` when `!isCurrentWeek` |
+
+### UI Design
+- Card with `border-primary/20 bg-primary/5` styling (consistent with existing cards)
+- Collapsible with header "Week in Review"
+- 2x2 grid layout on desktop, stacked on mobile
+- Each section is a mini-card with an icon, title, and metric
+- Muted color palette since it's historical/read-only data
+- Uses existing UI components (Card, Progress, Badge, Collapsible)
 
