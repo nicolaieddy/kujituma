@@ -35,6 +35,7 @@ interface ObjectiveItemProps {
   allObjectives: WeeklyObjective[];
   agreeFeedback?: ObjectiveFeedback[];
   questionFeedback?: ObjectiveFeedback[];
+  commentCount?: number;
   onToggleObjective: (id: string, isCompleted: boolean) => void;
   onEditObjective: (objective: WeeklyObjective) => void;
   onEditingTextChange: (text: string) => void;
@@ -47,6 +48,7 @@ interface ObjectiveItemProps {
   onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string, scheduledDay: string) => void;
   onCreateNewGoal: () => void;
   getGoalName: (goalId: string | null) => string | null;
+  onOpenComments?: (objectiveId: string, objectiveText: string) => void;
 }
 
 export const ObjectiveItem = memo(({
@@ -65,6 +67,7 @@ export const ObjectiveItem = memo(({
   allObjectives,
   agreeFeedback = [],
   questionFeedback = [],
+  commentCount = 0,
   onToggleObjective,
   onEditObjective,
   onEditingTextChange,
@@ -77,6 +80,7 @@ export const ObjectiveItem = memo(({
   onMoveObjectiveToWeek,
   onCreateNewGoal,
   getGoalName,
+  onOpenComments,
 }: ObjectiveItemProps) => {
   const goalName = getGoalName(objective.goal_id);
   const isSaving = savingObjectiveIds.has(objective.id) || pendingUpdateIds.has(objective.id);
@@ -148,11 +152,13 @@ export const ObjectiveItem = memo(({
               groupedGoals={groupedGoals}
               agreeFeedback={agreeFeedback}
               questionFeedback={questionFeedback}
+              commentCount={commentCount}
               onEditGoal={onEditGoal}
               onGoalChange={onGoalChange}
               onUpdateObjectiveSchedule={onUpdateObjectiveSchedule}
               onMoveObjectiveToWeek={onMoveObjectiveToWeek}
               onCreateNewGoal={onCreateNewGoal}
+              onOpenComments={onOpenComments}
             />
           )}
           
@@ -187,11 +193,13 @@ interface ObjectiveContentProps {
   groupedGoals: GroupedGoals;
   agreeFeedback: ObjectiveFeedback[];
   questionFeedback: ObjectiveFeedback[];
+  commentCount: number;
   onEditGoal: (objectiveId: string, currentGoalId: string | null) => void;
   onGoalChange: (objectiveId: string, goalId: string) => void;
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
   onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string, scheduledDay: string) => void;
   onCreateNewGoal: () => void;
+  onOpenComments?: (objectiveId: string, objectiveText: string) => void;
 }
 
 const ObjectiveContent = ({
@@ -207,11 +215,13 @@ const ObjectiveContent = ({
   groupedGoals,
   agreeFeedback,
   questionFeedback,
+  commentCount,
   onEditGoal,
   onGoalChange,
   onUpdateObjectiveSchedule,
   onMoveObjectiveToWeek,
   onCreateNewGoal,
+  onOpenComments,
 }: ObjectiveContentProps) => (
   <div className="flex-1 px-1 sm:px-2 py-1 transition-all duration-300 text-foreground min-w-0">
     <div className="flex flex-wrap items-start sm:items-center gap-1 sm:gap-2">
@@ -297,10 +307,12 @@ const ObjectiveContent = ({
       )}
       
       {/* Partner Feedback Indicator */}
-      {(agreeFeedback.length > 0 || questionFeedback.length > 0) && (
+      {(agreeFeedback.length > 0 || questionFeedback.length > 0 || commentCount > 0) && (
         <ObjectiveFeedbackIndicator
           agreeFeedback={agreeFeedback}
           questionFeedback={questionFeedback}
+          commentCount={commentCount}
+          onClick={onOpenComments ? () => onOpenComments(objective.id, objective.text) : undefined}
         />
       )}
     </div>

@@ -1,24 +1,36 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { ThumbsUp, HelpCircle } from "lucide-react";
+import { ThumbsUp, HelpCircle, MessageCircle } from "lucide-react";
 import { ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
 import { cn } from "@/lib/utils";
 
 interface ObjectiveFeedbackIndicatorProps {
   agreeFeedback: ObjectiveFeedback[];
   questionFeedback: ObjectiveFeedback[];
+  commentCount?: number;
+  onClick?: () => void;
 }
 
 export const ObjectiveFeedbackIndicator = ({
   agreeFeedback,
   questionFeedback,
+  commentCount = 0,
+  onClick,
 }: ObjectiveFeedbackIndicatorProps) => {
-  if (agreeFeedback.length === 0 && questionFeedback.length === 0) {
+  if (agreeFeedback.length === 0 && questionFeedback.length === 0 && commentCount === 0) {
     return null;
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div
+      className={cn(
+        "flex items-center gap-2",
+        onClick && "cursor-pointer"
+      )}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+    >
       {agreeFeedback.length > 0 && (
         <Tooltip>
           <TooltipTrigger asChild>
@@ -107,6 +119,14 @@ export const ObjectiveFeedbackIndicator = ({
             </div>
           </TooltipContent>
         </Tooltip>
+      )}
+
+      {/* Comment count badge */}
+      {commentCount > 0 && (
+        <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-primary/10 border border-primary/20">
+          <MessageCircle className="h-3 w-3 text-primary" />
+          <span className="text-[10px] text-primary font-medium">{commentCount}</span>
+        </div>
       )}
     </div>
   );

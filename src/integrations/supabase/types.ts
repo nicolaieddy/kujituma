@@ -1001,6 +1001,45 @@ export type Database = {
         }
         Relationships: []
       }
+      objective_comments: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          objective_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          objective_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          objective_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objective_comments_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "weekly_objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       objective_partner_feedback: {
         Row: {
           comment: string | null
