@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -38,9 +38,15 @@ export const PartnerCheckInsCard = () => {
   const [isSending, setIsSending] = useState(false);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
   const { dueCheckIns } = useDuePartnerCheckIns();
-  const duePartnerIds = dueCheckIns.map(c => c.partner_id);
+  
+  // Stabilize duePartnerIds with a string key to avoid re-render loops
+  const duePartnerIdsKey = useMemo(() => dueCheckIns.map(c => c.partner_id).sort().join(','), [dueCheckIns]);
+  const duePartnerIds = useMemo(() => dueCheckIns.map(c => c.partner_id), [duePartnerIdsKey]);
+  
+  // Track if initial fetch has happened
+  const hasFetchedRef = useRef(false);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -108,16 +114,28 @@ export const PartnerCheckInsCard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user?.id, duePartnerIdsKey]); // Stable dependencies only
 
+  // Initial fetch and refetch only when user or due partners change
   useEffect(() => {
     fetchData();
-  }, [user, duePartnerIds]);
+  }, [fetchData]);
+
+  // Use a ref for fetchData to avoid re-subscribing on every fetchData change
+  const fetchDataRef = useRef(fetchData);
+  fetchDataRef.current = fetchData;
+  
+  // Stabilize partnership IDs for the realtime subscription
+  const partnershipIdsKey = useMemo(
+    () => partnerCheckIns.map(pc => pc.partner.partnership_id).sort().join(','),
+    [partnerCheckIns]
+  );
 
   useEffect(() => {
-    if (!user || partnerCheckIns.length === 0) return;
+    if (!user || !partnershipIdsKey) return;
 
-    const partnershipIds = partnerCheckIns.map(pc => pc.partner.partnership_id);
+    const partnershipIds = partnershipIdsKey.split(',');
+    let refreshTimeout: ReturnType<typeof setTimeout> | null = null;
     
     const channel = supabase
       .channel('partner-check-ins-card')
@@ -131,16 +149,21 @@ export const PartnerCheckInsCard = () => {
         (payload) => {
           const newCheckIn = payload.new as any;
           if (partnershipIds.includes(newCheckIn.partnership_id)) {
-            fetchData();
+            // Debounce to prevent rapid re-fetches
+            if (refreshTimeout) clearTimeout(refreshTimeout);
+            refreshTimeout = setTimeout(() => {
+              fetchDataRef.current();
+            }, 500);
           }
         }
       )
       .subscribe();
 
     return () => {
+      if (refreshTimeout) clearTimeout(refreshTimeout);
       supabase.removeChannel(channel);
     };
-  }, [user, partnerCheckIns.length]);
+  }, [user?.id, partnershipIdsKey]); // Stable string key, not array/length
 
   const handleSendCheckIn = async (partnerId: string, partnershipId: string, parentCheckInId?: string) => {
     if (!replyText.trim() || !user) return;
