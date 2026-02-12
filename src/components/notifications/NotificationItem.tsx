@@ -82,7 +82,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
       case 'goal_update_comment':
       case 'goal_milestone':
       case 'goal_help_request':
-        destination = '/goals';
+        destination = '/community';
         break;
       case 'post_like':
       case 'comment_added':
