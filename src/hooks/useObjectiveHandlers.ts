@@ -11,6 +11,7 @@ interface UseObjectiveHandlersProps {
   createObjective: (data: { text: string; week_start: string; goal_id: string | null }) => void;
   updateObjective: (id: string, data: Record<string, unknown>) => void;
   deleteObjective: (id: string) => void;
+  reorderObjectives: (updates: { id: string; order_index: number }[]) => void;
   incompleteReflections: Record<string, string>;
 }
 
@@ -21,6 +22,7 @@ export const useObjectiveHandlers = ({
   createObjective,
   updateObjective,
   deleteObjective,
+  reorderObjectives,
   incompleteReflections,
 }: UseObjectiveHandlersProps) => {
   const queryClient = useQueryClient();
@@ -55,13 +57,9 @@ export const useObjectiveHandlers = ({
     deleteObjective(id);
   }, [deleteObjective]);
 
-  const handleReorderObjective = useCallback(async (objectiveId: string, newOrderIndex: number) => {
-    try {
-      await updateObjective(objectiveId, { order_index: newOrderIndex });
-    } catch (error) {
-      console.error('Error reordering objective:', error);
-    }
-  }, [updateObjective]);
+  const handleReorderObjectives = useCallback((updates: { id: string; order_index: number }[]) => {
+    reorderObjectives(updates);
+  }, [reorderObjectives]);
 
   const handleUpdateObjectiveSchedule = useCallback((id: string, day: string | null, time: string | null) => {
     updateObjective(id, { scheduled_day: day, scheduled_time: time });
@@ -118,7 +116,7 @@ export const useObjectiveHandlers = ({
     handleToggleObjective,
     handleUpdateObjectiveText,
     handleDeleteObjective,
-    handleReorderObjective,
+    handleReorderObjectives,
     handleUpdateObjectiveSchedule,
     handleMoveObjectiveToWeek,
   };

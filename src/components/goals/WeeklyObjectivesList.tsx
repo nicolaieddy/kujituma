@@ -29,7 +29,7 @@ interface WeeklyObjectivesListProps {
   onOpenCarryOver?: () => void;
   hasIncompleteObjectives?: boolean;
   isDeletingAll?: boolean;
-  onReorderObjective?: (objectiveId: string, newOrderIndex: number) => void;
+  onReorderObjectives?: (updates: { id: string; order_index: number }[]) => void;
   onUpdateObjectiveSchedule?: (id: string, day: string | null, time: string | null) => void;
   currentWeekStart?: string;
   onMoveObjectiveToWeek?: (objectiveId: string, newWeekStart: string, scheduledDay: string) => void;
@@ -51,7 +51,7 @@ export const WeeklyObjectivesList = ({
   onOpenCarryOver,
   hasIncompleteObjectives = false,
   isDeletingAll = false,
-  onReorderObjective,
+  onReorderObjectives,
   onUpdateObjectiveSchedule,
   currentWeekStart = '',
   onMoveObjectiveToWeek,
@@ -103,8 +103,8 @@ export const WeeklyObjectivesList = ({
       const newObjectives = arrayMove(localObjectives, oldIndex, newIndex);
       setLocalObjectives(newObjectives);
 
-      if (onReorderObjective) {
-        onReorderObjective(active.id as string, newIndex);
+      if (onReorderObjectives) {
+        onReorderObjectives(newObjectives.map((obj, i) => ({ id: obj.id, order_index: i })));
       }
     }
   };

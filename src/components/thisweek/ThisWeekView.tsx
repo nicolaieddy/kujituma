@@ -56,6 +56,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     updateObjective,
     deleteObjective,
     deleteAllObjectives,
+    reorderObjectives,
     updateProgressNotes,
     weekRange,
     weekNumber,
@@ -197,7 +198,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     handleToggleObjective,
     handleUpdateObjectiveText,
     handleDeleteObjective,
-    handleReorderObjective,
+    handleReorderObjectives,
     handleUpdateObjectiveSchedule,
     handleMoveObjectiveToWeek,
   } = useObjectiveHandlers({
@@ -207,6 +208,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     createObjective,
     updateObjective,
     deleteObjective,
+    reorderObjectives,
     incompleteReflections,
   });
 
@@ -401,7 +403,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             onOpenCarryOver={() => setShowCarryOverModal(true)}
             hasIncompleteObjectives={hasIncompleteObjectivesFromPastWeeks}
             isDeletingAll={isDeletingAll}
-            onReorderObjective={handleReorderObjective}
+            onReorderObjectives={handleReorderObjectives}
             onUpdateObjectiveSchedule={handleUpdateObjectiveSchedule}
             currentWeekStart={currentWeekStart}
             onMoveObjectiveToWeek={handleMoveObjectiveToWeek}

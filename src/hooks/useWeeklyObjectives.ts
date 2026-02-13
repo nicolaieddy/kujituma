@@ -62,6 +62,7 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     createMutation, 
     updateMutation, 
     deleteMutation, 
+    reorderMutation,
     deleteAllMutation,
     pendingUpdateIds,
     recentlySavedIds,
@@ -113,6 +114,10 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     deleteAllMutation.mutate(currentWeekStart);
   };
 
+  const reorderObjectives = (updates: { id: string; order_index: number }[]) => {
+    reorderMutation.mutate(updates);
+  };
+
   return {
     objectives,
     isLoading: objectivesLoading,
@@ -125,6 +130,7 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     updateObjective,
     deleteObjective,
     deleteAllObjectives,
+    reorderObjectives,
     isCreating: createMutation.isPending,
     isUpdating: updateMutation.isPending,
     isDeleting: deleteMutation.isPending,
