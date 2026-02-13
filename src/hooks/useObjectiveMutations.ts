@@ -204,6 +204,35 @@ export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjective
     },
   });
 
+  const reorderMutation = useMutation({
+    mutationFn: async (updates: { id: string; order_index: number }[]) => {
+      await WeeklyProgressService.reorderObjectives(updates);
+      return updates;
+    },
+    onMutate: async (updates) => {
+      await queryClient.cancelQueries({ queryKey });
+      const previousObjectives = queryClient.getQueryData(queryKey);
+      queryClient.setQueryData(queryKey, (old: any[] | undefined) => {
+        if (!old) return old;
+        const orderMap = new Map(updates.map(u => [u.id, u.order_index]));
+        return [...old].map(obj => ({
+          ...obj,
+          order_index: orderMap.has(obj.id) ? orderMap.get(obj.id) : obj.order_index,
+        })).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+      });
+      return { previousObjectives };
+    },
+    onError: (error, _variables, context) => {
+      if (context?.previousObjectives) {
+        queryClient.setQueryData(queryKey, context.previousObjectives);
+      }
+      console.error('Error reordering objectives:', error);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey });
+    },
+  });
+
   const deleteAllMutation = useMutation({
     mutationFn: async (weekStart: string) => {
       try {
@@ -261,6 +290,7 @@ export const useObjectiveMutations = ({ userId, currentWeekStart }: UseObjective
     createMutation,
     updateMutation,
     deleteMutation,
+    reorderMutation,
     deleteAllMutation,
     pendingUpdateIds,
     recentlySavedIds,

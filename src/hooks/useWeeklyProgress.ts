@@ -23,6 +23,7 @@ export const useWeeklyProgress = (weekStart?: string) => {
     updateObjective: objectives.updateObjective,
     deleteObjective: objectives.deleteObjective,
     deleteAllObjectives: objectives.deleteAllObjectives,
+    reorderObjectives: objectives.reorderObjectives,
     isCreating: objectives.isCreating,
     isUpdating: objectives.isUpdating,
     isDeleting: objectives.isDeleting,

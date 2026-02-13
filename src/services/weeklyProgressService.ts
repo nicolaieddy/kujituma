@@ -107,6 +107,19 @@ export class WeeklyProgressService {
     return objective as WeeklyObjective;
   }
 
+  static async reorderObjectives(updates: { id: string; order_index: number }[]): Promise<void> {
+    // Batch update all objectives' order indices
+    const promises = updates.map(({ id, order_index }) =>
+      supabase
+        .from('weekly_objectives')
+        .update({ order_index })
+        .eq('id', id)
+    );
+    const results = await Promise.all(promises);
+    const error = results.find(r => r.error)?.error;
+    if (error) throw error;
+  }
+
   static async deleteWeeklyObjective(id: string): Promise<void> {
     const { error } = await supabase
       .from('weekly_objectives')
