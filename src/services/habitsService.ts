@@ -36,12 +36,16 @@ export class HabitsService {
     
     const today = getLocalDateString();
     
+    // Separate custom_answers from standard fields so it maps to the JSONB column correctly
+    const { custom_answers, ...standardFields } = checkIn;
+    
     const { data, error } = await supabase
       .from('daily_check_ins')
       .upsert({
         user_id: userId,
         check_in_date: today,
-        ...checkIn
+        ...standardFields,
+        ...(custom_answers !== undefined ? { custom_answers } : {}),
       }, { onConflict: 'user_id,check_in_date' })
       .select()
       .single();

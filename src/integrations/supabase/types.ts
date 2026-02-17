@@ -358,6 +358,36 @@ export type Database = {
           },
         ]
       }
+      check_in_custom_questions: {
+        Row: {
+          created_at: string
+          id: string
+          is_enabled: boolean
+          order_index: number
+          prompt: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          order_index?: number
+          prompt: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          order_index?: number
+          prompt?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       check_in_reactions: {
         Row: {
           check_in_id: string
@@ -503,6 +533,7 @@ export type Database = {
           blocker: string | null
           check_in_date: string
           created_at: string
+          custom_answers: Json | null
           energy_level: number | null
           focus_today: string | null
           id: string
@@ -516,6 +547,7 @@ export type Database = {
           blocker?: string | null
           check_in_date?: string
           created_at?: string
+          custom_answers?: Json | null
           energy_level?: number | null
           focus_today?: string | null
           id?: string
@@ -529,6 +561,7 @@ export type Database = {
           blocker?: string | null
           check_in_date?: string
           created_at?: string
+          custom_answers?: Json | null
           energy_level?: number | null
           focus_today?: string | null
           id?: string
