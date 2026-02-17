@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { CategoryRadarChart } from "@/components/analytics/CategoryRadarChart";
+import { MoodEnergyTrendsChart } from "@/components/analytics/MoodEnergyTrendsChart";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -78,6 +79,9 @@ const Analytics = () => {
 
         <div className="max-w-5xl space-y-8">
           <AnalyticsDashboard />
+
+          {/* Mood & Energy Trends */}
+          <MoodEnergyTrendsChart />
           
           {/* Life Balance Radar Chart */}
           <CategoryRadarChart />
