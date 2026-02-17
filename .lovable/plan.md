@@ -1,34 +1,37 @@
 
-## What's Missing
+## Root Cause
 
-When you click a `comment_reaction` notification, you land on the weekly goals tab for the right week — but the comments sheet for the specific objective doesn't automatically open. You have to manually find the objective and click on the comment count yourself.
+`CheckInQuestionsSettings` is a **Radix UI Sheet** (built on `@radix-ui/react-dialog`). When the check-in **Dialog** is open, Radix UI installs a **focus trap** on that dialog. Any attempt to interact with a second Radix dialog/sheet that opens on top gets blocked by that focus trap — the sheet appears visually but interactions are swallowed, making it look "greyed out."
 
-## Solution: Deep-link via URL Parameter
+## Solution: Inline Settings Panel (Single-View Switch)
 
-Add an `openComments` query parameter to the notification navigation URL. When `WeeklyObjectivesList` mounts (or the objectives load), it detects this parameter and automatically opens the comments sheet for the matching objective.
+Replace the separate Sheet with an **inline settings view** rendered inside the existing Dialog/Drawer. When the gear icon is clicked, the dialog content switches to show the settings panel (and a back button replaces the title). This avoids the two-dialogs-at-once problem entirely.
+
+The implementation adds a `view` state (`'checkin' | 'settings'`) to `DailyCheckInDialog`. When `view === 'settings'`, the content area renders the settings UI (the same fields from `CheckInQuestionsSettings`) instead of the check-in form, and the header shows a back arrow + "Customise Questions" title. Switching back to `'checkin'` returns to the normal form.
+
+This is the same "nested view" pattern used in mobile settings apps (e.g. iOS Settings).
 
 ---
 
 ## Technical Changes
 
-### 1. `NotificationItem.tsx` — Append `openComments` to the URL
+### 1. `DailyCheckInDialog.tsx`
 
-Change the destination for `comment_reaction` (and `partner_objective_feedback`) to include the objective ID:
+- Add `const [view, setView] = useState<'checkin' | 'settings'>('checkin')` state.
+- Replace the settings gear `onClick` from `setShowQuestionsSettings(true)` → `setView('settings')`.
+- In both the Desktop (Dialog) and Mobile (Drawer) renders:
+  - When `view === 'checkin'`: render existing content + footer as today.
+  - When `view === 'settings'`: render `<InlineCheckInSettings />` with a back button in the header. Footer becomes just a "Done" / back button.
+- Reset `view` back to `'checkin'` when the dialog closes (in the existing `useEffect` on `open`).
+- Remove the `showQuestionsSettings` state and the separate `<CheckInQuestionsSettings ... />` sibling renders.
 
-```
-/goals?tab=weekly&week=2025-01-13&openComments=<objectiveId>
-```
+### 2. New component: `src/components/habits/InlineCheckInSettings.tsx`
 
-For `comment_reaction`, the `objectiveId` is fetched via the `related_comment_id` lookup (already in place). We just append it.
+Extract the settings UI from `CheckInQuestionsSettings.tsx` into a plain `<div>` (no Sheet/Dialog wrapper) so it can be embedded inline. It uses the same `useCheckInCustomQuestions` hook, renders the same built-in questions display, custom questions list, add-question input, and preset suggestions — just without a Sheet container.
 
-### 2. `WeeklyObjectivesList.tsx` — Read the param and auto-open
+### 3. `CheckInQuestionsSettings.tsx`
 
-Add a `useEffect` that:
-1. Reads `openComments` from `useSearchParams()`
-2. Waits for `objectives` to be loaded
-3. Finds the matching objective by ID
-4. Calls `handleOpenComments(objective.id, objective.text)` to open the sheet
-5. Removes the `openComments` param from the URL (so refreshing doesn't re-open it)
+Keep the file as-is (it's still used anywhere the sheet can open standalone). The `InlineCheckInSettings` will be a separate extracted component.
 
 ---
 
@@ -36,15 +39,13 @@ Add a `useEffect` that:
 
 | File | Change |
 |------|--------|
-| `src/components/notifications/NotificationItem.tsx` | Append `&openComments=<objectiveId>` to `comment_reaction` destination |
-| `src/components/goals/WeeklyObjectivesList.tsx` | Add `useEffect` with `useSearchParams` to auto-open comments sheet |
+| `src/components/habits/DailyCheckInDialog.tsx` | Add `view` state; switch content between check-in form and inline settings; remove Sheet sibling |
+| `src/components/habits/InlineCheckInSettings.tsx` | **New file** — settings UI as a plain div, no Sheet wrapper |
 
 ---
 
 ## User Experience
 
-Before: Click notification → land on the week page → have to find the objective manually → click comment icon.
+Before: Click gear → Sheet appears but is greyed out and unresponsive (blocked by Dialog focus trap).
 
-After: Click notification → land on the week page → comments sheet opens automatically for the right objective.
-
-The URL param is cleaned up after opening so it doesn't persist on refresh.
+After: Click gear → Dialog content slides/switches to the settings panel inline. Click back arrow → returns to check-in form. No z-index or focus trap conflicts.
