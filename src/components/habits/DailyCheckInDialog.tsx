@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -717,8 +718,18 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               </DrawerDescription>
             )}
           </DrawerHeader>
-          <div className="px-4 overflow-y-auto flex-1 pb-4">
-            {view === 'settings' ? <InlineCheckInSettings /> : content}
+          <div className="px-4 overflow-y-auto flex-1 pb-4 relative overflow-x-hidden">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={view}
+                initial={{ opacity: 0, x: view === 'settings' ? 40 : -40 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: view === 'settings' ? -40 : 40 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              >
+                {view === 'settings' ? <InlineCheckInSettings /> : content}
+              </motion.div>
+            </AnimatePresence>
           </div>
           <DrawerFooter className="pt-2">
             {view === 'settings' ? (
@@ -772,8 +783,18 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="py-4">
-          {view === 'settings' ? <InlineCheckInSettings /> : content}
+        <div className="py-4 relative overflow-x-hidden">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, x: view === 'settings' ? 40 : -40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: view === 'settings' ? -40 : 40 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+            >
+              {view === 'settings' ? <InlineCheckInSettings /> : content}
+            </motion.div>
+          </AnimatePresence>
         </div>
         <DialogFooter>
           {view === 'settings' ? (
