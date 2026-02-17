@@ -58,6 +58,34 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
       case 'accountability_check_in':
         destination = `/partner/${notification.triggered_by_user_id}`;
         break;
+      case 'comment_reaction': {
+        if (notification.related_comment_id) {
+          try {
+            const { data: comment } = await supabase
+              .from('objective_comments')
+              .select('objective_id')
+              .eq('id', notification.related_comment_id)
+              .single();
+            if (comment?.objective_id) {
+              const { data: obj } = await supabase
+                .from('weekly_objectives')
+                .select('week_start')
+                .eq('id', comment.objective_id)
+                .single();
+              destination = obj?.week_start
+                ? `/goals?tab=weekly&week=${obj.week_start}`
+                : '/goals?tab=weekly';
+            } else {
+              destination = '/goals?tab=weekly';
+            }
+          } catch {
+            destination = '/goals?tab=weekly';
+          }
+        } else {
+          destination = '/goals?tab=weekly';
+        }
+        break;
+      }
       case 'partner_objective_feedback':
         if (notification.related_objective_id) {
           try {
@@ -211,6 +239,8 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
         return '🆘';
       case 'goal_update_comment':
         return '💬';
+      case 'comment_reaction':
+        return '😊';
       default:
         return '🔔';
     }
