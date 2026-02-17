@@ -31,14 +31,14 @@ import { useCheckInCustomQuestions } from "@/hooks/useCheckInCustomQuestions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
-import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil, Settings2 } from "lucide-react";
+import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil, Settings2, ArrowLeft } from "lucide-react";
 import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
 import { celebrateGoalComplete } from "@/utils/confetti";
 import { hapticSelection, hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
-import { CheckInQuestionsSettings } from "./CheckInQuestionsSettings";
+import { InlineCheckInSettings } from "./InlineCheckInSettings";
 
 
 interface DailyCheckInDialogProps {
@@ -105,11 +105,12 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
-  const [showQuestionsSettings, setShowQuestionsSettings] = useState(false);
+  const [view, setView] = useState<'checkin' | 'settings'>('checkin');
   
   // Reset form state when dialog opens - only populate if todayCheckIn matches today's date
   useEffect(() => {
     if (open) {
+      setView('checkin');
       const today = format(new Date(), 'yyyy-MM-dd');
       const hasTodayCheckIn = todayCheckIn && todayCheckIn.check_in_date === today;
       
@@ -677,77 +678,111 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
 
   if (isMobile) {
     return (
-      <>
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[95vh]">
           <DrawerHeader className="text-left pb-2">
             <div className="flex items-center justify-between">
-              <DrawerTitle className="flex items-center gap-2">
-                <span className="text-2xl">{greeting.emoji}</span>
-                {greeting.text}
-              </DrawerTitle>
-              <div className="flex items-center gap-1">
+              {view === 'settings' ? (
                 <button
-                  onClick={() => setShowQuestionsSettings(true)}
-                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
-                  title="Customise questions"
+                  onClick={() => setView('checkin')}
+                  className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
                 >
-                  <Settings2 className="h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
                 </button>
+              ) : (
+                <DrawerTitle className="flex items-center gap-2">
+                  <span className="text-2xl">{greeting.emoji}</span>
+                  {greeting.text}
+                </DrawerTitle>
+              )}
+              <div className="flex items-center gap-1">
+                {view === 'checkin' && (
+                  <button
+                    onClick={() => setView('settings')}
+                    className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                    title="Customise questions"
+                  >
+                    <Settings2 className="h-4 w-4" />
+                  </button>
+                )}
                 <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
               </div>
             </div>
-            <DrawerDescription>
-              Take 30 seconds to set your intention for today
-            </DrawerDescription>
+            {view === 'settings' ? (
+              <DrawerTitle className="mt-1">Customise Questions</DrawerTitle>
+            ) : (
+              <DrawerDescription>
+                Take 30 seconds to set your intention for today
+              </DrawerDescription>
+            )}
           </DrawerHeader>
           <div className="px-4 overflow-y-auto flex-1 pb-4">
-            {content}
+            {view === 'settings' ? <InlineCheckInSettings /> : content}
           </div>
           <DrawerFooter className="pt-2">
-            {footer}
+            {view === 'settings' ? (
+              <Button onClick={() => setView('checkin')}>Done</Button>
+            ) : (
+              footer
+            )}
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
-      <CheckInQuestionsSettings open={showQuestionsSettings} onOpenChange={setShowQuestionsSettings} />
-      </>
     );
   }
   
   return (
-    <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            {view === 'settings' ? (
+              <button
+                onClick={() => setView('checkin')}
+                className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+            ) : (
               <DialogTitle className="flex items-center gap-2">
                 <span className="text-2xl">{greeting.emoji}</span>
                 {greeting.text}
               </DialogTitle>
-              <div className="flex items-center gap-1">
+            )}
+            <div className="flex items-center gap-1">
+              {view === 'checkin' && (
                 <button
-                  onClick={() => setShowQuestionsSettings(true)}
+                  onClick={() => setView('settings')}
                   className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
                   title="Customise questions"
                 >
                   <Settings2 className="h-4 w-4" />
                 </button>
-                <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
-              </div>
+              )}
+              <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
             </div>
+          </div>
+          {view === 'settings' ? (
+            <DialogTitle className="mt-1">Customise Questions</DialogTitle>
+          ) : (
             <DialogDescription>
               Take 30 seconds to set your intention for today
             </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            {content}
-          </div>
-          <DialogFooter>
-            {footer}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-      <CheckInQuestionsSettings open={showQuestionsSettings} onOpenChange={setShowQuestionsSettings} />
-    </>
+          )}
+        </DialogHeader>
+        <div className="py-4">
+          {view === 'settings' ? <InlineCheckInSettings /> : content}
+        </div>
+        <DialogFooter>
+          {view === 'settings' ? (
+            <Button onClick={() => setView('checkin')}>Done</Button>
+          ) : (
+            footer
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
