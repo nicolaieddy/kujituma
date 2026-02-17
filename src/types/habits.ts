@@ -65,6 +65,7 @@ export interface CreateDailyCheckIn {
   quick_win?: string;
   blocker?: string;
   journal_entry?: string;
+  custom_answers?: Record<string, string>;
 }
 
 export interface CreateQuarterlyReview {

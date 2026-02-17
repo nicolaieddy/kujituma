@@ -27,16 +27,19 @@ import { useGoals } from "@/hooks/useGoals";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
 import { useWeeklyObjectives } from "@/hooks/useWeeklyObjectives";
 import { useDuePartnerCheckIns } from "@/hooks/useDuePartnerCheckIns";
+import { useCheckInCustomQuestions } from "@/hooks/useCheckInCustomQuestions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
-import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil } from "lucide-react";
+import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil, Settings2 } from "lucide-react";
 import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
 import { celebrateGoalComplete } from "@/utils/confetti";
 import { hapticSelection, hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
+import { CheckInQuestionsSettings } from "./CheckInQuestionsSettings";
+
 
 interface DailyCheckInDialogProps {
   open: boolean;
@@ -86,6 +89,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const { submitCheckIn, isSubmitting, todayCheckIn, isCached, lastSync } = useDailyCheckIn();
   const { goals } = useGoals();
   const { overdueCheckIns, dueTodayCheckIns, hasOverdue, hasDueToday } = useDuePartnerCheckIns();
+  const { enabledQuestions } = useCheckInCustomQuestions();
   const navigate = useNavigate();
   
   const currentWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -97,9 +101,11 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [energyLevel, setEnergyLevel] = useState<number>(3);
   const [focusToday, setFocusToday] = useState("");
   const [journalEntry, setJournalEntry] = useState("");
+  const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
+  const [showQuestionsSettings, setShowQuestionsSettings] = useState(false);
   
   // Reset form state when dialog opens - only populate if todayCheckIn matches today's date
   useEffect(() => {
@@ -113,12 +119,16 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         setEnergyLevel(todayCheckIn.energy_level || 3);
         setFocusToday(todayCheckIn.focus_today || "");
         setJournalEntry(todayCheckIn.journal_entry || "");
+        // Restore custom answers
+        const saved = (todayCheckIn as any).custom_answers;
+        setCustomAnswers(saved && typeof saved === 'object' ? saved : {});
       } else {
         // Clear form for new day
         setMoodRating(3);
         setEnergyLevel(3);
         setFocusToday("");
         setJournalEntry("");
+        setCustomAnswers({});
       }
       // Reset edit states
       setIsEditingJournal(false);
@@ -303,6 +313,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       energy_level: energyLevel,
       focus_today: focusToday || undefined,
       journal_entry: journalEntry || undefined,
+      custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : undefined,
     });
     onOpenChange(false);
   };
@@ -618,6 +629,27 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
           />
         )}
       </div>
+      {/* Custom Questions */}
+      {enabledQuestions.length > 0 && (
+        <div className="space-y-4">
+          {enabledQuestions.map((q) => (
+            <div key={q.id} className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                {q.prompt}
+              </Label>
+              <Textarea
+                value={customAnswers[q.id] || ''}
+                onChange={(e) =>
+                  setCustomAnswers((prev) => ({ ...prev, [q.id]: e.target.value }))
+                }
+                placeholder="Your answer..."
+                className="resize-none"
+                rows={2}
+              />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 
@@ -645,6 +677,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
 
   if (isMobile) {
     return (
+      <>
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent className="max-h-[95vh]">
           <DrawerHeader className="text-left pb-2">
@@ -653,7 +686,16 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
                 <span className="text-2xl">{greeting.emoji}</span>
                 {greeting.text}
               </DrawerTitle>
-              <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setShowQuestionsSettings(true)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  title="Customise questions"
+                >
+                  <Settings2 className="h-4 w-4" />
+                </button>
+                <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
+              </div>
             </div>
             <DrawerDescription>
               Take 30 seconds to set your intention for today
@@ -667,31 +709,45 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+      <CheckInQuestionsSettings open={showQuestionsSettings} onOpenChange={setShowQuestionsSettings} />
+      </>
     );
   }
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="flex items-center gap-2">
-              <span className="text-2xl">{greeting.emoji}</span>
-              {greeting.text}
-            </DialogTitle>
-            <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <DialogTitle className="flex items-center gap-2">
+                <span className="text-2xl">{greeting.emoji}</span>
+                {greeting.text}
+              </DialogTitle>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setShowQuestionsSettings(true)}
+                  className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+                  title="Customise questions"
+                >
+                  <Settings2 className="h-4 w-4" />
+                </button>
+                <CachedDataIndicator isCached={isCached} lastSync={lastSync} />
+              </div>
+            </div>
+            <DialogDescription>
+              Take 30 seconds to set your intention for today
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            {content}
           </div>
-          <DialogDescription>
-            Take 30 seconds to set your intention for today
-          </DialogDescription>
-        </DialogHeader>
-        <div className="py-4">
-          {content}
-        </div>
-        <DialogFooter>
-          {footer}
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            {footer}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <CheckInQuestionsSettings open={showQuestionsSettings} onOpenChange={setShowQuestionsSettings} />
+    </>
   );
 };
