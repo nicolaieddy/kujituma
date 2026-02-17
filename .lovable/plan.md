@@ -1,57 +1,50 @@
 
+## What's Missing
 
-# Fix Objective Reordering
+When you click a `comment_reaction` notification, you land on the weekly goals tab for the right week — but the comments sheet for the specific objective doesn't automatically open. You have to manually find the objective and click on the comment count yourself.
 
-## Problem
+## Solution: Deep-link via URL Parameter
 
-Dragging objectives to reorder them doesn't persist. The list snaps back to its original order after a refetch because:
+Add an `openComments` query parameter to the notification navigation URL. When `WeeklyObjectivesList` mounts (or the objectives load), it detects this parameter and automatically opens the comments sheet for the matching objective.
 
-1. `handleReorderObjective` only updates the **single dragged item's** `order_index`, leaving all other objectives at their original values (mostly `0`)
-2. The database query sorts by `order_index ASC, created_at ASC`, so objectives sharing the same `order_index` fall back to creation-time order
-3. Carried-over objectives all get `order_index: 0`, making the problem worse
-
-## Solution
-
-Update **all objectives' order indices** after a drag-and-drop reorder, not just the moved one.
+---
 
 ## Technical Changes
 
-### 1. `WeeklyObjectivesList.tsx` - Pass full reordered list
+### 1. `NotificationItem.tsx` — Append `openComments` to the URL
 
-Change `handleDragEnd` to pass the complete reordered ID list (instead of a single ID + index):
+Change the destination for `comment_reaction` (and `partner_objective_feedback`) to include the objective ID:
 
 ```
-onReorderObjectives(newObjectives.map((obj, i) => ({ id: obj.id, order_index: i })));
+/goals?tab=weekly&week=2025-01-13&openComments=<objectiveId>
 ```
 
-### 2. `useObjectiveHandlers.ts` - Batch update all indices
+For `comment_reaction`, the `objectiveId` is fetched via the `related_comment_id` lookup (already in place). We just append it.
 
-Replace `handleReorderObjective(objectiveId, newIndex)` with `handleReorderObjectives(updates: {id, order_index}[])` that updates every objective's `order_index` in one go via the existing `updateObjective` call (or a new batch service method).
+### 2. `WeeklyObjectivesList.tsx` — Read the param and auto-open
 
-### 3. `WeeklyProgressService.ts` - Add batch reorder method
+Add a `useEffect` that:
+1. Reads `openComments` from `useSearchParams()`
+2. Waits for `objectives` to be loaded
+3. Finds the matching objective by ID
+4. Calls `handleOpenComments(objective.id, objective.text)` to open the sheet
+5. Removes the `openComments` param from the URL (so refreshing doesn't re-open it)
 
-Add `reorderObjectives(updates: {id: string, order_index: number}[])` that performs a single batched update to set all order indices at once, avoiding N individual update calls.
+---
 
-### 4. `useObjectiveMutations.ts` - Add reorder mutation
-
-Add a dedicated `reorderMutation` with optimistic update support so the UI stays in sync immediately and doesn't snap back.
-
-### 5. `useWeeklyObjectives.ts` - Expose reorder function
-
-Wire up the new batch reorder through the hook's return value.
-
-### 6. `ThisWeekView.tsx` - Update handler reference
-
-Switch from `handleReorderObjective` to the new `handleReorderObjectives` and update the prop passed to `WeeklyObjectivesList`.
-
-### Files Modified
+## Files to Modify
 
 | File | Change |
 |------|--------|
-| `src/services/weeklyProgressService.ts` | Add `reorderObjectives()` batch method |
-| `src/hooks/useObjectiveMutations.ts` | Add `reorderMutation` with optimistic updates |
-| `src/hooks/useWeeklyObjectives.ts` | Expose `reorderObjectives` |
-| `src/hooks/useObjectiveHandlers.ts` | Replace single-item reorder with batch reorder |
-| `src/components/goals/WeeklyObjectivesList.tsx` | Update `handleDragEnd` to pass full reordered list |
-| `src/components/thisweek/ThisWeekView.tsx` | Wire up new handler |
+| `src/components/notifications/NotificationItem.tsx` | Append `&openComments=<objectiveId>` to `comment_reaction` destination |
+| `src/components/goals/WeeklyObjectivesList.tsx` | Add `useEffect` with `useSearchParams` to auto-open comments sheet |
 
+---
+
+## User Experience
+
+Before: Click notification → land on the week page → have to find the objective manually → click comment icon.
+
+After: Click notification → land on the week page → comments sheet opens automatically for the right objective.
+
+The URL param is cleaned up after opening so it doesn't persist on refresh.
