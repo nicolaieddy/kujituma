@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { ArrowRight } from "lucide-react";
@@ -59,6 +59,7 @@ export const WeeklyObjectivesList = ({
   recentlySavedIds = new Set(),
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
@@ -82,6 +83,19 @@ export const WeeklyObjectivesList = ({
   useEffect(() => {
     setLocalObjectives(objectives);
   }, [objectives]);
+
+  // Auto-open comments sheet from deep-link param (e.g. from notifications)
+  useEffect(() => {
+    const openCommentsId = searchParams.get('openComments');
+    if (!openCommentsId || objectives.length === 0) return;
+    const objective = objectives.find(o => o.id === openCommentsId);
+    if (objective) {
+      handleOpenComments(objective.id, objective.text);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('openComments');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams, objectives, handleOpenComments, setSearchParams]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

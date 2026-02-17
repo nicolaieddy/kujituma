@@ -73,7 +73,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
                 .eq('id', comment.objective_id)
                 .single();
               destination = obj?.week_start
-                ? `/goals?tab=weekly&week=${obj.week_start}`
+                ? `/goals?tab=weekly&week=${obj.week_start}&openComments=${comment.objective_id}`
                 : '/goals?tab=weekly';
             } else {
               destination = '/goals?tab=weekly';
@@ -95,7 +95,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
               .eq('id', notification.related_objective_id)
               .single();
             if (data?.week_start) {
-              destination = `/goals?tab=weekly&week=${data.week_start}`;
+              destination = `/goals?tab=weekly&week=${data.week_start}&openComments=${notification.related_objective_id}`;
             } else {
               destination = '/goals?tab=weekly';
             }
