@@ -1,11 +1,15 @@
+import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Clock, Play, CheckCircle, Target, Calendar, ListChecks } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Clock, Play, CheckCircle, Target, Calendar, ListChecks, MessageCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { PartnerGoal } from "@/services/accountabilityService";
 import { format } from "date-fns";
 import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { GoalCommentsSheet } from "./GoalCommentsSheet";
+import { useGoalCommentCounts } from "@/hooks/useGoalComments";
 
 interface PartnerGoalWithCounts extends PartnerGoal {
   objectives_count?: number;
@@ -39,7 +43,15 @@ const COLUMNS = [
   }
 ];
 
-const PartnerGoalCard = ({ goal }: { goal: PartnerGoalWithCounts }) => {
+const PartnerGoalCard = ({
+  goal,
+  commentCount,
+  onCommentClick,
+}: {
+  goal: PartnerGoalWithCounts;
+  commentCount: number;
+  onCommentClick: () => void;
+}) => {
   const categoryConfig = goal.category ? getCategoryConfig(goal.category) : null;
   const CategoryIcon = categoryConfig?.icon || CustomCategoryIcon;
   const objectivesCount = goal.objectives_count ?? 0;
@@ -93,6 +105,19 @@ const PartnerGoalCard = ({ goal }: { goal: PartnerGoalWithCounts }) => {
             </Badge>
           )}
         </div>
+
+        {/* Comment / encouragement button */}
+        <div className="pt-1 flex justify-end">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onCommentClick}
+            className="h-7 px-2 text-xs gap-1.5 text-muted-foreground hover:text-foreground"
+          >
+            <MessageCircle className="h-3.5 w-3.5" />
+            {commentCount > 0 ? commentCount : 'Encourage'}
+          </Button>
+        </div>
       </div>
     </Card>
   );
@@ -100,9 +125,14 @@ const PartnerGoalCard = ({ goal }: { goal: PartnerGoalWithCounts }) => {
 
 export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
   const isMobile = useIsMobile();
+  const [commentsGoalId, setCommentsGoalId] = useState<string | null>(null);
+  const [commentsGoalTitle, setCommentsGoalTitle] = useState('');
+
+  const goalIds = goals.map((g) => g.id);
+  const commentCounts = useGoalCommentCounts(goalIds);
 
   // Group goals by status
-  const goalsByStatus: Record<GoalStatus, PartnerGoal[]> = {
+  const goalsByStatus: Record<GoalStatus, PartnerGoalWithCounts[]> = {
     not_started: goals.filter(g => g.status === 'not_started'),
     in_progress: goals.filter(g => g.status === 'in_progress'),
     completed: goals.filter(g => g.status === 'completed'),
@@ -120,42 +150,62 @@ export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
   }
 
   return (
-    <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
-      {COLUMNS.map((column) => {
-        const columnGoals = goalsByStatus[column.status];
-        const IconComponent = column.icon;
-        
-        return (
-          <div key={column.status} className="space-y-3">
-            <div className={`flex items-center justify-between ${isMobile ? 'py-2 px-3 bg-muted rounded-lg' : ''}`}>
-              <div className="flex items-center gap-2">
-                <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-foreground`} />
-                <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-foreground`}>
-                  {column.title}
-                </h3>
-              </div>
-              <Badge className={`${column.color} text-xs shadow-sm`}>
-                {columnGoals.length}
-              </Badge>
-            </div>
-            
-            <div className={`space-y-3 ${isMobile ? 'min-h-[100px]' : 'min-h-[200px]'}`}>
-              {columnGoals.length === 0 ? (
-                <div className={`border-2 border-dashed rounded-lg ${isMobile ? 'p-4' : 'p-6'} text-center text-muted-foreground`}>
-                  <IconComponent className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} mx-auto mb-2 opacity-40`} />
-                  <p className="text-xs">
-                    No {column.title.toLowerCase()} goals
-                  </p>
+    <>
+      <div className={`grid ${isMobile ? 'grid-cols-1 gap-4' : 'grid-cols-1 md:grid-cols-3 gap-6'}`}>
+        {COLUMNS.map((column) => {
+          const columnGoals = goalsByStatus[column.status];
+          const IconComponent = column.icon;
+          
+          return (
+            <div key={column.status} className="space-y-3">
+              <div className={`flex items-center justify-between ${isMobile ? 'py-2 px-3 bg-muted rounded-lg' : ''}`}>
+                <div className="flex items-center gap-2">
+                  <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-foreground`} />
+                  <h3 className={`${isMobile ? 'text-sm' : 'text-base'} font-semibold text-foreground`}>
+                    {column.title}
+                  </h3>
                 </div>
-              ) : (
-                columnGoals.map((goal) => (
-                  <PartnerGoalCard key={goal.id} goal={goal} />
-                ))
-              )}
+                <Badge className={`${column.color} text-xs shadow-sm`}>
+                  {columnGoals.length}
+                </Badge>
+              </div>
+              
+              <div className={`space-y-3 ${isMobile ? 'min-h-[100px]' : 'min-h-[200px]'}`}>
+                {columnGoals.length === 0 ? (
+                  <div className={`border-2 border-dashed rounded-lg ${isMobile ? 'p-4' : 'p-6'} text-center text-muted-foreground`}>
+                    <IconComponent className={`${isMobile ? 'h-5 w-5' : 'h-6 w-6'} mx-auto mb-2 opacity-40`} />
+                    <p className="text-xs">
+                      No {column.title.toLowerCase()} goals
+                    </p>
+                  </div>
+                ) : (
+                  columnGoals.map((goal) => (
+                    <PartnerGoalCard
+                      key={goal.id}
+                      goal={goal}
+                      commentCount={commentCounts[goal.id] ?? 0}
+                      onCommentClick={() => {
+                        setCommentsGoalId(goal.id);
+                        setCommentsGoalTitle(goal.title);
+                      }}
+                    />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
+          );
+        })}
+      </div>
+
+      {commentsGoalId && (
+        <GoalCommentsSheet
+          open={!!commentsGoalId}
+          onOpenChange={(open) => { if (!open) setCommentsGoalId(null); }}
+          goalId={commentsGoalId}
+          goalTitle={commentsGoalTitle}
+        />
+      )}
+    </>
   );
 };
+
