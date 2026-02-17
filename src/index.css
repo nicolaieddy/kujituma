@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,7 +8,7 @@
 @layer base {
   :root {
     /* Mountain Teal Theme - Calm Focus & Professional */
-    --background: 0 0% 100%;
+    --background: 0 0% 99%;
     --foreground: 0 0% 9%;
 
     --card: 0 0% 100%;
@@ -23,10 +23,10 @@
     --secondary: 158 15% 95%;
     --secondary-foreground: 0 0% 9%;
 
-    --muted: 158 15% 95%;
-    --muted-foreground: 158 8% 40%;
+    --muted: 158 12% 96%;
+    --muted-foreground: 158 8% 42%;
 
-    --accent: 158 15% 95%;
+    --accent: 158 15% 94%;
     --accent-foreground: 0 0% 9%;
 
     --destructive: 0 84% 60%;
@@ -38,11 +38,17 @@
     --success: 142 71% 45%;
     --success-foreground: 0 0% 100%;
 
-    --border: 158 10% 85%;
-    --input: 158 10% 88%;
+    --border: 158 10% 88%;
+    --input: 158 10% 90%;
     --ring: 158 65% 22%;
 
-    --radius: 1.5rem;
+    /* Tighter radius for a crisper 2025 aesthetic */
+    --radius: 0.875rem;
+
+    /* Surface hierarchy */
+    --surface-1: 158 20% 98%;
+    --surface-2: 0 0% 100%;
+    --surface-3: 0 0% 100%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(158, 65%, 22%) 0%, hsl(158, 65%, 32%) 100%);
@@ -59,7 +65,7 @@
     --sidebar-ring: 158 65% 22%;
   }
   .dark {
-    --radius: 1.5rem;
+    --radius: 0.875rem;
 
   }
 

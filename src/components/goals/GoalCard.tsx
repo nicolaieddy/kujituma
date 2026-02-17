@@ -47,22 +47,26 @@ interface GoalCardProps {
 
 const STATUS_CONFIG = {
   not_started: { 
-    color: "bg-blue-100 text-blue-800", 
+    color: "bg-primary/8 text-primary border-primary/20", 
+    accentBorder: "border-l-primary/50",
     icon: Clock, 
     label: "Not Started" 
   },
   in_progress: { 
-    color: "bg-yellow-100 text-yellow-800", 
+    color: "bg-warning/10 text-warning-foreground border-warning/20", 
+    accentBorder: "border-l-warning",
     icon: Play, 
     label: "In Progress" 
   },
   completed: { 
-    color: "bg-green-100 text-green-800", 
+    color: "bg-success/10 text-success border-success/20", 
+    accentBorder: "border-l-success",
     icon: CheckCircle, 
     label: "Completed" 
   },
   deprioritized: {
-    color: "bg-gray-100 text-gray-600",
+    color: "bg-muted text-muted-foreground border-border",
+    accentBorder: "border-l-muted-foreground/30",
     icon: Archive,
     label: "Deprioritized"
   }
@@ -209,7 +213,8 @@ export const GoalCard = ({
       >
         <Card 
           className={cn(
-            "border-border hover:border-primary/30 hover:shadow-lg transition-all cursor-pointer group",
+            "border-l-4 border-border hover:border-primary/30 hover:shadow-soft transition-all duration-200 cursor-pointer group overflow-hidden",
+            config.accentBorder,
             isDeprioritized && "opacity-60 bg-muted/30"
           )}
           onClick={() => onClick?.(goal)}
@@ -219,7 +224,7 @@ export const GoalCard = ({
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <IconComponent className={cn("h-4 w-4", isDeprioritized ? "text-muted-foreground" : "text-primary")} />
-                <Badge className={`${config.color} text-xs`}>
+                <Badge variant="outline" className={`${config.color} text-xs font-medium`}>
                   {config.label}
                 </Badge>
                 {/* Visibility toggle dropdown */}
@@ -322,7 +327,7 @@ export const GoalCard = ({
                 )}
               </div>
               <h3 className={cn(
-                "font-semibold text-lg leading-tight group-hover:text-primary transition-colors",
+                "font-heading font-semibold text-lg leading-tight group-hover:text-primary transition-colors",
                 isDeprioritized ? "text-muted-foreground" : "text-foreground"
               )}>
                 {goal.title}

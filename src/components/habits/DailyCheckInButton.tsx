@@ -13,13 +13,12 @@ export const DailyCheckInButton = () => {
   // Don't render anything while loading to prevent flash
   if (isLoading) return null;
   
-  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
     <>
       <motion.div
-        initial={{ scale: 0, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.3 }}
+        initial={{ scale: 0, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        transition={{ delay: 0.5, duration: 0.35, ease: [0.34, 1.56, 0.64, 1] }}
         className="fixed bottom-6 right-6 z-50"
       >
         <Tooltip>
@@ -27,17 +26,20 @@ export const DailyCheckInButton = () => {
             <Button
               onClick={() => setShowDialog(true)}
               size="lg"
-              variant={hasCheckedInToday ? "secondary" : "default"}
-              className={`rounded-full h-14 w-14 shadow-lg transition-all duration-300 ${
+              variant="default"
+              className={`rounded-full shadow-glow transition-all duration-300 font-medium ${
                 hasCheckedInToday 
-                  ? 'bg-green-600 hover:bg-green-700 text-white border-0' 
-                  : 'animate-pulse'
+                  ? 'h-12 w-12 bg-success hover:bg-success/90 text-success-foreground border-0 shadow-[0_0_20px_-4px_hsl(142,71%,45%,0.5)]'
+                  : 'h-12 px-5 gap-2 gradient-primary text-primary-foreground border-0 shadow-[0_4px_24px_-6px_hsl(158,65%,22%,0.5)] hover:shadow-[0_4px_28px_-4px_hsl(158,65%,22%,0.65)] hover:scale-105'
               }`}
             >
               {hasCheckedInToday ? (
-                <Check className="h-6 w-6" />
+                <Check className="h-5 w-5" />
               ) : (
-                <Sun className="h-6 w-6" />
+                <>
+                  <Sun className="h-4 w-4" />
+                  <span className="text-sm">Check in</span>
+                </>
               )}
             </Button>
           </TooltipTrigger>

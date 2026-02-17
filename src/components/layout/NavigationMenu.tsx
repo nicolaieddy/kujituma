@@ -69,28 +69,14 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
           <button
             key={section}
             onClick={() => handleNavigation(path)}
-            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm leading-none transition-all duration-200 group ${
+            className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm leading-none transition-all duration-200 ${
               isActive 
-                ? 'text-foreground font-medium' 
-                : 'text-muted-foreground hover:text-foreground'
+                ? 'bg-primary/10 text-primary font-medium' 
+                : 'text-muted-foreground hover:text-foreground hover:bg-muted'
             }`}
           >
-            <Icon className={`h-3.5 w-3.5 transition-all duration-200 ${isActive ? 'text-primary' : ''}`} />
+            <Icon className={`h-3.5 w-3.5 transition-colors duration-200 ${isActive ? 'text-primary' : ''}`} />
             {label}
-            
-            {/* Underline indicator */}
-            <span 
-              className={`absolute bottom-0 left-1/2 -translate-x-1/2 h-0.5 bg-primary rounded-full transition-all duration-300 ${
-                isActive 
-                  ? 'w-4/5 opacity-100' 
-                  : 'w-0 opacity-0 group-hover:w-1/2 group-hover:opacity-50'
-              }`}
-            />
-            
-            {/* Active glow effect */}
-            {isActive && (
-              <span className="absolute inset-0 rounded-md bg-primary/10 -z-10" />
-            )}
           </button>
         );
       })}
