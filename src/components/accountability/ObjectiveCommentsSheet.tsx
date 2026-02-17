@@ -4,8 +4,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, MessageCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Send, MessageCircle, SmilePlus } from "lucide-react";
 import { useObjectiveComments } from "@/hooks/useObjectiveComments";
+import { useCommentReactions, EMOJI_OPTIONS } from "@/hooks/useCommentReactions";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -25,7 +27,10 @@ export const ObjectiveCommentsSheet = ({
 }: ObjectiveCommentsSheetProps) => {
   const { user } = useAuth();
   const { comments, isLoading, addComment, isAdding, markAsRead } = useObjectiveComments(open ? objectiveId : null);
+  const commentIds = comments.map((c) => c.id);
+  const { reactionsByComment, toggleReaction } = useCommentReactions(commentIds);
   const [newMessage, setNewMessage] = useState("");
+  const [hoveredCommentId, setHoveredCommentId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Mark as read when sheet opens and has comments
@@ -83,14 +88,15 @@ export const ObjectiveCommentsSheet = ({
                   .join('')
                   .toUpperCase()
                   .slice(0, 2) || '?';
+                const commentReactions = reactionsByComment[comment.id] || {};
+                const hasReactions = Object.keys(commentReactions).length > 0;
 
                 return (
                   <div
                     key={comment.id}
-                    className={cn(
-                      "flex gap-2.5",
-                      isMe && "flex-row-reverse"
-                    )}
+                    className={cn("flex gap-2.5 group", isMe && "flex-row-reverse")}
+                    onMouseEnter={() => setHoveredCommentId(comment.id)}
+                    onMouseLeave={() => setHoveredCommentId(null)}
                   >
                     <Avatar className="h-7 w-7 flex-shrink-0 mt-0.5">
                       <AvatarImage src={comment.user?.avatar_url || undefined} />
@@ -107,16 +113,80 @@ export const ObjectiveCommentsSheet = ({
                           {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
                         </span>
                       </div>
-                      <div
-                        className={cn(
-                          "rounded-lg px-3 py-2 text-sm inline-block text-left",
-                          isMe
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground"
-                        )}
-                      >
-                        {comment.message}
+
+                      {/* Message bubble + emoji picker trigger */}
+                      <div className={cn("flex items-end gap-1.5", isMe && "flex-row-reverse")}>
+                        <div
+                          className={cn(
+                            "rounded-lg px-3 py-2 text-sm inline-block text-left",
+                            isMe
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground"
+                          )}
+                        >
+                          {comment.message}
+                        </div>
+
+                        {/* Emoji picker button — shows on hover */}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              className={cn(
+                                "opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0 mb-0.5",
+                                hoveredCommentId === comment.id && "opacity-100"
+                              )}
+                              aria-label="React to comment"
+                            >
+                              <SmilePlus className="h-3.5 w-3.5" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent
+                            className="w-auto p-2"
+                            side={isMe ? "left" : "right"}
+                            align="center"
+                          >
+                            <div className="flex gap-1">
+                              {EMOJI_OPTIONS.map((emoji) => {
+                                const isMine = commentReactions[emoji]?.isMine;
+                                return (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => toggleReaction({ commentId: comment.id, emoji })}
+                                    className={cn(
+                                      "text-lg p-1.5 rounded-md hover:bg-muted transition-colors",
+                                      isMine && "bg-primary/10 ring-1 ring-primary/30"
+                                    )}
+                                    aria-label={`React with ${emoji}`}
+                                  >
+                                    {emoji}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
+
+                      {/* Reaction chips below the bubble */}
+                      {hasReactions && (
+                        <div className={cn("flex flex-wrap gap-1 mt-1", isMe && "justify-end")}>
+                          {Object.entries(commentReactions).map(([emoji, { count, isMine }]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => toggleReaction({ commentId: comment.id, emoji })}
+                              className={cn(
+                                "flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors",
+                                isMine
+                                  ? "bg-primary/10 border-primary/30 text-primary"
+                                  : "bg-muted border-border text-muted-foreground hover:border-primary/30"
+                              )}
+                            >
+                              <span>{emoji}</span>
+                              <span className="font-medium">{count}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
