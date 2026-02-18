@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { NotificationType } from "@/types/notifications";
 
-export type NotificationChannel = "in_app"; // email | sms coming soon
+export type NotificationChannel = "in_app" | "sms"; // email coming soon
 
 type PreferenceKey = `${NotificationChannel}_${string}`;
 
@@ -26,6 +26,11 @@ export type NotificationPreferences = {
   in_app_goal_milestone: boolean;
   in_app_goal_help_request: boolean;
   in_app_goal_update_comment: boolean;
+  // sms (opt-in, default false)
+  sms_friend_request: boolean;
+  sms_accountability_partner_request: boolean;
+  sms_accountability_partner_accepted: boolean;
+  sms_accountability_check_in: boolean;
 };
 
 const DEFAULTS: NotificationPreferences = {
@@ -44,6 +49,11 @@ const DEFAULTS: NotificationPreferences = {
   in_app_goal_milestone: true,
   in_app_goal_help_request: true,
   in_app_goal_update_comment: true,
+  // sms — all opt-in (default false)
+  sms_friend_request: false,
+  sms_accountability_partner_request: false,
+  sms_accountability_partner_accepted: false,
+  sms_accountability_check_in: false,
 };
 
 export function columnForType(type: NotificationType, channel: NotificationChannel): keyof NotificationPreferences {

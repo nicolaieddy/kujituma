@@ -1043,6 +1043,10 @@ export type Database = {
           in_app_mention: boolean
           in_app_partner_objective_feedback: boolean
           in_app_post_like: boolean
+          sms_accountability_check_in: boolean
+          sms_accountability_partner_accepted: boolean
+          sms_accountability_partner_request: boolean
+          sms_friend_request: boolean
           updated_at: string
           user_id: string
         }
@@ -1064,6 +1068,10 @@ export type Database = {
           in_app_mention?: boolean
           in_app_partner_objective_feedback?: boolean
           in_app_post_like?: boolean
+          sms_accountability_check_in?: boolean
+          sms_accountability_partner_accepted?: boolean
+          sms_accountability_partner_request?: boolean
+          sms_friend_request?: boolean
           updated_at?: string
           user_id: string
         }
@@ -1085,6 +1093,10 @@ export type Database = {
           in_app_mention?: boolean
           in_app_partner_objective_feedback?: boolean
           in_app_post_like?: boolean
+          sms_accountability_check_in?: boolean
+          sms_accountability_partner_accepted?: boolean
+          sms_accountability_partner_request?: boolean
+          sms_friend_request?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -1485,6 +1497,7 @@ export type Database = {
           linkedin_url: string | null
           medium_url: string | null
           phone_number: string | null
+          phone_verified: boolean
           signal_url: string | null
           snapchat_url: string | null
           social_links_order: string[] | null
@@ -1519,6 +1532,7 @@ export type Database = {
           linkedin_url?: string | null
           medium_url?: string | null
           phone_number?: string | null
+          phone_verified?: boolean
           signal_url?: string | null
           snapchat_url?: string | null
           social_links_order?: string[] | null
@@ -1553,6 +1567,7 @@ export type Database = {
           linkedin_url?: string | null
           medium_url?: string | null
           phone_number?: string | null
+          phone_verified?: boolean
           signal_url?: string | null
           snapchat_url?: string | null
           social_links_order?: string[] | null

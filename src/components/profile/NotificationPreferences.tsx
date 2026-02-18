@@ -1,25 +1,51 @@
-import { Bell, Mail, MessageSquare, Smartphone } from "lucide-react";
+import { Bell, Mail, Smartphone, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useNotificationPreferences, NotificationChannel } from "@/hooks/useNotificationPreferences";
 import { NotificationType } from "@/types/notifications";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 interface NotificationRow {
   type: NotificationType;
   label: string;
   description: string;
+  smsEligible?: boolean;
 }
 
 interface NotificationGroup {
   title: string;
   rows: NotificationRow[];
+  hasSms?: boolean;
 }
 
 const GROUPS: NotificationGroup[] = [
   {
+    title: "Friends",
+    hasSms: true,
+    rows: [
+      { type: "friend_request", label: "Friend Requests", description: "Someone sent you a friend request", smsEligible: true },
+      { type: "friend_request_accepted", label: "Request Accepted", description: "Your friend request was accepted" },
+    ],
+  },
+  {
+    title: "Accountability",
+    hasSms: true,
+    rows: [
+      { type: "accountability_partner_request", label: "Partner Request", description: "Someone wants to be your accountability partner", smsEligible: true },
+      { type: "accountability_partner_accepted", label: "Partner Accepted", description: "Your partnership request was accepted", smsEligible: true },
+      { type: "accountability_check_in", label: "Partner Check-In", description: "Your partner sent you a check-in message", smsEligible: true },
+      { type: "partner_objective_feedback", label: "Objective Feedback", description: "Your partner reacted to one of your objectives" },
+    ],
+  },
+  {
     title: "Social",
+    hasSms: false,
     rows: [
       { type: "post_like", label: "Post Likes", description: "Someone liked your weekly progress post" },
       { type: "comment_added", label: "Comments", description: "Someone commented on your post" },
@@ -29,23 +55,8 @@ const GROUPS: NotificationGroup[] = [
     ],
   },
   {
-    title: "Friends",
-    rows: [
-      { type: "friend_request", label: "Friend Requests", description: "Someone sent you a friend request" },
-      { type: "friend_request_accepted", label: "Request Accepted", description: "Your friend request was accepted" },
-    ],
-  },
-  {
-    title: "Accountability",
-    rows: [
-      { type: "accountability_partner_request", label: "Partner Request", description: "Someone wants to be your accountability partner" },
-      { type: "accountability_partner_accepted", label: "Partner Accepted", description: "Your partnership request was accepted" },
-      { type: "accountability_check_in", label: "Partner Check-In", description: "Your partner sent you a check-in message" },
-      { type: "partner_objective_feedback", label: "Objective Feedback", description: "Your partner reacted to one of your objectives" },
-    ],
-  },
-  {
     title: "Goals & Community",
+    hasSms: false,
     rows: [
       { type: "goal_update_cheer", label: "Goal Cheers", description: "Someone cheered on your goal update" },
       { type: "goal_milestone", label: "Goal Milestones", description: "You reached a goal milestone" },
@@ -70,7 +81,10 @@ function PreferenceSkeleton() {
                   <Skeleton className="h-4 w-32" />
                   <Skeleton className="h-3 w-52" />
                 </div>
-                <Skeleton className="h-6 w-11 rounded-full" />
+                <div className="flex gap-6">
+                  <Skeleton className="h-6 w-11 rounded-full" />
+                  <Skeleton className="h-6 w-11 rounded-full" />
+                </div>
               </div>
             ))}
           </CardContent>
@@ -81,76 +95,164 @@ function PreferenceSkeleton() {
 }
 
 export function NotificationPreferences() {
+  const { user } = useAuth();
   const { preferences, isLoading, updatePreference } = useNotificationPreferences();
+  const [hasPhone, setHasPhone] = useState<boolean | null>(null);
 
-  const channel: NotificationChannel = "in_app";
+  // Check if user has a verified phone number
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("phone_number, phone_verified")
+      .eq("id", user.id)
+      .single()
+      .then(({ data }) => {
+        setHasPhone(!!(data?.phone_number && data?.phone_verified));
+      });
+  }, [user]);
 
-  const getValue = (type: NotificationType): boolean => {
-    const key = `${channel}_${type}` as keyof typeof preferences;
+  const getInAppValue = (type: NotificationType): boolean => {
+    const key = `in_app_${type}` as keyof typeof preferences;
     return preferences[key] as boolean;
   };
 
+  const getSmsValue = (type: NotificationType): boolean => {
+    const key = `sms_${type}` as keyof typeof preferences;
+    return (preferences[key] as boolean) ?? false;
+  };
+
+  const smsDisabled = hasPhone === false;
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground font-heading">Notification Preferences</h2>
-        <p className="text-muted-foreground mt-1">Control what you get notified about and how.</p>
-      </div>
+    <TooltipProvider>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div>
+          <h2 className="text-2xl font-bold text-foreground font-heading">Notification Preferences</h2>
+          <p className="text-muted-foreground mt-1">Control what you get notified about and how.</p>
+        </div>
 
-      {/* Channel legend */}
-      <div className="flex flex-wrap gap-3">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
-          <Bell className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-primary">In-App</span>
-          <span className="text-xs text-primary/70">Active</span>
+        {/* Channel legend */}
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
+            <Bell className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">In-App</span>
+            <span className="text-xs text-primary/70">Active</span>
+          </div>
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${hasPhone ? "bg-primary/10 border-primary/20" : "bg-muted border-border"}`}>
+            <Smartphone className={`h-4 w-4 ${hasPhone ? "text-primary" : "text-muted-foreground"}`} />
+            <span className={`text-sm font-medium ${hasPhone ? "text-primary" : "text-muted-foreground"}`}>SMS</span>
+            {hasPhone ? (
+              <span className="text-xs text-primary/70">Active</span>
+            ) : (
+              <Badge variant="secondary" className="text-xs py-0">Add phone to enable</Badge>
+            )}
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border opacity-60">
+            <Mail className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-muted-foreground">Email</span>
+            <Badge variant="secondary" className="text-xs py-0">Coming soon</Badge>
+          </div>
         </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border opacity-60">
-          <Mail className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">Email</span>
-          <Badge variant="secondary" className="text-xs py-0">Coming soon</Badge>
-        </div>
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-muted border border-border opacity-60">
-          <Smartphone className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium text-muted-foreground">SMS</span>
-          <Badge variant="secondary" className="text-xs py-0">Coming soon</Badge>
-        </div>
-      </div>
 
-      {/* Groups */}
-      {isLoading ? (
-        <PreferenceSkeleton />
-      ) : (
-        <div className="space-y-4">
-          {GROUPS.map((group) => (
-            <Card key={group.title} className="glass-card shadow-elegant">
-              <CardHeader className="pb-2 pt-5 px-6">
-                <CardTitle className="text-base font-semibold text-foreground">{group.title}</CardTitle>
-              </CardHeader>
-              <CardContent className="px-6 pb-5 space-y-1">
-                {group.rows.map((row, idx) => (
-                  <div key={row.type}>
-                    <div className="flex items-center justify-between py-3">
-                      <div className="flex-1 min-w-0 pr-4">
-                        <p className="text-sm font-medium text-foreground">{row.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{row.description}</p>
+        {/* Phone number banner */}
+        {hasPhone === false && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
+            <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-amber-700 dark:text-amber-400">
+              📱 Add a phone number to your profile to enable SMS notifications.{" "}
+              <Link to="/profile?tab=profile" className="underline font-medium hover:no-underline">
+                Go to Profile →
+              </Link>
+            </p>
+          </div>
+        )}
+
+        {/* Groups */}
+        {isLoading ? (
+          <PreferenceSkeleton />
+        ) : (
+          <div className="space-y-4">
+            {GROUPS.map((group) => (
+              <Card key={group.title} className="glass-card shadow-elegant">
+                <CardHeader className="pb-2 pt-5 px-6">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-base font-semibold text-foreground">{group.title}</CardTitle>
+                    {/* Column headers for groups with SMS */}
+                    {group.hasSms ? (
+                      <div className="flex items-center gap-6 text-xs text-muted-foreground font-medium uppercase tracking-wide pr-1">
+                        <span className="w-11 text-center">In-App</span>
+                        <span className="w-11 text-center">SMS</span>
                       </div>
-                      <Switch
-                        checked={getValue(row.type)}
-                        onCheckedChange={(val) => updatePreference(row.type, channel, val)}
-                        aria-label={`Toggle ${row.label} notifications`}
-                      />
-                    </div>
-                    {idx < group.rows.length - 1 && (
-                      <div className="h-px bg-border/50" />
+                    ) : (
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">In-App Only</span>
                     )}
                   </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
+                </CardHeader>
+                <CardContent className="px-6 pb-5 space-y-1">
+                  {group.rows.map((row, idx) => (
+                    <div key={row.type}>
+                      <div className="flex items-center justify-between py-3">
+                        <div className="flex-1 min-w-0 pr-4">
+                          <p className="text-sm font-medium text-foreground">{row.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{row.description}</p>
+                        </div>
+                        <div className="flex items-center gap-6">
+                          {/* In-App toggle */}
+                          <div className="w-11 flex justify-center">
+                            <Switch
+                              checked={getInAppValue(row.type)}
+                              onCheckedChange={(val) => updatePreference(row.type, "in_app", val)}
+                              aria-label={`Toggle ${row.label} in-app notifications`}
+                            />
+                          </div>
+                          {/* SMS toggle (only for SMS-eligible groups) */}
+                          {group.hasSms && (
+                            <div className="w-11 flex justify-center">
+                              {row.smsEligible ? (
+                                smsDisabled ? (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <span className="cursor-not-allowed">
+                                        <Switch
+                                          checked={false}
+                                          disabled
+                                          aria-label={`SMS ${row.label} (requires phone number)`}
+                                        />
+                                      </span>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>Add a phone number to your profile to enable SMS</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                ) : (
+                                  <Switch
+                                    checked={getSmsValue(row.type)}
+                                    onCheckedChange={(val) => updatePreference(row.type, "sms", val)}
+                                    aria-label={`Toggle ${row.label} SMS notifications`}
+                                  />
+                                )
+                              ) : (
+                                <span className="w-11 h-6 flex items-center justify-center">
+                                  <span className="text-xs text-muted-foreground/40">—</span>
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {idx < group.rows.length - 1 && (
+                        <div className="h-px bg-border/50" />
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
