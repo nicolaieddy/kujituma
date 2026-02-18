@@ -33,11 +33,43 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHandled, setIsHandled] = useState(false);
+  const [requestStatus, setRequestStatus] = useState<string | null>(null);
   
   // Partner accept dialog state
   const [showPartnerDialog, setShowPartnerDialog] = useState(false);
   const [theyCanViewMyGoals, setTheyCanViewMyGoals] = useState(true);
   const [iCanViewTheirGoals, setICanViewTheirGoals] = useState(true);
+
+  // Check if the request has already been handled (accepted/rejected elsewhere)
+  useEffect(() => {
+    if (!notification.related_request_id) return;
+
+    const checkRequestStatus = async () => {
+      if (notification.type === 'friend_request') {
+        const { data } = await supabase
+          .from('friend_requests')
+          .select('status')
+          .eq('id', notification.related_request_id)
+          .single();
+        if (data && data.status !== 'pending') {
+          setRequestStatus(data.status);
+          setIsHandled(true);
+        }
+      } else if (notification.type === 'accountability_partner_request') {
+        const { data } = await supabase
+          .from('accountability_partner_requests')
+          .select('status')
+          .eq('id', notification.related_request_id)
+          .single();
+        if (data && data.status !== 'pending') {
+          setRequestStatus(data.status);
+          setIsHandled(true);
+        }
+      }
+    };
+
+    checkRequestStatus();
+  }, [notification.related_request_id, notification.type]);
 
   const handleClick = async () => {
     let destination: string | null = null;
@@ -348,7 +380,9 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
             {(isFriendRequest || isPartnerRequest) && isHandled && (
               <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                 <CheckCircle className="h-3 w-3" />
-                <span>Already responded</span>
+                <span>
+                  {requestStatus === 'accepted' ? 'Already partners' : requestStatus === 'rejected' ? 'Declined' : 'Already responded'}
+                </span>
               </div>
             )}
           </div>
