@@ -209,12 +209,24 @@ export function PhoneVerificationSection({ onVerified }: PhoneVerificationSectio
       </CardHeader>
 
       <CardContent className="px-6 pb-5 space-y-4">
-        {/* Phone input row */}
-        {(state === "idle" || state === "sending" || state === "verified") && (
-          <div className="space-y-2">
-            <Label htmlFor="phone-input" className="text-sm">
-              Phone Number <span className="text-muted-foreground font-normal">(E.164 format, e.g. +12025551234)</span>
-            </Label>
+        {/* Verified compact display */}
+        {state === "verified" && currentPhone && (
+          <div className="flex items-center justify-between py-1">
+            <span className="text-sm font-medium text-foreground">{currentPhone}</span>
+            <button
+              type="button"
+              onClick={handleChangeNumber}
+              className="text-xs text-muted-foreground hover:text-foreground underline"
+            >
+              Change number
+            </button>
+          </div>
+        )}
+
+        {/* Phone input row — idle / sending */}
+        {(state === "idle" || state === "sending") && (
+          <div className="space-y-1.5">
+            <Label htmlFor="phone-input" className="text-sm">Phone Number</Label>
             <div className="flex gap-2">
               <Input
                 id="phone-input"
@@ -225,28 +237,23 @@ export function PhoneVerificationSection({ onVerified }: PhoneVerificationSectio
                   setPhoneInput(e.target.value);
                   setError(null);
                 }}
-                disabled={state === "sending" || state === "verified"}
+                disabled={state === "sending"}
                 className="flex-1"
               />
-              {state === "verified" ? (
-                <Button variant="outline" size="sm" onClick={handleChangeNumber} className="shrink-0">
-                  Change
-                </Button>
-              ) : (
-                <Button
-                  onClick={handleSendCode}
-                  disabled={state === "sending" || !phoneInput.trim()}
-                  size="sm"
-                  className="shrink-0"
-                >
-                  {state === "sending" ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending…</>
-                  ) : (
-                    "Send Code"
-                  )}
-                </Button>
-              )}
+              <Button
+                onClick={handleSendCode}
+                disabled={state === "sending" || !phoneInput.trim()}
+                size="sm"
+                className="shrink-0"
+              >
+                {state === "sending" ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Sending…</>
+                ) : (
+                  "Send Code"
+                )}
+              </Button>
             </div>
+            <p className="text-xs text-muted-foreground">Include country code, e.g. +12025551234</p>
           </div>
         )}
 
@@ -318,16 +325,6 @@ export function PhoneVerificationSection({ onVerified }: PhoneVerificationSectio
                 </button>
               )}
             </div>
-          </div>
-        )}
-
-        {/* Verified state - number display */}
-        {state === "verified" && currentPhone && (
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-            <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
-            <p className="text-sm text-primary/90">
-              <span className="font-semibold">{currentPhone}</span> is verified. SMS notifications are active.
-            </p>
           </div>
         )}
 
