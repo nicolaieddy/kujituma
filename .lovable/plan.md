@@ -1,109 +1,150 @@
 
-## Notification Preferences — Settings Page
+# SMS Notifications via Twilio
 
-### What's Being Built
+## Overview
 
-A new "Notifications" tab on the user's own Profile page where they can toggle which notification types they receive (in-app), with the architecture designed to accommodate email and SMS channels in the future via additional columns.
+This builds a full SMS notification pipeline on top of the existing `notification_preferences` table, adding:
+- 4 SMS-enabled notification types (accountability check-in, partner request, partner accepted, friend request)
+- A phone number verification flow so users must add and verify a phone before SMS is sent
+- Per-notification SMS toggles in the existing Notifications settings tab
+- A Supabase Edge Function that sends SMS via Twilio, triggered on new `notifications` rows
+- A Postgres trigger to call the Edge Function automatically whenever a relevant notification is inserted
 
 ---
 
-### Database
+## Architecture Flow
 
-A new `notification_preferences` table stores one row per user. Each notification type gets its own `in_app` boolean column (defaulting to `true` — opted-in by default). Future channels simply add `email_*` and `sms_*` columns to the same table without schema breakage.
+When a notification is created in the database:
+1. Postgres trigger fires on `notifications` INSERT
+2. Trigger calls `pg_net` to invoke the `send-sms` Edge Function
+3. Edge Function checks: is the notification type SMS-eligible? Does the user have an SMS preference enabled? Do they have a verified phone number?
+4. If all checks pass → Twilio API call sends the SMS
 
-The 15 existing notification types from `src/types/notifications.ts` map 1:1 to columns:
+---
 
-| Notification Type | Column |
+## What Needs Twilio Credentials
+
+You will need to provide 3 secrets from your Twilio account:
+- `TWILIO_ACCOUNT_SID` — from your Twilio Console dashboard
+- `TWILIO_AUTH_TOKEN` — from your Twilio Console dashboard
+- `TWILIO_PHONE_NUMBER` — the Twilio phone number that will send SMS (e.g. `+12025551234`)
+
+These get stored securely as Supabase secrets, only accessible to the Edge Function.
+
+---
+
+## Database Changes
+
+### 1. Extend `notification_preferences` table
+Add 4 new boolean SMS columns (all default `false` — users must opt in):
+
+| New Column | Default |
 |---|---|
-| post_like | in_app_post_like |
-| comment_added | in_app_comment_added |
-| comment_like | in_app_comment_like |
-| mention | in_app_mention |
-| friend_request | in_app_friend_request |
-| friend_request_accepted | in_app_friend_request_accepted |
-| accountability_partner_request | in_app_accountability_partner_request |
-| accountability_partner_accepted | in_app_accountability_partner_accepted |
-| accountability_check_in | in_app_accountability_check_in |
-| goal_update_cheer | in_app_goal_update_cheer |
-| goal_milestone | in_app_goal_milestone |
-| goal_help_request | in_app_goal_help_request |
-| goal_update_comment | in_app_goal_update_comment |
-| partner_objective_feedback | in_app_partner_objective_feedback |
-| comment_reaction | in_app_comment_reaction |
+| `sms_friend_request` | false |
+| `sms_accountability_partner_request` | false |
+| `sms_accountability_partner_accepted` | false |
+| `sms_accountability_check_in` | false |
 
-RLS: users can only read and write their own row.
+### 2. Extend `profiles` table
+Add a `phone_verified` boolean column (default `false`). The existing `phone_number` column is already there on the `profiles` table.
+
+### 3. Postgres trigger
+A new `after insert` trigger on the `notifications` table that uses `pg_net` to call the `send-sms` edge function for eligible notification types. Uses `service_role` so it has access to the phone number.
 
 ---
 
-### New Files
+## New Files
 
-**`src/components/profile/NotificationPreferences.tsx`**
-The UI component. Renders notification toggles grouped into logical categories using `Switch` components:
+### `supabase/functions/send-sms/index.ts`
+The edge function that:
+1. Receives the notification ID, recipient user ID, and notification type
+2. Fetches the recipient's `phone_number` and `phone_verified` from `profiles` (via service role)
+3. Checks the `notification_preferences` row for the `sms_<type>` column
+4. If all conditions pass, calls Twilio's REST API with a tailored message per notification type
+5. Logs success/failure without throwing (so a Twilio failure doesn't affect the main app flow)
 
-- **Social** — post likes, comment added, comment likes, mentions, comment reactions
-- **Friends** — friend requests, friend request accepted
-- **Accountability** — partner request, partner accepted, partner check-in, partner objective feedback
-- **Goals & Community** — goal update cheer, goal milestone, goal help request, goal update comment
-
-Each group is a `Card` with a header and rows of `Switch` + label + description. Above the groups, a channel header shows "In-App" (active, with a future "Email" and "SMS" columns shown as "Coming soon" badges to communicate the roadmap).
-
-**`src/hooks/useNotificationPreferences.ts`**
-Loads the user's preferences row (creating it with all defaults if it doesn't exist via upsert), exposes a `updatePreference(type, channel, value)` function that does an optimistic update + debounced Supabase upsert, so toggling feels instant.
-
----
-
-### Modified Files
-
-**`src/pages/Profile.tsx`**
-Add a third tab `"notifications"` to the own-profile tab bar alongside "Profile" and "Integrations". Import and render `<NotificationPreferences />` when that tab is active.
+SMS message templates (concise, under 160 chars):
+- **friend_request**: "👋 [Name] sent you a friend request on Kujituma. Open the app to respond."
+- **accountability_partner_request**: "🤝 [Name] wants to be your accountability partner on Kujituma."
+- **accountability_partner_accepted**: "✅ [Name] accepted your accountability partner request on Kujituma!"
+- **accountability_check_in**: "💬 [Name] sent you a check-in on Kujituma. Open the app to reply."
 
 ---
 
-### User Experience
+## Modified Files
 
-The tab bar on your own profile page gains a Bell icon tab labelled "Notifications". Inside, you see a clean settings panel:
+### `src/hooks/useNotificationPreferences.ts`
+- Extend `NotificationChannel` type to include `"sms"` 
+- Add 4 new `sms_*` boolean fields to the `NotificationPreferences` type and `DEFAULTS` object (all `false`)
+- The existing `updatePreference(type, channel, value)` function already handles any channel generically — no logic changes needed, just the type extension
+
+### `src/components/profile/NotificationPreferences.tsx`
+Major UI update — the layout changes from a single-column switch list to a **multi-channel grid**:
 
 ```text
-┌─────────────────────────────────────────────┐
-│  Notification Preferences                   │
-│  Control what you're notified about         │
-│                                             │
-│  Channel:  In-App ✓   Email (coming soon)   │
-├─────────────────────────────────────────────┤
-│  Social                                     │
-│  Post Likes          Someone liked your...  │ ●
-│  Comments            Someone commented...   │ ●
-│  Comment Likes       Someone liked your...  │ ●
-│  Mentions            Someone mentioned...   │ ●
-│  Comment Reactions   Emoji reactions on...  │ ●
-├─────────────────────────────────────────────┤
-│  Friends                                    │
-│  Friend Requests     New connection req...  │ ●
-│  Request Accepted    Your friend request... │ ●
-├─────────────────────────────────────────────┤
-│  Accountability                             │
-│  Partner Request     New partnership req... │ ●
-│  Partner Accepted    Request accepted       │ ●
-│  Partner Check-In    Partner sent check-in  │ ●
-│  Objective Feedback  Partner reacted to...  │ ●
-├─────────────────────────────────────────────┤
-│  Goals & Community                          │
-│  Goal Cheers         Someone cheered...     │ ●
-│  Goal Milestone      You hit a milestone    │ ●
-│  Help Requests       Someone asked for...   │ ●
-│  Goal Comments       New comment on an...   │ ●
-└─────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│  Notification Preferences                           │
+│  Control what you get notified about and how.       │
+│                                                     │
+│  Channels:  🔔 In-App  📱 SMS ✓   📧 Email (soon) │
+│             (SMS requires verified phone number)    │
+├──────────────────────────────────┬────────┬─────────┤
+│                                  │ In-App │   SMS   │
+├──────────────────────────────────┴────────┴─────────┤
+│  Friends                                            │
+│  Friend Requests         ●              ●           │
+│  ─────────────────────────────────────────────────  │
+│  (Request Accepted — in-app only)                   │
+├─────────────────────────────────────────────────────┤
+│  Accountability                                     │
+│  Partner Request         ●              ●           │
+│  Partner Accepted        ●              ●           │
+│  Partner Check-In        ●              ●           │
+│  (Objective Feedback — in-app only)                 │
+├─────────────────────────────────────────────────────┤
+│  Social (In-App Only)                               │
+│  Post Likes              ●                          │
+│  Comments                ●                          │
+│  ...                                                │
+└─────────────────────────────────────────────────────┘
 ```
 
-Toggles update instantly (optimistic) with a silent background save. Saved state persists across sessions.
+- Groups that have SMS-eligible types show a 2-column header (In-App | SMS)
+- SMS column is disabled (greyed out) if the user has no verified phone number, with a tooltip explaining why
+- A banner at the top of the SMS-eligible groups links to Profile settings to add/verify a phone number
+- Social and Goals & Community groups show "In-App Only" label since SMS won't be supported for those
+
+### `src/components/profile/NotificationPreferences.tsx` — Phone Banner
+If a user doesn't have `phone_verified = true`, a subtle amber info banner appears above the SMS-eligible sections:
+> "📱 Add a verified phone number to your profile to enable SMS notifications."
+With a link to the Profile tab.
 
 ---
 
-### Technical Summary
+## Phone Number in Profile
+The `phone_number` field already exists in `profiles` and is already shown/editable in `ProfileEditForm.tsx` via the `SocialLinkPicker` component (it's listed as a social platform). The new `phone_verified` column defaults to `false`. For this implementation, we'll keep it simple: the phone number field in the profile form will save the number, and SMS will only send if `phone_verified = true`. A note in the UI will indicate this is for future verification flow (phase 2 could add OTP verification).
 
-| File | Action |
+Actually — to make SMS useful immediately without a full OTP verification flow, the plan will treat "has a phone number stored" as sufficient to receive SMS, and we will set `phone_verified = true` automatically when a phone number is saved. Full OTP verification can be layered on later.
+
+---
+
+## Technical Summary
+
+| Item | Action |
 |---|---|
-| `supabase/migrations/…_notification_preferences.sql` | New migration — table + RLS |
-| `src/hooks/useNotificationPreferences.ts` | New hook — load/save preferences |
-| `src/components/profile/NotificationPreferences.tsx` | New component — preferences UI |
-| `src/pages/Profile.tsx` | Add "Notifications" tab, render component |
+| `supabase/migrations/…_sms_notification_prefs.sql` | Add `sms_*` columns to `notification_preferences`, add `phone_verified` to `profiles`, add pg_net trigger on `notifications` |
+| `supabase/functions/send-sms/index.ts` | New edge function — Twilio SMS sender |
+| `supabase/config.toml` | Add `[functions.send-sms]` with `verify_jwt = false` |
+| `src/hooks/useNotificationPreferences.ts` | Extend types for `sms` channel + 4 SMS columns |
+| `src/components/profile/NotificationPreferences.tsx` | Multi-channel grid UI with SMS column, phone number banner |
+
+---
+
+## Secrets Required (from Twilio)
+
+Before implementation, you'll need to add these 3 secrets to Supabase:
+1. `TWILIO_ACCOUNT_SID`
+2. `TWILIO_AUTH_TOKEN`
+3. `TWILIO_PHONE_NUMBER`
+
+These come from your [Twilio Console](https://console.twilio.com). If you don't have a Twilio account, signing up takes ~2 minutes and includes a free trial number.
