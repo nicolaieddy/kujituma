@@ -462,31 +462,6 @@ const PartnerDashboard = () => {
                 </div>
               )}
 
-              {/* Weekly Note Quick Action */}
-              <div className="mt-4 pt-4 border-t border-border">
-                <div className="flex gap-2">
-                  <Textarea
-                    placeholder={`Leave a note about ${isCurrentWeek ? 'this' : 'that'} week...`}
-                    value={weeklyNote}
-                    onChange={(e) => setWeeklyNote(e.target.value)}
-                    className="min-h-[40px] h-10 resize-none text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendWeeklyNote();
-                      }
-                    }}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={handleSendWeeklyNote}
-                    disabled={!weeklyNote.trim() || isSendingNote}
-                    className="px-3 self-end"
-                  >
-                    <Send className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
 
@@ -526,6 +501,32 @@ const PartnerDashboard = () => {
                     </div>
                   </CardHeader>
                 </CollapsibleTrigger>
+                {/* Quick message — always visible, above the collapsible feed */}
+                <CardContent className="pt-0 pb-3">
+                  <div className="flex gap-2">
+                    <Textarea
+                      placeholder={`Send ${partnerProfile.full_name.split(' ')[0]} a quick message...`}
+                      value={weeklyNote}
+                      onChange={(e) => setWeeklyNote(e.target.value)}
+                      className="min-h-[40px] h-10 resize-none text-sm"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendWeeklyNote();
+                        }
+                      }}
+                    />
+                    <Button
+                      size="sm"
+                      onClick={handleSendWeeklyNote}
+                      disabled={!weeklyNote.trim() || isSendingNote}
+                      className="px-3 self-end"
+                    >
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+
                 <CollapsibleContent>
                   <CardContent className="pt-0">
                     <CheckInsFeed
