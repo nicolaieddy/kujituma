@@ -1,51 +1,109 @@
 
-## Root Cause
+## Notification Preferences — Settings Page
 
-`CheckInQuestionsSettings` is a **Radix UI Sheet** (built on `@radix-ui/react-dialog`). When the check-in **Dialog** is open, Radix UI installs a **focus trap** on that dialog. Any attempt to interact with a second Radix dialog/sheet that opens on top gets blocked by that focus trap — the sheet appears visually but interactions are swallowed, making it look "greyed out."
+### What's Being Built
 
-## Solution: Inline Settings Panel (Single-View Switch)
-
-Replace the separate Sheet with an **inline settings view** rendered inside the existing Dialog/Drawer. When the gear icon is clicked, the dialog content switches to show the settings panel (and a back button replaces the title). This avoids the two-dialogs-at-once problem entirely.
-
-The implementation adds a `view` state (`'checkin' | 'settings'`) to `DailyCheckInDialog`. When `view === 'settings'`, the content area renders the settings UI (the same fields from `CheckInQuestionsSettings`) instead of the check-in form, and the header shows a back arrow + "Customise Questions" title. Switching back to `'checkin'` returns to the normal form.
-
-This is the same "nested view" pattern used in mobile settings apps (e.g. iOS Settings).
+A new "Notifications" tab on the user's own Profile page where they can toggle which notification types they receive (in-app), with the architecture designed to accommodate email and SMS channels in the future via additional columns.
 
 ---
 
-## Technical Changes
+### Database
 
-### 1. `DailyCheckInDialog.tsx`
+A new `notification_preferences` table stores one row per user. Each notification type gets its own `in_app` boolean column (defaulting to `true` — opted-in by default). Future channels simply add `email_*` and `sms_*` columns to the same table without schema breakage.
 
-- Add `const [view, setView] = useState<'checkin' | 'settings'>('checkin')` state.
-- Replace the settings gear `onClick` from `setShowQuestionsSettings(true)` → `setView('settings')`.
-- In both the Desktop (Dialog) and Mobile (Drawer) renders:
-  - When `view === 'checkin'`: render existing content + footer as today.
-  - When `view === 'settings'`: render `<InlineCheckInSettings />` with a back button in the header. Footer becomes just a "Done" / back button.
-- Reset `view` back to `'checkin'` when the dialog closes (in the existing `useEffect` on `open`).
-- Remove the `showQuestionsSettings` state and the separate `<CheckInQuestionsSettings ... />` sibling renders.
+The 15 existing notification types from `src/types/notifications.ts` map 1:1 to columns:
 
-### 2. New component: `src/components/habits/InlineCheckInSettings.tsx`
+| Notification Type | Column |
+|---|---|
+| post_like | in_app_post_like |
+| comment_added | in_app_comment_added |
+| comment_like | in_app_comment_like |
+| mention | in_app_mention |
+| friend_request | in_app_friend_request |
+| friend_request_accepted | in_app_friend_request_accepted |
+| accountability_partner_request | in_app_accountability_partner_request |
+| accountability_partner_accepted | in_app_accountability_partner_accepted |
+| accountability_check_in | in_app_accountability_check_in |
+| goal_update_cheer | in_app_goal_update_cheer |
+| goal_milestone | in_app_goal_milestone |
+| goal_help_request | in_app_goal_help_request |
+| goal_update_comment | in_app_goal_update_comment |
+| partner_objective_feedback | in_app_partner_objective_feedback |
+| comment_reaction | in_app_comment_reaction |
 
-Extract the settings UI from `CheckInQuestionsSettings.tsx` into a plain `<div>` (no Sheet/Dialog wrapper) so it can be embedded inline. It uses the same `useCheckInCustomQuestions` hook, renders the same built-in questions display, custom questions list, add-question input, and preset suggestions — just without a Sheet container.
-
-### 3. `CheckInQuestionsSettings.tsx`
-
-Keep the file as-is (it's still used anywhere the sheet can open standalone). The `InlineCheckInSettings` will be a separate extracted component.
-
----
-
-## Files to Modify
-
-| File | Change |
-|------|--------|
-| `src/components/habits/DailyCheckInDialog.tsx` | Add `view` state; switch content between check-in form and inline settings; remove Sheet sibling |
-| `src/components/habits/InlineCheckInSettings.tsx` | **New file** — settings UI as a plain div, no Sheet wrapper |
+RLS: users can only read and write their own row.
 
 ---
 
-## User Experience
+### New Files
 
-Before: Click gear → Sheet appears but is greyed out and unresponsive (blocked by Dialog focus trap).
+**`src/components/profile/NotificationPreferences.tsx`**
+The UI component. Renders notification toggles grouped into logical categories using `Switch` components:
 
-After: Click gear → Dialog content slides/switches to the settings panel inline. Click back arrow → returns to check-in form. No z-index or focus trap conflicts.
+- **Social** — post likes, comment added, comment likes, mentions, comment reactions
+- **Friends** — friend requests, friend request accepted
+- **Accountability** — partner request, partner accepted, partner check-in, partner objective feedback
+- **Goals & Community** — goal update cheer, goal milestone, goal help request, goal update comment
+
+Each group is a `Card` with a header and rows of `Switch` + label + description. Above the groups, a channel header shows "In-App" (active, with a future "Email" and "SMS" columns shown as "Coming soon" badges to communicate the roadmap).
+
+**`src/hooks/useNotificationPreferences.ts`**
+Loads the user's preferences row (creating it with all defaults if it doesn't exist via upsert), exposes a `updatePreference(type, channel, value)` function that does an optimistic update + debounced Supabase upsert, so toggling feels instant.
+
+---
+
+### Modified Files
+
+**`src/pages/Profile.tsx`**
+Add a third tab `"notifications"` to the own-profile tab bar alongside "Profile" and "Integrations". Import and render `<NotificationPreferences />` when that tab is active.
+
+---
+
+### User Experience
+
+The tab bar on your own profile page gains a Bell icon tab labelled "Notifications". Inside, you see a clean settings panel:
+
+```text
+┌─────────────────────────────────────────────┐
+│  Notification Preferences                   │
+│  Control what you're notified about         │
+│                                             │
+│  Channel:  In-App ✓   Email (coming soon)   │
+├─────────────────────────────────────────────┤
+│  Social                                     │
+│  Post Likes          Someone liked your...  │ ●
+│  Comments            Someone commented...   │ ●
+│  Comment Likes       Someone liked your...  │ ●
+│  Mentions            Someone mentioned...   │ ●
+│  Comment Reactions   Emoji reactions on...  │ ●
+├─────────────────────────────────────────────┤
+│  Friends                                    │
+│  Friend Requests     New connection req...  │ ●
+│  Request Accepted    Your friend request... │ ●
+├─────────────────────────────────────────────┤
+│  Accountability                             │
+│  Partner Request     New partnership req... │ ●
+│  Partner Accepted    Request accepted       │ ●
+│  Partner Check-In    Partner sent check-in  │ ●
+│  Objective Feedback  Partner reacted to...  │ ●
+├─────────────────────────────────────────────┤
+│  Goals & Community                          │
+│  Goal Cheers         Someone cheered...     │ ●
+│  Goal Milestone      You hit a milestone    │ ●
+│  Help Requests       Someone asked for...   │ ●
+│  Goal Comments       New comment on an...   │ ●
+└─────────────────────────────────────────────┘
+```
+
+Toggles update instantly (optimistic) with a silent background save. Saved state persists across sessions.
+
+---
+
+### Technical Summary
+
+| File | Action |
+|---|---|
+| `supabase/migrations/…_notification_preferences.sql` | New migration — table + RLS |
+| `src/hooks/useNotificationPreferences.ts` | New hook — load/save preferences |
+| `src/components/profile/NotificationPreferences.tsx` | New component — preferences UI |
+| `src/pages/Profile.tsx` | Add "Notifications" tab, render component |
