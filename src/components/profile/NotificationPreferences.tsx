@@ -103,9 +103,8 @@ export function NotificationPreferences({ onSwitchToProfileTab, onVerified }: No
   const { user } = useAuth();
   const { preferences, isLoading, updatePreference } = useNotificationPreferences();
   const [hasPhone, setHasPhone] = useState<boolean | null>(null);
-  const [phoneKey, setPhoneKey] = useState(0);
 
-  // Check if user has a verified phone number
+  // Check if user has a verified phone number (once on mount)
   useEffect(() => {
     if (!user) return;
     supabase
@@ -116,11 +115,10 @@ export function NotificationPreferences({ onSwitchToProfileTab, onVerified }: No
       .then(({ data }) => {
         setHasPhone(!!(data?.phone_number && data?.phone_verified));
       });
-  }, [user, phoneKey]);
+  }, [user]);
 
-  const handleVerified = () => {
+  const handleVerified = (phoneNumber: string) => {
     setHasPhone(true);
-    setPhoneKey(k => k + 1);
     onVerified?.();
   };
 
@@ -146,7 +144,7 @@ export function NotificationPreferences({ onSwitchToProfileTab, onVerified }: No
         </div>
 
         {/* Phone verification — embedded here so it's contextually relevant */}
-        <PhoneVerificationSection key={phoneKey} onVerified={handleVerified} />
+        <PhoneVerificationSection onVerified={handleVerified} />
 
         {/* Channel legend */}
         <div className="flex flex-wrap gap-3">

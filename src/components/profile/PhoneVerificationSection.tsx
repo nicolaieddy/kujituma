@@ -17,8 +17,8 @@ import { Smartphone, CheckCircle2, AlertCircle, Loader2, RefreshCcw } from "luci
 type PhoneState = "idle" | "sending" | "code_sent" | "verifying" | "verified";
 
 interface PhoneVerificationSectionProps {
-  /** Called when phone is successfully verified so parent can refresh profile data */
-  onVerified?: () => void;
+  /** Called when phone is successfully verified, passes back the verified phone number */
+  onVerified?: (phoneNumber: string) => void;
 }
 
 export function PhoneVerificationSection({ onVerified }: PhoneVerificationSectionProps) {
@@ -155,7 +155,7 @@ export function PhoneVerificationSection({ onVerified }: PhoneVerificationSectio
       setCurrentPhone(result.phone_number || phoneInput.trim());
       setIsVerified(true);
       toast({ title: "Phone verified! ✅", description: "SMS notifications are now enabled." });
-      onVerified?.();
+      onVerified?.(result.phone_number || phoneInput.trim());
     } catch {
       setError("Network error. Please try again.");
       setState("code_sent");
