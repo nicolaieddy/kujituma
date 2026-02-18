@@ -1024,6 +1024,72 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          in_app_accountability_check_in: boolean
+          in_app_accountability_partner_accepted: boolean
+          in_app_accountability_partner_request: boolean
+          in_app_comment_added: boolean
+          in_app_comment_like: boolean
+          in_app_comment_reaction: boolean
+          in_app_friend_request: boolean
+          in_app_friend_request_accepted: boolean
+          in_app_goal_help_request: boolean
+          in_app_goal_milestone: boolean
+          in_app_goal_update_cheer: boolean
+          in_app_goal_update_comment: boolean
+          in_app_mention: boolean
+          in_app_partner_objective_feedback: boolean
+          in_app_post_like: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          in_app_accountability_check_in?: boolean
+          in_app_accountability_partner_accepted?: boolean
+          in_app_accountability_partner_request?: boolean
+          in_app_comment_added?: boolean
+          in_app_comment_like?: boolean
+          in_app_comment_reaction?: boolean
+          in_app_friend_request?: boolean
+          in_app_friend_request_accepted?: boolean
+          in_app_goal_help_request?: boolean
+          in_app_goal_milestone?: boolean
+          in_app_goal_update_cheer?: boolean
+          in_app_goal_update_comment?: boolean
+          in_app_mention?: boolean
+          in_app_partner_objective_feedback?: boolean
+          in_app_post_like?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          in_app_accountability_check_in?: boolean
+          in_app_accountability_partner_accepted?: boolean
+          in_app_accountability_partner_request?: boolean
+          in_app_comment_added?: boolean
+          in_app_comment_like?: boolean
+          in_app_comment_reaction?: boolean
+          in_app_friend_request?: boolean
+          in_app_friend_request_accepted?: boolean
+          in_app_goal_help_request?: boolean
+          in_app_goal_milestone?: boolean
+          in_app_goal_update_cheer?: boolean
+          in_app_goal_update_comment?: boolean
+          in_app_mention?: boolean
+          in_app_partner_objective_feedback?: boolean
+          in_app_post_like?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string

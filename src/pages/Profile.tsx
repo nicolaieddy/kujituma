@@ -5,6 +5,7 @@ import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useProfilePageData, ProfileData, ProfileGoal } from "@/hooks/useProfilePageData";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
+import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ import {
   Edit3,
   User,
   Zap,
+  Bell,
   Calendar,
   Clock,
   UserPlus,
@@ -83,9 +85,9 @@ const Profile = () => {
   const viewerContext = pageData?.viewer_context;
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"profile" | "integrations">(() => {
+  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "notifications">(() => {
     const p = getSearchParams().get("tab");
-    return p === "integrations" ? "integrations" : "profile";
+    return p === "integrations" ? "integrations" : p === "notifications" ? "notifications" : "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
@@ -123,7 +125,7 @@ const Profile = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleTabChange = useCallback((tab: "profile" | "integrations") => {
+  const handleTabChange = useCallback((tab: "profile" | "integrations" | "notifications") => {
     setActiveTab(tab);
     setSearchParam("tab", tab);
   }, []);
@@ -469,6 +471,18 @@ const Profile = () => {
                   <Zap className="h-4 w-4" />
                   Integrations
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("notifications")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "notifications"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Bell className="h-4 w-4" />
+                  Notifications
+                </button>
               </div>
 
               {activeTab === "profile" && (
@@ -484,6 +498,11 @@ const Profile = () => {
             {activeTab === "integrations" && (
               <div className="max-w-4xl mx-auto">
                 <IntegrationsSection />
+              </div>
+            )}
+            {activeTab === "notifications" && (
+              <div className="max-w-4xl mx-auto">
+                <NotificationPreferences />
               </div>
             )}
           </>
