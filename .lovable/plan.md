@@ -1,73 +1,89 @@
 
-## Fix: Phone OTP Verification — Three Bugs Found
+## Redesign: Phone Verification UX — Verified State
 
-### Bug 1 (Critical): `supabase.auth.getClaims()` Does Not Exist
+### Problem
+When a phone is verified, the current UI shows three overlapping elements:
+1. A full-width disabled text input with the phone number
+2. A "Change" button
+3. A separate green banner below repeating "is verified. SMS notifications are active."
 
-Both `send-otp/index.ts` and `verify-otp/index.ts` call `supabase.auth.getClaims(token)`, which is **not a real method** in Supabase JS v2. This causes every request to fail with `401 Unauthorized`, meaning:
-- No OTP is ever sent via Twilio
-- No verification code is ever validated
+This is visually noisy and redundant. The user's screenshot confirms this.
 
-**Fix:** Replace `getClaims` with `supabase.auth.getUser()`, which is the correct Supabase v2 way to validate a JWT and get the user ID from an edge function.
+### New Verified State Design
 
-```typescript
-// WRONG (doesn't exist)
-const { data: authData } = await supabase.auth.getClaims(token);
-const userId = authData.claims.sub;
+Replace the entire verified state with a **single compact row** that shows:
 
-// CORRECT
-const { data: { user }, error: authError } = await supabase.auth.getUser();
-const userId = user.id;
+```
+┌──────────────────────────────────────────────────────────┐
+│  📱  Phone Number                          ✅ Verified   │
+│                                                          │
+│  +13133203922                           [Change Number]  │
+└──────────────────────────────────────────────────────────┘
 ```
 
----
+- The phone number is shown as plain text (not an input) — clean, not editable
+- "Change Number" is a small ghost/link-style button that resets the flow
+- The "Verified" badge is in the header right — minimal and clear
+- No green banner below — the badge alone signals verified status
+- The card shrinks to a tight 2-row layout when verified
 
-### Bug 2 (Critical): Reset Trigger Fires on the Same UPDATE That Sets `phone_verified = true`
+### Unverified / Entry State (unchanged in function, refined in style)
+- Phone entry: input + "Send Code" button on one row
+- If phone exists but unverified: amber "Not verified" badge, with pre-filled number
+- OTP entry: OTP boxes + Verify button + resend timer (kept, works well)
 
-In `verify-otp`, the profile update is:
-```sql
-UPDATE profiles SET phone_number = '...', phone_verified = true WHERE id = userId
+### What Changes
+
+**`src/components/profile/PhoneVerificationSection.tsx`**
+
+1. **Verified state** — remove the disabled input + "Change" button row entirely. Replace with a compact display:
+   - Phone number as `<p>` text with a phone icon
+   - "Change number" as an inline text button (small, muted, underline style)
+   - Remove the green banner `div` below — the header badge is sufficient
+
+2. **Idle/unverified state** — tighten up the label: remove the verbose "(E.164 format, e.g. +12025551234)" inline label text. Move the format hint to a `<p className="text-xs text-muted-foreground">` below the input instead, so the label reads cleanly as just "Phone Number".
+
+3. **Card structure when verified** — use a single-row `CardContent` with flex layout instead of the multi-section layout that currently renders.
+
+### Exact Verified State Before → After
+
+**Before (3 separate UI elements):**
+```jsx
+// Element 1: disabled input row
+<div className="space-y-2">
+  <Label>Phone Number (E.164 format...)</Label>
+  <div className="flex gap-2">
+    <Input disabled value={phoneInput} />
+    <Button onClick={handleChangeNumber}>Change</Button>
+  </div>
+</div>
+
+// Element 2: green banner
+<div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
+  <CheckCircle2 />
+  <p>{currentPhone} is verified. SMS notifications are active.</p>
+</div>
 ```
 
-The `trg_reset_phone_verified` trigger fires `BEFORE UPDATE` on `profiles` and checks `IF NEW.phone_number IS DISTINCT FROM OLD.phone_number`. Since `phone_number` changes from `''` (empty string, its default) to the actual verified number, the trigger resets `phone_verified` back to `false` **in the same statement that tried to set it to true**.
-
-**Fix:** The trigger's reset function must be made smarter — it should NOT reset `phone_verified` when `phone_verified` is already being explicitly set to `true` in the same update statement. We do this by checking if `NEW.phone_verified = true` and allowing that through:
-
-```sql
-CREATE OR REPLACE FUNCTION public.reset_phone_verified_on_change()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-  -- Only reset if phone number is changing AND verification isn't being explicitly granted
-  IF NEW.phone_number IS DISTINCT FROM OLD.phone_number AND NEW.phone_verified IS NOT TRUE THEN
-    NEW.phone_verified := false;
-  END IF;
-  RETURN NEW;
-END;
-$$;
+**After (1 clean compact layout):**
+```jsx
+<div className="flex items-center justify-between py-1">
+  <div className="flex items-center gap-2">
+    <span className="text-sm font-medium text-foreground">{currentPhone}</span>
+  </div>
+  <button
+    onClick={handleChangeNumber}
+    className="text-xs text-muted-foreground hover:text-foreground underline"
+  >
+    Change number
+  </button>
+</div>
 ```
 
-This way, the `verify-otp` edge function (which sets both `phone_number` and `phone_verified = true` in the same UPDATE) is allowed through, but changing the phone number via any other path (profile edit form) will still correctly reset verification.
-
----
-
-### Bug 3 (UX): `phoneKey` Increment Causes Re-mount After Verification
-
-In `NotificationPreferences`, `handleVerified` calls `setPhoneKey(k => k + 1)`, which remounts `PhoneVerificationSection`. The remounted component re-fetches the profile from the DB. Even if Bug 2 were fixed, this introduces a timing race — the component re-mounts before the DB write completes, potentially reading stale data.
-
-**Fix:** Remove the `phoneKey` re-mount trick. Instead:
-- Pass the verified phone number directly from `PhoneVerificationSection`'s `onVerified` callback: `onVerified(phoneNumber: string)`
-- `NotificationPreferences` updates its `hasPhone` state directly from the callback data, no re-mount needed
-- `PhoneVerificationSection` manages its own internal state (already does this correctly with `setState("verified")`)
-
----
-
-### Summary of Files Changed
+### Files Changed
 
 | File | Change |
 |---|---|
-| `supabase/functions/send-otp/index.ts` | Replace `getClaims` with `getUser()` |
-| `supabase/functions/verify-otp/index.ts` | Replace `getClaims` with `getUser()` |
-| `supabase/migrations/..._fix_phone_trigger.sql` | Fix `reset_phone_verified_on_change()` to not reset when `phone_verified` is being set to `true` in same update |
-| `src/components/profile/NotificationPreferences.tsx` | Remove `phoneKey` state and re-mount; update `handleVerified` to set `hasPhone(true)` directly without triggering a DB re-fetch |
-| `src/components/profile/PhoneVerificationSection.tsx` | Update `onVerified` callback signature to pass the phone number back |
+| `src/components/profile/PhoneVerificationSection.tsx` | Redesign the verified state to a single compact row; tighten the idle state label |
 
-No new secrets, tables, or dependencies needed.
+No backend, database, or other files need to change.
