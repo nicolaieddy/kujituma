@@ -9,7 +9,6 @@ import { NotificationType } from "@/types/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
 interface NotificationRow {
   type: NotificationType;
@@ -94,7 +93,11 @@ function PreferenceSkeleton() {
   );
 }
 
-export function NotificationPreferences() {
+interface NotificationPreferencesProps {
+  onSwitchToProfileTab?: () => void;
+}
+
+export function NotificationPreferences({ onSwitchToProfileTab }: NotificationPreferencesProps) {
   const { user } = useAuth();
   const { preferences, isLoading, updatePreference } = useNotificationPreferences();
   const [hasPhone, setHasPhone] = useState<boolean | null>(null);
@@ -159,12 +162,22 @@ export function NotificationPreferences() {
         {/* Phone number banner */}
         {hasPhone === false && (
           <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-            <Info className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
             <p className="text-amber-700 dark:text-amber-400">
-              📱 Add a phone number to your profile to enable SMS notifications.{" "}
-              <Link to="/profile?tab=profile" className="underline font-medium hover:no-underline">
-                Go to Profile →
-              </Link>
+              📱 Verify your phone number to enable SMS notifications.{" "}
+              {onSwitchToProfileTab ? (
+                <button
+                  type="button"
+                  onClick={onSwitchToProfileTab}
+                  className="underline font-medium hover:no-underline text-amber-700 dark:text-amber-400"
+                >
+                  Go to Profile →
+                </button>
+              ) : (
+                <a href="/profile?tab=profile" className="underline font-medium hover:no-underline">
+                  Go to Profile →
+                </a>
+              )}
             </p>
           </div>
         )}
