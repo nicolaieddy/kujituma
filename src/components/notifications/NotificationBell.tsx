@@ -22,6 +22,10 @@ export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Build sets of pending request IDs so NotificationItem can check without DB queries
+  const pendingFriendRequestIds = new Set((friendRequests.received || []).map(r => r.id));
+  const pendingPartnerRequestIds = new Set((partnerRequestsReceived || []).map(r => r.id));
+
   // Calculate pending requests count
   const pendingFriendRequests = friendRequests.received?.length || 0;
   const pendingPartnerRequests = partnerRequestsReceived?.length || 0;
@@ -157,6 +161,8 @@ export const NotificationBell = () => {
                   notification={notification}
                   onMarkRead={() => setIsOpen(false)}
                   onMarkAsRead={markAsRead}
+                  pendingPartnerRequestIds={pendingPartnerRequestIds}
+                  pendingFriendRequestIds={pendingFriendRequestIds}
                 />
               ))}
             </div>
