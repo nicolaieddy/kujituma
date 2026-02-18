@@ -303,22 +303,28 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   };
 
   const handleDelete = async (checkInId: string) => {
+    // Optimistic: remove immediately from UI
+    const snapshot = checkIns;
+    setCheckIns(prev => prev.filter(c => c.id !== checkInId));
+    setPendingDeleteId(null);
+    setDeleteConfirmOpen(false);
+
     try {
       setDeletingId(checkInId);
       const result = await accountabilityService.deleteCheckIn(checkInId);
       if (result.success) {
-        await fetchCheckIns();
         toast.success('Check-in deleted');
       } else {
+        // Rollback on failure
+        setCheckIns(snapshot);
         toast.error(result.error || 'Failed to delete check-in');
       }
     } catch (error) {
       console.error('Error deleting check-in:', error);
+      setCheckIns(snapshot);
       toast.error('Failed to delete check-in');
     } finally {
       setDeletingId(null);
-      setPendingDeleteId(null);
-      setDeleteConfirmOpen(false);
     }
   };
 
@@ -441,42 +447,6 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
 
   return (
     <div className="space-y-4">
-      {/* Header with Record Check-in button */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-foreground">
-          <MessageSquare className="h-4 w-4" />
-          Check-in History
-          <Badge variant="secondary" className="text-xs">
-            {filteredCheckIns.length}
-            {hasActiveFilters && checkIns.length !== filteredCheckIns.length && (
-              <span className="text-muted-foreground">/{checkIns.length}</span>
-            )}
-          </Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showFilters ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setShowFilters(!showFilters)}
-            className="gap-1.5"
-          >
-            <Filter className="h-3 w-3" />
-            {hasActiveFilters && <span className="h-1.5 w-1.5 rounded-full bg-primary" />}
-          </Button>
-          {onRecordCheckIn && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onRecordCheckIn}
-              className="gap-1.5"
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              Record Check-in
-            </Button>
-          )}
-        </div>
-      </div>
-
       {/* Filters */}
       {showFilters && (
         <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border">
