@@ -1,4 +1,4 @@
-import { Bell, Mail, Smartphone, Info } from "lucide-react";
+import { Bell, Mail, Smartphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +9,7 @@ import { NotificationType } from "@/types/notifications";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
+import { PhoneVerificationSection } from "@/components/profile/PhoneVerificationSection";
 
 interface NotificationRow {
   type: NotificationType;
@@ -95,12 +96,14 @@ function PreferenceSkeleton() {
 
 interface NotificationPreferencesProps {
   onSwitchToProfileTab?: () => void;
+  onVerified?: () => void;
 }
 
-export function NotificationPreferences({ onSwitchToProfileTab }: NotificationPreferencesProps) {
+export function NotificationPreferences({ onSwitchToProfileTab, onVerified }: NotificationPreferencesProps) {
   const { user } = useAuth();
   const { preferences, isLoading, updatePreference } = useNotificationPreferences();
   const [hasPhone, setHasPhone] = useState<boolean | null>(null);
+  const [phoneKey, setPhoneKey] = useState(0);
 
   // Check if user has a verified phone number
   useEffect(() => {
@@ -113,7 +116,13 @@ export function NotificationPreferences({ onSwitchToProfileTab }: NotificationPr
       .then(({ data }) => {
         setHasPhone(!!(data?.phone_number && data?.phone_verified));
       });
-  }, [user]);
+  }, [user, phoneKey]);
+
+  const handleVerified = () => {
+    setHasPhone(true);
+    setPhoneKey(k => k + 1);
+    onVerified?.();
+  };
 
   const getInAppValue = (type: NotificationType): boolean => {
     const key = `in_app_${type}` as keyof typeof preferences;
@@ -135,6 +144,9 @@ export function NotificationPreferences({ onSwitchToProfileTab }: NotificationPr
           <h2 className="text-2xl font-bold text-foreground font-heading">Notification Preferences</h2>
           <p className="text-muted-foreground mt-1">Control what you get notified about and how.</p>
         </div>
+
+        {/* Phone verification — embedded here so it's contextually relevant */}
+        <PhoneVerificationSection key={phoneKey} onVerified={handleVerified} />
 
         {/* Channel legend */}
         <div className="flex flex-wrap gap-3">
@@ -158,29 +170,6 @@ export function NotificationPreferences({ onSwitchToProfileTab }: NotificationPr
             <Badge variant="secondary" className="text-xs py-0">Coming soon</Badge>
           </div>
         </div>
-
-        {/* Phone number banner */}
-        {hasPhone === false && (
-          <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-sm">
-            <Info className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-            <p className="text-amber-700 dark:text-amber-400">
-              📱 Verify your phone number to enable SMS notifications.{" "}
-              {onSwitchToProfileTab ? (
-                <button
-                  type="button"
-                  onClick={onSwitchToProfileTab}
-                  className="underline font-medium hover:no-underline text-amber-700 dark:text-amber-400"
-                >
-                  Go to Profile →
-                </button>
-              ) : (
-                <a href="/profile?tab=profile" className="underline font-medium hover:no-underline">
-                  Go to Profile →
-                </a>
-              )}
-            </p>
-          </div>
-        )}
 
         {/* Groups */}
         {isLoading ? (

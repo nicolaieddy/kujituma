@@ -6,7 +6,7 @@ import { useProfilePageData, ProfileData, ProfileGoal } from "@/hooks/useProfile
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
-import { PhoneVerificationSection } from "@/components/profile/PhoneVerificationSection";
+
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
 import { Button } from "@/components/ui/button";
@@ -495,14 +495,7 @@ const Profile = () => {
             </div>
 
             {/* Tab content (simple conditional, no Radix) */}
-            {activeTab === "profile" && (
-              <div className="max-w-4xl mx-auto space-y-6">
-                <PhoneVerificationSection
-                  onVerified={() => queryClient.invalidateQueries({ queryKey: ['profile-page-data', targetUserId] })}
-                />
-                {renderProfileView()}
-              </div>
-            )}
+            {activeTab === "profile" && renderProfileView()}
             {activeTab === "integrations" && (
               <div className="max-w-4xl mx-auto">
                 <IntegrationsSection />
@@ -510,7 +503,10 @@ const Profile = () => {
             )}
             {activeTab === "notifications" && (
               <div className="max-w-4xl mx-auto">
-                <NotificationPreferences onSwitchToProfileTab={() => handleTabChange("profile")} />
+                <NotificationPreferences
+                  onSwitchToProfileTab={() => handleTabChange("profile")}
+                  onVerified={() => queryClient.invalidateQueries({ queryKey: ['profile-page-data', targetUserId] })}
+                />
               </div>
             )}
           </>
