@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -21,55 +21,31 @@ import { useNavigate } from 'react-router-dom';
 import { User, UserCheck, UserMinus, Loader2, CheckCircle, Target, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
+
 interface NotificationItemProps {
   notification: Notification;
   onMarkRead: () => void;
   onMarkAsRead: (notificationId: string) => Promise<void>;
+  pendingPartnerRequestIds?: Set<string>;
+  pendingFriendRequestIds?: Set<string>;
 }
 
-export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: NotificationItemProps) => {
+export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendingPartnerRequestIds, pendingFriendRequestIds }: NotificationItemProps) => {
   const { respondToFriendRequest } = useFriends();
   const { respondToPartnerRequest } = useAccountabilityPartners();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [isHandled, setIsHandled] = useState(false);
-  const [requestStatus, setRequestStatus] = useState<string | null>(null);
   
   // Partner accept dialog state
   const [showPartnerDialog, setShowPartnerDialog] = useState(false);
   const [theyCanViewMyGoals, setTheyCanViewMyGoals] = useState(true);
   const [iCanViewTheirGoals, setICanViewTheirGoals] = useState(true);
 
-  // Check if the request has already been handled (accepted/rejected elsewhere)
-  useEffect(() => {
-    if (!notification.related_request_id) return;
-
-    const checkRequestStatus = async () => {
-      if (notification.type === 'friend_request') {
-        const { data } = await supabase
-          .from('friend_requests')
-          .select('status')
-          .eq('id', notification.related_request_id)
-          .single();
-        if (data && data.status !== 'pending') {
-          setRequestStatus(data.status);
-          setIsHandled(true);
-        }
-      } else if (notification.type === 'accountability_partner_request') {
-        const { data } = await supabase
-          .from('accountability_partner_requests')
-          .select('status')
-          .eq('id', notification.related_request_id)
-          .single();
-        if (data && data.status !== 'pending') {
-          setRequestStatus(data.status);
-          setIsHandled(true);
-        }
-      }
-    };
-
-    checkRequestStatus();
-  }, [notification.related_request_id, notification.type]);
+  // Determine if this request is still pending based on already-fetched data.
+  // A partner request is pending if its ID exists in pendingPartnerRequestIds.
+  // A friend request is pending if its ID exists in pendingFriendRequestIds.
+  // This avoids per-notification DB queries on every render.
 
   const handleClick = async () => {
     let destination: string | null = null;
@@ -280,8 +256,19 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
 
   const isFriendRequest = notification.type === 'friend_request';
   const isPartnerRequest = notification.type === 'accountability_partner_request';
-  const showFriendRequestActions = isFriendRequest && notification.related_request_id && !isHandled;
-  const showPartnerRequestActions = isPartnerRequest && notification.related_request_id && !isHandled;
+
+  // Request is still actionable only if its ID is still in the pending set (from parent).
+  // If pendingXxxRequestIds is undefined (prop not passed), fall back to local isHandled only.
+  const friendRequestStillPending = notification.related_request_id
+    ? (pendingFriendRequestIds ? pendingFriendRequestIds.has(notification.related_request_id) : !isHandled)
+    : false;
+  const partnerRequestStillPending = notification.related_request_id
+    ? (pendingPartnerRequestIds ? pendingPartnerRequestIds.has(notification.related_request_id) : !isHandled)
+    : false;
+
+  const showFriendRequestActions = isFriendRequest && notification.related_request_id && friendRequestStillPending && !isHandled;
+  const showPartnerRequestActions = isPartnerRequest && notification.related_request_id && partnerRequestStillPending && !isHandled;
+  const alreadyHandled = (isFriendRequest && !friendRequestStillPending) || (isPartnerRequest && !partnerRequestStillPending) || isHandled;
 
   const senderName = notification.triggered_by?.full_name || 'Someone';
   const senderFirstName = senderName.split(' ')[0];
@@ -377,12 +364,10 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead }: Not
             )}
 
             {/* Show handled state */}
-            {(isFriendRequest || isPartnerRequest) && isHandled && (
+            {(isFriendRequest || isPartnerRequest) && alreadyHandled && (
               <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
                 <CheckCircle className="h-3 w-3" />
-                <span>
-                  {requestStatus === 'accepted' ? 'Already partners' : requestStatus === 'rejected' ? 'Declined' : 'Already responded'}
-                </span>
+                <span>Already partners</span>
               </div>
             )}
           </div>
