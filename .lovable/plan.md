@@ -1,89 +1,65 @@
 
-## Redesign: Phone Verification UX — Verified State
+## Fix: "Weekly Note" UX on Partner Dashboard
 
-### Problem
-When a phone is verified, the current UI shows three overlapping elements:
-1. A full-width disabled text input with the phone number
-2. A "Change" button
-3. A separate green banner below repeating "is verified. SMS notifications are active."
+### The Problem
 
-This is visually noisy and redundant. The user's screenshot confirms this.
+The "Leave a note about this week..." input is a **check-in message sender** — when submitted, the message appears in the Check-in History feed below. But right now it's:
 
-### New Verified State Design
+1. **Placed inside the Weekly Performance card** (objectives list) — making it look like a personal note about the week's data, not a message to your partner
+2. **Has no label or context** — the placeholder text alone is ambiguous; there's no indication that this sends a message
+3. **Disconnected from the Check-in History** — the actual destination (Check-in History feed) is a collapsed card further below the page
 
-Replace the entire verified state with a **single compact row** that shows:
+### The Fix
 
+**Move the quick-reply field out of the Weekly Performance card and into the Check-in History card.** This is where it logically belongs — right above (or below) the feed of messages.
+
+**Before:**
 ```
-┌──────────────────────────────────────────────────────────┐
-│  📱  Phone Number                          ✅ Verified   │
-│                                                          │
-│  +13133203922                           [Change Number]  │
-└──────────────────────────────────────────────────────────┘
-```
+┌─ Weekly Performance Card ──────────────────┐
+│  [week nav]  This Week                      │
+│  [progress bar]  0%                         │
+│  [0 active habits]                          │
+│  No objectives set for this week.           │
+│                                             │
+│  ┌──────────────────────────────────┐ [→]  │  ← CONFUSING: send button here
+│  │ Leave a note about this week...  │      │
+│  └──────────────────────────────────┘      │
+└────────────────────────────────────────────┘
 
-- The phone number is shown as plain text (not an input) — clean, not editable
-- "Change Number" is a small ghost/link-style button that resets the flow
-- The "Verified" badge is in the header right — minimal and clear
-- No green banner below — the badge alone signals verified status
-- The card shrinks to a tight 2-row layout when verified
-
-### Unverified / Entry State (unchanged in function, refined in style)
-- Phone entry: input + "Send Code" button on one row
-- If phone exists but unverified: amber "Not verified" badge, with pre-filled number
-- OTP entry: OTP boxes + Verify button + resend timer (kept, works well)
-
-### What Changes
-
-**`src/components/profile/PhoneVerificationSection.tsx`**
-
-1. **Verified state** — remove the disabled input + "Change" button row entirely. Replace with a compact display:
-   - Phone number as `<p>` text with a phone icon
-   - "Change number" as an inline text button (small, muted, underline style)
-   - Remove the green banner `div` below — the header badge is sufficient
-
-2. **Idle/unverified state** — tighten up the label: remove the verbose "(E.164 format, e.g. +12025551234)" inline label text. Move the format hint to a `<p className="text-xs text-muted-foreground">` below the input instead, so the label reads cleanly as just "Phone Number".
-
-3. **Card structure when verified** — use a single-row `CardContent` with flex layout instead of the multi-section layout that currently renders.
-
-### Exact Verified State Before → After
-
-**Before (3 separate UI elements):**
-```jsx
-// Element 1: disabled input row
-<div className="space-y-2">
-  <Label>Phone Number (E.164 format...)</Label>
-  <div className="flex gap-2">
-    <Input disabled value={phoneInput} />
-    <Button onClick={handleChangeNumber}>Change</Button>
-  </div>
-</div>
-
-// Element 2: green banner
-<div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-primary/10 border border-primary/20">
-  <CheckCircle2 />
-  <p>{currentPhone} is verified. SMS notifications are active.</p>
-</div>
+┌─ Check-in History (collapsed) ─────────────┐
+│  [New Check-in]                  [chevron] │
+└────────────────────────────────────────────┘
 ```
 
-**After (1 clean compact layout):**
-```jsx
-<div className="flex items-center justify-between py-1">
-  <div className="flex items-center gap-2">
-    <span className="text-sm font-medium text-foreground">{currentPhone}</span>
-  </div>
-  <button
-    onClick={handleChangeNumber}
-    className="text-xs text-muted-foreground hover:text-foreground underline"
-  >
-    Change number
-  </button>
-</div>
+**After:**
 ```
+┌─ Weekly Performance Card ──────────────────┐
+│  [week nav]  This Week                      │
+│  [progress bar]  0%                         │
+│  [0 active habits]                          │
+│  No objectives set for this week.           │
+└────────────────────────────────────────────┘
+
+┌─ Check-in History ─────────────────────────┐
+│  💬 Check-in History      [New Check-in]   │
+│  ─────────────────────────────────────────  │
+│  [Quick Reply to {PartnerName}...]   [→]   │  ← CLEAR: inside check-in card
+│  ─────────────────────────────────────────  │
+│  [message feed, collapsed by default]       │
+└────────────────────────────────────────────┘
+```
+
+### Additional UX Improvements
+
+1. **Better placeholder text**: Change from `"Leave a note about this week..."` → `"Send {partnerName} a quick message..."`  
+2. **Label above the input**: Add a small `"Quick message"` label so the purpose is immediately clear
+3. **Expand the feed on send**: When a note is sent via the quick field, auto-open the collapsible Check-in History so the user sees the message they just sent appear in the feed
+4. **Remove the border-t separator** that currently makes the note field look visually attached to the objectives list
 
 ### Files Changed
 
 | File | Change |
 |---|---|
-| `src/components/profile/PhoneVerificationSection.tsx` | Redesign the verified state to a single compact row; tighten the idle state label |
+| `src/pages/PartnerDashboard.tsx` | Remove the weekly note section from inside the Weekly Performance `CardContent`; add it to the Check-in History card, above the `CollapsibleContent` feed, always visible (not inside the collapsible) |
 
-No backend, database, or other files need to change.
+No new components, hooks, database changes, or dependencies needed.
