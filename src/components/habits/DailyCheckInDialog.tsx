@@ -718,7 +718,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               </DrawerDescription>
             )}
           </DrawerHeader>
-          <div className="px-4 overflow-y-auto flex-1 pb-4 relative overflow-x-hidden">
+          <div className="overflow-y-auto flex-1 pb-4 relative overflow-x-hidden px-[calc(1rem+2px)]">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
                 key={view}
@@ -783,7 +783,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="py-4 relative overflow-x-hidden">
+        <div className="py-4 relative overflow-x-hidden px-0.5">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={view}
