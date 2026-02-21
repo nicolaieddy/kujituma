@@ -13,6 +13,8 @@ import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { CheckInHeatmap } from "@/components/rituals/CheckInHeatmap";
+import { JournalingStreaksCard } from "@/components/habits/JournalingStreaksCard";
+import { MonthlyDigestCard } from "@/components/habits/MonthlyDigestCard";
 import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 
@@ -91,6 +93,16 @@ export const DailyCheckInHistory = () => {
                 <CheckInHeatmap checkIns={checkIns} weeks={10} />
               </CardContent>
             </Card>
+          )}
+
+          {/* Writing Stats */}
+          {checkIns.length > 0 && (
+            <JournalingStreaksCard checkIns={checkIns} />
+          )}
+
+          {/* Monthly Digest */}
+          {checkIns.length > 0 && (
+            <MonthlyDigestCard checkIns={checkIns} />
           )}
 
           {/* Analytics Summary */}
