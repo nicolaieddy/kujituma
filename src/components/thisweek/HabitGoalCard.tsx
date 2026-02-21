@@ -2,12 +2,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Progress } from "@/components/ui/progress";
 import { Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle, Zap } from "lucide-react";
 import { HabitItem } from "@/types/goals";
 import { cn } from "@/lib/utils";
-import { format, isToday, isBefore } from "date-fns";
-import { HabitProgressDots } from "./HabitProgressDots";
+import { format, isToday } from "date-fns";
 import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -107,81 +105,103 @@ export const HabitGoalCard = ({
     });
   };
 
+  // Today's inline checkboxes for collapsed view
+  const todayHabits = habitItems.map(item => {
+    const status = getCompletionStatus(item.id);
+    const isDue = isDailyTracking(item.frequency, item)
+      ? getDaysToShow(item.frequency, item).includes(todayIndex)
+      : true;
+    const isCompleted = isDailyTracking(item.frequency, item)
+      ? (todayIndex >= 0 && status[todayIndex])
+      : isWeeklyHabitCompleted(item.id);
+    return { item, isDue, isCompleted };
+  });
+
   return (
-    <div
-      className={cn(
-        "rounded-lg border transition-all",
-        allDoneToday
-          ? "border-l-[3px] border-l-success border-success/20 bg-success/5"
-          : nothingDone
-          ? "border-l-[3px] border-l-amber-400 border-amber-400/20 bg-amber-50/5"
-          : "border-border bg-background/50"
-      )}
-    >
-      {/* Collapsed Header */}
+    <div className="rounded-md border border-border/60 transition-all">
+      {/* Collapsed: single-line with inline today checkboxes */}
       <div
         onClick={onToggleExpanded}
-        className="flex items-center gap-3 p-2 sm:p-3 cursor-pointer hover:bg-primary/5 transition-colors"
+        className="flex items-center gap-2 py-1.5 px-2 cursor-pointer hover:bg-muted/40 transition-colors"
       >
         <Button
           variant="ghost"
           size="icon"
-          className="h-6 w-6 p-0 flex-shrink-0"
+          className="h-5 w-5 p-0 flex-shrink-0"
           onClick={(e) => { e.stopPropagation(); onToggleExpanded(); }}
         >
           {isExpanded ? (
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
           ) : (
-            <ChevronRight className="h-4 w-4" />
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
           )}
         </Button>
 
-        <div className="flex-1 min-w-0 space-y-1.5">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-sm font-medium truncate">{goalTitle}</p>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              {/* Streak badge */}
-              {goalStreakTotal > 0 && (
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "text-xs gap-1 px-2",
-                    goalHasAtRisk
-                      ? "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-700/30"
-                      : "bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-700/30"
-                  )}
-                >
-                  <Flame className="h-3 w-3" />
-                  {goalStreakTotal}d
-                  {goalHasAtRisk && <AlertTriangle className="h-2.5 w-2.5" />}
-                </Badge>
-              )}
-              {/* Today's count */}
+        <p className="text-sm font-medium truncate min-w-0 flex-shrink">{goalTitle}</p>
+
+        {/* Inline today's checkboxes (collapsed only) */}
+        {!isExpanded && (
+          <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
+            {todayHabits.filter(h => h.isDue).map(({ item, isCompleted }) => (
+              <Tooltip key={item.id}>
+                <TooltipTrigger asChild>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={isCompleted}
+                      disabled={isToggling || isReadOnly}
+                      onCheckedChange={() => {
+                        if (!isReadOnly) {
+                          if (isDailyTracking(item.frequency, item)) {
+                            handleDayToggle(goalId, item.id, todayIndex);
+                          } else {
+                            handleWeeklyToggle(goalId, item.id);
+                          }
+                        }
+                      }}
+                      className={cn(
+                        "h-5 w-5 rounded",
+                        isCompleted && "bg-success border-success",
+                        isReadOnly && "cursor-not-allowed"
+                      )}
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">
+                  <p className="text-xs">{item.text}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+            {allDoneToday && totalDueToday > 0 && (
+              <Check className="h-3.5 w-3.5 text-success flex-shrink-0" />
+            )}
+          </div>
+        )}
+
+        {/* Expanded header: just show count */}
+        {isExpanded && (
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+            {goalStreakTotal > 0 && (
               <Badge
-                variant={allDoneToday ? "default" : "outline"}
+                variant="secondary"
                 className={cn(
-                  "text-xs",
-                  allDoneToday && "bg-success text-success-foreground"
+                  "text-xs gap-0.5 px-1.5",
+                  goalHasAtRisk
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                    : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                 )}
               >
-                {completedToday}/{totalDueToday}
+                <Flame className="h-3 w-3" />
+                {goalStreakTotal}d
               </Badge>
-            </div>
+            )}
+            <Badge
+              variant={allDoneToday ? "default" : "outline"}
+              className={cn("text-xs", allDoneToday && "bg-success text-success-foreground")}
+            >
+              {completedToday}/{totalDueToday}
+            </Badge>
           </div>
-
-          {/* Progress bar (collapsed only) */}
-          {!isExpanded && totalDueToday > 0 && (
-            <div className="flex items-center gap-2">
-              <Progress value={progressPercent} animated={false} className="h-1.5 flex-1" />
-              <HabitProgressDots
-                habits={todayCompletions.filter(h => h.isDue).map(h => ({
-                  text: h.text,
-                  isCompleted: h.isCompleted,
-                }))}
-              />
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {/* Expanded Habit Items */}
