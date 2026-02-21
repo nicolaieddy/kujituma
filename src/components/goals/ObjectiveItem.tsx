@@ -243,7 +243,7 @@ const ObjectiveContent = ({
       
       {goalName && (
         <div className="flex items-center gap-1 ml-1 sm:ml-2 max-w-[100px] sm:max-w-none">
-          <Target className="h-3 w-3 text-muted-foreground flex-shrink-0 hidden sm:block" />
+          <Target className="h-3 w-3 text-muted-foreground flex-shrink-0" />
           <span className="text-xs text-muted-foreground truncate">→ {goalName}</span>
           {!isWeekCompleted && (
             <Button
@@ -251,7 +251,7 @@ const ObjectiveContent = ({
               variant="ghost"
               size="sm"
               onClick={() => onEditGoal(objective.id, objective.goal_id)}
-              className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground hover:bg-accent flex-shrink-0 hidden sm:flex"
+              className="h-4 w-4 p-0 text-muted-foreground hover:text-foreground hover:bg-accent flex-shrink-0"
             >
               <Pencil className="h-3 w-3" />
             </Button>
@@ -276,15 +276,15 @@ const ObjectiveContent = ({
           variant="ghost"
           size="sm"
           onClick={() => onEditGoal(objective.id, objective.goal_id)}
-          className="hidden sm:flex h-6 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent ml-2"
+          className="flex h-6 px-1 sm:px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-accent ml-1 sm:ml-2"
         >
-          <Target className="h-3 w-3 mr-1" />
-          Link goal
+          <Target className="h-3 w-3 sm:mr-1" />
+          <span className="hidden sm:inline">Link goal</span>
         </Button>
       )}
       
       {!isWeekCompleted && onUpdateObjectiveSchedule && currentWeekStart && (
-        <div className="hidden sm:block">
+        <div>
           <ObjectiveTimeBlocker
             scheduledDay={objective.scheduled_day}
             scheduledTime={objective.scheduled_time}

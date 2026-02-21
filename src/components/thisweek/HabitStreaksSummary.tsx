@@ -89,10 +89,10 @@ export const HabitStreaksSummary = ({
       </div>
 
       {/* Divider */}
-      <div className="h-8 w-px bg-border hidden sm:block" />
+      <div className="h-8 w-px bg-border" />
 
       {/* Active Habits Count */}
-      <div className="hidden sm:flex items-center gap-2">
+      <div className="flex items-center gap-2">
         <div className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/20">
           <Target className="h-4 w-4 text-primary" />
         </div>
