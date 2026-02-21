@@ -141,11 +141,11 @@ export const ObjectiveCommentsSheet = ({
                             </button>
                           </PopoverTrigger>
                           <PopoverContent
-                            className="w-auto p-2"
+                            className="w-auto p-2 z-[60]"
                             side={isMe ? "left" : "right"}
                             align="center"
-                            onPointerDownOutside={(e) => e.stopPropagation()}
-                            onInteractOutside={(e) => e.stopPropagation()}
+                            onPointerDownOutside={(e) => { e.stopPropagation(); e.preventDefault(); }}
+                            onInteractOutside={(e) => { e.stopPropagation(); e.preventDefault(); }}
                           >
                             <div className="flex gap-1">
                               {EMOJI_OPTIONS.map((emoji) => {
