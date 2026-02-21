@@ -48,12 +48,6 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendi
   // This avoids per-notification DB queries on every render.
 
   const handleClick = async () => {
-    // Close popover and mark as read immediately
-    onMarkRead();
-    if (!notification.is_read) {
-      onMarkAsRead(notification.id).catch(() => {});
-    }
-
     let destination: string | null = null;
 
     switch (notification.type) {
@@ -143,8 +137,15 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendi
         break;
     }
 
+    // Navigate FIRST, then close popover and mark as read
+    // This prevents the component unmount from interrupting navigation
     if (destination) {
       navigate(destination);
+    }
+
+    onMarkRead();
+    if (!notification.is_read) {
+      onMarkAsRead(notification.id).catch(() => {});
     }
   };
 
