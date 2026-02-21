@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -107,6 +107,37 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
   const [view, setView] = useState<'checkin' | 'settings'>('checkin');
+
+  const DRAFT_KEY = 'daily-checkin-draft';
+
+  // Save draft to localStorage on changes (debounced via effect)
+  const draftTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => {
+    if (!hasInitialized || !open) return;
+    // Don't save drafts if there's already a saved check-in for today
+    const today = format(new Date(), 'yyyy-MM-dd');
+    if (todayCheckIn && todayCheckIn.check_in_date === today) return;
+
+    draftTimeoutRef.current = setTimeout(() => {
+      const draft = {
+        date: today,
+        moodRating,
+        energyLevel,
+        focusToday,
+        journalEntry,
+        customAnswers,
+      };
+      // Only save if there's meaningful content
+      if (focusToday || journalEntry || Object.values(customAnswers).some(v => v)) {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      }
+    }, 500);
+    return () => clearTimeout(draftTimeoutRef.current);
+  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, hasInitialized, open, todayCheckIn]);
+
+  const clearDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+  }, []);
   
   // Reset form state when dialog opens - only populate if todayCheckIn matches today's date
   useEffect(() => {
@@ -121,23 +152,50 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         setEnergyLevel(todayCheckIn.energy_level || 3);
         setFocusToday(todayCheckIn.focus_today || "");
         setJournalEntry(todayCheckIn.journal_entry || "");
-        // Restore custom answers
         const saved = (todayCheckIn as any).custom_answers;
         setCustomAnswers(saved && typeof saved === 'object' ? saved : {});
       } else {
-        // Clear form for new day
-        setMoodRating(3);
-        setEnergyLevel(3);
-        setFocusToday("");
-        setJournalEntry("");
-        setCustomAnswers({});
+        // Try to restore draft
+        try {
+          const raw = localStorage.getItem(DRAFT_KEY);
+          if (raw) {
+            const draft = JSON.parse(raw);
+            if (draft.date === today) {
+              setMoodRating(draft.moodRating ?? 3);
+              setEnergyLevel(draft.energyLevel ?? 3);
+              setFocusToday(draft.focusToday ?? "");
+              setJournalEntry(draft.journalEntry ?? "");
+              setCustomAnswers(draft.customAnswers && typeof draft.customAnswers === 'object' ? draft.customAnswers : {});
+            } else {
+              // Stale draft from a different day — clear it
+              clearDraft();
+              setMoodRating(3);
+              setEnergyLevel(3);
+              setFocusToday("");
+              setJournalEntry("");
+              setCustomAnswers({});
+            }
+          } else {
+            setMoodRating(3);
+            setEnergyLevel(3);
+            setFocusToday("");
+            setJournalEntry("");
+            setCustomAnswers({});
+          }
+        } catch {
+          setMoodRating(3);
+          setEnergyLevel(3);
+          setFocusToday("");
+          setJournalEntry("");
+          setCustomAnswers({});
+        }
       }
       // Reset edit states
       setIsEditingJournal(false);
       setIsEditingFocus(false);
       setHasInitialized(true);
     }
-  }, [open, todayCheckIn]);
+  }, [open, todayCheckIn, clearDraft]);
 
   // Get greeting
   const greeting = useMemo(() => getGreeting(user?.user_metadata?.full_name), [user]);
@@ -317,6 +375,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       journal_entry: journalEntry || undefined,
       custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : undefined,
     });
+    clearDraft();
     onOpenChange(false);
   };
 
