@@ -159,7 +159,7 @@ export const NotificationBell = () => {
                 <NotificationItem
                   key={notification.id}
                   notification={notification}
-                  onMarkRead={() => setIsOpen(false)}
+                  onMarkRead={() => setTimeout(() => setIsOpen(false), 0)}
                   onMarkAsRead={markAsRead}
                   pendingPartnerRequestIds={pendingPartnerRequestIds}
                   pendingFriendRequestIds={pendingFriendRequestIds}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ import { format, startOfWeek, addWeeks, subWeeks, isSameWeek, formatDistanceToNo
 const PartnerDashboard = () => {
   const { partnerId } = useParams<{ partnerId: string }>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   
   const [selectedWeekStart, setSelectedWeekStart] = useState<Date>(() => 
@@ -107,6 +108,31 @@ const PartnerDashboard = () => {
       navigate('/auth');
     }
   }, [authLoading, user, navigate]);
+
+  // Deep-link: open comments sheet from URL param (e.g. from notification click)
+  useEffect(() => {
+    const openCommentsId = searchParams.get('openComments');
+    if (openCommentsId && weeklyObjectives.length > 0) {
+      const obj = weeklyObjectives.find(o => o.id === openCommentsId);
+      if (obj) {
+        setCommentsObjectiveId(obj.id);
+        setCommentsObjectiveText(obj.text);
+        // Also navigate to the correct week if needed
+        if (obj.week_start) {
+          const objWeek = startOfWeek(new Date(obj.week_start + 'T00:00:00'), { weekStartsOn: 1 });
+          if (!isSameWeek(objWeek, selectedWeekStart, { weekStartsOn: 1 })) {
+            setSelectedWeekStart(objWeek);
+          }
+        }
+      }
+      // Clean up the URL param
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.delete('openComments');
+        return next;
+      }, { replace: true });
+    }
+  }, [searchParams, weeklyObjectives]);
 
   const handleRecordCheckIn = async (message?: string) => {
     if (!partnershipDetails || !currentUserProfile) {
