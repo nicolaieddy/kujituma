@@ -15,8 +15,10 @@ export const useCommentReactions = (commentIds: string[]) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const sortedKey = [...commentIds].sort().join(",");
+
   const { data: reactions = [] } = useQuery({
-    queryKey: ["comment-reactions", commentIds.sort().join(",")],
+    queryKey: ["comment-reactions", sortedKey],
     queryFn: async () => {
       if (!commentIds.length) return [];
       const { data, error } = await supabase
@@ -27,7 +29,7 @@ export const useCommentReactions = (commentIds: string[]) => {
       return data as CommentReaction[];
     },
     enabled: !!user && commentIds.length > 0,
-    staleTime: 15 * 1000,
+    staleTime: 5 * 1000,
   });
 
   // Group reactions by comment_id → emoji → users
