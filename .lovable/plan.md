@@ -1,67 +1,74 @@
 
 
-# Habits This Week - UX Redesign
+# Habits Section: Reduce Prominence
 
-## Current Issues
+## Problem
+The habits section currently takes up too much vertical space and visual weight. As a user, you want to quickly check off today's habits and then focus on your objectives -- the primary content of the weekly view.
 
-- Collapsed goal cards show minimal info ("3 habits", "2 habits") -- no at-a-glance progress
-- No visual indication of today's completion status without expanding
-- Streak indicators are tiny and easy to miss
-- All cards look the same regardless of completion state
-- The expand/collapse chevron is generic and uninviting
-- No progress bars or visual momentum cues
+## Proposed Redesign: Compact Habit Strip
 
-## Proposed Redesign
+Replace the current full card with a slim, lightweight section that prioritizes speed of interaction over information density.
 
-### 1. Progress Bar on Each Collapsed Goal Card
+### Key Changes
 
-Add a slim progress bar below the goal title showing today's completion ratio (e.g., 2/3 habits done). This gives instant feedback without expanding.
+1. **Remove the outer Card wrapper** -- no CardHeader/CardTitle chrome. Replace with a simple section that blends into the page rather than demanding attention.
 
-### 2. Inline Habit Previews on Collapsed Cards
+2. **Single-line collapsed view per goal** -- each goal shows: title, today's checkboxes inline (not hidden behind expand), and a small progress indicator. No progress bar, no dots row -- just the checkboxes themselves.
 
-Show small completion dots or mini checkmarks for each habit item directly on the collapsed card row, so users can see which habits are done/pending without expanding.
+3. **Today-first layout** -- show only today's habit checkboxes directly on the collapsed row. The full M-T-W-T-F-S-S grid only appears when expanded (for reviewing the week). This cuts vertical space dramatically.
 
-### 3. Visual State Differentiation
+4. **Smaller section header** -- replace the current bold card title with a subtle label like "Habits" with a small completion count, styled as a muted sub-heading rather than a card title.
 
-- **All done today**: Card gets a subtle green left border and background tint
-- **Partially done**: Default style with progress bar showing how far along
-- **Nothing done yet**: Subtle amber/warm accent to draw attention
+5. **Move streak badges to expanded view only** -- streaks are motivating but not needed at first glance. Show them only when a goal is expanded.
 
-### 4. Streak Badges Redesigned
+6. **Remove the Duolingo integration card from this section** -- it adds visual bulk. Move it to a collapsible area or only show it in expanded view.
 
-Replace the small inline "6d" text with a more prominent pill badge on the card (e.g., a flame icon with "6 day streak" in a rounded badge). Make at-risk streaks visually urgent with a warm amber background.
+### Visual Comparison
 
-### 5. Auto-Expand Today's Priority
+**Before (current):**
+```text
++------------------------------------------+
+| [icon] Habits This Week    [streaks] [3/5]|
+|------------------------------------------|
+| > Goal A          [streak] [2/3]         |
+|   [====progress bar====] [o o .]         |
+|                                          |
+| v Goal B          [streak] [1/2]         |
+|   [Complete All]                         |
+|   Habit 1   M T W T F S S               |
+|   Habit 2   M T W T F S S               |
++------------------------------------------+
+```
 
-Goals with habits due today that are not yet completed will be expanded by default, reducing the number of clicks needed. Already-completed goals collapse automatically.
+**After (proposed):**
+```text
+Habits                              2/5 today
+--------------------------------------------
+Goal A    [x] Habit1  [x] Habit2  [ ] Habit3  >
+Goal B    [x] Habit1  [ ] Habit2              >
+```
 
-### 6. Improved Expanded View
-
-- Add a subtle habit name + checkbox inline row (less indentation, cleaner spacing)
-- Show the day grid (M T W T F S S) more prominently with larger touch targets on mobile
-- Add a "Complete All" quick action when multiple habits are pending
-
----
+Each row is a single line. Clicking the chevron or row expands to show the full week grid. The section takes roughly 30-40% of the current vertical space.
 
 ## Technical Details
 
 ### Files to Modify
 
-**`src/components/thisweek/HabitsDueThisWeek.tsx`** (main changes)
+**`src/components/thisweek/HabitsDueThisWeek.tsx`**
+- Remove the outer `Card`, `CardHeader`, `CardTitle` wrapper
+- Replace with a simple `div` with a muted heading ("Habits") and inline completion count
+- Remove the Duolingo section from the top level (move inside expanded goal or remove entirely)
+- Remove the active-streaks badge from the header
 
-1. **Auto-expand logic**: Initialize `expandedGoals` state with goals that have incomplete habits due today
-2. **Collapsed card redesign**:
-   - Add a thin `Progress` bar component below the title showing `completedToday / totalDueToday`
-   - Render mini completion indicators (small colored dots) for each habit item
-   - Apply conditional left-border and bg colors based on completion state
-3. **Streak badge upgrade**: Replace `<Flame>` + text with a styled pill `<Badge>` containing the streak count and status
-4. **"Complete All" button**: When expanded and multiple habits are pending, show a bulk-complete button that iterates through `handleDayToggle` for each unchecked daily habit
-5. **Larger day checkboxes on mobile**: Increase checkbox size from `h-6 w-6` to `h-8 w-8` on small screens using responsive classes
+**`src/components/thisweek/HabitGoalCard.tsx`**
+- Redesign collapsed view: show today's habit names with inline checkboxes on one line (no progress bar, no dots component)
+- Move streak badges to only appear in expanded view
+- Keep the expanded view mostly as-is (full week grid) since it's opt-in
+- Remove the left-border color states (green/amber) to reduce visual noise -- use a subtle check icon instead when all done
+- Reduce padding from `p-2 sm:p-3` to `py-1.5 px-2` for compactness
 
-### New Sub-Components (extracted for clarity)
+**`src/components/thisweek/HabitProgressDots.tsx`**
+- No longer used in collapsed view (still available if needed elsewhere)
 
-- **`HabitGoalCard`**: Extracted collapsed/expanded goal card (keeps the main file cleaner)
-- **`HabitProgressDots`**: Row of small colored dots showing per-habit completion at a glance
-
-### No new dependencies required. Uses existing `Progress`, `Badge`, `Checkbox`, and `cn()` utilities.
+### No new dependencies or files needed.
 
