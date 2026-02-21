@@ -144,6 +144,8 @@ export const ObjectiveCommentsSheet = ({
                             className="w-auto p-2"
                             side={isMe ? "left" : "right"}
                             align="center"
+                            onPointerDownOutside={(e) => e.stopPropagation()}
+                            onInteractOutside={(e) => e.stopPropagation()}
                           >
                             <div className="flex gap-1">
                               {EMOJI_OPTIONS.map((emoji) => {
@@ -151,7 +153,10 @@ export const ObjectiveCommentsSheet = ({
                                 return (
                                   <button
                                     key={emoji}
-                                    onClick={() => toggleReaction({ commentId: comment.id, emoji })}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleReaction({ commentId: comment.id, emoji });
+                                    }}
                                     className={cn(
                                       "text-lg p-1.5 rounded-md hover:bg-muted transition-colors",
                                       isMine && "bg-primary/10 ring-1 ring-primary/30"
