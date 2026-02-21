@@ -43,9 +43,18 @@ export const useCommentReactions = (commentIds: string[]) => {
 
   const toggleReaction = useMutation({
     mutationFn: async ({ commentId, emoji }: { commentId: string; emoji: string }) => {
-      const existing = reactions.find(
-        (r) => r.comment_id === commentId && r.emoji === emoji && r.user_id === user!.id
-      );
+      if (!user?.id) throw new Error("Not authenticated");
+      
+      // Always query the DB for the existing reaction to avoid stale closure issues
+      const { data: existing, error: fetchError } = await supabase
+        .from("objective_comment_reactions")
+        .select("id")
+        .eq("comment_id", commentId)
+        .eq("emoji", emoji)
+        .eq("user_id", user.id)
+        .maybeSingle();
+      
+      if (fetchError) throw fetchError;
 
       if (existing) {
         const { error } = await supabase
@@ -56,7 +65,7 @@ export const useCommentReactions = (commentIds: string[]) => {
       } else {
         const { error } = await supabase
           .from("objective_comment_reactions")
-          .insert({ comment_id: commentId, user_id: user!.id, emoji });
+          .insert({ comment_id: commentId, user_id: user.id, emoji });
         if (error) throw error;
       }
     },
