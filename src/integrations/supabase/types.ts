@@ -1024,6 +1024,27 @@ export type Database = {
           },
         ]
       }
+      journal_access_log: {
+        Row: {
+          accessed_at: string | null
+          action: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          accessed_at?: string | null
+          action: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          accessed_at?: string | null
+          action?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -2214,6 +2235,29 @@ export type Database = {
           objective_text: string
           rank: number
         }[]
+      }
+      get_safe_check_in_data: {
+        Args: { p_user_id: string }
+        Returns: {
+          blocker: string | null
+          check_in_date: string
+          created_at: string
+          custom_answers: Json | null
+          energy_level: number | null
+          focus_today: string | null
+          id: string
+          journal_entry: string | null
+          mood_rating: number | null
+          quick_win: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "daily_check_ins"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_user_friends: {
         Args: { _user_id?: string }
