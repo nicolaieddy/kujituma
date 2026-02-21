@@ -48,9 +48,11 @@ const Goals = () => {
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
-  const [currentWeekStart, setCurrentWeekStart] = useState<string>(
-    WeeklyProgressService.getWeekStart()
-  );
+  const [currentWeekStart, setCurrentWeekStart] = useState<string>(() => {
+    // If navigated with a ?week= param (e.g. from a notification), use it
+    const weekParam = searchParams.get('week');
+    return weekParam || WeeklyProgressService.getWeekStart();
+  });
   
   // Read tab from URL parameter, default to "weekly"
   const tabParam = searchParams.get('tab');
@@ -60,10 +62,12 @@ const Goals = () => {
   // Handle tab changes and sync with URL
   const handleTabChange = (newTab: string) => {
     setActiveTab(newTab);
-    // Clean up URL - remove the tab param after reading it
+    // Clean up tab param only (preserve other params like openComments)
     if (searchParams.has('tab')) {
-      searchParams.delete('tab');
-      setSearchParams(searchParams, { replace: true });
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('tab');
+      newParams.delete('week');
+      setSearchParams(newParams, { replace: true });
     }
   };
   
@@ -71,9 +75,11 @@ const Goals = () => {
   useEffect(() => {
     if (tabParam && (tabParam === 'longterm' || tabParam === 'weekly')) {
       setActiveTab(tabParam);
-      // Clean up URL after setting the tab
-      searchParams.delete('tab');
-      setSearchParams(searchParams, { replace: true });
+      // Clean up tab and week params but preserve openComments for the WeeklyObjectivesList to consume
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('tab');
+      newParams.delete('week');
+      setSearchParams(newParams, { replace: true });
     }
   }, []);
 
