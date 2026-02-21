@@ -1,9 +1,8 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Flame, Check, ChevronRight, Snowflake, AlertTriangle, Zap, Clock, Loader2 } from "lucide-react";
+import { Flame, Check, ChevronRight, Snowflake, AlertTriangle, Zap, Clock, Loader2, RefreshCw } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal, HabitItem } from "@/types/goals";
@@ -253,122 +252,20 @@ export const HabitsDueThisWeek = ({
   if (habits.length === 0) return null;
 
   return (
-    <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent">
-      <CardHeader className="pb-2 sm:pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-            <RefreshCw className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            {isReadOnly ? "Habits Review" : "Habits This Week"}
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            {!isReadOnly && activeStreaks > 0 && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Badge
-                    variant="secondary"
-                    className={cn(
-                      "text-xs gap-1 cursor-help",
-                      atRiskStreaks > 0
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
-                    )}
-                  >
-                    <Flame className="h-3 w-3" />
-                    {activeStreaks} active
-                    {atRiskStreaks > 0 && <AlertTriangle className="h-2.5 w-2.5" />}
-                  </Badge>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="max-w-xs">
-                  <p className="font-medium">{activeStreaks} habit{activeStreaks > 1 ? 's' : ''} with active streaks</p>
-                  {bestDailyStreak > 0 && (
-                    <p className="text-xs text-muted-foreground">Best streak: {bestDailyStreak} days</p>
-                  )}
-                  {atRiskStreaks > 0 && (
-                    <p className="text-yellow-500 text-xs mt-1">{atRiskStreaks} at risk (no freezes left)</p>
-                  )}
-                  {totalFreezesRemaining > 0 && (
-                    <p className="text-muted-foreground text-xs mt-1">
-                      <Snowflake className="h-3 w-3 inline mr-1" />
-                      {totalFreezesRemaining} freeze{totalFreezesRemaining > 1 ? 's' : ''} remaining
-                    </p>
-                  )}
-                </TooltipContent>
-              </Tooltip>
-            )}
-            {habitItemsTotal > 0 && (
-              <Badge variant="outline" className="text-xs">
-                {isReadOnly 
-                  ? `${habitItemsCompletedThisWeek}/${habitItemsExpectedThisWeek} completed` 
-                  : `${habitItemsCompletedToday}/${habitItemsTotal} today`}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        {/* Duolingo Integration */}
-        {duolingoConnected && duolingoConnection && !duolingoLoading && (
-          <div className="flex items-center justify-between p-3 rounded-lg border border-[#58CC02]/30 bg-gradient-to-br from-[#58CC02]/5 to-[#89E219]/5">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-[#58CC02] flex items-center justify-center flex-shrink-0">
-                <span className="text-xl">🦉</span>
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-medium text-sm">Duolingo</p>
-                  {(duolingoConnection.current_streak || 0) > 0 && (
-                    <Badge variant="outline" className="bg-[#58CC02]/10 border-[#58CC02]/30 text-[#58CC02] gap-1 text-xs">
-                      <Check className="h-3 w-3" />
-                      Today
-                    </Badge>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                  <span className="flex items-center gap-1 text-[#FF9600] font-medium">
-                    <Flame className="h-3.5 w-3.5" />
-                    {duolingoConnection.current_streak || 0} day streak
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-yellow-500" />
-                    {duolingoConnection.total_xp?.toLocaleString() || 0} XP
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              {duolingoLastSync && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1 cursor-help">
-                      <Clock className="h-3 w-3" />
-                      {duolingoLastSync}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Last synced {duolingoLastSync}</p>
-                    <p className="text-xs text-muted-foreground">Auto-syncs every 6 hours</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => syncDuolingo()}
-                disabled={duolingoSyncing}
-              >
-                {duolingoSyncing ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-        )}
+    <div className="space-y-1.5">
+      {/* Compact section header */}
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {isReadOnly ? "Habits Review" : "Habits"}
+        </h3>
+        <span className="text-xs text-muted-foreground">
+          {isReadOnly 
+            ? `${habitItemsCompletedThisWeek}/${habitItemsExpectedThisWeek} completed` 
+            : habitItemsTotal > 0 ? `${habitItemsCompletedToday}/${habitItemsTotal} today` : ''}
+        </span>
+      </div>
 
-        {/* Goals with multiple habit items */}
+      {/* Goals with multiple habit items */}
         {goalsWithHabitItems.map((habit) => {
           const goalHabitStreaks = habit.goal.habit_items
             .map(item => getHabitStreak(item.id))
@@ -487,7 +384,6 @@ export const HabitsDueThisWeek = ({
             )}
           </div>
         ))}
-      </CardContent>
-    </Card>
+    </div>
   );
 };
