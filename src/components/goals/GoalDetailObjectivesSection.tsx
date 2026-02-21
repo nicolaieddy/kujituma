@@ -145,8 +145,8 @@ export const GoalDetailObjectivesSection = ({
             }}
           />
           <Select value={editingObjectiveWeek} onValueChange={setEditingObjectiveWeek}>
-            <SelectTrigger className="w-24 h-8">
-              <SelectValue>W{getWeekNumber(editingObjectiveWeek)}</SelectValue>
+            <SelectTrigger className="w-auto min-w-[120px] h-8">
+              <SelectValue>W{getWeekNumber(editingObjectiveWeek)} • {formatWeekRange(editingObjectiveWeek)}</SelectValue>
             </SelectTrigger>
             <SelectContent>
               {weekOptions.map((week) => (
@@ -311,8 +311,8 @@ export const GoalDetailObjectivesSection = ({
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleAddObjective(); } }}
         />
         <Select value={newObjectiveWeek} onValueChange={setNewObjectiveWeek}>
-          <SelectTrigger className="w-28 h-9">
-            <SelectValue>W{getWeekNumber(newObjectiveWeek)}</SelectValue>
+          <SelectTrigger className="w-auto min-w-[120px] h-9">
+            <SelectValue>W{getWeekNumber(newObjectiveWeek)} • {formatWeekRange(newObjectiveWeek)}</SelectValue>
           </SelectTrigger>
           <SelectContent>
             {weekOptions.map((week) => (
