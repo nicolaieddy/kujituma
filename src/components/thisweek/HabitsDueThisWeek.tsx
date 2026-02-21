@@ -3,22 +3,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { RefreshCw, Flame, Check, ChevronRight, ChevronDown, Snowflake, AlertTriangle, Zap, Clock, Loader2 } from "lucide-react";
+import { RefreshCw, Flame, Check, ChevronRight, Snowflake, AlertTriangle, Zap, Clock, Loader2 } from "lucide-react";
 import { HabitStats } from "@/services/habitStreaksService";
 import { WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal, HabitItem } from "@/types/goals";
 import { cn } from "@/lib/utils";
 import { format, startOfWeek, eachDayOfInterval, endOfWeek, isToday, isBefore } from "date-fns";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useHabitCompletions } from "@/hooks/useHabitCompletions";
 import { useDailyStreaks } from "@/hooks/useDailyStreaks";
 import { useSyncedActivities } from "@/hooks/useSyncedActivities";
 import { useActivityMappings } from "@/hooks/useActivityMappings";
-import { StravaActivityBadge } from "@/components/strava/StravaActivityBadge";
 import { celebrateGoalComplete, celebrateWeekComplete } from "@/utils/confetti";
 import { hapticSuccess } from "@/utils/haptic";
 import { toast } from "@/hooks/use-toast";
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
+import { HabitGoalCard } from "./HabitGoalCard";
 
 interface HabitsDueThisWeekProps {
   habits: HabitStats[];
@@ -27,8 +27,6 @@ interface HabitsDueThisWeekProps {
   weekStart?: Date;
   isReadOnly?: boolean;
 }
-
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export const HabitsDueThisWeek = ({ 
   habits, 
@@ -42,7 +40,7 @@ export const HabitsDueThisWeek = ({
   const { streaks: dailyStreaks, getHabitStreak, activeStreaks, atRiskStreaks, totalFreezesRemaining } = useDailyStreaks();
   const { isStravaCompletion, getStravaCompletionsForDate, getStravaCompletionsForHabit, formatDuration, formatDistance } = useSyncedActivities(currentWeekStart);
   const { getMappingForHabitItem } = useActivityMappings();
-  const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+  const [expandedGoals, setExpandedGoals] = useState<Set<string> | null>(null);
 
   // Duolingo integration
   const { 
@@ -53,8 +51,6 @@ export const HabitsDueThisWeek = ({
     syncActivities: syncDuolingo,
     lastSyncDisplay: duolingoLastSync
   } = useDuolingoConnection();
-
-  if (habits.length === 0) return null;
 
   // Get habits with their habit_items (multi-habit goals)
   const goalsWithHabitItems = habits.filter(h => h.goal.habit_items && h.goal.habit_items.length > 0);
@@ -73,12 +69,9 @@ export const HabitsDueThisWeek = ({
   const legacyCompletedCount = legacyHabitsWithStatus.filter(h => h.isCompletedThisWeek).length;
   const totalLegacyCount = legacyHabitsWithStatus.length;
 
-  // Helper functions for frequency checks (defined inline to use before main helpers)
+  // Helper functions for frequency checks
   const getDaysForFrequencyWithItem = (frequency: string, habitItem?: HabitItem): number[] => {
-    // For custom schedules with specific days, convert from 0=Sunday to 0=Monday format
     if (habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
-      // customSchedule.daysOfWeek uses 0=Sunday, but our UI uses 0=Monday
-      // Convert: Sun(0)->6, Mon(1)->0, Tue(2)->1, Wed(3)->2, Thu(4)->3, Fri(5)->4, Sat(6)->5
       return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
     }
     switch (frequency) {
@@ -90,7 +83,6 @@ export const HabitsDueThisWeek = ({
   
   const isFrequencyDailyWithItem = (frequency: string, habitItem?: HabitItem): boolean => {
     if (frequency === 'daily' || frequency === 'weekdays') return true;
-    // Custom frequency with specific days should be treated as daily tracking
     if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
       return true;
     }
@@ -108,31 +100,26 @@ export const HabitsDueThisWeek = ({
     habitItemsTotal += h.goal.habit_items.length;
     h.goal.habit_items.forEach(item => {
       const status = getCompletionStatus(item.id);
-      // Count today's completion
       if (todayIndex >= 0 && status[todayIndex]) {
         habitItemsCompletedToday++;
       }
       
-      // Count weekly expected and completed based on frequency
       const daysToCheck = getDaysForFrequencyWithItem(item.frequency, item);
       const isDailyType = isFrequencyDailyWithItem(item.frequency, item);
       
       if (isDailyType) {
-        // For daily/weekday habits, count expected days up to today
         const expectedDays = daysToCheck.filter(dayIdx => {
           const date = weekDates[dayIdx];
           return date && (isBefore(date, new Date()) || isToday(date));
         }).length;
         habitItemsExpectedThisWeek += expectedDays;
         
-        // Count completed days
         daysToCheck.forEach(dayIdx => {
           if (status[dayIdx]) {
             habitItemsCompletedThisWeek++;
           }
         });
       } else {
-        // For weekly/other habits, just need 1 completion
         habitItemsExpectedThisWeek += 1;
         if (Object.values(status).some(Boolean)) {
           habitItemsCompletedThisWeek++;
@@ -141,16 +128,36 @@ export const HabitsDueThisWeek = ({
     });
   });
 
+  // Auto-expand: goals with incomplete habits due today (only set once on mount)
+  // Uses null as sentinel to know we haven't initialized yet
+  useEffect(() => {
+    if (expandedGoals !== null || isReadOnly) return;
+    
+    const autoExpand = new Set<string>();
+    goalsWithHabitItems.forEach(h => {
+      const hasIncompleteDueToday = h.goal.habit_items.some(item => {
+        const isDailyType = isDailyTracking(item.frequency, item);
+        if (!isDailyType) return false;
+        const daysToShow = getDaysToShow(item.frequency, item);
+        if (todayIndex < 0 || !daysToShow.includes(todayIndex)) return false;
+        const status = getCompletionStatus(item.id);
+        return !status[todayIndex];
+      });
+      if (hasIncompleteDueToday) {
+        autoExpand.add(h.goal.id);
+      }
+    });
+    setExpandedGoals(autoExpand);
+  }, [goalsWithHabitItems.length, todayIndex]);
+
   // Track if all habits for today are complete and celebrate
   const allTodayHabitsComplete = habitItemsTotal > 0 && habitItemsCompletedToday === habitItemsTotal;
   const prevAllTodayCompleteRef = useRef(allTodayHabitsComplete);
   
-  // Track if all weekly habit expectations are met
   const allWeeklyHabitsComplete = habitItemsExpectedThisWeek > 0 && habitItemsCompletedThisWeek >= habitItemsExpectedThisWeek;
   const prevAllWeeklyCompleteRef = useRef(allWeeklyHabitsComplete);
   
   useEffect(() => {
-    // Celebrate daily completion
     if (allTodayHabitsComplete && !prevAllTodayCompleteRef.current) {
       celebrateGoalComplete();
       hapticSuccess();
@@ -159,7 +166,6 @@ export const HabitsDueThisWeek = ({
   }, [allTodayHabitsComplete]);
   
   useEffect(() => {
-    // Celebrate weekly completion - bigger celebration!
     if (allWeeklyHabitsComplete && !prevAllWeeklyCompleteRef.current) {
       celebrateWeekComplete();
       hapticSuccess();
@@ -171,8 +177,10 @@ export const HabitsDueThisWeek = ({
     prevAllWeeklyCompleteRef.current = allWeeklyHabitsComplete;
   }, [allWeeklyHabitsComplete]);
 
+  const currentExpandedGoals = expandedGoals ?? new Set<string>();
+
   const toggleGoalExpanded = (goalId: string) => {
-    const newExpanded = new Set(expandedGoals);
+    const newExpanded = new Set(currentExpandedGoals);
     if (newExpanded.has(goalId)) {
       newExpanded.delete(goalId);
     } else {
@@ -199,15 +207,11 @@ export const HabitsDueThisWeek = ({
     return Object.values(status).filter(Boolean).length;
   };
 
-  // Determine if this habit needs daily checkboxes or just a single weekly checkbox
-  // Custom schedules with specific daysOfWeek OR multiple times per week should show checkboxes
   const isDailyTracking = (frequency: string, habitItem?: HabitItem): boolean => {
     if (frequency === 'daily' || frequency === 'weekdays') return true;
-    // Custom frequency with specific days should show day checkboxes
     if (frequency === 'custom' && habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
       return true;
     }
-    // Custom frequency with multiple times per week (no specific days) should also show day checkboxes
     if (frequency === 'custom' && habitItem?.customSchedule?.timesPerWeek && habitItem.customSchedule.timesPerWeek > 1) {
       return true;
     }
@@ -215,48 +219,39 @@ export const HabitsDueThisWeek = ({
   };
 
   const getDaysToShow = (frequency: string, habitItem?: HabitItem): number[] => {
-    // For custom schedules with specific days, convert from 0=Sunday to 0=Monday format
     if (habitItem?.customSchedule?.daysOfWeek && habitItem.customSchedule.daysOfWeek.length > 0) {
-      // customSchedule.daysOfWeek uses 0=Sunday, but our UI uses 0=Monday
-      // Convert: Sun(0)->6, Mon(1)->0, Tue(2)->1, Wed(3)->2, Thu(4)->3, Fri(5)->4, Sat(6)->5
       return habitItem.customSchedule.daysOfWeek.map(day => day === 0 ? 6 : day - 1);
     }
-    // For "X times per week" without specific days, show all days as available
     if (habitItem?.customSchedule?.timesPerWeek && habitItem.customSchedule.timesPerWeek > 1) {
-      return [0, 1, 2, 3, 4, 5, 6]; // All days available - user picks which days
+      return [0, 1, 2, 3, 4, 5, 6];
     }
     switch (frequency) {
-      case 'daily':
-        return [0, 1, 2, 3, 4, 5, 6]; // All days
-      case 'weekdays':
-        return [0, 1, 2, 3, 4]; // Mon-Fri
-      default:
-        return [0, 1, 2, 3, 4, 5, 6]; // Show all by default (but will use single checkbox UI)
+      case 'daily': return [0, 1, 2, 3, 4, 5, 6];
+      case 'weekdays': return [0, 1, 2, 3, 4];
+      default: return [0, 1, 2, 3, 4, 5, 6];
     }
   };
 
-  // Check if a weekly habit is completed (has at least one completion this week)
   const isWeeklyHabitCompleted = (habitItemId: string): boolean => {
     const status = getCompletionStatus(habitItemId);
     return Object.values(status).some(Boolean);
   };
 
-  // Toggle weekly habit - use today's date or first available date
   const handleWeeklyToggle = (goalId: string, habitItemId: string) => {
-    const todayIndex = weekDates.findIndex(d => isToday(d));
-    const dateIndex = todayIndex >= 0 ? todayIndex : 0;
+    const todayIdx = weekDates.findIndex(d => isToday(d));
+    const dateIndex = todayIdx >= 0 ? todayIdx : 0;
     const date = weekDates[dateIndex];
     if (!date) return;
     toggleCompletion(goalId, habitItemId, date);
   };
 
-  // Calculate aggregate streak info using daily streaks
   const bestDailyStreak = dailyStreaks.reduce((max, s) => Math.max(max, s.longestStreak), 0);
   const avgCompletionRate = habits.length > 0 
     ? Math.round(habits.reduce((sum, h) => sum + h.completionRate, 0) / habits.length) 
     : 0;
 
-  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
+  if (habits.length === 0) return null;
+
   return (
     <Card className="border-border bg-gradient-to-br from-primary/5 to-transparent">
       <CardHeader className="pb-2 sm:pb-3">
@@ -266,17 +261,22 @@ export const HabitsDueThisWeek = ({
             {isReadOnly ? "Habits Review" : "Habits This Week"}
           </CardTitle>
           <div className="flex items-center gap-2">
-            {/* Daily streak summary - show count of active streaks (only for current week) */}
             {!isReadOnly && activeStreaks > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-1 text-orange-500 cursor-help">
-                    <Flame className="h-4 w-4" />
-                    <span className="text-xs font-semibold">{activeStreaks} active</span>
-                    {atRiskStreaks > 0 && (
-                      <AlertTriangle className="h-3 w-3 text-yellow-500" />
+                  <Badge
+                    variant="secondary"
+                    className={cn(
+                      "text-xs gap-1 cursor-help",
+                      atRiskStreaks > 0
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
                     )}
-                  </div>
+                  >
+                    <Flame className="h-3 w-3" />
+                    {activeStreaks} active
+                    {atRiskStreaks > 0 && <AlertTriangle className="h-2.5 w-2.5" />}
+                  </Badge>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="max-w-xs">
                   <p className="font-medium">{activeStreaks} habit{activeStreaks > 1 ? 's' : ''} with active streaks</p>
@@ -284,20 +284,17 @@ export const HabitsDueThisWeek = ({
                     <p className="text-xs text-muted-foreground">Best streak: {bestDailyStreak} days</p>
                   )}
                   {atRiskStreaks > 0 && (
-                    <p className="text-yellow-500 text-xs mt-1">
-                      {atRiskStreaks} at risk (no freezes left)
-                    </p>
+                    <p className="text-yellow-500 text-xs mt-1">{atRiskStreaks} at risk (no freezes left)</p>
                   )}
                   {totalFreezesRemaining > 0 && (
                     <p className="text-muted-foreground text-xs mt-1">
                       <Snowflake className="h-3 w-3 inline mr-1" />
-                      {totalFreezesRemaining} freeze{totalFreezesRemaining > 1 ? 's' : ''} remaining this week
+                      {totalFreezesRemaining} freeze{totalFreezesRemaining > 1 ? 's' : ''} remaining
                     </p>
                   )}
                 </TooltipContent>
               </Tooltip>
             )}
-            {/* Show today badge only for current week, otherwise show completed count */}
             {habitItemsTotal > 0 && (
               <Badge variant="outline" className="text-xs">
                 {isReadOnly 
@@ -313,11 +310,9 @@ export const HabitsDueThisWeek = ({
         {duolingoConnected && duolingoConnection && !duolingoLoading && (
           <div className="flex items-center justify-between p-3 rounded-lg border border-[#58CC02]/30 bg-gradient-to-br from-[#58CC02]/5 to-[#89E219]/5">
             <div className="flex items-center gap-3">
-              {/* Duolingo owl */}
               <div className="w-10 h-10 rounded-full bg-[#58CC02] flex items-center justify-center flex-shrink-0">
                 <span className="text-xl">🦉</span>
               </div>
-              
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <p className="font-medium text-sm">Duolingo</p>
@@ -341,9 +336,7 @@ export const HabitsDueThisWeek = ({
                 </div>
               </div>
             </div>
-
             <div className="flex items-center gap-2">
-              {/* Last sync time */}
               {duolingoLastSync && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -358,8 +351,6 @@ export const HabitsDueThisWeek = ({
                   </TooltipContent>
                 </Tooltip>
               )}
-
-              {/* Sync button */}
               <Button 
                 variant="ghost" 
                 size="icon"
@@ -377,369 +368,45 @@ export const HabitsDueThisWeek = ({
           </div>
         )}
 
-        {/* Goals with multiple habit items (daily checkboxes) */}
+        {/* Goals with multiple habit items */}
         {goalsWithHabitItems.map((habit) => {
-          const isExpanded = expandedGoals.has(habit.goal.id);
-          const habitItems = habit.goal.habit_items;
-          
+          const goalHabitStreaks = habit.goal.habit_items
+            .map(item => getHabitStreak(item.id))
+            .filter(Boolean);
+          const goalStreakTotal = goalHabitStreaks.reduce((sum, s) => sum + (s?.currentStreak || 0), 0);
+          const goalStreakMax = goalHabitStreaks.reduce((max, s) => Math.max(max, s?.longestStreak || 0), 0);
+          const goalHasAtRisk = goalHabitStreaks.some(s => s?.streakStatus === 'at_risk');
+
           return (
-            <div
+            <HabitGoalCard
               key={habit.goal.id}
-              className="rounded-lg border bg-background/50"
-            >
-              {/* Goal Header */}
-              <div
-                onClick={() => toggleGoalExpanded(habit.goal.id)}
-                className="flex items-center gap-3 p-2 sm:p-3 cursor-pointer hover:bg-primary/5 transition-colors"
-              >
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 p-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    toggleGoalExpanded(habit.goal.id);
-                  }}
-                >
-                  {isExpanded ? (
-                    <ChevronDown className="h-4 w-4" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                </Button>
-                
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{habit.goal.title}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {habitItems.length} habit{habitItems.length > 1 ? 's' : ''}
-                    {habit.completionRate > 0 && ` · ${habit.completionRate}% rate`}
-                  </p>
-                </div>
-
-                {/* Streak info - aggregate daily streaks for this goal */}
-                {(() => {
-                  const goalHabitStreaks = habitItems
-                    .map(item => getHabitStreak(item.id))
-                    .filter(Boolean);
-                  const totalGoalStreak = goalHabitStreaks.reduce((sum, s) => sum + (s?.currentStreak || 0), 0);
-                  const maxGoalStreak = goalHabitStreaks.reduce((max, s) => Math.max(max, s?.longestStreak || 0), 0);
-                  const hasAtRisk = goalHabitStreaks.some(s => s?.streakStatus === 'at_risk');
-                  
-                  return totalGoalStreak > 0 ? (
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className={cn(
-                          "flex items-center gap-1 cursor-help flex-shrink-0",
-                          hasAtRisk ? "text-yellow-500" : "text-orange-500"
-                        )}>
-                          <Flame className="h-4 w-4" />
-                          <span className="text-xs font-medium">{totalGoalStreak}d</span>
-                          {hasAtRisk && <AlertTriangle className="h-3 w-3" />}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="left">
-                        <p className="font-medium">{totalGoalStreak} day streak (total)</p>
-                        <p className="text-xs text-muted-foreground">Best: {maxGoalStreak} days</p>
-                        {hasAtRisk && (
-                          <p className="text-xs text-yellow-500 mt-1">Some habits at risk!</p>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  ) : null;
-                })()}
-              </div>
-
-              {/* Expanded Habit Items */}
-              {isExpanded && (
-                <div className="border-t px-3 py-2 space-y-3">
-                  {habitItems.map((item) => {
-                    const completionStatus = getCompletionStatus(item.id);
-                    const daysToShow = getDaysToShow(item.frequency, item);
-                    const completedDays = getHabitItemCompletionCount(item);
-                    const showDailyCheckboxes = isDailyTracking(item.frequency, item);
-                    const isWeeklyCompleted = isWeeklyHabitCompleted(item.id);
-                    
-                    // Check if this habit is mapped to an integration
-                    const habitMapping = getMappingForHabitItem(item.id);
-                    const isStravaMapped = habitMapping?.integration_type === 'strava';
-                    const isDuolingoMapped = habitMapping?.integration_type === 'duolingo';
-                    const stravaCompletions = isStravaMapped ? getStravaCompletionsForHabit(item.id) : [];
-                    
-                    // Get daily streak for this habit item
-                    const habitStreak = getHabitStreak(item.id);
-                    
-                    // Frequency label for weekly habits
-                    const frequencyLabel = item.frequency === 'weekly' ? 'Weekly' 
-                      : item.frequency === 'biweekly' ? 'Biweekly'
-                      : item.frequency === 'monthly' ? 'Monthly'
-                      : item.frequency === 'monthly_last_week' ? 'Monthly (last week)'
-                      : item.frequency === 'quarterly' ? 'Quarterly'
-                      : item.frequency === 'custom' ? 'Custom'
-                      : item.frequency;
-                    
-                    return (
-                      <div key={item.id} className="space-y-1.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 truncate flex-1">
-                            {/* Strava indicator */}
-                            {isStravaMapped && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex-shrink-0">
-                                    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="#FC4C02">
-                                      <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-                                    </svg>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="left" className="max-w-xs">
-                                  <p className="font-medium flex items-center gap-1">
-                                    <Zap className="h-3 w-3" />
-                                    Auto-tracked via Strava
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    This habit is automatically marked complete when you log a matching activity on Strava.
-                                  </p>
-                                  {stravaCompletions.length > 0 && (
-                                    <p className="text-xs text-primary mt-1">
-                                      {stravaCompletions.length} activit{stravaCompletions.length === 1 ? 'y' : 'ies'} synced this week
-                                    </p>
-                                  )}
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            {/* Duolingo indicator */}
-                            {isDuolingoMapped && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className="flex-shrink-0">
-                                    <span className="text-base">🦉</span>
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="left" className="max-w-xs">
-                                  <p className="font-medium flex items-center gap-1">
-                                    <Zap className="h-3 w-3" />
-                                    Linked to Duolingo
-                                  </p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    This habit is linked to your Duolingo activity.
-                                  </p>
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            <p className="text-sm font-medium truncate">{item.text}</p>
-                          </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            {/* Per-item daily streak with freeze status */}
-                            {showDailyCheckboxes && habitStreak && habitStreak.currentStreak > 0 && (
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <div className={cn(
-                                    "flex items-center gap-0.5 cursor-help",
-                                    habitStreak.streakStatus === 'at_risk' ? "text-yellow-500" : "text-orange-500"
-                                  )}>
-                                    <Flame className="h-3 w-3" />
-                                    <span className="text-xs font-medium">{habitStreak.currentStreak}d</span>
-                                    {habitStreak.freezesRemaining > 0 && (
-                                      <Snowflake className="h-3 w-3 text-blue-400" />
-                                    )}
-                                    {habitStreak.streakStatus === 'at_risk' && (
-                                      <AlertTriangle className="h-3 w-3" />
-                                    )}
-                                  </div>
-                                </TooltipTrigger>
-                                <TooltipContent side="left">
-                                  <p className="font-medium">{habitStreak.currentStreak} day streak</p>
-                                  <p className="text-xs text-muted-foreground">Best: {habitStreak.longestStreak} days</p>
-                                  {habitStreak.freezesRemaining > 0 ? (
-                                    <p className="text-xs text-blue-400 flex items-center gap-1 mt-1">
-                                      <Snowflake className="h-3 w-3" />
-                                      {habitStreak.freezesRemaining} freeze left this week
-                                    </p>
-                                  ) : (
-                                    <p className="text-xs text-yellow-500 mt-1">
-                                      No freezes left - don't miss!
-                                    </p>
-                                  )}
-                                </TooltipContent>
-                              </Tooltip>
-                            )}
-                            {showDailyCheckboxes && (!habitStreak || habitStreak.currentStreak === 0) && completedDays > 0 && (
-                              <div className="flex items-center gap-0.5 text-muted-foreground">
-                                <Flame className="h-3 w-3" />
-                                <span className="text-xs">{completedDays}</span>
-                              </div>
-                            )}
-                            {isStravaMapped ? (
-                              <Badge 
-                                variant="outline" 
-                                className="text-xs border-[#FC4C02]/30 text-[#FC4C02] bg-[#FC4C02]/5"
-                              >
-                                Strava
-                              </Badge>
-                            ) : isDuolingoMapped ? (
-                              <Badge 
-                                variant="outline" 
-                                className="text-xs border-[#58CC02]/30 text-[#58CC02] bg-[#58CC02]/5"
-                              >
-                                Duolingo
-                              </Badge>
-                            ) : showDailyCheckboxes ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {completedDays}/{daysToShow.length}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {frequencyLabel}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        
-                        {/* Strava-mapped habits: show read-only progress */}
-                        {isStravaMapped ? (
-                          <div className="flex items-center gap-1">
-                            {DAY_LABELS.map((label, index) => {
-                              const isChecked = completionStatus[index] || false;
-                              const date = weekDates[index];
-                              const isTodayDate = date && isToday(date);
-                              const stravaActivitiesForDay = date ? getStravaCompletionsForDate(item.id, date) : [];
-                              
-                              return (
-                                <Tooltip key={index}>
-                                  <TooltipTrigger asChild>
-                                    <div className="flex flex-col items-center gap-0.5">
-                                      <span className={cn(
-                                        "text-[10px] font-medium",
-                                        isTodayDate ? "text-primary" : "text-muted-foreground"
-                                      )}>
-                                        {label}
-                                      </span>
-                                      <div className={cn(
-                                        "h-6 w-6 rounded flex items-center justify-center border transition-all",
-                                        isChecked 
-                                          ? "bg-[#FC4C02]/10 border-[#FC4C02]/30" 
-                                          : "bg-muted/30 border-border",
-                                        isTodayDate && !isChecked && "ring-2 ring-primary/30 ring-offset-1"
-                                      )}>
-                                        {isChecked ? (
-                                          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="#FC4C02">
-                                            <path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169" />
-                                          </svg>
-                                        ) : (
-                                          <span className="text-[10px] text-muted-foreground">—</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="top" className="max-w-xs">
-                                    {stravaActivitiesForDay.length > 0 ? (
-                                      <div className="space-y-2">
-                                        {stravaActivitiesForDay.map((activity, idx) => (
-                                          <div key={activity.id} className={idx > 0 ? "pt-2 border-t border-border" : ""}>
-                                            <p className="font-medium">{activity.activity_name || 'Activity'}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                              {activity.activity_type}
-                                              {activity.duration_seconds && ` • ${formatDuration(activity.duration_seconds)}`}
-                                              {activity.distance_meters && activity.distance_meters > 0 && ` • ${formatDistance(activity.distance_meters)}`}
-                                              {activity.start_date && ` • ${format(new Date(activity.start_date), 'h:mm a')}`}
-                                            </p>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : isChecked ? (
-                                      <p>Completed via Strava</p>
-                                    ) : (
-                                      <p className="text-muted-foreground">Waiting for Strava activity</p>
-                                    )}
-                                  </TooltipContent>
-                                </Tooltip>
-                              );
-                            })}
-                          </div>
-                        ) : showDailyCheckboxes ? (
-                          /* Day checkboxes for daily/weekday habits */
-                          <div className="flex items-center gap-1">
-                            {DAY_LABELS.map((label, index) => {
-                              const isActiveDay = daysToShow.includes(index);
-                              const isChecked = completionStatus[index] || false;
-                              const date = weekDates[index];
-                              const isPast = date && isBefore(date, new Date()) && !isToday(date);
-                              const isTodayDate = date && isToday(date);
-                              
-                              // Get all Strava completions for this day
-                              const stravaActivitiesForDay = date ? getStravaCompletionsForDate(item.id, date) : [];
-                              
-                              return (
-                                <div
-                                  key={index}
-                                  className={cn(
-                                    "flex flex-col items-center gap-0.5",
-                                    !isActiveDay && "opacity-30"
-                                  )}
-                                >
-                                  <span className={cn(
-                                    "text-[10px] font-medium",
-                                    isTodayDate ? "text-primary" : "text-muted-foreground"
-                                  )}>
-                                    {label}
-                                  </span>
-                                    <div className="relative">
-                                    <Checkbox
-                                      checked={isChecked}
-                                      disabled={!isActiveDay || isToggling || isReadOnly}
-                                      onCheckedChange={() => {
-                                        if (isActiveDay && !isReadOnly) {
-                                          handleDayToggle(habit.goal.id, item.id, index);
-                                        }
-                                      }}
-                                      className={cn(
-                                        "h-6 w-6 rounded",
-                                        isTodayDate && !isReadOnly && "ring-2 ring-primary ring-offset-1",
-                                        isChecked && "bg-success border-success",
-                                        (!isActiveDay || isReadOnly) && "cursor-not-allowed"
-                                      )}
-                                    />
-                                    {/* Strava badge overlay */}
-                                    {stravaActivitiesForDay.length > 0 && isChecked && (
-                                      <div className="absolute -top-1 -right-1">
-                                        <StravaActivityBadge activities={stravaActivitiesForDay} />
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        ) : (
-                          /* Single "Done this week" checkbox for weekly/less frequent habits */
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              checked={isWeeklyCompleted}
-                              disabled={isToggling || isReadOnly}
-                              onCheckedChange={() => !isReadOnly && handleWeeklyToggle(habit.goal.id, item.id)}
-                              className={cn(
-                                "h-5 w-5 rounded",
-                                isWeeklyCompleted && "bg-success border-success",
-                                isReadOnly && "cursor-not-allowed"
-                              )}
-                            />
-                            <span className={cn(
-                              "text-sm",
-                              isWeeklyCompleted ? "text-success line-through" : "text-muted-foreground"
-                            )}>
-                              {isWeeklyCompleted ? "Completed this week" : "Mark as done"}
-                            </span>
-                            {isWeeklyCompleted && (
-                              <Check className="h-4 w-4 text-success" />
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+              goalId={habit.goal.id}
+              goalTitle={habit.goal.title}
+              habitItems={habit.goal.habit_items}
+              completionRate={habit.completionRate}
+              isExpanded={currentExpandedGoals.has(habit.goal.id)}
+              onToggleExpanded={() => toggleGoalExpanded(habit.goal.id)}
+              getCompletionStatus={getCompletionStatus}
+              getHabitItemCompletionCount={getHabitItemCompletionCount}
+              isDailyTracking={isDailyTracking}
+              getDaysToShow={getDaysToShow}
+              isWeeklyHabitCompleted={isWeeklyHabitCompleted}
+              handleDayToggle={handleDayToggle}
+              handleWeeklyToggle={handleWeeklyToggle}
+              weekDates={weekDates}
+              todayIndex={todayIndex}
+              isToggling={isToggling}
+              isReadOnly={isReadOnly}
+              getHabitStreak={getHabitStreak}
+              goalStreakTotal={goalStreakTotal}
+              goalStreakMax={goalStreakMax}
+              goalHasAtRisk={goalHasAtRisk}
+              getMappingForHabitItem={getMappingForHabitItem}
+              getStravaCompletionsForHabit={getStravaCompletionsForHabit}
+              getStravaCompletionsForDate={getStravaCompletionsForDate}
+              formatDuration={formatDuration}
+              formatDistance={formatDistance}
+            />
           );
         })}
 
@@ -754,7 +421,6 @@ export const HabitsDueThisWeek = ({
                 : "bg-background/50 border-border"
             )}
           >
-            {/* Completion Status */}
             <Checkbox
               checked={habit.isCompletedThisWeek}
               disabled={isReadOnly}
@@ -770,8 +436,6 @@ export const HabitsDueThisWeek = ({
                 isReadOnly && "cursor-not-allowed"
               )}
             />
-
-            {/* Habit Info */}
             <div className="flex-1 min-w-0">
               <p className={cn(
                 "text-sm font-medium truncate",
@@ -783,22 +447,20 @@ export const HabitsDueThisWeek = ({
                 {habit.goal.title}
               </p>
             </div>
-
-            {/* Streak */}
             {habit.currentStreak > 0 && (
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <Flame className={cn(
-                  "h-4 w-4",
-                  habit.currentStreak >= 12 ? "text-orange-500" :
-                  habit.currentStreak >= 8 ? "text-yellow-500" :
-                  habit.currentStreak >= 4 ? "text-green-500" :
-                  "text-emerald-400"
-                )} />
-                <span className="text-xs font-medium">{habit.currentStreak}</span>
-              </div>
+              <Badge
+                variant="secondary"
+                className={cn(
+                  "text-xs gap-1",
+                  habit.currentStreak >= 8
+                    ? "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400"
+                    : "bg-muted text-muted-foreground"
+                )}
+              >
+                <Flame className="h-3 w-3" />
+                {habit.currentStreak}w
+              </Badge>
             )}
-
-            {/* Quick Complete Button */}
             {habit.objective && !habit.isCompletedThisWeek && !isReadOnly && (
               <Button
                 size="sm"
@@ -810,8 +472,6 @@ export const HabitsDueThisWeek = ({
                 <span className="hidden sm:inline">Complete</span>
               </Button>
             )}
-
-            {/* Undo button for completed */}
             {habit.objective && habit.isCompletedThisWeek && !isReadOnly && (
               <Button
                 size="sm"
@@ -822,8 +482,6 @@ export const HabitsDueThisWeek = ({
                 Undo
               </Button>
             )}
-
-            {/* Arrow - only show when no action buttons */}
             {!habit.objective && (
               <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             )}
