@@ -61,7 +61,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendi
         destination = '/friends?tab=accountability';
         break;
       case 'accountability_partner_accepted':
-        destination = `/profile/${notification.triggered_by_user_id}`;
+        destination = `/partner/${notification.triggered_by_user_id}`;
         break;
       case 'accountability_check_in':
         destination = `/partner/${notification.triggered_by_user_id}`;
@@ -75,43 +75,23 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendi
               .eq('id', notification.related_comment_id)
               .single();
             if (comment?.objective_id) {
-              const { data: obj } = await supabase
-                .from('weekly_objectives')
-                .select('week_start')
-                .eq('id', comment.objective_id)
-                .single();
-              destination = obj?.week_start
-                ? `/goals?tab=weekly&week=${obj.week_start}&openComments=${comment.objective_id}`
-                : '/goals?tab=weekly';
+              destination = `/partner/${notification.triggered_by_user_id}?openComments=${comment.objective_id}`;
             } else {
-              destination = '/goals?tab=weekly';
+              destination = `/partner/${notification.triggered_by_user_id}`;
             }
           } catch {
-            destination = '/goals?tab=weekly';
+            destination = `/partner/${notification.triggered_by_user_id}`;
           }
         } else {
-          destination = '/goals?tab=weekly';
+          destination = `/partner/${notification.triggered_by_user_id}`;
         }
         break;
       }
       case 'partner_objective_feedback':
         if (notification.related_objective_id) {
-          try {
-            const { data } = await supabase
-              .from('weekly_objectives')
-              .select('week_start')
-              .eq('id', notification.related_objective_id)
-              .single();
-            if (data?.week_start) {
-              destination = `/goals?tab=weekly&week=${data.week_start}&openComments=${notification.related_objective_id}`;
-            } else {
-              destination = '/goals?tab=weekly';
-            }
-          } catch {
-            destination = '/goals?tab=weekly';
-          }
+          destination = `/partner/${notification.triggered_by_user_id}?openComments=${notification.related_objective_id}`;
         } else {
-          destination = '/goals?tab=weekly';
+          destination = `/partner/${notification.triggered_by_user_id}`;
         }
         break;
       case 'goal_update_cheer':
