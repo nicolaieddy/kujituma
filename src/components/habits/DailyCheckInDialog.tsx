@@ -927,7 +927,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             </DialogDescription>
           )}
         </DialogHeader>
-        <div className="py-4 relative overflow-x-hidden px-0.5">
+        <div className="py-4 relative overflow-x-hidden px-1">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={view}
