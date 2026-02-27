@@ -538,6 +538,9 @@ export type Database = {
           focus_today: string | null
           id: string
           journal_entry: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_name: string | null
           mood_rating: number | null
           quick_win: string | null
           updated_at: string
@@ -552,6 +555,9 @@ export type Database = {
           focus_today?: string | null
           id?: string
           journal_entry?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
           mood_rating?: number | null
           quick_win?: string | null
           updated_at?: string
@@ -566,6 +572,9 @@ export type Database = {
           focus_today?: string | null
           id?: string
           journal_entry?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          location_name?: string | null
           mood_rating?: number | null
           quick_win?: string | null
           updated_at?: string
@@ -2247,6 +2256,9 @@ export type Database = {
           focus_today: string | null
           id: string
           journal_entry: string | null
+          location_lat: number | null
+          location_lng: number | null
+          location_name: string | null
           mood_rating: number | null
           quick_win: string | null
           updated_at: string

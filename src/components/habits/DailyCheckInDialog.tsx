@@ -32,7 +32,7 @@ import { useCheckInCustomQuestions } from "@/hooks/useCheckInCustomQuestions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useNavigate } from "react-router-dom";
-import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil, Settings2, ArrowLeft } from "lucide-react";
+import { Zap, Target, Loader2, RefreshCw, Flame, TrendingUp, CalendarCheck, Users, Clock, BookOpen, Lock, Pencil, Settings2, ArrowLeft, MapPin, X } from "lucide-react";
 import { startOfWeek, isToday, format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { HabitItem } from "@/types/goals";
@@ -107,6 +107,10 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
   const [view, setView] = useState<'checkin' | 'settings'>('checkin');
+  const [locationLat, setLocationLat] = useState<number | undefined>();
+  const [locationLng, setLocationLng] = useState<number | undefined>();
+  const [locationName, setLocationName] = useState<string | undefined>();
+  const [isLocating, setIsLocating] = useState(false);
 
   const DRAFT_KEY = 'daily-checkin-draft';
 
@@ -126,6 +130,9 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         focusToday,
         journalEntry,
         customAnswers,
+        locationLat,
+        locationLng,
+        locationName,
       };
       // Only save if there's meaningful content
       if (focusToday || journalEntry || Object.values(customAnswers).some(v => v)) {
@@ -133,7 +140,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       }
     }, 500);
     return () => clearTimeout(draftTimeoutRef.current);
-  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, hasInitialized, open, todayCheckIn]);
+  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, locationLat, locationLng, locationName, hasInitialized, open, todayCheckIn]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
@@ -154,6 +161,9 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         setJournalEntry(todayCheckIn.journal_entry || "");
         const saved = (todayCheckIn as any).custom_answers;
         setCustomAnswers(saved && typeof saved === 'object' ? saved : {});
+        setLocationLat((todayCheckIn as any).location_lat ?? undefined);
+        setLocationLng((todayCheckIn as any).location_lng ?? undefined);
+        setLocationName((todayCheckIn as any).location_name ?? undefined);
       } else {
         // Try to restore draft
         try {
@@ -166,6 +176,9 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               setFocusToday(draft.focusToday ?? "");
               setJournalEntry(draft.journalEntry ?? "");
               setCustomAnswers(draft.customAnswers && typeof draft.customAnswers === 'object' ? draft.customAnswers : {});
+              setLocationLat(draft.locationLat ?? undefined);
+              setLocationLng(draft.locationLng ?? undefined);
+              setLocationName(draft.locationName ?? undefined);
             } else {
               // Stale draft from a different day — clear it
               clearDraft();
@@ -176,18 +189,24 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               setCustomAnswers({});
             }
           } else {
+              setMoodRating(3);
+              setEnergyLevel(3);
+              setFocusToday("");
+              setJournalEntry("");
+              setCustomAnswers({});
+              setLocationLat(undefined);
+              setLocationLng(undefined);
+              setLocationName(undefined);
+          }
+        } catch {
             setMoodRating(3);
             setEnergyLevel(3);
             setFocusToday("");
             setJournalEntry("");
             setCustomAnswers({});
-          }
-        } catch {
-          setMoodRating(3);
-          setEnergyLevel(3);
-          setFocusToday("");
-          setJournalEntry("");
-          setCustomAnswers({});
+            setLocationLat(undefined);
+            setLocationLng(undefined);
+            setLocationName(undefined);
         }
       }
       // Reset edit states
@@ -366,6 +385,43 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
     return "What's on your mind? Take a moment to reflect...";
   };
   
+  const handleGetLocation = useCallback(async () => {
+    if (!navigator.geolocation) return;
+    setIsLocating(true);
+    try {
+      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+      });
+      const { latitude, longitude } = position.coords;
+      setLocationLat(latitude);
+      setLocationLng(longitude);
+      // Reverse geocode
+      try {
+        const resp = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=10`
+        );
+        const data = await resp.json();
+        const city = data.address?.city || data.address?.town || data.address?.village || data.address?.county || '';
+        const state = data.address?.state || '';
+        const country = data.address?.country_code?.toUpperCase() || '';
+        const parts = [city, state, country].filter(Boolean);
+        setLocationName(parts.slice(0, 2).join(', ') || data.display_name?.split(',').slice(0, 2).join(',') || 'Unknown');
+      } catch {
+        setLocationName(`${latitude.toFixed(2)}, ${longitude.toFixed(2)}`);
+      }
+    } catch {
+      // User denied or error
+    } finally {
+      setIsLocating(false);
+    }
+  }, []);
+
+  const clearLocation = useCallback(() => {
+    setLocationLat(undefined);
+    setLocationLng(undefined);
+    setLocationName(undefined);
+  }, []);
+
   const handleSubmit = async () => {
     hapticSuccess();
     await submitCheckIn({
@@ -374,6 +430,9 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       focus_today: focusToday || undefined,
       journal_entry: journalEntry || undefined,
       custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : undefined,
+      location_lat: locationLat,
+      location_lng: locationLng,
+      location_name: locationName,
     });
     clearDraft();
     onOpenChange(false);
@@ -655,6 +714,32 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             autoFocus={isEditingJournal}
           />
         )}
+        {/* Location Pin */}
+        <div className="flex items-center gap-2">
+          {locationName ? (
+            <Badge variant="secondary" className="gap-1.5 cursor-pointer" onClick={clearLocation}>
+              <MapPin className="h-3 w-3" />
+              {locationName}
+              <X className="h-3 w-3 ml-1" />
+            </Badge>
+          ) : (
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={handleGetLocation}
+              disabled={isLocating}
+              className="gap-1.5 text-muted-foreground h-7 px-2"
+            >
+              {isLocating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <MapPin className="h-3.5 w-3.5" />
+              )}
+              <span className="text-xs">{isLocating ? 'Locating...' : 'Add location'}</span>
+            </Button>
+          )}
+        </div>
       </div>
       
       {/* Focus Today */}

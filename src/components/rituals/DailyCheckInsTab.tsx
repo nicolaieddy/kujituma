@@ -20,7 +20,7 @@ import { useRitualsTrigger } from "@/contexts/RitualsContext";
 
 import { CheckInDetailModal } from "./CheckInDetailModal";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen, Search, CalendarIcon, X } from "lucide-react";
+import { Sun, Zap, Target, TrendingUp, Plus, CheckCircle, BookOpen, Search, CalendarIcon, X, MapPin } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DateRange } from "react-day-picker";
 import { format, parseISO, subDays, startOfMonth, startOfWeek } from "date-fns";
@@ -82,7 +82,8 @@ export const DailyCheckInsTab = () => {
         const journalMatch = checkIn.journal_entry?.toLowerCase().includes(query);
         const focusMatch = checkIn.focus_today?.toLowerCase().includes(query);
         const dateMatch = dateStr.includes(query);
-        return journalMatch || focusMatch || dateMatch;
+        const locationMatch = checkIn.location_name?.toLowerCase().includes(query);
+        return journalMatch || focusMatch || dateMatch || locationMatch;
       });
     }
     
@@ -411,14 +412,15 @@ export const DailyCheckInsTab = () => {
                   <TableRow>
                     <TableHead className="w-[100px]">Date</TableHead>
                     <TableHead className="w-[80px] text-center">Mood</TableHead>
-                    <TableHead className="min-w-[250px]">Journal Entry</TableHead>
-                    <TableHead className="min-w-[200px]">#1 Focus</TableHead>
+                    <TableHead className="min-w-[200px]">Journal Entry</TableHead>
+                    <TableHead className="min-w-[120px]">Location</TableHead>
+                    <TableHead className="min-w-[180px]">#1 Focus</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedCheckIns.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                         {searchQuery || moodFilter !== 'all' || dateRange?.from ? "No entries match your filters" : "No check-ins yet"}
                       </TableCell>
                     </TableRow>
@@ -456,6 +458,16 @@ export const DailyCheckInsTab = () => {
                             <p className="text-sm line-clamp-2">{checkIn.journal_entry}</p>
                           ) : (
                             <span className="text-xs text-muted-foreground italic">No entry</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {checkIn.location_name ? (
+                            <div className="flex items-start gap-1.5">
+                              <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                              <p className="text-sm text-muted-foreground line-clamp-1">{checkIn.location_name}</p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">—</span>
                           )}
                         </TableCell>
                         <TableCell>
