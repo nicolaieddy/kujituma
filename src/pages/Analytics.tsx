@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { AnalyticsDashboard } from "@/components/analytics/AnalyticsDashboard";
 import { CategoryRadarChart } from "@/components/analytics/CategoryRadarChart";
+import { CheckInLocationMap } from "@/components/analytics/CheckInLocationMap";
 import { MoodEnergyTrendsChart } from "@/components/analytics/MoodEnergyTrendsChart";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -82,6 +83,9 @@ const Analytics = () => {
 
           {/* Mood & Energy Trends */}
           <MoodEnergyTrendsChart />
+
+          {/* Check-in Location Map */}
+          <CheckInLocationMap />
           
           {/* Life Balance Radar Chart */}
           <CategoryRadarChart />

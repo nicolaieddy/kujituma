@@ -9,6 +9,9 @@ export interface DailyCheckIn {
   quick_win?: string;
   blocker?: string;
   journal_entry?: string;
+  location_lat?: number;
+  location_lng?: number;
+  location_name?: string;
   created_at: string;
   updated_at: string;
 }
@@ -66,6 +69,9 @@ export interface CreateDailyCheckIn {
   blocker?: string;
   journal_entry?: string;
   custom_answers?: Record<string, string>;
+  location_lat?: number;
+  location_lng?: number;
+  location_name?: string;
 }
 
 export interface CreateQuarterlyReview {
