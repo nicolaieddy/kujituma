@@ -1,41 +1,43 @@
 
 
-# Fix Google Sign-In Button to Follow Official Branding Guidelines
+# Fix: Analytics Page Crash ("r is not a function")
 
 ## Problem
-The current sign-in button is green with a white monochrome Google icon. This violates Google's branding guidelines, which require:
-- White or light background (not colored)
-- The official multi-colored Google "G" logo (blue, red, yellow, green)
-- Roboto font family
-- Specific padding and sizing
-- Dark text (#1f1f1f) on the white background
-- A subtle border and shadow
 
-## Solution
-Update the Auth page to render a Google-compliant sign-in button using the official color palette and SVG logo. No new libraries needed -- just correct SVG paths and styling.
+The analytics page crashes with a "r is not a function" error (minified). This happens because `AnalyticsDashboard` destructures `data` from `useAnalyticsSummary()`, which returns a React Query result. When the query completes but `data` is still `undefined` (e.g., a network hiccup, error state, or race condition), the component tries to access properties like `data.completionRate.toFixed(0)` on `undefined`, which crashes the app.
 
-## Technical Changes
+## Root Cause
 
-### File: `src/pages/Auth.tsx`
+In `src/components/analytics/AnalyticsDashboard.tsx` (line 10):
+```typescript
+const { data, isLoading } = useAnalyticsSummary();
+```
 
-**Replace both Google button instances** (sign-up and sign-in) with a properly branded button:
+After the `isLoading` check, the code assumes `data` is always defined -- but `useQuery` can return `data: undefined` even when `isLoading` is `false` (e.g., on error or when the query is disabled).
 
-- **Background**: White (`#ffffff`) with a light border (`#747775`)
-- **Text color**: Dark (`#1f1f1f`)
-- **Font**: Roboto, 500 weight, 14px
-- **Google "G" icon**: Official multi-colored SVG (blue `#4285F4`, red `#EA4335`, yellow `#FBBC05`, green `#34A853`)
-- **Hover state**: Light gray background (`#f2f2f2`)
-- **Border radius**: 20px (pill shape per current Google guidelines)
-- **Height**: 40px (Google's standard)
+## Fix
 
-The button text will be:
-- Sign-up flow: "Sign up with Google"
-- Sign-in flow: "Continue with Google"  
+**File: `src/components/analytics/AnalyticsDashboard.tsx`**
 
-Both match Google's approved call-to-action text options.
+Add a fallback for `data` so it never crashes:
 
-### File: `index.html`
-Add Roboto font import via Google Fonts CDN (if not already present).
+```typescript
+const { data: rawData, isLoading } = useAnalyticsSummary();
+const data = rawData ?? {
+  completionRate: 0,
+  completedObjectives: 0,
+  totalObjectives: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  goalsCompleted: 0,
+  goalsInProgress: 0,
+  activeWeeks: 0,
+  avgObjectivesPerWeek: 0,
+  weeklyProgress: [],
+  categoryBreakdown: [],
+  recentWeeks: [],
+};
+```
 
-No other files change. The Supabase OAuth flow remains identical -- only the button's visual presentation is updated.
+This is a one-line conceptual change -- provide a safe default when `data` is undefined, preventing the crash while still rendering the page (with zeros/empty states).
 
