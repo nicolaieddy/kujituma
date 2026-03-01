@@ -78,16 +78,17 @@ const Analytics = () => {
           </p>
         </div>
 
-        <div className="max-w-5xl space-y-8">
+      <div className="max-w-5xl space-y-8">
+          {(() => { console.log('[Analytics] Rendering AnalyticsDashboard'); return null; })()}
           <AnalyticsDashboard />
 
-          {/* Mood & Energy Trends */}
+          {(() => { console.log('[Analytics] Rendering MoodEnergyTrendsChart'); return null; })()}
           <MoodEnergyTrendsChart />
 
-          {/* Check-in Location Map */}
+          {(() => { console.log('[Analytics] Rendering CheckInLocationMap'); return null; })()}
           <CheckInLocationMap />
           
-          {/* Life Balance Radar Chart */}
+          {(() => { console.log('[Analytics] Rendering CategoryRadarChart'); return null; })()}
           <CategoryRadarChart />
           
           {/* Rituals Section */}
@@ -101,14 +102,15 @@ const Analytics = () => {
               </p>
             </div>
 
-            {/* Streak History Chart */}
+            {(() => { console.log('[Analytics] Rendering StreakHistoryChart'); return null; })()}
             <StreakHistoryChart />
 
-            {/* Check-in Heatmap */}
+            {(() => { console.log('[Analytics] Rendering CheckInHeatmap'); return null; })()}
             <div className="mt-6">
               <CheckInHeatmap />
             </div>
 
+            {(() => { console.log('[Analytics] Rendering Tabs'); return null; })()}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6 space-y-6">
               <TabsList className="grid w-full grid-cols-3 max-w-md">
                 <TabsTrigger value="daily" className="flex items-center gap-2">
@@ -126,6 +128,7 @@ const Analytics = () => {
               </TabsList>
 
               <TabsContent value="daily">
+                {(() => { console.log('[Analytics] Rendering DailyCheckInsTab'); return null; })()}
                 <DailyCheckInsTab />
               </TabsContent>
 
