@@ -140,39 +140,14 @@ export const HabitGoalCard = ({
         <p className="text-sm font-medium truncate min-w-0 flex-shrink">{goalTitle}</p>
 
         {/* Inline today's checkboxes (collapsed only) */}
-        {!isExpanded && (
-          <div className="flex items-center gap-1.5 ml-auto flex-shrink-0">
-            {todayHabits.filter(h => h.isDue).map(({ item, isCompleted }) => (
-              <Tooltip key={item.id}>
-                <TooltipTrigger asChild>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={isCompleted}
-                      disabled={isToggling || isReadOnly}
-                      onCheckedChange={() => {
-                        if (!isReadOnly) {
-                          if (isDailyTracking(item.frequency, item)) {
-                            handleDayToggle(goalId, item.id, todayIndex);
-                          } else {
-                            handleWeeklyToggle(goalId, item.id);
-                          }
-                        }
-                      }}
-                      className={cn(
-                        "h-5 w-5 rounded",
-                        isCompleted && "bg-success border-success",
-                        isReadOnly && "cursor-not-allowed"
-                      )}
-                    />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">
-                  <p className="text-xs">{item.text}</p>
-                </TooltipContent>
-              </Tooltip>
-            ))}
-            {allDoneToday && totalDueToday > 0 && (
-              <Check className="h-3.5 w-3.5 text-success flex-shrink-0" />
+        {!isExpanded && totalDueToday > 0 && (
+          <div className="flex items-center gap-2 ml-auto flex-shrink-0">
+            {allDoneToday ? (
+              <Check className="h-4 w-4 text-success" />
+            ) : (
+              <span className="text-xs font-medium text-muted-foreground bg-secondary/50 px-1.5 py-0.5 rounded">
+                {completedToday}/{totalDueToday}
+              </span>
             )}
           </div>
         )}
