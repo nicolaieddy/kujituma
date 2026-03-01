@@ -74,14 +74,17 @@ export default {
     		},
     		fontFamily: {
     			sans: [
-    				'Inter',
+    				'Work Sans',
     				'ui-sans-serif',
     				'system-ui',
-    				'sans-serif',
-    				'Apple Color Emoji',
-    				'Segoe UI Emoji',
-    				'Segoe UI Symbol',
-    				'Noto Color Emoji'
+    				'-apple-system',
+    				'BlinkMacSystemFont',
+    				'Segoe UI',
+    				'Roboto',
+    				'Helvetica Neue',
+    				'Arial',
+    				'Noto Sans',
+    				'sans-serif'
     			],
     			heading: [
     				'Plus Jakarta Sans',
@@ -89,6 +92,7 @@ export default {
     				'sans-serif'
     			],
     			serif: [
+    				'Lora',
     				'ui-serif',
     				'Georgia',
     				'Cambria',
@@ -97,6 +101,7 @@ export default {
     				'serif'
     			],
     			mono: [
+    				'Inconsolata',
     				'ui-monospace',
     				'SFMono-Regular',
     				'Menlo',
@@ -111,7 +116,14 @@ export default {
     			soft: '0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04)',
     			elegant: '0 10px 40px -10px rgba(0, 0, 0, 0.1), 0 2px 8px -2px rgba(0, 0, 0, 0.05)',
     			glow: '0 0 20px -5px rgba(34, 197, 94, 0.3)',
-    			lift: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)'
+    			lift: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+    			'2xs': 'var(--shadow-2xs)',
+    			xs: 'var(--shadow-xs)',
+    			sm: 'var(--shadow-sm)',
+    			md: 'var(--shadow-md)',
+    			lg: 'var(--shadow-lg)',
+    			xl: 'var(--shadow-xl)',
+    			'2xl': 'var(--shadow-2xl)'
     		},
     		spacing: {
     			'18': '4.5rem',
