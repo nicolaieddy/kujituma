@@ -1,48 +1,41 @@
 
 
-# Set Up Capacitor for Native iOS App
+# Fix Google Sign-In Button to Follow Official Branding Guidelines
 
-## What This Does
-This configures your project so you can build a real native iOS app from your existing web app and submit it to the Apple App Store.
+## Problem
+The current sign-in button is green with a white monochrome Google icon. This violates Google's branding guidelines, which require:
+- White or light background (not colored)
+- The official multi-colored Google "G" logo (blue, red, yellow, green)
+- Roboto font family
+- Specific padding and sizing
+- Dark text (#1f1f1f) on the white background
+- A subtle border and shadow
 
-## What I'll Do (In Lovable)
+## Solution
+Update the Auth page to render a Google-compliant sign-in button using the official color palette and SVG logo. No new libraries needed -- just correct SVG paths and styling.
 
-1. **Install Capacitor packages** -- Add the required dependencies: `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, and `@capacitor/android`
-2. **Create Capacitor config file** (`capacitor.config.ts`) with:
-   - App ID: `app.lovable.b825602865f1489caa7848f27fdddc06`
-   - App name: `kujituma`
-   - Live-reload server URL pointing to your preview so you can test instantly on your phone
+## Technical Changes
 
-## What You'll Do (On Your Mac)
+### File: `src/pages/Auth.tsx`
 
-After I make the changes, you'll need to:
+**Replace both Google button instances** (sign-up and sign-in) with a properly branded button:
 
-1. **Export to GitHub** -- Click the GitHub button in Lovable to push your code to a repository
-2. **Clone and set up** -- On your Mac, open Terminal and run:
-   ```
-   git clone <your-repo-url>
-   cd <your-project>
-   npm install
-   npx cap add ios
-   npm run build
-   npx cap sync
-   ```
-3. **Open in Xcode** -- Run `npx cap open ios`, then hit the Play button to run on your iPhone or simulator
-4. **Submit to App Store** -- When ready, use Xcode to archive and upload to App Store Connect
+- **Background**: White (`#ffffff`) with a light border (`#747775`)
+- **Text color**: Dark (`#1f1f1f`)
+- **Font**: Roboto, 500 weight, 14px
+- **Google "G" icon**: Official multi-colored SVG (blue `#4285F4`, red `#EA4335`, yellow `#FBBC05`, green `#34A853`)
+- **Hover state**: Light gray background (`#f2f2f2`)
+- **Border radius**: 20px (pill shape per current Google guidelines)
+- **Height**: 40px (Google's standard)
 
-## Requirements
-- A Mac with Xcode installed (free from the Mac App Store)
-- An Apple Developer Account ($99/year) for App Store submission
-- An iPhone or use the Xcode Simulator for testing
+The button text will be:
+- Sign-up flow: "Sign up with Google"
+- Sign-in flow: "Continue with Google"  
 
-## Ongoing Updates
-Whenever you make changes in Lovable, just pull the latest code on your Mac and run `npx cap sync` to update the native app.
+Both match Google's approved call-to-action text options.
 
-## Technical Details
+### File: `index.html`
+Add Roboto font import via Google Fonts CDN (if not already present).
 
-**Files created/modified:**
-- `capacitor.config.ts` -- New file with app configuration and live-reload server settings
-- `package.json` -- Add `@capacitor/core`, `@capacitor/cli`, `@capacitor/ios`, `@capacitor/android` as dependencies
-
-**Reference:** After setup, I'll share a link to the Lovable blog post with a full walkthrough of the Capacitor workflow.
+No other files change. The Supabase OAuth flow remains identical -- only the button's visual presentation is updated.
 
