@@ -15,6 +15,7 @@ import { WeeklyPlanningTab } from "@/components/rituals/WeeklyPlanningTab";
 import { QuarterlyReviewsTab } from "@/components/rituals/QuarterlyReviewsTab";
 import { StreakHistoryChart } from "@/components/rituals/StreakHistoryChart";
 import { CheckInHeatmap } from "@/components/rituals/CheckInHeatmap";
+import { SectionErrorBoundary } from "@/components/errors/SectionErrorBoundary";
 import { Sun, CalendarDays, ClipboardList } from "lucide-react";
 
 const Analytics = () => {
@@ -78,18 +79,22 @@ const Analytics = () => {
           </p>
         </div>
 
-      <div className="max-w-5xl space-y-8">
-          {(() => { console.log('[Analytics] Rendering AnalyticsDashboard'); return null; })()}
-          <AnalyticsDashboard />
+        <div className="max-w-5xl space-y-8">
+          <SectionErrorBoundary name="AnalyticsDashboard">
+            <AnalyticsDashboard />
+          </SectionErrorBoundary>
 
-          {(() => { console.log('[Analytics] Rendering MoodEnergyTrendsChart'); return null; })()}
-          <MoodEnergyTrendsChart />
+          <SectionErrorBoundary name="MoodEnergyTrendsChart">
+            <MoodEnergyTrendsChart />
+          </SectionErrorBoundary>
 
-          {(() => { console.log('[Analytics] Rendering CheckInLocationMap'); return null; })()}
-          <CheckInLocationMap />
+          <SectionErrorBoundary name="CheckInLocationMap">
+            <CheckInLocationMap />
+          </SectionErrorBoundary>
           
-          {(() => { console.log('[Analytics] Rendering CategoryRadarChart'); return null; })()}
-          <CategoryRadarChart />
+          <SectionErrorBoundary name="CategoryRadarChart">
+            <CategoryRadarChart />
+          </SectionErrorBoundary>
           
           {/* Rituals Section */}
           <div className="pt-6 border-t border-border">
@@ -102,15 +107,16 @@ const Analytics = () => {
               </p>
             </div>
 
-            {(() => { console.log('[Analytics] Rendering StreakHistoryChart'); return null; })()}
-            <StreakHistoryChart />
+            <SectionErrorBoundary name="StreakHistoryChart">
+              <StreakHistoryChart />
+            </SectionErrorBoundary>
 
-            {(() => { console.log('[Analytics] Rendering CheckInHeatmap'); return null; })()}
             <div className="mt-6">
-              <CheckInHeatmap />
+              <SectionErrorBoundary name="CheckInHeatmap">
+                <CheckInHeatmap />
+              </SectionErrorBoundary>
             </div>
 
-            {(() => { console.log('[Analytics] Rendering Tabs'); return null; })()}
             <Tabs value={activeTab} onValueChange={handleTabChange} className="mt-6 space-y-6">
               <TabsList className="grid w-full grid-cols-3 max-w-md">
                 <TabsTrigger value="daily" className="flex items-center gap-2">
@@ -128,20 +134,25 @@ const Analytics = () => {
               </TabsList>
 
               <TabsContent value="daily">
-                {(() => { console.log('[Analytics] Rendering DailyCheckInsTab'); return null; })()}
-                <DailyCheckInsTab />
+                <SectionErrorBoundary name="DailyCheckInsTab">
+                  <DailyCheckInsTab />
+                </SectionErrorBoundary>
               </TabsContent>
 
               <TabsContent value="weekly">
-                <WeeklyPlanningTab />
+                <SectionErrorBoundary name="WeeklyPlanningTab">
+                  <WeeklyPlanningTab />
+                </SectionErrorBoundary>
               </TabsContent>
 
               <TabsContent value="quarterly">
-                <QuarterlyReviewsTab />
-            </TabsContent>
-          </Tabs>
+                <SectionErrorBoundary name="QuarterlyReviewsTab">
+                  <QuarterlyReviewsTab />
+                </SectionErrorBoundary>
+              </TabsContent>
+            </Tabs>
+          </div>
         </div>
-      </div>
     </div>
   );
 };
