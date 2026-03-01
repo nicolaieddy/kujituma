@@ -2227,6 +2227,10 @@ export type Database = {
         Args: { p_partner_id: string; p_week_start: string }
         Returns: Json
       }
+      get_partner_weekly_completion_stats: {
+        Args: { p_partner_id: string; p_weeks?: number }
+        Returns: Json
+      }
       get_profile_page_data: {
         Args: { p_profile_user_id: string }
         Returns: Json

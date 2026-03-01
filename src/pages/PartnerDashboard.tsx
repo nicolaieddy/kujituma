@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { PartnerGoalsKanban } from '@/components/accountability/PartnerGoalsKanban';
 import { PartnerHabitsCard } from '@/components/accountability/PartnerHabitsCard';
+import { PartnerCompletionChart } from '@/components/accountability/PartnerCompletionChart';
 import { VisibilityHistoryTimeline } from '@/components/accountability/VisibilityHistoryTimeline';
 import { CheckInDialog } from '@/components/accountability/CheckInDialog';
 import { CheckInsFeed, CheckInsFeedRef } from '@/components/accountability/CheckInsFeed';
@@ -490,6 +491,11 @@ const PartnerDashboard = () => {
 
             </CardContent>
           </Card>
+
+          {/* 12-Week Completion Chart */}
+          {partnerId && canViewPartner && (
+            <PartnerCompletionChart partnerId={partnerId} />
+          )}
 
           {/* Habits Review - now week-aware */}
           <PartnerHabitsCard 
