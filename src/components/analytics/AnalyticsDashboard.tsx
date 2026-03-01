@@ -7,7 +7,21 @@ import { useAnalyticsSummary } from '@/hooks/useAnalyticsSummary';
 import { format } from 'date-fns';
 
 export const AnalyticsDashboard = () => {
-  const { data, isLoading } = useAnalyticsSummary();
+  const { data: rawData, isLoading } = useAnalyticsSummary();
+  const data = rawData ?? {
+    completionRate: 0,
+    completedObjectives: 0,
+    totalObjectives: 0,
+    currentStreak: 0,
+    longestStreak: 0,
+    goalsCompleted: 0,
+    goalsInProgress: 0,
+    activeWeeks: 0,
+    avgObjectivesPerWeek: 0,
+    weeklyProgress: [],
+    categoryBreakdown: [],
+    recentWeeks: [],
+  };
 
   if (isLoading) {
     return (
