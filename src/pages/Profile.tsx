@@ -6,6 +6,7 @@ import { useProfilePageData, ProfileData, ProfileGoal } from "@/hooks/useProfile
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
+import { McpSection } from "@/components/profile/McpSection";
 
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -23,6 +24,7 @@ import {
   User,
   Zap,
   Bell,
+  Terminal,
   Calendar,
   Clock,
   UserPlus,
@@ -86,9 +88,10 @@ const Profile = () => {
   const viewerContext = pageData?.viewer_context;
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "notifications">(() => {
+  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "notifications" | "mcp">(() => {
     const p = getSearchParams().get("tab");
-    return p === "integrations" ? "integrations" : p === "notifications" ? "notifications" : "profile";
+    if (p === "integrations" || p === "notifications" || p === "mcp") return p;
+    return "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
@@ -126,7 +129,7 @@ const Profile = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleTabChange = useCallback((tab: "profile" | "integrations" | "notifications") => {
+  const handleTabChange = useCallback((tab: "profile" | "integrations" | "notifications" | "mcp") => {
     setActiveTab(tab);
     setSearchParam("tab", tab);
   }, []);
@@ -484,6 +487,18 @@ const Profile = () => {
                   <Bell className="h-4 w-4" />
                   Notifications
                 </button>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange("mcp")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "mcp"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Terminal className="h-4 w-4" />
+                  MCP
+                </button>
               </div>
 
               {activeTab === "profile" && (
@@ -507,6 +522,11 @@ const Profile = () => {
                   onSwitchToProfileTab={() => handleTabChange("profile")}
                   onVerified={() => queryClient.invalidateQueries({ queryKey: ['profile-page-data', targetUserId] })}
                 />
+              </div>
+            )}
+            {activeTab === "mcp" && (
+              <div className="max-w-4xl mx-auto">
+                <McpSection />
               </div>
             )}
           </>
