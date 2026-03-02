@@ -145,53 +145,80 @@ export function McpSection() {
               <p className="text-sm font-medium">Add the server to your MCP client</p>
             </div>
 
-            <div className="ml-8 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Paste the config below into your client's MCP settings. Replace{" "}
-                <code className="bg-muted px-1 py-0.5 rounded text-xs">YOUR_API_TOKEN</code> with the token you just generated.
-              </p>
-
+            <div className="ml-8 space-y-4">
+              {/* Server URL (used by all clients) */}
               <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">Claude Desktop</p>
+                <p className="text-xs font-medium">Server URL</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-muted/50 border rounded-lg px-3 py-2 text-xs font-mono break-all">
+                    {mcpUrl}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(mcpUrl, "URL copied")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Claude.ai (Web) */}
+              <div className="space-y-1.5 border rounded-lg p-3">
+                <p className="text-xs font-medium flex items-center gap-1.5">
+                  🌐 Claude.ai (Web)
+                  <Badge variant="outline" className="text-[10px]">Easiest</Badge>
+                </p>
+                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>
+                    Go to{" "}
+                    <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Settings → Connectors
+                    </a>
+                  </li>
+                  <li>Click <strong>"Add custom connector"</strong> at the bottom</li>
+                  <li>Paste the <strong>Server URL</strong> above</li>
+                  <li>Click <strong>"Add"</strong> — no OAuth needed, authentication uses your API token</li>
+                  <li>In a new chat, click the <strong>"+"</strong> button → <strong>Connectors</strong> → enable <strong>Kujituma</strong></li>
+                </ol>
+                <p className="text-[11px] text-muted-foreground mt-1">
+                  Available on Free (1 connector), Pro, Max, Team, and Enterprise plans.{" "}
+                  <a href="https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    Learn more →
+                  </a>
+                </p>
+              </div>
+
+              {/* Claude Desktop */}
+              <div className="space-y-1.5 border rounded-lg p-3">
+                <p className="text-xs font-medium">🖥️ Claude Desktop</p>
                 <p className="text-xs text-muted-foreground">
                   Open <strong>Settings → Developer → Edit Config</strong>, then paste into{" "}
-                  <code className="bg-muted px-1 py-0.5 rounded text-xs">claude_desktop_config.json</code>:
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">claude_desktop_config.json</code>.
+                  Replace <code className="bg-muted px-1 py-0.5 rounded text-xs">YOUR_API_TOKEN</code> with your token:
                 </p>
+                <div className="relative">
+                  <pre className="bg-muted/50 border rounded-lg p-4 text-xs overflow-x-auto font-mono whitespace-pre">
+                    {claudeConfig}
+                  </pre>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="absolute top-2 right-2"
+                    onClick={() => copyToClipboard(claudeConfig, "Config copied")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="relative">
-                <pre className="bg-muted/50 border rounded-lg p-4 text-xs overflow-x-auto font-mono whitespace-pre">
-                  {claudeConfig}
-                </pre>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="absolute top-2 right-2"
-                  onClick={() => copyToClipboard(claudeConfig, "Config copied")}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium text-muted-foreground">ChatGPT / Other clients</p>
+              {/* Other clients */}
+              <div className="space-y-1.5 border rounded-lg p-3">
+                <p className="text-xs font-medium">⚡ ChatGPT / Cursor / Other MCP clients</p>
                 <p className="text-xs text-muted-foreground">
-                  Use the <strong>Server URL</strong> below and set the <strong>Authorization</strong> header to{" "}
-                  <code className="bg-muted px-1 py-0.5 rounded text-xs">Bearer YOUR_API_TOKEN</code>.
+                  Use the <strong>Server URL</strong> above and set an <strong>Authorization</strong> header:{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">Bearer YOUR_API_TOKEN</code>
                 </p>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted/50 border rounded-lg px-3 py-2 text-xs font-mono break-all">
-                  {mcpUrl}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(mcpUrl, "URL copied")}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
               </div>
             </div>
           </div>
