@@ -460,7 +460,7 @@ class AccountabilityService {
 
   async updateVisibilitySettings(
     partnerId: string, 
-    settings: { canViewPartnerGoals?: boolean; partnerCanViewMyGoals?: boolean }
+    settings: { partnerCanViewMyGoals?: boolean }
   ): Promise<{ success: boolean; error?: string }> {
     const user = authStore.getUser();
     if (!user) return { success: false, error: 'Not authenticated' };
@@ -481,13 +481,9 @@ class AccountabilityService {
       const isUser1 = partnership.user1_id === user.id;
       const updateData: Record<string, boolean> = {};
 
-      // Map the settings to the correct columns
-      if (settings.canViewPartnerGoals !== undefined) {
-        // Current user's ability to view partner's goals
-        updateData[isUser1 ? 'user1_can_view_user2_goals' : 'user2_can_view_user1_goals'] = settings.canViewPartnerGoals;
-      }
       if (settings.partnerCanViewMyGoals !== undefined) {
-        // Partner's ability to view current user's goals
+        // Only allow controlling whether the PARTNER can view MY goals
+        // user1 controls user2_can_view_user1_goals, user2 controls user1_can_view_user2_goals
         updateData[isUser1 ? 'user2_can_view_user1_goals' : 'user1_can_view_user2_goals'] = settings.partnerCanViewMyGoals;
       }
 
