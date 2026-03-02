@@ -8,6 +8,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function createServiceClient() {
+  return createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+}
+
 function createAuthClient(authHeader: string) {
   return createClient(
     Deno.env.get("SUPABASE_URL")!,
@@ -16,7 +23,24 @@ function createAuthClient(authHeader: string) {
   );
 }
 
+/**
+ * Authenticate via JWT or long-lived API token (kuj_*).
+ * Returns { supabase, user } or { supabase, user: null }.
+ */
 async function getUser(authHeader: string) {
+  const token = (authHeader || "").replace(/^Bearer\s+/i, "").trim();
+
+  // ── API token path ──
+  if (token.startsWith("kuj_")) {
+    const svc = createServiceClient();
+    const { data: userId, error } = await svc.rpc("validate_mcp_api_token", { p_token: token });
+    if (error || !userId) return { supabase: svc, user: null };
+    // Build an admin client scoped to the user for RLS bypass
+    // We use the service client but attach the user id manually
+    return { supabase: svc, user: { id: userId as string } };
+  }
+
+  // ── JWT path ──
   const supabase = createAuthClient(authHeader);
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user) return { supabase, user: null };

@@ -1054,6 +1054,50 @@ export type Database = {
         }
         Relationships: []
       }
+      mcp_api_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_revoked: boolean
+          last_used_at: string | null
+          name: string
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean
+          last_used_at?: string | null
+          name?: string
+          token_hash: string
+          token_prefix: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_revoked?: boolean
+          last_used_at?: string | null
+          name?: string
+          token_hash?: string
+          token_prefix?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mcp_api_tokens_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notification_preferences: {
         Row: {
           created_at: string
@@ -2141,6 +2185,7 @@ export type Database = {
         Args: { _user1_id: string; _user2_id: string }
         Returns: boolean
       }
+      create_mcp_api_token: { Args: { p_name?: string }; Returns: string }
       create_notification: {
         Args: {
           _message: string
@@ -2371,6 +2416,7 @@ export type Database = {
         }
         Returns: string
       }
+      validate_mcp_api_token: { Args: { p_token: string }; Returns: string }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
