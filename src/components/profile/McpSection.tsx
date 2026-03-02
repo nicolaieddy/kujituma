@@ -118,53 +118,94 @@ export function McpSection() {
         check-ins via natural language.
       </p>
 
-      {/* Connection instructions */}
+      {/* Step-by-step setup */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Quick Setup</CardTitle>
+          <CardTitle className="text-base">How to Connect</CardTitle>
           <CardDescription>
-            Add this to your Claude Desktop config (
-            <code className="text-xs bg-muted px-1 py-0.5 rounded">claude_desktop_config.json</code>
-            )
+            Follow these steps to connect your MCP client (Claude Desktop, ChatGPT, Cursor, etc.)
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="relative">
-            <pre className="bg-muted/50 border rounded-lg p-4 text-xs overflow-x-auto font-mono whitespace-pre">
-              {claudeConfig}
-            </pre>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute top-2 right-2"
-              onClick={() => copyToClipboard(claudeConfig, "Config copied")}
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-
-          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-500 shrink-0" />
-            <span>
-              Replace <code className="bg-muted px-1 py-0.5 rounded text-xs">YOUR_API_TOKEN</code>{" "}
-              with a token generated below.
-            </span>
-          </div>
-
+        <CardContent className="space-y-5">
+          {/* Step 1 */}
           <div className="space-y-2">
-            <p className="text-sm font-medium">Server URL</p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 bg-muted/50 border rounded-lg px-3 py-2 text-xs font-mono break-all">
-                {mcpUrl}
-              </code>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => copyToClipboard(mcpUrl, "URL copied")}
-              >
-                <Copy className="h-3.5 w-3.5" />
-              </Button>
+              <Badge className="h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs">1</Badge>
+              <p className="text-sm font-medium">Generate an API token below</p>
             </div>
+            <p className="text-xs text-muted-foreground ml-8">
+              Scroll down to the <strong>API Tokens</strong> section and click <strong>Generate</strong>. Copy the token immediately — it's only shown once.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Badge className="h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs">2</Badge>
+              <p className="text-sm font-medium">Add the server to your MCP client</p>
+            </div>
+
+            <div className="ml-8 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Paste the config below into your client's MCP settings. Replace{" "}
+                <code className="bg-muted px-1 py-0.5 rounded text-xs">YOUR_API_TOKEN</code> with the token you just generated.
+              </p>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">Claude Desktop</p>
+                <p className="text-xs text-muted-foreground">
+                  Open <strong>Settings → Developer → Edit Config</strong>, then paste into{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">claude_desktop_config.json</code>:
+                </p>
+              </div>
+
+              <div className="relative">
+                <pre className="bg-muted/50 border rounded-lg p-4 text-xs overflow-x-auto font-mono whitespace-pre">
+                  {claudeConfig}
+                </pre>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="absolute top-2 right-2"
+                  onClick={() => copyToClipboard(claudeConfig, "Config copied")}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+
+              <div className="space-y-1.5">
+                <p className="text-xs font-medium text-muted-foreground">ChatGPT / Other clients</p>
+                <p className="text-xs text-muted-foreground">
+                  Use the <strong>Server URL</strong> below and set the <strong>Authorization</strong> header to{" "}
+                  <code className="bg-muted px-1 py-0.5 rounded text-xs">Bearer YOUR_API_TOKEN</code>.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <code className="flex-1 bg-muted/50 border rounded-lg px-3 py-2 text-xs font-mono break-all">
+                  {mcpUrl}
+                </code>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => copyToClipboard(mcpUrl, "URL copied")}
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Step 3 */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge className="h-6 w-6 rounded-full p-0 flex items-center justify-center text-xs">3</Badge>
+              <p className="text-sm font-medium">Start using it</p>
+            </div>
+            <p className="text-xs text-muted-foreground ml-8">
+              Restart your MCP client. You can then ask things like <em>"What are my active goals?"</em>,{" "}
+              <em>"Add an objective for this week"</em>, or <em>"Log my daily check-in"</em>.
+            </p>
           </div>
         </CardContent>
       </Card>
