@@ -53,19 +53,16 @@ export const PartnershipSettingsModal = ({
 }: PartnershipSettingsModalProps) => {
   const [cadence, setCadence] = useState<CheckInCadence>(currentCadence);
   const [shareMyGoals, setShareMyGoals] = useState(partnerCanViewMyGoals);
-  const [viewPartnerGoals, setViewPartnerGoals] = useState(canViewPartnerGoals);
   const [isSavingCadence, setIsSavingCadence] = useState(false);
   const [isSavingVisibility, setIsSavingVisibility] = useState(false);
-  const [isSavingViewPartner, setIsSavingViewPartner] = useState(false);
 
   // Reset state when modal opens
   useEffect(() => {
     if (open) {
       setCadence(currentCadence);
       setShareMyGoals(partnerCanViewMyGoals);
-      setViewPartnerGoals(canViewPartnerGoals);
     }
-  }, [open, currentCadence, partnerCanViewMyGoals, canViewPartnerGoals]);
+  }, [open, currentCadence, partnerCanViewMyGoals]);
 
   const handleCadenceChange = async (newCadence: CheckInCadence) => {
     setCadence(newCadence);
@@ -100,25 +97,6 @@ export const PartnershipSettingsModal = ({
     } else {
       toast.error(result.error || 'Failed to update visibility');
       setShareMyGoals(partnerCanViewMyGoals);
-    }
-  };
-
-  const handleViewPartnerGoalsChange = async (view: boolean) => {
-    setViewPartnerGoals(view);
-    setIsSavingViewPartner(true);
-
-    const result = await accountabilityService.updateVisibilitySettings(partnerId, {
-      canViewPartnerGoals: view,
-    });
-
-    setIsSavingViewPartner(false);
-
-    if (result.success) {
-      toast.success(view ? `Now viewing ${partnerName}'s goals` : `Stopped viewing ${partnerName}'s goals`);
-      onSettingsChange?.();
-    } else {
-      toast.error(result.error || 'Failed to update visibility');
-      setViewPartnerGoals(canViewPartnerGoals);
     }
   };
 
@@ -179,7 +157,7 @@ export const PartnershipSettingsModal = ({
           {/* Goal Visibility */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              {shareMyGoals || viewPartnerGoals ? (
+              {shareMyGoals ? (
                 <Eye className="h-4 w-4 text-muted-foreground" />
               ) : (
                 <EyeOff className="h-4 w-4 text-muted-foreground" />
@@ -205,32 +183,18 @@ export const PartnershipSettingsModal = ({
               </div>
             </div>
 
-            {/* View partner's goals toggle */}
-            <div className="flex items-center justify-between gap-4 rounded-lg border p-4">
+            {/* Read-only status of partner's sharing */}
+            <div className="rounded-lg border p-4 bg-muted/30">
               <div className="space-y-1">
-                <Label className="text-sm">View {partnerName}'s goals</Label>
+                <Label className="text-sm text-muted-foreground">{partnerName}'s goals</Label>
                 <p className="text-xs text-muted-foreground">
-                  {partnerCanViewMyGoals 
-                    ? `See ${partnerName}'s goals and weekly objectives (they are sharing with you)`
+                  {canViewPartnerGoals
+                    ? `${partnerName} is sharing their goals with you`
                     : `${partnerName} is not sharing their goals with you`
                   }
                 </p>
               </div>
-              <div className="flex items-center gap-2">
-                {isSavingViewPartner && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-                <Switch
-                  checked={viewPartnerGoals}
-                  onCheckedChange={handleViewPartnerGoalsChange}
-                  disabled={isSavingViewPartner || !partnerCanViewMyGoals}
-                />
-              </div>
             </div>
-
-            {!partnerCanViewMyGoals && (
-              <p className="text-xs text-muted-foreground italic">
-                Note: You can only view {partnerName}'s goals if they choose to share them with you.
-              </p>
-            )}
           </div>
         </div>
       </DialogContent>
