@@ -220,13 +220,13 @@ const PartnerDashboard = () => {
   if (!canViewPartner && partnerProfile) {
     return (
       <div className="container mx-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto">
-          <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-6">
+        <div className="max-w-4xl mx-auto space-y-6">
+          <Button variant="ghost" onClick={() => navigate('/friends?tab=partners')} className="mb-2">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Partners
           </Button>
           
-          <Card className="border-border mb-6">
+          <Card className="border-border">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <Avatar className="h-16 w-16 ring-2 ring-primary/20">
@@ -240,22 +240,76 @@ const PartnerDashboard = () => {
                     {partnerProfile.full_name}
                   </h1>
                 </div>
+                <Button variant="outline" size="sm" onClick={() => setSettingsModalOpen(true)} className="gap-1.5">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden sm:inline">Settings</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-muted">
-            <CardContent className="py-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
-                <Target className="h-8 w-8 text-muted-foreground" />
+            <CardContent className="py-8 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-muted flex items-center justify-center">
+                <Target className="h-6 w-6 text-muted-foreground" />
               </div>
-              <p className="text-foreground font-medium mb-2">Access Restricted</p>
-              <p className="text-muted-foreground text-sm max-w-md mx-auto">
-                {partnerProfile.full_name} hasn't granted you permission to view their goals yet. 
-                You can adjust visibility settings in your partnership configuration.
+              <p className="text-foreground font-medium mb-1 text-sm">Goals Not Visible</p>
+              <p className="text-muted-foreground text-xs max-w-sm mx-auto">
+                {partnerProfile.full_name} hasn't granted you permission to view their goals yet.
+                You can adjust visibility in partnership settings.
               </p>
             </CardContent>
           </Card>
+
+          {/* Check-in History - always visible between partners */}
+          {partnershipDetails && (
+            <>
+              <Card className="border-border">
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    {/* Quick message input */}
+                    <div className="flex gap-2">
+                      <Textarea
+                        placeholder={`Send a message to ${partnerProfile.full_name}...`}
+                        value={weeklyNote}
+                        onChange={(e) => setWeeklyNote(e.target.value)}
+                        className="min-h-[60px] text-sm resize-none flex-1"
+                      />
+                      <Button
+                        size="sm"
+                        className="self-end gap-1.5"
+                        onClick={handleSendWeeklyNote}
+                        disabled={!weeklyNote.trim() || isSendingNote}
+                      >
+                        <Send className="h-4 w-4" />
+                        Send
+                      </Button>
+                    </div>
+                    
+                    <CheckInsFeed
+                      ref={checkInsFeedRef}
+                      partnershipId={partnershipDetails.id}
+                      currentUserId={user.id}
+                      currentUserProfile={currentUserProfile || undefined}
+                      partnerName={partnerProfile.full_name}
+                      maxVisible={10}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <PartnershipSettingsModal
+                open={settingsModalOpen}
+                onOpenChange={setSettingsModalOpen}
+                partnerId={partnerId!}
+                partnerName={partnerProfile.full_name}
+                currentCadence={partnerVisibility.myCheckInCadence}
+                canViewPartnerGoals={partnerVisibility.canViewPartnerGoals}
+                partnerCanViewMyGoals={partnerVisibility.partnerCanViewMyGoals}
+                onSettingsChange={() => refetch()}
+              />
+            </>
+          )}
         </div>
       </div>
     );
