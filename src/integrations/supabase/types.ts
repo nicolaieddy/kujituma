@@ -2185,7 +2185,7 @@ export type Database = {
         Args: { _user1_id: string; _user2_id: string }
         Returns: boolean
       }
-      create_mcp_api_token: { Args: { p_name?: string }; Returns: string }
+      create_mcp_api_token: { Args: { p_name: string }; Returns: string }
       create_notification: {
         Args: {
           _message: string
