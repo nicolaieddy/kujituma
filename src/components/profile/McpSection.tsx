@@ -146,23 +146,6 @@ export function McpSection() {
             </div>
 
             <div className="ml-8 space-y-4">
-              {/* Server URL (used by all clients) */}
-              <div className="space-y-1.5">
-                <p className="text-xs font-medium">Server URL</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-muted/50 border rounded-lg px-3 py-2 text-xs font-mono break-all">
-                    {mcpBaseUrl}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => copyToClipboard(mcpBaseUrl, "URL copied")}
-                  >
-                    <Copy className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-
               {/* Claude.ai (Web) */}
               <div className="space-y-1.5 border rounded-lg p-3">
                 <p className="text-xs font-medium flex items-center gap-1.5">
@@ -170,23 +153,24 @@ export function McpSection() {
                   <Badge variant="outline" className="text-[10px]">Easiest</Badge>
                 </p>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>Generate an API token below (Step 1)</li>
+                  <li><strong>Generate an API token below</strong> (scroll to API Tokens section)</li>
+                  <li>Copy the <strong>Claude.ai connector URL</strong> that appears (it includes your token)</li>
                   <li>
                     Go to{" "}
                     <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                      Settings → Connectors
+                      claude.ai/settings/connectors
                     </a>
                   </li>
-                  <li>Click <strong>"Add custom connector"</strong></li>
-                  <li>
-                    Paste the URL with your token:<br />
-                    <code className="bg-muted px-1.5 py-0.5 rounded text-[10px] break-all">
-                      {mcpBaseUrl}?token=YOUR_API_TOKEN
-                    </code>
-                  </li>
+                  <li>Click <strong>"Add custom connector"</strong> and paste the URL you copied</li>
                   <li>Click <strong>"Add"</strong> — no OAuth needed</li>
                   <li>In a new chat, click <strong>"+"</strong> → <strong>Connectors</strong> → enable <strong>Kujituma</strong></li>
                 </ol>
+                <div className="mt-2 bg-amber-500/10 border border-amber-500/20 rounded p-2">
+                  <p className="text-[11px] text-amber-700 dark:text-amber-400 flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 shrink-0" />
+                    Don't paste the plain Server URL — it won't work without your token. Use the full URL shown after generating a token.
+                  </p>
+                </div>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Available on Free (1 connector), Pro, Max, Team, and Enterprise plans.{" "}
                   <a href="https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
