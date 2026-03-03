@@ -37,7 +37,7 @@ export function McpSection() {
   const [newToken, setNewToken] = useState<string | null>(null);
   const [showToken, setShowToken] = useState(true);
 
-  const mcpUrl = `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/mcp-server`;
+  const mcpBaseUrl = `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/mcp-server`;
 
   const { data: tokens = [], isLoading } = useQuery({
     queryKey: ["mcp-api-tokens", user?.id],
@@ -95,7 +95,7 @@ export function McpSection() {
     {
       mcpServers: {
         kujituma: {
-          url: mcpUrl,
+          url: mcpBaseUrl,
           headers: {
             Authorization: "Bearer YOUR_API_TOKEN",
           },
@@ -151,12 +151,12 @@ export function McpSection() {
                 <p className="text-xs font-medium">Server URL</p>
                 <div className="flex items-center gap-2">
                   <code className="flex-1 bg-muted/50 border rounded-lg px-3 py-2 text-xs font-mono break-all">
-                    {mcpUrl}
+                    {mcpBaseUrl}
                   </code>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => copyToClipboard(mcpUrl, "URL copied")}
+                    onClick={() => copyToClipboard(mcpBaseUrl, "URL copied")}
                   >
                     <Copy className="h-3.5 w-3.5" />
                   </Button>
@@ -170,16 +170,22 @@ export function McpSection() {
                   <Badge variant="outline" className="text-[10px]">Easiest</Badge>
                 </p>
                 <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+                  <li>Generate an API token below (Step 1)</li>
                   <li>
                     Go to{" "}
                     <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
                       Settings → Connectors
                     </a>
                   </li>
-                  <li>Click <strong>"Add custom connector"</strong> at the bottom</li>
-                  <li>Paste the <strong>Server URL</strong> above</li>
-                  <li>Click <strong>"Add"</strong> — no OAuth needed, authentication uses your API token</li>
-                  <li>In a new chat, click the <strong>"+"</strong> button → <strong>Connectors</strong> → enable <strong>Kujituma</strong></li>
+                  <li>Click <strong>"Add custom connector"</strong></li>
+                  <li>
+                    Paste the URL with your token:<br />
+                    <code className="bg-muted px-1.5 py-0.5 rounded text-[10px] break-all">
+                      {mcpBaseUrl}?token=YOUR_API_TOKEN
+                    </code>
+                  </li>
+                  <li>Click <strong>"Add"</strong> — no OAuth needed</li>
+                  <li>In a new chat, click <strong>"+"</strong> → <strong>Connectors</strong> → enable <strong>Kujituma</strong></li>
                 </ol>
                 <p className="text-[11px] text-muted-foreground mt-1">
                   Available on Free (1 connector), Pro, Max, Team, and Enterprise plans.{" "}
@@ -308,39 +314,58 @@ export function McpSection() {
 
           {/* Newly created token (show once) */}
           {newToken && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4 text-amber-500" />
                 <span className="text-sm font-medium">
-                  Copy this token now — you won't see it again
+                  Save this now — you won't see it again
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-background border rounded px-3 py-2 text-xs font-mono break-all">
-                  {showToken ? newToken : "•".repeat(40)}
-                </code>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowToken(!showToken)}
-                >
-                  {showToken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => copyToClipboard(newToken, "Token copied")}
-                >
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
+
+              {/* Ready-to-paste URL for Claude.ai */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Claude.ai connector URL (paste this):</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background border rounded px-3 py-2 text-xs font-mono break-all">
+                    {showToken ? `${mcpBaseUrl}?token=${newToken}` : "•".repeat(60)}
+                  </code>
+                  <Button variant="ghost" size="sm" onClick={() => setShowToken(!showToken)}>
+                    {showToken ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(`${mcpBaseUrl}?token=${newToken}`, "URL copied")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
               </div>
+
+              {/* Raw token for Claude Desktop / other clients */}
+              <div className="space-y-1">
+                <p className="text-xs font-medium">Raw API token (for Claude Desktop / other clients):</p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-background border rounded px-3 py-2 text-xs font-mono break-all">
+                    {showToken ? newToken : "•".repeat(40)}
+                  </code>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyToClipboard(newToken, "Token copied")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-muted-foreground"
                 onClick={() => setNewToken(null)}
               >
-                Dismiss
+                Done — I've saved it
               </Button>
             </div>
           )}
