@@ -175,18 +175,6 @@ export function McpSection() {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <p className="text-xs font-medium">Raw API token (for Claude Desktop / other clients):</p>
-              <div className="flex items-center gap-2">
-                <code className="flex-1 bg-muted border rounded px-3 py-2 text-xs font-mono break-all">
-                  {showToken ? newToken : "•".repeat(40)}
-                </code>
-                <Button variant="ghost" size="sm" onClick={() => copyToClipboard(newToken, "Token copied")}>
-                  <Copy className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </div>
-
             <Button
               variant="ghost"
               size="sm"
