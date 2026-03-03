@@ -1,13 +1,11 @@
 import { Hono } from "npm:hono@4";
-import { McpServer } from "npm:@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPTransport } from "npm:@hono/mcp";
+import { McpServer, StreamableHttpTransport } from "npm:mcp-lite@^0.10.0";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { z } from "npm:zod@3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, accept, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
 };
 
@@ -28,21 +26,14 @@ function createAuthClient(authHeader: string) {
   );
 }
 
-/**
- * Authenticate via:
- * 1. Authorization header (Bearer JWT or Bearer kuj_*)
- * 2. ?token= query param (for Claude.ai web connector)
- */
 async function getUser(request: Request) {
   let token = "";
 
-  // Check Authorization header first
   const authHeader = request.headers.get("authorization") || "";
   if (authHeader) {
     token = authHeader.replace(/^Bearer\s+/i, "").trim();
   }
 
-  // Fall back to ?token= query param (Claude.ai web connector)
   if (!token) {
     const url = new URL(request.url);
     token = url.searchParams.get("token") || "";
@@ -50,7 +41,6 @@ async function getUser(request: Request) {
 
   if (!token) return { supabase: createServiceClient(), user: null };
 
-  // ── API token path (kuj_*) ──
   if (token.startsWith("kuj_")) {
     const svc = createServiceClient();
     const { data: userId, error } = await svc.rpc("validate_mcp_api_token", {
@@ -60,7 +50,6 @@ async function getUser(request: Request) {
     return { supabase: svc, user: { id: userId as string } };
   }
 
-  // ── JWT path ──
   const bearer = `Bearer ${token}`;
   const supabase = createAuthClient(bearer);
   const {
@@ -93,15 +82,23 @@ function toDateStr(d: Date): string {
 // ── MCP SERVER FACTORY ─────────────────────────────────────
 
 function createConfiguredServer(supabase: ReturnType<typeof createClient>, userId: string) {
-  const mcp = new McpServer({ name: "kujituma-mcp", version: "1.0.0" });
+  const mcp = new McpServer({
+    name: "kujituma-mcp",
+    version: "1.0.0",
+  });
 
   // ── READ TOOLS ──
 
-  mcp.tool(
-    "get_active_goals",
-    "Get all active goals for the authenticated user. Optionally filter by timeframe.",
-    { timeframe: z.string().optional().describe("Filter: 'yearly', 'quarterly', 'monthly'") },
-    async ({ timeframe }) => {
+  mcp.tool({
+    name: "get_active_goals",
+    description: "Get all active goals for the authenticated user. Optionally filter by timeframe.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        timeframe: { type: "string", description: "Filter: 'yearly', 'quarterly', 'monthly'" },
+      },
+    },
+    handler: async ({ timeframe }: { timeframe?: string }) => {
       let query = supabase
         .from("goals")
         .select("id, title, description, category, timeframe, status, start_date, target_date, habit_items, is_recurring, recurrence_frequency, visibility")
@@ -114,13 +111,18 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     },
-  );
+  });
 
-  mcp.tool(
-    "get_weekly_objectives",
-    "Get weekly objectives for a given week (Monday-based). Defaults to current week.",
-    { week_start: z.string().optional().describe("YYYY-MM-DD Monday. Defaults to current week.") },
-    async ({ week_start }) => {
+  mcp.tool({
+    name: "get_weekly_objectives",
+    description: "Get weekly objectives for a given week (Monday-based). Defaults to current week.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        week_start: { type: "string", description: "YYYY-MM-DD Monday. Defaults to current week." },
+      },
+    },
+    handler: async ({ week_start }: { week_start?: string }) => {
       const weekKey = week_start || getMondayOfWeek(new Date());
       const { data, error } = await supabase
         .from("weekly_objectives")
@@ -134,13 +136,13 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
         content: [{ type: "text" as const, text: `Week ${weekKey}: ${completed}/${data?.length || 0} completed\n\n${JSON.stringify(data, null, 2)}` }],
       };
     },
-  );
+  });
 
-  mcp.tool(
-    "get_streaks",
-    "Get daily, weekly, and quarterly streaks",
-    {},
-    async () => {
+  mcp.tool({
+    name: "get_streaks",
+    description: "Get daily, weekly, and quarterly streaks",
+    inputSchema: { type: "object", properties: {} },
+    handler: async () => {
       const { data, error } = await supabase
         .from("user_streaks")
         .select("*")
@@ -160,13 +162,18 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
         }],
       };
     },
-  );
+  });
 
-  mcp.tool(
-    "get_habit_completions",
-    "Get habit completions for a given week",
-    { week_start: z.string().optional().describe("YYYY-MM-DD Monday. Defaults to current week.") },
-    async ({ week_start }) => {
+  mcp.tool({
+    name: "get_habit_completions",
+    description: "Get habit completions for a given week",
+    inputSchema: {
+      type: "object",
+      properties: {
+        week_start: { type: "string", description: "YYYY-MM-DD Monday. Defaults to current week." },
+      },
+    },
+    handler: async ({ week_start }: { week_start?: string }) => {
       const weekKey = week_start || getMondayOfWeek(new Date());
       const weekEnd = getWeekEnd(weekKey);
       const { data, error } = await supabase
@@ -181,16 +188,19 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
         content: [{ type: "text" as const, text: `${data?.length || 0} completions for week ${weekKey}\n\n${JSON.stringify(data, null, 2)}` }],
       };
     },
-  );
+  });
 
-  mcp.tool(
-    "get_analytics_summary",
-    "Productivity analytics: objectives, check-ins, habits, goals over a date range",
-    {
-      start_date: z.string().optional().describe("YYYY-MM-DD. Defaults to 30 days ago."),
-      end_date: z.string().optional().describe("YYYY-MM-DD. Defaults to today."),
+  mcp.tool({
+    name: "get_analytics_summary",
+    description: "Productivity analytics: objectives, check-ins, habits, goals over a date range",
+    inputSchema: {
+      type: "object",
+      properties: {
+        start_date: { type: "string", description: "YYYY-MM-DD. Defaults to 30 days ago." },
+        end_date: { type: "string", description: "YYYY-MM-DD. Defaults to today." },
+      },
     },
-    async ({ start_date, end_date }) => {
+    handler: async ({ start_date, end_date }: { start_date?: string; end_date?: string }) => {
       const endD = end_date || toDateStr(new Date());
       const startD = start_date || toDateStr(new Date(Date.now() - 30 * 86400000));
 
@@ -227,13 +237,13 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
         }],
       };
     },
-  );
+  });
 
-  mcp.tool(
-    "get_partnerships",
-    "List active accountability partnerships with partner names",
-    {},
-    async () => {
+  mcp.tool({
+    name: "get_partnerships",
+    description: "List active accountability partnerships with partner names",
+    inputSchema: { type: "object", properties: {} },
+    handler: async () => {
       const { data, error } = await supabase
         .from("accountability_partnerships")
         .select("id, user1_id, user2_id, last_check_in_at")
@@ -252,20 +262,24 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
       });
       return { content: [{ type: "text" as const, text: lines.join("\n") }] };
     },
-  );
+  });
 
   // ── WRITE TOOLS ──
 
-  mcp.tool(
-    "create_objective",
-    "Create a weekly objective for the current or specified week",
-    {
-      text: z.string().describe("Objective text"),
-      goal_id: z.string().optional().describe("Optional goal ID to link to"),
-      week_start: z.string().optional().describe("YYYY-MM-DD Monday. Defaults to current week."),
-      scheduled_day: z.string().optional().describe("Optional: monday, tuesday, etc."),
+  mcp.tool({
+    name: "create_objective",
+    description: "Create a weekly objective for the current or specified week",
+    inputSchema: {
+      type: "object",
+      properties: {
+        text: { type: "string", description: "Objective text" },
+        goal_id: { type: "string", description: "Optional goal ID to link to" },
+        week_start: { type: "string", description: "YYYY-MM-DD Monday. Defaults to current week." },
+        scheduled_day: { type: "string", description: "Optional: monday, tuesday, etc." },
+      },
+      required: ["text"],
     },
-    async ({ text, goal_id, week_start, scheduled_day }) => {
+    handler: async ({ text, goal_id, week_start, scheduled_day }: { text: string; goal_id?: string; week_start?: string; scheduled_day?: string }) => {
       const weekKey = week_start || getMondayOfWeek(new Date());
       const { data: existing } = await supabase
         .from("weekly_objectives")
@@ -289,17 +303,21 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
       return { content: [{ type: "text" as const, text: `✅ Created: "${text}" (${weekKey}) ID: ${data.id}` }] };
     },
-  );
+  });
 
-  mcp.tool(
-    "update_objective",
-    "Update a weekly objective (mark complete/incomplete, change text)",
-    {
-      id: z.string().describe("Objective ID"),
-      text: z.string().optional().describe("New text"),
-      is_completed: z.boolean().optional().describe("Completed?"),
+  mcp.tool({
+    name: "update_objective",
+    description: "Update a weekly objective (mark complete/incomplete, change text)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        id: { type: "string", description: "Objective ID" },
+        text: { type: "string", description: "New text" },
+        is_completed: { type: "boolean", description: "Completed?" },
+      },
+      required: ["id"],
     },
-    async ({ id, text, is_completed }) => {
+    handler: async ({ id, text, is_completed }: { id: string; text?: string; is_completed?: boolean }) => {
       const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (text !== undefined) upd.text = text;
       if (is_completed !== undefined) upd.is_completed = is_completed;
@@ -314,17 +332,21 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
       return { content: [{ type: "text" as const, text: `✅ "${data.text}" — ${data.is_completed ? "done ✓" : "in progress"}` }] };
     },
-  );
+  });
 
-  mcp.tool(
-    "log_habit_completion",
-    "Toggle a habit completion for a specific date",
-    {
-      goal_id: z.string().describe("Goal ID"),
-      habit_item_id: z.string().describe("Habit item ID"),
-      date: z.string().optional().describe("YYYY-MM-DD. Defaults to today."),
+  mcp.tool({
+    name: "log_habit_completion",
+    description: "Toggle a habit completion for a specific date",
+    inputSchema: {
+      type: "object",
+      properties: {
+        goal_id: { type: "string", description: "Goal ID" },
+        habit_item_id: { type: "string", description: "Habit item ID" },
+        date: { type: "string", description: "YYYY-MM-DD. Defaults to today." },
+      },
+      required: ["goal_id", "habit_item_id"],
     },
-    async ({ goal_id, habit_item_id, date }) => {
+    handler: async ({ goal_id, habit_item_id, date }: { goal_id: string; habit_item_id: string; date?: string }) => {
       const dateStr = date || toDateStr(new Date());
       const { data: existing } = await supabase
         .from("habit_completions")
@@ -350,16 +372,20 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
         return { content: [{ type: "text" as const, text: `✅ Logged completion for ${dateStr}` }] };
       }
     },
-  );
+  });
 
-  mcp.tool(
-    "send_check_in",
-    "Send an accountability check-in message to a partner",
-    {
-      partnership_id: z.string().describe("Partnership ID"),
-      message: z.string().describe("Check-in message"),
+  mcp.tool({
+    name: "send_check_in",
+    description: "Send an accountability check-in message to a partner",
+    inputSchema: {
+      type: "object",
+      properties: {
+        partnership_id: { type: "string", description: "Partnership ID" },
+        message: { type: "string", description: "Check-in message" },
+      },
+      required: ["partnership_id", "message"],
     },
-    async ({ partnership_id, message }) => {
+    handler: async ({ partnership_id, message }: { partnership_id: string; message: string }) => {
       const { error } = await supabase.from("accountability_check_ins").insert({
         partnership_id,
         initiated_by: userId,
@@ -369,20 +395,23 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
       return { content: [{ type: "text" as const, text: `✅ Check-in sent: "${message}"` }] };
     },
-  );
+  });
 
-  mcp.tool(
-    "log_daily_check_in",
-    "Create or update today's daily check-in (mood, energy, focus, journal)",
-    {
-      mood_rating: z.number().optional().describe("1-5"),
-      energy_level: z.number().optional().describe("1-5"),
-      focus_today: z.string().optional(),
-      quick_win: z.string().optional(),
-      blocker: z.string().optional(),
-      journal_entry: z.string().optional(),
+  mcp.tool({
+    name: "log_daily_check_in",
+    description: "Create or update today's daily check-in (mood, energy, focus, journal)",
+    inputSchema: {
+      type: "object",
+      properties: {
+        mood_rating: { type: "number", description: "1-5" },
+        energy_level: { type: "number", description: "1-5" },
+        focus_today: { type: "string" },
+        quick_win: { type: "string" },
+        blocker: { type: "string" },
+        journal_entry: { type: "string" },
+      },
     },
-    async ({ mood_rating, energy_level, focus_today, quick_win, blocker, journal_entry }) => {
+    handler: async ({ mood_rating, energy_level, focus_today, quick_win, blocker, journal_entry }: any) => {
       const today = toDateStr(new Date());
       const { data: existing } = await supabase
         .from("daily_check_ins")
@@ -411,7 +440,7 @@ function createConfiguredServer(supabase: ReturnType<typeof createClient>, userI
         return { content: [{ type: "text" as const, text: `✅ Created today's check-in` }] };
       }
     },
-  );
+  });
 
   return mcp;
 }
@@ -440,11 +469,10 @@ app.all("/*", async (c) => {
 
   // Create per-request MCP server with auth context
   const mcp = createConfiguredServer(supabase, user.id);
-  const transport = new StreamableHTTPTransport({ sessionIdGenerator: undefined });
-  await mcp.connect(transport);
+  const transport = new StreamableHttpTransport();
 
   try {
-    const response = await transport.handleRequest(c);
+    const response = await transport.handleRequest(c.req.raw, mcp);
     // Add CORS headers to response
     const newHeaders = new Headers(response.headers);
     Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
