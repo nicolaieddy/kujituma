@@ -5,8 +5,7 @@ type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
 export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: string) {
-  mcp.tool({
-    name: "create_objective",
+  mcp.tool("create_objective", {
     description: "Create a weekly objective for the current or specified week",
     inputSchema: {
       type: "object",
@@ -44,8 +43,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "update_objective",
+  mcp.tool("update_objective", {
     description: "Update a weekly objective (mark complete/incomplete, change text)",
     inputSchema: {
       type: "object",
@@ -73,8 +71,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "delete_objective",
+  mcp.tool("delete_objective", {
     description: "Delete a weekly objective by ID",
     inputSchema: {
       type: "object",
@@ -94,8 +91,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "log_habit_completion",
+  mcp.tool("log_habit_completion", {
     description: "Toggle a habit completion for a specific date",
     inputSchema: {
       type: "object",
@@ -134,8 +130,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "send_check_in",
+  mcp.tool("send_check_in", {
     description: "Send an accountability check-in message to a partner",
     inputSchema: {
       type: "object",
@@ -157,8 +152,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "log_daily_check_in",
+  mcp.tool("log_daily_check_in", {
     description: "Create or update today's daily check-in (mood, energy, focus, journal)",
     inputSchema: {
       type: "object",
@@ -202,10 +196,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  // ── NEW WRITE TOOLS ──
-
-  mcp.tool({
-    name: "create_goal",
+  mcp.tool("create_goal", {
     description: "Create a new goal with title, category, timeframe, and optional description",
     inputSchema: {
       type: "object",
@@ -237,8 +228,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "update_goal",
+  mcp.tool("update_goal", {
     description: "Update a goal's status (complete, pause, deprioritize), title, or description",
     inputSchema: {
       type: "object",
@@ -279,8 +269,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
-  mcp.tool({
-    name: "create_weekly_planning",
+  mcp.tool("create_weekly_planning", {
     description: "Start or update a weekly planning session with intention and/or reflection",
     inputSchema: {
       type: "object",
