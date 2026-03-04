@@ -26,12 +26,15 @@ function createConfiguredServer(supabase: any, userId: string) {
 const app = new Hono();
 
 app.all("/*", async (c) => {
+  console.log(`[MCP] ${c.req.method} ${c.req.url}`);
+
   if (c.req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   const { supabase, user } = await getUser(c.req.raw);
   if (!user) {
+    console.log("[MCP] Auth failed — no valid user");
     return new Response(
       JSON.stringify({
         jsonrpc: "2.0",
@@ -42,11 +45,15 @@ app.all("/*", async (c) => {
     );
   }
 
+  console.log(`[MCP] Authenticated user: ${user.id}`);
+
   const mcp = createConfiguredServer(supabase, user.id);
   const transport = new StreamableHttpTransport();
+  const httpHandler = transport.bind(mcp);
 
   try {
-    const response = await transport.handleRequest(c.req.raw, mcp);
+    const response = await httpHandler(c.req.raw);
+    console.log(`[MCP] Response status: ${response.status}`);
     const newHeaders = new Headers(response.headers);
     Object.entries(corsHeaders).forEach(([k, v]) => newHeaders.set(k, v));
     return new Response(response.body, {
@@ -55,7 +62,7 @@ app.all("/*", async (c) => {
       headers: newHeaders,
     });
   } catch (err) {
-    console.error("MCP handler error:", err);
+    console.error("[MCP] Handler error:", err);
     return new Response(
       JSON.stringify({
         jsonrpc: "2.0",

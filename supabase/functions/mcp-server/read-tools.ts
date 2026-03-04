@@ -5,8 +5,7 @@ type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
 export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: string) {
-  mcp.tool({
-    name: "get_active_goals",
+  mcp.tool("get_active_goals", {
     description: "Get all active goals for the authenticated user. Optionally filter by timeframe.",
     inputSchema: {
       type: "object",
@@ -29,8 +28,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_weekly_objectives",
+  mcp.tool("get_weekly_objectives", {
     description: "Get weekly objectives for a given week (Monday-based). Defaults to current week.",
     inputSchema: {
       type: "object",
@@ -54,8 +52,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_streaks",
+  mcp.tool("get_streaks", {
     description: "Get daily, weekly, and quarterly streaks",
     inputSchema: { type: "object", properties: {} },
     handler: async () => {
@@ -80,8 +77,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_habit_completions",
+  mcp.tool("get_habit_completions", {
     description: "Get habit completions for a given week",
     inputSchema: {
       type: "object",
@@ -106,8 +102,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_analytics_summary",
+  mcp.tool("get_analytics_summary", {
     description: "Productivity analytics: objectives, check-ins, habits, goals over a date range",
     inputSchema: {
       type: "object",
@@ -155,8 +150,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_partnerships",
+  mcp.tool("get_partnerships", {
     description: "List active accountability partnerships with partner names",
     inputSchema: { type: "object", properties: {} },
     handler: async () => {
@@ -180,10 +174,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  // ── NEW READ TOOLS ──
-
-  mcp.tool({
-    name: "get_goal_details",
+  mcp.tool("get_goal_details", {
     description: "Get a single goal with its linked weekly objectives and habit items",
     inputSchema: {
       type: "object",
@@ -204,8 +195,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "search_goals",
+  mcp.tool("search_goals", {
     description: "Search across goal titles and descriptions",
     inputSchema: {
       type: "object",
@@ -226,8 +216,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_daily_check_ins",
+  mcp.tool("get_daily_check_ins", {
     description: "Fetch daily check-in history for a date range (mood, energy, journal entries)",
     inputSchema: {
       type: "object",
@@ -251,8 +240,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_weekly_planning",
+  mcp.tool("get_weekly_planning", {
     description: "Get weekly planning sessions (intention, reflection) for current or past weeks",
     inputSchema: {
       type: "object",
@@ -274,8 +262,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_friends",
+  mcp.tool("get_friends", {
     description: "List friends with profile info",
     inputSchema: { type: "object", properties: {} },
     handler: async () => {
@@ -293,8 +280,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool({
-    name: "get_week_summary",
+  mcp.tool("get_week_summary", {
     description: "Combined snapshot for a week: objectives completion %, habits done, check-in status, planning status",
     inputSchema: {
       type: "object",

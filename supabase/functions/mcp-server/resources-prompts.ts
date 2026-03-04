@@ -1,12 +1,11 @@
-import { getMondayOfWeek, getWeekEnd, toDateStr } from "./helpers.ts";
+import { getMondayOfWeek, getWeekEnd } from "./helpers.ts";
 import type { createClient } from "npm:@supabase/supabase-js@2";
 
 type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
 export function registerResources(mcp: McpServer, supabase: Supabase, userId: string) {
-  mcp.resource({
-    uri: "user://profile",
+  mcp.resource("user://profile", {
     name: "User Profile",
     description: "User's name, streak data, and goal count",
     mimeType: "application/json",
@@ -36,8 +35,7 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.resource({
-    uri: "week://current",
+  mcp.resource("week://current", {
     name: "Current Week",
     description: "This week's objectives and completion status",
     mimeType: "application/json",
@@ -63,8 +61,7 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.resource({
-    uri: "goals://active",
+  mcp.resource("goals://active", {
     name: "Active Goals",
     description: "All active (non-paused, non-completed) goals",
     mimeType: "application/json",
@@ -82,8 +79,7 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
 }
 
 export function registerPrompts(mcp: McpServer) {
-  mcp.prompt({
-    name: "weekly_review",
+  mcp.prompt("weekly_review", {
     description: "Review this week's progress — objectives, habits, check-ins — and get Claude's analysis",
     handler: () => ({
       messages: [{
@@ -96,8 +92,7 @@ export function registerPrompts(mcp: McpServer) {
     }),
   });
 
-  mcp.prompt({
-    name: "plan_my_week",
+  mcp.prompt("plan_my_week", {
     description: "Plan next week based on active goals, last week's incomplete objectives, and current momentum",
     handler: () => ({
       messages: [{
@@ -110,8 +105,7 @@ export function registerPrompts(mcp: McpServer) {
     }),
   });
 
-  mcp.prompt({
-    name: "daily_check_in",
+  mcp.prompt("daily_check_in", {
     description: "Guided daily check-in — mood, energy, focus, blockers, and journal entry",
     handler: () => ({
       messages: [{
