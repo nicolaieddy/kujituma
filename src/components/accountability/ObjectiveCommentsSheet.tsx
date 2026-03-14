@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Send, MessageCircle, SmilePlus } from "lucide-react";
 import { useObjectiveComments } from "@/hooks/useObjectiveComments";
-import { useCommentReactions, EMOJI_OPTIONS } from "@/hooks/useCommentReactions";
+
 import { useAuth } from "@/contexts/AuthContext";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
