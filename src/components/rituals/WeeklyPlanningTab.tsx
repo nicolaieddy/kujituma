@@ -77,6 +77,24 @@ export const WeeklyPlanningTab = () => {
                   </div>
                 </div>
               )}
+              {currentSession.relationship_investment && (
+                <div className="flex gap-3">
+                  <Heart className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Relationship Investment</p>
+                    <p className="text-sm">{currentSession.relationship_investment}</p>
+                  </div>
+                </div>
+              )}
+              {currentSession.honest_conversation && (
+                <div className="flex gap-3">
+                  <MessageCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Honest Conversation</p>
+                    <p className="text-sm">{currentSession.honest_conversation}</p>
+                  </div>
+                </div>
+              )}
               <Button variant="outline" size="sm" onClick={openWeeklyPlanning}>
                 Update Plan
               </Button>
