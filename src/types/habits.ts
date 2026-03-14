@@ -57,6 +57,8 @@ export interface WeeklyPlanningSession {
   completed_at?: string;
   last_week_reflection?: string;
   week_intention?: string;
+  relationship_investment?: string;
+  honest_conversation?: string;
   created_at: string;
   updated_at: string;
 }
@@ -88,4 +90,6 @@ export interface CreateWeeklyPlanningSession {
   week_start: string;
   last_week_reflection?: string;
   week_intention?: string;
+  relationship_investment?: string;
+  honest_conversation?: string;
 }
