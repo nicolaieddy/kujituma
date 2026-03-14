@@ -1,59 +1,53 @@
 
 
-## MCP Server Upgrades — Options
+# Plan: Remove Community/Feed Feature
 
-Your current server has 11 tools (6 read, 5 write). Here are practical upgrades grouped by category:
+## What gets removed
 
-### 1. New Tools (more data surface area)
+### Entire directories (delete all files)
+- `src/components/community/` (6 files) — CommunityFeed, CommunitySidebar, CommunityRightSidebar, CreateGoalUpdateModal, GoalUpdateCard, GoalUpdateComments
+- `src/components/feed/` (19 files) — all feed post components, FeedView, VirtualizedFeedList, etc.
 
-| Tool | Type | What it does |
-|------|------|-------------|
-| `create_goal` | write | Create a new goal with title, category, timeframe, description |
-| `update_goal` | write | Update goal status (complete, pause, deprioritize), edit title/description |
-| `delete_objective` | write | Remove a weekly objective |
-| `get_daily_check_ins` | read | Fetch check-in history for a date range (mood, energy, journal entries) |
-| `get_weekly_planning` | read | Get current/past weekly planning sessions (intention, reflection) |
-| `create_weekly_planning` | write | Start or update a weekly planning session |
-| `get_friends` | read | List friends with online status |
-| `get_goal_details` | read | Get a single goal with its linked objectives and habit items |
-| `search_goals` | read | Full-text search across goal titles and descriptions |
-| `get_week_summary` | read | Combined snapshot: objectives completion %, habits done, check-in status, planning status for a given week |
+### Pages
+- `src/pages/Feed.tsx` — the community/feed page
 
-### 2. MCP Resources (read-only context Claude can pull automatically)
+### Hooks
+- `src/hooks/useGoalUpdates.ts` — fetches goal update feed
+- `src/hooks/useGoalFollows.ts` — follow/unfollow goals
+- `src/hooks/useUnifiedPosts.ts` — unified post feed
+- `src/hooks/useWeeklyFeedPost.ts` — weekly feed post logic
+- `src/hooks/useWeeklyShare.ts` — share week to community
+- `src/hooks/useWeeklyProgressPost.ts` — progress post creation
+- `src/hooks/useCommentReactions.ts` — reactions on comments
 
-MCP Resources let Claude pull context without the user explicitly asking. Using mcp-lite you can register resources:
+### Services
+- `src/services/goalUpdatesService.ts` — goal updates CRUD
+- `src/services/unifiedPostsService.ts` — unified posts queries
+- `src/services/goalFollowsService.ts` — goal follows CRUD
 
-- **`user://profile`** — user's name, streak, goal count (auto-loaded context)
-- **`week://current`** — this week's objectives + completion status
-- **`goals://active`** — all active goals as structured context
+### Types
+- `src/types/goalUpdates.ts` — GoalUpdate, CheerType, etc.
 
-This means Claude starts every conversation already knowing your current state.
+### Files that need editing (not deleting)
 
-### 3. MCP Prompts (pre-built conversation starters)
+1. **`src/App.tsx`** — Remove `/community` route, Feed lazy import, change `*` fallback from `<Feed />` to `<Goals />`
+2. **`src/components/layout/NavigationMenu.tsx`** — Remove "Community" nav item from `navItems` array
+3. **`src/components/layout/MainNavigation.tsx`** — Remove "feed" tab (this component may become unnecessary with only Goals left, but we'll keep it if admin tab still uses it)
+4. **`src/components/thisweek/ThisWeekView.tsx`** — Remove share-to-community functionality (`handleViewInCommunity`, share week card references)
+5. **`src/components/thisweek/WeeklyReflectionCard.tsx`** — Remove "shared with community" messaging
+6. **`src/components/thisweek/ShareWeekCard.tsx`** — May need deletion or gutting if it's purely for community sharing
+7. **`src/components/thisweek/SharedPostPreview.tsx`** — Delete (preview of shared community post)
+8. **`src/components/thisweek/ShareConfirmationDialog.tsx`** — Delete (confirms sharing to community)
+9. **`src/components/habits/CloseLastWeekPrompt.tsx`** — Remove "share with community" messaging
+10. **`src/components/feed/PostContextMenu.tsx`** — Deleted with feed directory
+11. **`src/components/profile/NotificationPreferences.tsx`** — Remove "Goals & Community" label, update to just "Goals"
+12. **`src/pages/PrivacyPolicy.tsx`** / **`src/pages/TermsOfService.tsx`** — Remove community feed references from legal text
+13. **`src/hooks/useWeeklyProgress.ts`** — Remove `feedPost` references if it returns community feed data
+14. **`vite.config.ts`** — Update PWA description to remove "community" wording
 
-Register prompt templates that appear in Claude's UI:
-
-- **"Weekly review"** — pre-fills a prompt that pulls this week's data and asks Claude to analyze progress
-- **"Plan my week"** — pulls last week's incomplete objectives and active goals, asks Claude to suggest this week's plan
-- **"Daily check-in"** — guided journal prompt that ends by calling `log_daily_check_in`
-
-### 4. Infrastructure Improvements
-
-- **Rate limiting** — track calls per token per minute in a simple counter to prevent abuse
-- **Token scoping** — allow tokens to be read-only vs read-write (add a `scope` column to `mcp_api_tokens`)
-- **Audit logging** — log every tool call with timestamp, tool name, and params for debugging
-- **Better error messages** — return structured error codes so Claude can retry intelligently
-
-### Recommendation
-
-The highest-impact upgrades are:
-1. **New tools** (`create_goal`, `get_week_summary`, `delete_objective`) — these fill obvious gaps
-2. **MCP Resources** — makes Claude contextually aware without extra prompting
-3. **MCP Prompts** — gives users one-click workflows
-
-### Implementation scope
-- New tools: ~1 file edit (mcp-server/index.ts) + update the tools list in McpSection.tsx
-- Resources & Prompts: same file, using mcp-lite's `mcp.resource()` and `mcp.prompt()` APIs
-- Token scoping: 1 migration (add `scope` column) + auth logic update
-- No new dependencies needed
+### Summary
+- **~30 files deleted**
+- **~10 files edited**
+- Navigation simplified (no more Community tab)
+- Week sharing to community removed; weekly close/reflection still works for personal use
 
