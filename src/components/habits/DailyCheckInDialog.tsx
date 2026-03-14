@@ -63,6 +63,18 @@ const ENERGY_OPTIONS = [
   { value: 5, emoji: "🔥", label: "Peak" },
 ];
 
+const EMOTION_TAGS: Record<string, string[]> = {
+  low: ['anxious', 'frustrated', 'lonely', 'overwhelmed', 'hurt', 'disappointed'],
+  mid: ['restless', 'uncertain', 'contemplative', 'neutral', 'mixed'],
+  high: ['grateful', 'energized', 'proud', 'hopeful', 'connected', 'peaceful'],
+};
+
+const getMoodBracket = (mood: number): string => {
+  if (mood <= 2) return 'low';
+  if (mood === 3) return 'mid';
+  return 'high';
+};
+
 // Get greeting based on time of day
 const getGreeting = (name?: string) => {
   const hour = new Date().getHours();
