@@ -45,14 +45,6 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
             <span className="hidden sm:inline">Goals & Progress</span>
             <span className="sm:hidden">Goals</span>
           </TabsTrigger>
-          <TabsTrigger 
-            value="feed" 
-            className="flex items-center gap-2 text-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Progress Feed</span>
-            <span className="sm:hidden">Feed</span>
-          </TabsTrigger>
           {isAdmin && (
             <TabsTrigger 
               value="admin" 
