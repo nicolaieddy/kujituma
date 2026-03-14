@@ -209,21 +209,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     incompleteReflections,
   });
 
-  // Share functionality
-  const {
-    isSharing,
-    showShareConfirmation,
-    setShowShareConfirmation,
-    handleRequestShare,
-    handleConfirmShare,
-    handleViewInCommunity,
-  } = useWeeklyShare({
-    userId: user?.id,
-    currentWeekStart,
-    objectives,
-    progressNotes: progressPost?.notes || '',
-    incompleteReflections,
-  });
 
   // Navigation
   const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
