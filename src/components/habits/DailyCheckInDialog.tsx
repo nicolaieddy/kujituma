@@ -170,7 +170,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       }
     }, 500);
     return () => clearTimeout(draftTimeoutRef.current);
-  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, locationLat, locationLng, locationName, hasInitialized, open, todayCheckIn]);
+  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, emotionTags, locationLat, locationLng, locationName, hasInitialized, open, todayCheckIn]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
