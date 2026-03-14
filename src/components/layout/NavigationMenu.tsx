@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Target, Users, UserPlus, BarChart3, Shield } from "lucide-react";
+import { Target, UserPlus, BarChart3, Shield } from "lucide-react";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 
 interface NavigationMenuProps {

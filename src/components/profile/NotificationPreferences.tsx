@@ -55,13 +55,10 @@ const GROUPS: NotificationGroup[] = [
     ],
   },
   {
-    title: "Goals & Community",
+    title: "Goals",
     hasSms: false,
     rows: [
-      { type: "goal_update_cheer", label: "Goal Cheers", description: "Someone cheered on your goal update" },
       { type: "goal_milestone", label: "Goal Milestones", description: "You reached a goal milestone" },
-      { type: "goal_help_request", label: "Help Requests", description: "Someone asked for help on a goal you follow" },
-      { type: "goal_update_comment", label: "Goal Comments", description: "New comment on a goal update" },
     ],
   },
 ];

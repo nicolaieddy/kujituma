@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => ({
         manifest: {
           name: 'Kujituma - Weekly Progress Sharing',
           short_name: 'Kujituma',
-          description: 'Share your weekly progress, connect with your community, and stay accountable to your goals',
+          description: 'Track your weekly progress and stay accountable to your goals',
           theme_color: '#1a6b4a',
           background_color: '#ffffff',
           display: 'standalone',

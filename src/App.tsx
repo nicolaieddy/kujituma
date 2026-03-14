@@ -245,7 +245,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/strava-callback" element={<StravaCallback />} />
-            <Route path="*" element={<Feed />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </DashboardLayout>
