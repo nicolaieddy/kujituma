@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { CheckCircle, Circle, ArrowRight, Share2, Loader2 } from "lucide-react";
+import { CheckCircle, Circle, ArrowRight, Loader2 } from "lucide-react";
 import { format, parseISO, subDays } from "date-fns";
 
 interface CloseLastWeekPromptProps {
@@ -39,7 +39,7 @@ export const CloseLastWeekPrompt = ({
   lastWeekStart 
 }: CloseLastWeekPromptProps) => {
   const isMobile = useIsMobile();
-  const { objectives, progressPost, feedPost, isLoading } = useWeeklyProgress(lastWeekStart);
+  const { objectives, progressPost, isLoading } = useWeeklyProgress(lastWeekStart);
   
   const completedCount = objectives.filter(o => o.is_completed).length;
   const totalCount = objectives.length;
@@ -47,7 +47,6 @@ export const CloseLastWeekPrompt = ({
   
   const lastWeekRange = WeeklyProgressService.formatWeekRange(lastWeekStart);
   const isWeekClosed = progressPost?.is_completed || false;
-  const isWeekShared = !!feedPost;
 
   const handleSkipAndPlan = () => {
     onOpenChange(false);
@@ -114,9 +113,6 @@ export const CloseLastWeekPrompt = ({
             <Badge variant={isWeekClosed ? "default" : "outline"} className="text-xs">
               {isWeekClosed ? "✓ Week Closed" : "Week Not Closed"}
             </Badge>
-            <Badge variant={isWeekShared ? "default" : "outline"} className="text-xs">
-              {isWeekShared ? "✓ Shared" : "Not Shared"}
-            </Badge>
           </div>
 
           {/* Recommendation */}
@@ -126,13 +122,9 @@ export const CloseLastWeekPrompt = ({
                 <>
                   <span className="font-medium">Recommended:</span> Close last week first to reflect on what worked and what didn't before planning your new week.
                 </>
-              ) : !isWeekShared ? (
-                <>
-                  <span className="font-medium">Optional:</span> Share your progress with the community before starting your new week!
-                </>
               ) : (
                 <>
-                  <span className="font-medium">Great job!</span> Last week is closed and shared. You're ready to plan!
+                  <span className="font-medium">Great job!</span> Last week is closed. You're ready to plan!
                 </>
               )}
             </p>
@@ -150,23 +142,14 @@ export const CloseLastWeekPrompt = ({
             Skip & Plan Anyway
           </Button>
           <Button onClick={handleCloseWeekFirst} className="flex-1">
-            <Share2 className="h-4 w-4 mr-2" />
             Close Last Week First
           </Button>
         </>
       ) : (
-        <>
-          {!isWeekShared && (
-            <Button variant="outline" onClick={handleCloseWeekFirst} className="flex-1">
-              <Share2 className="h-4 w-4 mr-2" />
-              Share Last Week
-            </Button>
-          )}
-          <Button onClick={handleSkipAndPlan} className="flex-1">
-            Continue to Planning
-            <ArrowRight className="h-4 w-4 ml-2" />
-          </Button>
-        </>
+        <Button onClick={handleSkipAndPlan} className="flex-1">
+          Continue to Planning
+          <ArrowRight className="h-4 w-4 ml-2" />
+        </Button>
       )}
     </div>
   );

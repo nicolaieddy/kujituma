@@ -7,9 +7,8 @@ import { GoalForm } from "./GoalForm";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
 import { IntegrationsPromptCard } from "./IntegrationsPromptCard";
-import { CreateGoalUpdateModal } from "@/components/community/CreateGoalUpdateModal";
 import { LanguageLearningIntegration } from "./LanguageLearningIntegration";
-import { Edit, CheckCircle, Play, Clock, Trash2, Share2 } from "lucide-react";
+import { Edit, CheckCircle, Play, Clock, Trash2 } from "lucide-react";
 
 interface GoalDetailModalProps {
   goal: Goal | null;
@@ -36,13 +35,11 @@ export const GoalDetailModal = ({
   onStatusChange,
 }: GoalDetailModalProps) => {
   const [isEditing, setIsEditing] = useState(false);
-  const [showShareModal, setShowShareModal] = useState(false);
 
   if (!goal) return null;
 
   const config = STATUS_CONFIG[goal.status];
   const IconComponent = config.icon;
-  const canShare = goal.visibility !== 'private' && goal.status !== 'deprioritized';
 
   const handleClose = () => {
     setIsEditing(false);
@@ -50,92 +47,76 @@ export const GoalDetailModal = ({
   };
 
   return (
-    <>
-      <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
-          <DialogHeader>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <IconComponent className="h-5 w-5 text-primary" />
-                  <Badge className={`${config.color} text-sm`}>{config.label}</Badge>
-                </div>
-                <DialogTitle className="text-2xl text-foreground">{goal.title}</DialogTitle>
-                <DialogDescription className="sr-only">Goal details and actions</DialogDescription>
-                {goal.description && <p className="text-muted-foreground mt-2">{goal.description}</p>}
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto glass-card shadow-elegant">
+        <DialogHeader>
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <IconComponent className="h-5 w-5 text-primary" />
+                <Badge className={`${config.color} text-sm`}>{config.label}</Badge>
               </div>
-              <div className="flex gap-2">
-                {!isEditing && (
-                  <>
-                    {canShare && (
-                      <Button variant="ghost" size="sm" onClick={() => setShowShareModal(true)}>
-                        <Share2 className="h-4 w-4 mr-2" />Share
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
-                      <Edit className="h-4 w-4 mr-2" />Edit
-                    </Button>
-                    {goal.status === 'not_started' && (
-                      <Button variant="ghost" size="sm" onClick={() => onStatusChange(goal.id, 'in_progress')}>
-                        <Play className="h-4 w-4 mr-2" />Start
-                      </Button>
-                    )}
-                    {goal.status === 'in_progress' && (
-                      <Button variant="ghost" size="sm" onClick={() => onStatusChange(goal.id, 'completed')}>
-                        <CheckCircle className="h-4 w-4 mr-2" />Complete
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="sm" onClick={() => onDelete(goal.id)} className="text-destructive hover:bg-destructive/20">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
+              <DialogTitle className="text-2xl text-foreground">{goal.title}</DialogTitle>
+              <DialogDescription className="sr-only">Goal details and actions</DialogDescription>
+              {goal.description && <p className="text-muted-foreground mt-2">{goal.description}</p>}
             </div>
-          </DialogHeader>
-
-          {isEditing ? (
-            <div className="mt-6">
-              <GoalForm 
-                key={`edit-${goal.id}`} 
-                onSubmit={(data) => { onEdit({ ...goal, ...data }); setIsEditing(false); }} 
-                onCancel={() => setIsEditing(false)} 
-                initialData={goal} 
-              />
-            </div>
-          ) : (
-            <div className="mt-6 space-y-6">
-              {/* Integrations prompt for users who haven't set up integrations */}
-              <IntegrationsPromptCard 
-                category={goal.category} 
-                hasHabits={goal.habit_items && goal.habit_items.length > 0}
-              />
-              
-              {/* Language Learning Integration */}
-              {goal.category === 'Language Learning' && (
-                <LanguageLearningIntegration />
+            <div className="flex gap-2">
+              {!isEditing && (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)}>
+                    <Edit className="h-4 w-4 mr-2" />Edit
+                  </Button>
+                  {goal.status === 'not_started' && (
+                    <Button variant="ghost" size="sm" onClick={() => onStatusChange(goal.id, 'in_progress')}>
+                      <Play className="h-4 w-4 mr-2" />Start
+                    </Button>
+                  )}
+                  {goal.status === 'in_progress' && (
+                    <Button variant="ghost" size="sm" onClick={() => onStatusChange(goal.id, 'completed')}>
+                      <CheckCircle className="h-4 w-4 mr-2" />Complete
+                    </Button>
+                  )}
+                  <Button variant="ghost" size="sm" onClick={() => onDelete(goal.id)} className="text-destructive hover:bg-destructive/20">
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
               )}
-              
-              <GoalDetailHabitsSection 
-                goal={goal} 
-                onEdit={onEdit} 
-              />
-              
-              <GoalDetailObjectivesSection
-                goalId={goal.id}
-                goalStartDate={goal.start_date}
-              />
             </div>
-          )}
-        </DialogContent>
-      </Dialog>
+          </div>
+        </DialogHeader>
 
-      {/* Share Goal Update Modal */}
-      <CreateGoalUpdateModal
-        isOpen={showShareModal}
-        onClose={() => setShowShareModal(false)}
-        preselectedGoalId={goal.id}
-      />
-    </>
+        {isEditing ? (
+          <div className="mt-6">
+            <GoalForm 
+              key={`edit-${goal.id}`} 
+              onSubmit={(data) => { onEdit({ ...goal, ...data }); setIsEditing(false); }} 
+              onCancel={() => setIsEditing(false)} 
+              initialData={goal} 
+            />
+          </div>
+        ) : (
+          <div className="mt-6 space-y-6">
+            <IntegrationsPromptCard 
+              category={goal.category} 
+              hasHabits={goal.habit_items && goal.habit_items.length > 0}
+            />
+            
+            {goal.category === 'Language Learning' && (
+              <LanguageLearningIntegration />
+            )}
+            
+            <GoalDetailHabitsSection 
+              goal={goal} 
+              onEdit={onEdit} 
+            />
+            
+            <GoalDetailObjectivesSection
+              goalId={goal.id}
+              goalStartDate={goal.start_date}
+            />
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };

@@ -39,7 +39,7 @@ export const HabitsProvider = ({ children }: HabitsProviderProps) => {
   const lastWeekStart = useMemo(() => WeeklyProgressService.getWeekStart(lastWeekStartDate), [lastWeekStartDate]);
   
   const { hasCompletedPlanning } = useWeeklyPlanning(weekStart);
-  const { progressPost: lastWeekProgress, feedPost: lastWeekFeedPost } = useWeeklyProgress(lastWeekStart);
+  const { progressPost: lastWeekProgress } = useWeeklyProgress(lastWeekStart);
   const { hasCompletedReview, isEndOfQuarter, isLoading: isReviewLoading } = useQuarterlyReview();
   const { goals } = useGoals();
   const { objectives } = useAllWeeklyObjectives();

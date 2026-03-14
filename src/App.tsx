@@ -42,7 +42,7 @@ const RequireProfileComplete = ({ children }: { children: React.ReactNode }) => 
 };
 
 // Lazy load pages for better performance
-const Feed = lazy(() => import("./pages/Feed"));
+
 const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Goals = lazy(() => import("./pages/Goals"));
@@ -226,7 +226,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/community" element={<Feed />} />
+            
             <Route path="/goals" element={<Goals />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/analytics" element={<Analytics />} />
@@ -245,7 +245,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/strava-callback" element={<StravaCallback />} />
-            <Route path="*" element={<Feed />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
       </DashboardLayout>

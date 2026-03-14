@@ -10,7 +10,6 @@ import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
-import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { CloseWeekDialog } from "@/components/thisweek/CloseWeekDialog";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
@@ -30,8 +29,6 @@ import { toast } from "@/hooks/use-toast";
 import { HistoricalWeekSummary } from "@/components/thisweek/HistoricalWeekSummary";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 
-// Extracted hooks for better code organization
-import { useWeeklyShare } from "@/hooks/useWeeklyShare";
 import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
 import { useIncompleteReflections } from "@/hooks/useIncompleteReflections";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
@@ -51,7 +48,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const {
     objectives,
     progressPost,
-    feedPost,
     createObjective,
     updateObjective,
     deleteObjective,
@@ -212,21 +208,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     incompleteReflections,
   });
 
-  // Share functionality
-  const {
-    isSharing,
-    showShareConfirmation,
-    setShowShareConfirmation,
-    handleRequestShare,
-    handleConfirmShare,
-    handleViewInCommunity,
-  } = useWeeklyShare({
-    userId: user?.id,
-    currentWeekStart,
-    objectives,
-    progressNotes: progressPost?.notes || '',
-    incompleteReflections,
-  });
 
   // Navigation
   const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
@@ -251,7 +232,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Computed values
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
-  const hasShared = !!feedPost;
 
   // Loading state
   if (weeklyDataLoading) {
@@ -434,14 +414,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       <CarryOverActivityLog />
 
       <ShareWeekCard
-        hasShared={hasShared}
         isCurrentWeek={isCurrentWeek}
-        isSharing={isSharing}
-        feedPost={feedPost}
         objectives={objectives || []}
         reflectionValue={progressPost?.notes || ""}
-        onShareWeek={handleRequestShare}
-        onViewInCommunity={() => handleViewInCommunity(feedPost?.id)}
         onCloseWeek={() => setShowCloseDialog(true)}
         onCarryOverIncomplete={isWeekCompleted && closeIncompleteObjectives.length > 0 
           ? () => setShowCarryOverFromClosedModal(true) 
@@ -460,14 +435,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         goals={goals || []}
         onConfirmClose={closeWeek}
         isClosing={isClosingWeek}
-      />
-
-      <ShareConfirmationDialog
-        isOpen={showShareConfirmation}
-        onClose={() => setShowShareConfirmation(false)}
-        onConfirm={handleConfirmShare}
-        isSharing={isSharing}
-        goals={(goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started').map(g => ({ id: g.id, title: g.title }))}
       />
 
       <CarryOverObjectivesModal

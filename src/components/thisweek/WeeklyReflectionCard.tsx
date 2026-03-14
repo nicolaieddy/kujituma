@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useWeeklyReflection } from "@/hooks/useWeeklyReflection";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { Share2, Globe, ChevronDown } from "lucide-react";
+import { Share2, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 
@@ -43,19 +43,13 @@ export const WeeklyReflectionCard = ({
                     {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {!isReadOnly && (
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/20 text-primary flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
-                        Public
-                      </span>
-                    )}
                     <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
                 <p className="text-muted-foreground text-sm mt-1">
                   {isReadOnly 
-                    ? "This week has been shared and can no longer be edited"
-                    : "Share your overall week highlights — visible to the community when you post"
+                    ? "This week has been closed and can no longer be edited"
+                    : "Reflect on your week — what went well and what you learned"
                   }
                 </p>
               </div>
@@ -89,7 +83,7 @@ export const WeeklyReflectionCard = ({
             {isReadOnly && (
               <div className="text-center py-2">
                 <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                  ✅ Week completed and shared with community
+                  ✅ Week completed
                 </span>
               </div>
             )}

@@ -36,7 +36,7 @@ export const WeeklyProgressView = () => {
   const {
     objectives,
     progressPost,
-    feedPost,
+    
     createObjective,
     updateObjective,
     deleteObjective,
@@ -338,13 +338,6 @@ export const WeeklyProgressView = () => {
     uncompleteWeek();
   };
 
-  const handleViewPost = () => {
-    if (feedPost) {
-      // Navigate to feed with the specific post - you could implement a route like /feed#post-id
-      // For now, just navigate to feed
-      window.open('/feed', '_blank');
-    }
-  };
 
   const handleOpenCarryOver = () => {
     setShowCarryOverModal(true);
@@ -422,14 +415,11 @@ export const WeeklyProgressView = () => {
           <WeeklyProgressActions
             isWeekCompleted={isWeekCompleted}
             weekNumber={weekNumber}
-            feedPost={feedPost}
             isSavingNotes={isSavingNotes}
             isCompletingWeek={isPostingToFeed}
             isUncompletingWeek={isUncompletingWeek}
             onSaveNotes={handleSaveNotes}
-            onPostToFeed={handlePostToFeed}
             onEditWeek={handleEditWeek}
-            onViewPost={handleViewPost}
           />
         </CardContent>
       </Card>
