@@ -85,8 +85,6 @@ export const ObjectiveCommentsSheet = ({
                   .join('')
                   .toUpperCase()
                   .slice(0, 2) || '?';
-                const commentReactions = reactionsByComment[comment.id] || {};
-                const hasReactions = Object.keys(commentReactions).length > 0;
 
                 return (
                   <div
@@ -109,91 +107,16 @@ export const ObjectiveCommentsSheet = ({
                         </span>
                       </div>
 
-                      {/* Message bubble + emoji picker trigger */}
-                      <div className={cn("flex items-end gap-1.5", isMe && "flex-row-reverse")}>
-                        <div
-                          className={cn(
-                            "rounded-lg px-3 py-2 text-sm inline-block text-left",
-                            isMe
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground"
-                          )}
-                        >
-                          {comment.message}
-                        </div>
-
-                        {/* Emoji picker toggle button */}
-                        <button
-                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground flex-shrink-0 mb-0.5"
-                          aria-label="React to comment"
-                          onPointerDown={(e) => {
-                            e.stopPropagation();
-                            e.preventDefault();
-                            setOpenEmojiPickerCommentId(
-                              openEmojiPickerCommentId === comment.id ? null : comment.id
-                            );
-                          }}
-                        >
-                          <SmilePlus className="h-3.5 w-3.5" />
-                        </button>
+                      <div
+                        className={cn(
+                          "rounded-lg px-3 py-2 text-sm inline-block text-left",
+                          isMe
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground"
+                        )}
+                      >
+                        {comment.message}
                       </div>
-
-                      {/* Inline emoji picker (no portal, no Popover) */}
-                      {openEmojiPickerCommentId === comment.id && (
-                        <div
-                          className={cn(
-                            "flex gap-1 mt-1 p-1.5 rounded-lg border bg-popover shadow-md w-fit",
-                            isMe && "ml-auto"
-                          )}
-                        >
-                          {EMOJI_OPTIONS.map((emoji) => {
-                            const isMine = commentReactions[emoji]?.isMine;
-                            return (
-                              <button
-                                key={emoji}
-                                onPointerDown={(e) => {
-                                  e.stopPropagation();
-                                  e.preventDefault();
-                                  toggleReaction({ commentId: comment.id, emoji });
-                                  setOpenEmojiPickerCommentId(null);
-                                }}
-                                className={cn(
-                                  "text-lg p-1.5 rounded-md hover:bg-muted transition-colors cursor-pointer",
-                                  isMine && "bg-primary/10 ring-1 ring-primary/30"
-                                )}
-                                aria-label={`React with ${emoji}`}
-                              >
-                                {emoji}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-
-                      {/* Reaction chips below the bubble */}
-                      {hasReactions && (
-                        <div className={cn("flex flex-wrap gap-1 mt-1", isMe && "justify-end")}>
-                          {Object.entries(commentReactions).map(([emoji, { count, isMine }]) => (
-                            <button
-                              key={emoji}
-                              onPointerDown={(e) => {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                toggleReaction({ commentId: comment.id, emoji });
-                              }}
-                              className={cn(
-                                "flex items-center gap-0.5 text-xs px-1.5 py-0.5 rounded-full border transition-colors cursor-pointer",
-                                isMine
-                                  ? "bg-primary/10 border-primary/30 text-primary"
-                                  : "bg-muted border-border text-muted-foreground hover:border-primary/30"
-                              )}
-                            >
-                              <span>{emoji}</span>
-                              <span className="font-medium">{count}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 );

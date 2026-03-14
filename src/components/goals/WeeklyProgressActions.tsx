@@ -1,7 +1,6 @@
 
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Edit, Save, Share, ExternalLink, Check } from "lucide-react";
-import { UnifiedPost } from "@/services/unifiedPostsService";
+import { CheckCircle, Edit, Save } from "lucide-react";
 
 interface WeeklyProgressActionsProps {
   isWeekCompleted: boolean;
@@ -9,11 +8,8 @@ interface WeeklyProgressActionsProps {
   isSavingNotes: boolean;
   isCompletingWeek: boolean;
   isUncompletingWeek: boolean;
-  feedPost?: UnifiedPost | null;
   onSaveNotes: () => void;
-  onPostToFeed: () => void;
   onEditWeek: () => void;
-  onViewPost?: () => void;
 }
 
 export const WeeklyProgressActions = ({
@@ -22,11 +18,8 @@ export const WeeklyProgressActions = ({
   isSavingNotes,
   isCompletingWeek,
   isUncompletingWeek,
-  feedPost,
   onSaveNotes,
-  onPostToFeed,
   onEditWeek,
-  onViewPost,
 }: WeeklyProgressActionsProps) => {
   return (
     <div className="flex justify-center">
@@ -40,17 +33,6 @@ export const WeeklyProgressActions = ({
             <Edit className="h-4 w-4 mr-2" />
             {isUncompletingWeek ? "Reopening..." : "Edit Week"}
           </Button>
-          
-          {feedPost && onViewPost && (
-            <Button
-              onClick={onViewPost}
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10 bg-transparent px-6"
-            >
-              <ExternalLink className="h-4 w-4 mr-2" />
-              View Feed Post
-            </Button>
-          )}
         </div>
       ) : (
         <div className="flex gap-4">
@@ -63,34 +45,6 @@ export const WeeklyProgressActions = ({
             <Save className="h-4 w-4 mr-2" />
             {isSavingNotes ? "Saving..." : "Save Progress"}
           </Button>
-          
-          {feedPost ? (
-            <div className="flex gap-4 items-center">
-              <div className="flex items-center gap-2 text-green-400 text-sm">
-                <Check className="h-4 w-4" />
-                <span>Posted to Feed</span>
-              </div>
-              {onViewPost && (
-                <Button
-                  onClick={onViewPost}
-                  variant="outline"
-                  className="border-green-400/30 text-green-400 hover:bg-green-400/10 bg-transparent px-6"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  View Post
-                </Button>
-              )}
-            </div>
-          ) : (
-            <Button
-              onClick={onPostToFeed}
-              disabled={isCompletingWeek}
-              className="gradient-primary shadow-elegant hover:shadow-lift px-6"
-            >
-              <Share className="h-4 w-4 mr-2" />
-              {isCompletingWeek ? "Posting..." : `Post Week ${weekNumber} to Feed`}
-            </Button>
-          )}
         </div>
       )}
     </div>

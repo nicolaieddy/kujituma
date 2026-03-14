@@ -1,23 +1,26 @@
 
 import { useWeekState } from "./useWeekState";
 import { useWeeklyObjectives } from "./useWeeklyObjectives";
-import { useWeeklyProgressPost } from "./useWeeklyProgressPost";
-import { useWeeklyFeedPost } from "./useWeeklyFeedPost";
 
 export const useWeeklyProgress = (weekStart?: string) => {
-  // Use focused hooks for each concern
   const weekState = useWeekState(weekStart);
   const objectives = useWeeklyObjectives(weekState.weekStart);
-  const progressPost = useWeeklyProgressPost(weekState.weekStart);
-  const feedPost = useWeeklyFeedPost(weekState.weekStart);
+
+  // Get progress post from objectives query context if available
+  const { data: progressPostData } = require("@tanstack/react-query").useQuery({
+    queryKey: ['weekly-progress-post', weekState.weekStart],
+    queryFn: async () => {
+      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
+      return WeeklyProgressService.getWeeklyProgressPost(weekState.weekStart);
+    },
+    enabled: !!weekState.weekStart,
+  });
 
   return {
-    // Week state
     weekStart: weekState.weekStart,
     weekRange: weekState.weekRange,
     weekNumber: weekState.weekNumber,
     
-    // Objectives
     objectives: objectives.objectives,
     createObjective: objectives.createObjective,
     updateObjective: objectives.updateObjective,
@@ -31,26 +34,30 @@ export const useWeeklyProgress = (weekStart?: string) => {
     pendingUpdateIds: objectives.pendingUpdateIds,
     recentlySavedIds: objectives.recentlySavedIds,
     
-    // Sync status
     isCached: objectives.isCached,
     isRefetching: objectives.isRefetching,
     lastSyncTime: objectives.lastSyncTime,
     refetchObjectives: objectives.refetch,
     
-    // Progress post
-    progressPost: progressPost.progressPost,
-    updateProgressNotes: progressPost.updateProgressNotes,
-    completeWeek: progressPost.completeWeek,
-    uncompleteWeek: progressPost.uncompleteWeek,
-    isSavingNotes: progressPost.isSavingNotes,
-    isCompletingWeek: progressPost.isCompletingWeek,
-    isUncompletingWeek: progressPost.isUncompletingWeek,
+    progressPost: progressPostData || null,
+    updateProgressNotes: async (notes: string) => {
+      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
+      await WeeklyProgressService.updateProgressNotes(weekState.weekStart, notes);
+    },
+    completeWeek: async () => {
+      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
+      await WeeklyProgressService.completeWeek(weekState.weekStart);
+    },
+    uncompleteWeek: async () => {
+      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
+      await WeeklyProgressService.uncompleteWeek(weekState.weekStart);
+    },
+    isSavingNotes: false,
+    isCompletingWeek: false,
+    isUncompletingWeek: false,
     
-    // Feed post
-    feedPost: feedPost.feedPost,
+    feedPost: null,
     
-    // Combined loading state
-    isLoading: objectives.isLoading || progressPost.isLoading,
+    isLoading: objectives.isLoading,
   };
 };
-
