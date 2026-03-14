@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, Lightbulb, Target, CheckCircle, Clock } from "lucide-react";
+import { CalendarDays, Lightbulb, Target, CheckCircle, Clock, Heart, MessageCircle } from "lucide-react";
 import { format, parseISO, getISOWeek } from "date-fns";
 
 interface WeeklySession {
@@ -15,6 +15,8 @@ interface WeeklySession {
   is_completed: boolean;
   last_week_reflection: string | null;
   week_intention: string | null;
+  relationship_investment?: string | null;
+  honest_conversation?: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -33,6 +35,9 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
   const endDate = new Date(startDate);
   endDate.setDate(endDate.getDate() + 6);
   const weekNum = getISOWeek(startDate);
+
+  const hasRelationshipContent = session.relationship_investment || session.honest_conversation;
+  const hasReflectionContent = session.last_week_reflection || session.week_intention;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -59,7 +64,6 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
         </DialogHeader>
 
         <div className="space-y-4">
-          {/* Last Week Reflection */}
           {session.last_week_reflection && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -74,7 +78,6 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
 
           {session.last_week_reflection && session.week_intention && <Separator />}
 
-          {/* This Week's Intention */}
           {session.week_intention && (
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-sm font-medium">
@@ -87,7 +90,32 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
             </div>
           )}
 
-          {/* Completion info */}
+          {hasReflectionContent && hasRelationshipContent && <Separator />}
+
+          {session.relationship_investment && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Heart className="h-4 w-4 text-destructive" />
+                Relationship Investment
+              </div>
+              <p className="text-sm text-muted-foreground pl-6 whitespace-pre-wrap">
+                {session.relationship_investment}
+              </p>
+            </div>
+          )}
+
+          {session.honest_conversation && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <MessageCircle className="h-4 w-4 text-muted-foreground" />
+                Honest Conversation
+              </div>
+              <p className="text-sm text-muted-foreground pl-6 whitespace-pre-wrap">
+                {session.honest_conversation}
+              </p>
+            </div>
+          )}
+
           {session.completed_at && (
             <>
               <Separator />
@@ -97,8 +125,7 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
             </>
           )}
 
-          {/* No content message */}
-          {!session.last_week_reflection && !session.week_intention && (
+          {!session.last_week_reflection && !session.week_intention && !hasRelationshipContent && (
             <p className="text-sm text-muted-foreground text-center py-4">
               No details recorded for this planning session.
             </p>

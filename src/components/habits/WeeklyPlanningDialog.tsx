@@ -227,6 +227,42 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
         />
       </div>
       
+      {/* Relationship Intentions (Connect framework) */}
+      <div className="space-y-4 bg-accent/30 rounded-lg p-4 border border-accent">
+        <div>
+          <Label className="flex items-center gap-2 text-sm font-medium">
+            <Heart className="h-4 w-4 text-destructive" />
+            Relationship Intentions
+          </Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Inspired by the <em>Connect</em> framework — deepen one relationship this week
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm">Which relationship will you invest in this week?</Label>
+          <Textarea
+            value={relationshipInvestment}
+            onChange={(e) => setRelationshipInvestment(e.target.value)}
+            placeholder="e.g. I'll schedule a real catch-up with my sister…"
+            className="resize-none min-h-[80px]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm">
+            <MessageCircle className="h-3.5 w-3.5 text-muted-foreground" />
+            What honest conversation are you avoiding?
+          </Label>
+          <Textarea
+            value={honestConversation}
+            onChange={(e) => setHonestConversation(e.target.value)}
+            placeholder="e.g. I need to tell my manager that the deadline isn't realistic…"
+            className="resize-none min-h-[80px]"
+          />
+        </div>
+      </div>
+
       {/* Tips */}
       <div className="bg-primary/5 rounded-lg p-4 border border-primary/20">
         <h4 className="font-medium text-sm mb-2 flex items-center gap-2">
@@ -237,6 +273,7 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
           <li>• Schedule time blocks for deep work</li>
           <li>• Identify potential blockers early</li>
           <li>• Keep some buffer for unexpected tasks</li>
+          <li>• Invest in at least one relationship intentionally</li>
         </ul>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { PlanningTrendsChart } from "./PlanningTrendsChart";
 import { WeeklySessionDetailModal } from "./WeeklySessionDetailModal";
-import { CalendarDays, Target, Lightbulb, Plus, CheckCircle, Clock, ChevronRight } from "lucide-react";
+import { CalendarDays, Target, Lightbulb, Plus, CheckCircle, Clock, ChevronRight, Heart, MessageCircle } from "lucide-react";
 import { format, parseISO, getISOWeek } from "date-fns";
 import { useState } from "react";
 
