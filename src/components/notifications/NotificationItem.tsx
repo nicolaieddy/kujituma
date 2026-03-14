@@ -98,7 +98,7 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendi
       case 'goal_update_comment':
       case 'goal_milestone':
       case 'goal_help_request':
-        destination = '/community';
+        destination = '/goals';
         break;
       case 'post_like':
       case 'comment_added':
