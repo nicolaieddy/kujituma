@@ -1,59 +1,38 @@
 
 
-## MCP Server Upgrades — Options
+# Plan: Emotional Vocabulary Expansion for Daily Check-in
 
-Your current server has 11 tools (6 read, 5 write). Here are practical upgrades grouped by category:
+## What changes
 
-### 1. New Tools (more data surface area)
+### 1. Add emotion tags UI after mood picker (`DailyCheckInDialog.tsx`)
+- Define an `EMOTION_TAGS` map keyed by mood range:
+  - Mood 1-2: anxious, frustrated, lonely, overwhelmed, hurt, disappointed
+  - Mood 3: restless, uncertain, contemplative, neutral, mixed
+  - Mood 4-5: grateful, energized, proud, hopeful, connected, peaceful
+- Add state: `const [emotionTags, setEmotionTags] = useState<string[]>([])`
+- After the mood picker buttons, render a collapsible grid of emotion word badges. Tapping toggles selection (multi-select). Selected tags get a filled/highlighted style.
+- Reset emotion tags when mood changes to a different range bracket (1-2 vs 3 vs 4-5)
+- Include emotion tags in draft save/restore logic
+- On submit, store emotion tags in the existing `custom_answers` JSONB field under a reserved key `_emotion_tags` (array of strings). No DB migration needed.
+- Populate from `todayCheckIn.custom_answers._emotion_tags` when editing an existing check-in
 
-| Tool | Type | What it does |
-|------|------|-------------|
-| `create_goal` | write | Create a new goal with title, category, timeframe, description |
-| `update_goal` | write | Update goal status (complete, pause, deprioritize), edit title/description |
-| `delete_objective` | write | Remove a weekly objective |
-| `get_daily_check_ins` | read | Fetch check-in history for a date range (mood, energy, journal entries) |
-| `get_weekly_planning` | read | Get current/past weekly planning sessions (intention, reflection) |
-| `create_weekly_planning` | write | Start or update a weekly planning session |
-| `get_friends` | read | List friends with online status |
-| `get_goal_details` | read | Get a single goal with its linked objectives and habit items |
-| `search_goals` | read | Full-text search across goal titles and descriptions |
-| `get_week_summary` | read | Combined snapshot: objectives completion %, habits done, check-in status, planning status for a given week |
+### 2. Display emotion tags in check-in history (`CheckInDetailModal.tsx`)
+- Read `_emotion_tags` from the check-in's `custom_answers` field
+- Show selected tags as colored badges below the mood/energy section
 
-### 2. MCP Resources (read-only context Claude can pull automatically)
+### 3. Display emotion tags in rituals history (`DailyCheckInsTab.tsx`)
+- Show emotion tag badges in the check-in list rows and detail view
 
-MCP Resources let Claude pull context without the user explicitly asking. Using mcp-lite you can register resources:
+### 4. Update `CreateDailyCheckIn` type (`types/habits.ts`)
+- No changes needed — `custom_answers` is already `Record<string, string>`. We'll store `_emotion_tags` as a JSON-stringified array in that field, or use the JSONB flexibility directly since the DB column is `jsonb`.
 
-- **`user://profile`** — user's name, streak, goal count (auto-loaded context)
-- **`week://current`** — this week's objectives + completion status
-- **`goals://active`** — all active goals as structured context
+### Files modified
+- `src/components/habits/DailyCheckInDialog.tsx` — emotion tag picker UI, state, draft logic, submit
+- `src/components/rituals/CheckInDetailModal.tsx` — display emotion tags
+- `src/components/rituals/DailyCheckInsTab.tsx` — show tags in list view
 
-This means Claude starts every conversation already knowing your current state.
-
-### 3. MCP Prompts (pre-built conversation starters)
-
-Register prompt templates that appear in Claude's UI:
-
-- **"Weekly review"** — pre-fills a prompt that pulls this week's data and asks Claude to analyze progress
-- **"Plan my week"** — pulls last week's incomplete objectives and active goals, asks Claude to suggest this week's plan
-- **"Daily check-in"** — guided journal prompt that ends by calling `log_daily_check_in`
-
-### 4. Infrastructure Improvements
-
-- **Rate limiting** — track calls per token per minute in a simple counter to prevent abuse
-- **Token scoping** — allow tokens to be read-only vs read-write (add a `scope` column to `mcp_api_tokens`)
-- **Audit logging** — log every tool call with timestamp, tool name, and params for debugging
-- **Better error messages** — return structured error codes so Claude can retry intelligently
-
-### Recommendation
-
-The highest-impact upgrades are:
-1. **New tools** (`create_goal`, `get_week_summary`, `delete_objective`) — these fill obvious gaps
-2. **MCP Resources** — makes Claude contextually aware without extra prompting
-3. **MCP Prompts** — gives users one-click workflows
-
-### Implementation scope
-- New tools: ~1 file edit (mcp-server/index.ts) + update the tools list in McpSection.tsx
-- Resources & Prompts: same file, using mcp-lite's `mcp.resource()` and `mcp.prompt()` APIs
-- Token scoping: 1 migration (add `scope` column) + auth logic update
-- No new dependencies needed
+### Technical notes
+- Storage: `custom_answers._emotion_tags = ["grateful", "energized"]` — stored in existing JSONB column, no migration
+- The emotion tag grid appears only after a mood is selected, with smooth animation
+- Multi-select: users can pick as many tags as they want from the contextual set
 
