@@ -90,4 +90,6 @@ export interface CreateWeeklyPlanningSession {
   week_start: string;
   last_week_reflection?: string;
   week_intention?: string;
+  relationship_investment?: string;
+  honest_conversation?: string;
 }
