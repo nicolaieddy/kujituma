@@ -36,7 +36,7 @@ export const WeeklyProgressView = () => {
   const {
     objectives,
     progressPost,
-    feedPost,
+    
     createObjective,
     updateObjective,
     deleteObjective,
