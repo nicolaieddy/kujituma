@@ -7,9 +7,20 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Sun, Zap, Target, BookOpen } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { cn } from "@/lib/utils";
 
 const moodEmojis = ['😔', '😕', '😐', '🙂', '😊'];
 const moodLabels = ['Very Low', 'Low', 'Neutral', 'Good', 'Great'];
+
+const parseEmotionTags = (customAnswers: any): string[] => {
+  if (!customAnswers || typeof customAnswers !== 'object') return [];
+  try {
+    const raw = customAnswers._emotion_tags;
+    if (!raw) return [];
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch { return []; }
+};
 
 interface CheckIn {
   id: string;
@@ -20,6 +31,7 @@ interface CheckIn {
   quick_win?: string | null;
   blocker?: string | null;
   journal_entry?: string | null;
+  custom_answers?: any;
   created_at?: string;
   updated_at?: string;
 }
@@ -34,6 +46,7 @@ export const CheckInDetailModal = ({ checkIn, open, onOpenChange }: CheckInDetai
   if (!checkIn) return null;
 
   const date = parseISO(checkIn.check_in_date);
+  const emotionTags = parseEmotionTags(checkIn.custom_answers);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -69,6 +82,23 @@ export const CheckInDetailModal = ({ checkIn, open, onOpenChange }: CheckInDetai
               </div>
             )}
           </div>
+
+          {/* Emotion Tags */}
+          {emotionTags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {emotionTags.map((tag) => (
+                <span
+                  key={tag}
+                  className={cn(
+                    "px-2.5 py-1 rounded-full text-xs font-medium",
+                    "bg-primary/15 text-primary border border-primary/20"
+                  )}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
 
           <Separator />
 

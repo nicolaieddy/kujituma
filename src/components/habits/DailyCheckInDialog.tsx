@@ -63,6 +63,18 @@ const ENERGY_OPTIONS = [
   { value: 5, emoji: "🔥", label: "Peak" },
 ];
 
+const EMOTION_TAGS: Record<string, string[]> = {
+  low: ['anxious', 'frustrated', 'lonely', 'overwhelmed', 'hurt', 'disappointed'],
+  mid: ['restless', 'uncertain', 'contemplative', 'neutral', 'mixed'],
+  high: ['grateful', 'energized', 'proud', 'hopeful', 'connected', 'peaceful'],
+};
+
+const getMoodBracket = (mood: number): string => {
+  if (mood <= 2) return 'low';
+  if (mood === 3) return 'mid';
+  return 'high';
+};
+
 // Get greeting based on time of day
 const getGreeting = (name?: string) => {
   const hour = new Date().getHours();
@@ -103,6 +115,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [focusToday, setFocusToday] = useState("");
   const [journalEntry, setJournalEntry] = useState("");
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
+  const [emotionTags, setEmotionTags] = useState<string[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
@@ -111,6 +124,22 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [locationLng, setLocationLng] = useState<number | undefined>();
   const [locationName, setLocationName] = useState<string | undefined>();
   const [isLocating, setIsLocating] = useState(false);
+
+  // Reset emotion tags when mood bracket changes
+  const prevBracketRef = useRef(getMoodBracket(3));
+  useEffect(() => {
+    const newBracket = getMoodBracket(moodRating);
+    if (newBracket !== prevBracketRef.current) {
+      setEmotionTags([]);
+      prevBracketRef.current = newBracket;
+    }
+  }, [moodRating]);
+
+  const toggleEmotionTag = useCallback((tag: string) => {
+    setEmotionTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  }, []);
 
   const DRAFT_KEY = 'daily-checkin-draft';
 
@@ -130,6 +159,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         focusToday,
         journalEntry,
         customAnswers,
+        emotionTags,
         locationLat,
         locationLng,
         locationName,
@@ -140,7 +170,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
       }
     }, 500);
     return () => clearTimeout(draftTimeoutRef.current);
-  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, locationLat, locationLng, locationName, hasInitialized, open, todayCheckIn]);
+  }, [moodRating, energyLevel, focusToday, journalEntry, customAnswers, emotionTags, locationLat, locationLng, locationName, hasInitialized, open, todayCheckIn]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem(DRAFT_KEY);
@@ -160,10 +190,17 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         setFocusToday(todayCheckIn.focus_today || "");
         setJournalEntry(todayCheckIn.journal_entry || "");
         const saved = (todayCheckIn as any).custom_answers;
-        setCustomAnswers(saved && typeof saved === 'object' ? saved : {});
+        const parsedAnswers = saved && typeof saved === 'object' ? saved : {};
+        // Extract emotion tags from saved custom_answers
+        try {
+          const savedTags = parsedAnswers._emotion_tags;
+          setEmotionTags(savedTags ? JSON.parse(savedTags) : []);
+        } catch { setEmotionTags([]); }
+        setCustomAnswers(parsedAnswers);
         setLocationLat((todayCheckIn as any).location_lat ?? undefined);
         setLocationLng((todayCheckIn as any).location_lng ?? undefined);
         setLocationName((todayCheckIn as any).location_name ?? undefined);
+        prevBracketRef.current = getMoodBracket(todayCheckIn.mood_rating || 3);
       } else {
         // Try to restore draft
         try {
@@ -176,17 +213,19 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               setFocusToday(draft.focusToday ?? "");
               setJournalEntry(draft.journalEntry ?? "");
               setCustomAnswers(draft.customAnswers && typeof draft.customAnswers === 'object' ? draft.customAnswers : {});
+              setEmotionTags(Array.isArray(draft.emotionTags) ? draft.emotionTags : []);
               setLocationLat(draft.locationLat ?? undefined);
               setLocationLng(draft.locationLng ?? undefined);
               setLocationName(draft.locationName ?? undefined);
+              prevBracketRef.current = getMoodBracket(draft.moodRating ?? 3);
             } else {
-              // Stale draft from a different day — clear it
               clearDraft();
               setMoodRating(3);
               setEnergyLevel(3);
               setFocusToday("");
               setJournalEntry("");
               setCustomAnswers({});
+              setEmotionTags([]);
             }
           } else {
               setMoodRating(3);
@@ -194,6 +233,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               setFocusToday("");
               setJournalEntry("");
               setCustomAnswers({});
+              setEmotionTags([]);
               setLocationLat(undefined);
               setLocationLng(undefined);
               setLocationName(undefined);
@@ -204,6 +244,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             setFocusToday("");
             setJournalEntry("");
             setCustomAnswers({});
+            setEmotionTags([]);
             setLocationLat(undefined);
             setLocationLng(undefined);
             setLocationName(undefined);
@@ -424,12 +465,16 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
 
   const handleSubmit = async () => {
     hapticSuccess();
+    const mergedAnswers = {
+      ...customAnswers,
+      ...(emotionTags.length > 0 ? { _emotion_tags: JSON.stringify(emotionTags) } : {}),
+    };
     await submitCheckIn({
       mood_rating: moodRating,
       energy_level: energyLevel,
       focus_today: focusToday || undefined,
       journal_entry: journalEntry || undefined,
-      custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : undefined,
+      custom_answers: Object.keys(mergedAnswers).length > 0 ? mergedAnswers : undefined,
       location_lat: locationLat,
       location_lng: locationLng,
       location_name: locationName,
@@ -652,6 +697,40 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             </button>
           ))}
         </div>
+        {/* Emotion Tags */}
+        <AnimatePresence>
+          {moodRating && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <p className="text-xs text-muted-foreground mb-2">What best describes how you feel? <span className="opacity-60">(select all that apply)</span></p>
+              <div className="flex flex-wrap gap-1.5">
+                {EMOTION_TAGS[getMoodBracket(moodRating)].map((tag) => {
+                  const selected = emotionTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleEmotionTag(tag)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                        selected
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm scale-105"
+                          : "bg-muted/50 text-muted-foreground border-transparent hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       
       {/* Energy Level */}

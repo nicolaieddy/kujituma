@@ -441,16 +441,40 @@ export const DailyCheckInsTab = () => {
                           </div>
                         </TableCell>
                         <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            {checkIn.mood_rating && (
-                              <span className="text-lg">{moodEmojis[checkIn.mood_rating - 1]}</span>
-                            )}
-                            {checkIn.energy_level && (
-                              <Badge variant="outline" className="text-xs">
-                                <Zap className="h-3 w-3 text-yellow-500" />
-                                {checkIn.energy_level}
-                              </Badge>
-                            )}
+                          <div className="flex flex-col items-center gap-1">
+                            <div className="flex items-center justify-center gap-1">
+                              {checkIn.mood_rating && (
+                                <span className="text-lg">{moodEmojis[checkIn.mood_rating - 1]}</span>
+                              )}
+                              {checkIn.energy_level && (
+                                <Badge variant="outline" className="text-xs">
+                                  <Zap className="h-3 w-3 text-yellow-500" />
+                                  {checkIn.energy_level}
+                                </Badge>
+                              )}
+                            </div>
+                            {(() => {
+                              const ca = (checkIn as any).custom_answers;
+                              if (!ca || typeof ca !== 'object') return null;
+                              try {
+                                const raw = ca._emotion_tags;
+                                if (!raw) return null;
+                                const tags: string[] = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                                if (!Array.isArray(tags) || tags.length === 0) return null;
+                                return (
+                                  <div className="flex flex-wrap gap-0.5 justify-center max-w-[140px]">
+                                    {tags.slice(0, 3).map((tag) => (
+                                      <span key={tag} className="px-1.5 py-0.5 rounded-full text-[10px] bg-primary/10 text-primary">
+                                        {tag}
+                                      </span>
+                                    ))}
+                                    {tags.length > 3 && (
+                                      <span className="text-[10px] text-muted-foreground">+{tags.length - 3}</span>
+                                    )}
+                                  </div>
+                                );
+                              } catch { return null; }
+                            })()}
                           </div>
                         </TableCell>
                         <TableCell>
