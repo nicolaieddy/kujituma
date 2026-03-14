@@ -156,6 +156,13 @@ export const WeeklyPlanningTab = () => {
                       <p className="text-muted-foreground line-clamp-2">{session.week_intention}</p>
                     </div>
                   )}
+                  
+                  {session.relationship_investment && (
+                    <div className="flex gap-2 text-sm">
+                      <Heart className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                      <p className="text-muted-foreground line-clamp-1">{session.relationship_investment}</p>
+                    </div>
+                  )}
                 </div>
               ))}
           </CardContent>
