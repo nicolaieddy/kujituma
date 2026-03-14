@@ -64,9 +64,9 @@ const ENERGY_OPTIONS = [
 ];
 
 const EMOTION_TAGS: Record<string, string[]> = {
-  low: ['anxious', 'frustrated', 'lonely', 'overwhelmed', 'hurt', 'disappointed'],
-  mid: ['restless', 'uncertain', 'contemplative', 'neutral', 'mixed'],
-  high: ['grateful', 'energized', 'proud', 'hopeful', 'connected', 'peaceful'],
+  low: ['anxious', 'frustrated', 'lonely', 'overwhelmed', 'hurt', 'disappointed', 'drained', 'numb', 'insecure', 'resentful', 'guilty', 'irritable'],
+  mid: ['restless', 'uncertain', 'contemplative', 'neutral', 'mixed', 'distracted', 'bored', 'indifferent', 'nostalgic', 'cautious', 'curious'],
+  high: ['grateful', 'energized', 'proud', 'hopeful', 'connected', 'peaceful', 'inspired', 'joyful', 'confident', 'playful', 'content', 'loved'],
 };
 
 const getMoodBracket = (mood: number): string => {
