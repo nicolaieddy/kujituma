@@ -26,10 +26,8 @@ export const ObjectiveCommentsSheet = ({
 }: ObjectiveCommentsSheetProps) => {
   const { user } = useAuth();
   const { comments, isLoading, addComment, isAdding, markAsRead } = useObjectiveComments(open ? objectiveId : null);
-  const commentIds = comments.map((c) => c.id);
-  const { reactionsByComment, toggleReaction } = useCommentReactions(commentIds);
   const [newMessage, setNewMessage] = useState("");
-  const [openEmojiPickerCommentId, setOpenEmojiPickerCommentId] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Mark as read when sheet opens and has comments
