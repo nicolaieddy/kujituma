@@ -697,6 +697,40 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             </button>
           ))}
         </div>
+        {/* Emotion Tags */}
+        <AnimatePresence>
+          {moodRating && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden"
+            >
+              <p className="text-xs text-muted-foreground mb-2">What best describes how you feel? <span className="opacity-60">(select all that apply)</span></p>
+              <div className="flex flex-wrap gap-1.5">
+                {EMOTION_TAGS[getMoodBracket(moodRating)].map((tag) => {
+                  const selected = emotionTags.includes(tag);
+                  return (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleEmotionTag(tag)}
+                      className={cn(
+                        "px-2.5 py-1 rounded-full text-xs font-medium transition-all border",
+                        selected
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm scale-105"
+                          : "bg-muted/50 text-muted-foreground border-transparent hover:bg-accent hover:text-accent-foreground"
+                      )}
+                    >
+                      {tag}
+                    </button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
       
       {/* Energy Level */}
