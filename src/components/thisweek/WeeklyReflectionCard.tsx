@@ -48,8 +48,8 @@ export const WeeklyReflectionCard = ({
                 </div>
                 <p className="text-muted-foreground text-sm mt-1">
                   {isReadOnly 
-                    ? "This week has been shared and can no longer be edited"
-                    : "Share your overall week highlights — visible to the community when you post"
+                    ? "This week has been closed and can no longer be edited"
+                    : "Reflect on your week — what went well and what you learned"
                   }
                 </p>
               </div>
