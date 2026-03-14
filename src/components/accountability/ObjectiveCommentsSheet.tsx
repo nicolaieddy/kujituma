@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Send, MessageCircle, SmilePlus } from "lucide-react";
+import { Send, MessageCircle } from "lucide-react";
 import { useObjectiveComments } from "@/hooks/useObjectiveComments";
 
 import { useAuth } from "@/contexts/AuthContext";
