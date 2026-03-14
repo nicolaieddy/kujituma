@@ -68,6 +68,8 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
     if (planningSession) {
       setLastWeekReflection(planningSession.last_week_reflection || "");
       setWeekIntention(planningSession.week_intention || "");
+      setRelationshipInvestment(planningSession.relationship_investment || "");
+      setHonestConversation(planningSession.honest_conversation || "");
     }
   }, [planningSession]);
 
