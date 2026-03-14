@@ -190,10 +190,17 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         setFocusToday(todayCheckIn.focus_today || "");
         setJournalEntry(todayCheckIn.journal_entry || "");
         const saved = (todayCheckIn as any).custom_answers;
-        setCustomAnswers(saved && typeof saved === 'object' ? saved : {});
+        const parsedAnswers = saved && typeof saved === 'object' ? saved : {};
+        // Extract emotion tags from saved custom_answers
+        try {
+          const savedTags = parsedAnswers._emotion_tags;
+          setEmotionTags(savedTags ? JSON.parse(savedTags) : []);
+        } catch { setEmotionTags([]); }
+        setCustomAnswers(parsedAnswers);
         setLocationLat((todayCheckIn as any).location_lat ?? undefined);
         setLocationLng((todayCheckIn as any).location_lng ?? undefined);
         setLocationName((todayCheckIn as any).location_name ?? undefined);
+        prevBracketRef.current = getMoodBracket(todayCheckIn.mood_rating || 3);
       } else {
         // Try to restore draft
         try {
@@ -206,17 +213,19 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               setFocusToday(draft.focusToday ?? "");
               setJournalEntry(draft.journalEntry ?? "");
               setCustomAnswers(draft.customAnswers && typeof draft.customAnswers === 'object' ? draft.customAnswers : {});
+              setEmotionTags(Array.isArray(draft.emotionTags) ? draft.emotionTags : []);
               setLocationLat(draft.locationLat ?? undefined);
               setLocationLng(draft.locationLng ?? undefined);
               setLocationName(draft.locationName ?? undefined);
+              prevBracketRef.current = getMoodBracket(draft.moodRating ?? 3);
             } else {
-              // Stale draft from a different day — clear it
               clearDraft();
               setMoodRating(3);
               setEnergyLevel(3);
               setFocusToday("");
               setJournalEntry("");
               setCustomAnswers({});
+              setEmotionTags([]);
             }
           } else {
               setMoodRating(3);
@@ -224,6 +233,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
               setFocusToday("");
               setJournalEntry("");
               setCustomAnswers({});
+              setEmotionTags([]);
               setLocationLat(undefined);
               setLocationLng(undefined);
               setLocationName(undefined);
@@ -234,6 +244,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
             setFocusToday("");
             setJournalEntry("");
             setCustomAnswers({});
+            setEmotionTags([]);
             setLocationLat(undefined);
             setLocationLng(undefined);
             setLocationName(undefined);
