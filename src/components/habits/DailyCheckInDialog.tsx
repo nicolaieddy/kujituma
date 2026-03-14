@@ -115,6 +115,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [focusToday, setFocusToday] = useState("");
   const [journalEntry, setJournalEntry] = useState("");
   const [customAnswers, setCustomAnswers] = useState<Record<string, string>>({});
+  const [emotionTags, setEmotionTags] = useState<string[]>([]);
   const [hasInitialized, setHasInitialized] = useState(false);
   const [isEditingJournal, setIsEditingJournal] = useState(false);
   const [isEditingFocus, setIsEditingFocus] = useState(false);
@@ -123,6 +124,22 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   const [locationLng, setLocationLng] = useState<number | undefined>();
   const [locationName, setLocationName] = useState<string | undefined>();
   const [isLocating, setIsLocating] = useState(false);
+
+  // Reset emotion tags when mood bracket changes
+  const prevBracketRef = useRef(getMoodBracket(3));
+  useEffect(() => {
+    const newBracket = getMoodBracket(moodRating);
+    if (newBracket !== prevBracketRef.current) {
+      setEmotionTags([]);
+      prevBracketRef.current = newBracket;
+    }
+  }, [moodRating]);
+
+  const toggleEmotionTag = useCallback((tag: string) => {
+    setEmotionTags(prev => 
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    );
+  }, []);
 
   const DRAFT_KEY = 'daily-checkin-draft';
 
