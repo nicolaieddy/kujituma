@@ -159,6 +159,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
         focusToday,
         journalEntry,
         customAnswers,
+        emotionTags,
         locationLat,
         locationLng,
         locationName,
