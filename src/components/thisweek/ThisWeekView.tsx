@@ -415,14 +415,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       <CarryOverActivityLog />
 
       <ShareWeekCard
-        hasShared={hasShared}
         isCurrentWeek={isCurrentWeek}
-        isSharing={isSharing}
-        feedPost={feedPost}
         objectives={objectives || []}
         reflectionValue={progressPost?.notes || ""}
-        onShareWeek={handleRequestShare}
-        onViewInCommunity={() => handleViewInCommunity(feedPost?.id)}
         onCloseWeek={() => setShowCloseDialog(true)}
         onCarryOverIncomplete={isWeekCompleted && closeIncompleteObjectives.length > 0 
           ? () => setShowCarryOverFromClosedModal(true) 
@@ -441,14 +436,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         goals={goals || []}
         onConfirmClose={closeWeek}
         isClosing={isClosingWeek}
-      />
-
-      <ShareConfirmationDialog
-        isOpen={showShareConfirmation}
-        onClose={() => setShowShareConfirmation(false)}
-        onConfirm={handleConfirmShare}
-        isSharing={isSharing}
-        goals={(goals || []).filter(g => g.status === 'in_progress' || g.status === 'not_started').map(g => ({ id: g.id, title: g.title }))}
       />
 
       <CarryOverObjectivesModal
