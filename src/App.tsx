@@ -226,7 +226,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
         <Suspense fallback={<LoadingSpinner />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/community" element={<Feed />} />
+            
             <Route path="/goals" element={<Goals />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/analytics" element={<Analytics />} />
