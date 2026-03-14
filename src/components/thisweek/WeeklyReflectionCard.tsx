@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { useWeeklyReflection } from "@/hooks/useWeeklyReflection";
 import { AutoSaveIndicator } from "./AutoSaveIndicator";
-import { Share2, Globe, ChevronDown } from "lucide-react";
+import { Share2, ChevronDown } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useState } from "react";
 
