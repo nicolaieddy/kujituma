@@ -108,6 +108,8 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
       week_start: weekStart,
       last_week_reflection: lastWeekReflection,
       week_intention: weekIntention,
+      relationship_investment: relationshipInvestment,
+      honest_conversation: honestConversation,
     });
     await completePlanningSession();
     onOpenChange(false);
