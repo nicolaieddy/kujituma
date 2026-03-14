@@ -9,7 +9,6 @@ interface NavigationMenuProps {
 
 const navItems = [
   { path: '/goals', label: 'Goals', icon: Target, section: 'goals' },
-  { path: '/community', label: 'Community', icon: Users, section: 'community' },
   { path: '/friends', label: 'Friends', icon: UserPlus, section: 'friends' },
   { path: '/analytics', label: 'Analytics', icon: BarChart3, section: 'analytics' },
 ];
