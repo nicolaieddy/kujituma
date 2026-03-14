@@ -25,9 +25,6 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
       case 'goals':
         navigate('/');
         break;
-      case 'feed':
-        navigate('/feed');
-        break;
       case 'admin':
         navigate('/admin');
         break;
