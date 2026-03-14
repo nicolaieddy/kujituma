@@ -727,7 +727,42 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
                     </button>
                   );
                 })}
+                {/* Custom emotion input */}
+                <form
+                  className="inline-flex"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const input = e.currentTarget.querySelector('input') as HTMLInputElement;
+                    const val = input?.value.trim().toLowerCase();
+                    if (val && !emotionTags.includes(val)) {
+                      toggleEmotionTag(val);
+                      input.value = '';
+                    }
+                  }}
+                >
+                  <input
+                    type="text"
+                    placeholder="+ add your own"
+                    maxLength={24}
+                    className="px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-muted-foreground/30 bg-transparent text-muted-foreground placeholder:text-muted-foreground/50 w-[100px] focus:w-[120px] focus:border-primary focus:outline-none transition-all"
+                  />
+                </form>
               </div>
+              {/* Show custom emotion tags that aren't in the preset list */}
+              {emotionTags.filter(t => !EMOTION_TAGS[getMoodBracket(moodRating)].includes(t)).length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {emotionTags.filter(t => !EMOTION_TAGS[getMoodBracket(moodRating)].includes(t)).map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => toggleEmotionTag(tag)}
+                      className="px-2.5 py-1 rounded-full text-xs font-medium transition-all border bg-primary text-primary-foreground border-primary shadow-sm scale-105"
+                    >
+                      {tag} ×
+                    </button>
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
