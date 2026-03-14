@@ -24,7 +24,7 @@ import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CalendarDays, Loader2, Sparkles, Target, CheckCircle, Circle, Brain, RefreshCw } from "lucide-react";
+import { CalendarDays, Loader2, Sparkles, Target, CheckCircle, Circle, Brain, RefreshCw, Heart, MessageCircle } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 import { subDays } from "date-fns";
