@@ -233,7 +233,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   // Computed values
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
   const totalCount = objectives?.length || 0;
-  const hasShared = !!feedPost;
 
   // Loading state
   if (weeklyDataLoading) {
