@@ -338,13 +338,6 @@ export const WeeklyProgressView = () => {
     uncompleteWeek();
   };
 
-  const handleViewPost = () => {
-    if (feedPost) {
-      // Navigate to feed with the specific post - you could implement a route like /feed#post-id
-      // For now, just navigate to feed
-      window.open('/feed', '_blank');
-    }
-  };
 
   const handleOpenCarryOver = () => {
     setShowCarryOverModal(true);
