@@ -43,12 +43,6 @@ export const WeeklyReflectionCard = ({
                     {isReadOnly && <span className="ml-2 text-xs text-yellow-600">🔒 Locked</span>}
                   </CardTitle>
                   <div className="flex items-center gap-2">
-                    {!isReadOnly && (
-                      <span className="text-xs font-medium px-2 py-1 rounded-full bg-primary/20 text-primary flex items-center gap-1">
-                        <Globe className="h-3 w-3" />
-                        Public
-                      </span>
-                    )}
                     <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
