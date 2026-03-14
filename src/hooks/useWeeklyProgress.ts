@@ -1,18 +1,16 @@
 
 import { useWeekState } from "./useWeekState";
 import { useWeeklyObjectives } from "./useWeeklyObjectives";
+import { useQuery } from "@tanstack/react-query";
+import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
 export const useWeeklyProgress = (weekStart?: string) => {
   const weekState = useWeekState(weekStart);
   const objectives = useWeeklyObjectives(weekState.weekStart);
 
-  // Get progress post from objectives query context if available
-  const { data: progressPostData } = require("@tanstack/react-query").useQuery({
+  const { data: progressPostData, isLoading: progressLoading } = useQuery({
     queryKey: ['weekly-progress-post', weekState.weekStart],
-    queryFn: async () => {
-      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
-      return WeeklyProgressService.getWeeklyProgressPost(weekState.weekStart);
-    },
+    queryFn: () => WeeklyProgressService.getWeeklyProgressPost(weekState.weekStart),
     enabled: !!weekState.weekStart,
   });
 
@@ -41,15 +39,12 @@ export const useWeeklyProgress = (weekStart?: string) => {
     
     progressPost: progressPostData || null,
     updateProgressNotes: async (notes: string) => {
-      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
-      await WeeklyProgressService.updateProgressNotes(weekState.weekStart, notes);
+      await WeeklyProgressService.upsertWeeklyProgressPost(weekState.weekStart, notes);
     },
     completeWeek: async () => {
-      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
       await WeeklyProgressService.completeWeek(weekState.weekStart);
     },
     uncompleteWeek: async () => {
-      const { WeeklyProgressService } = await import("@/services/weeklyProgressService");
       await WeeklyProgressService.uncompleteWeek(weekState.weekStart);
     },
     isSavingNotes: false,
@@ -58,6 +53,6 @@ export const useWeeklyProgress = (weekStart?: string) => {
     
     feedPost: null,
     
-    isLoading: objectives.isLoading,
+    isLoading: objectives.isLoading || progressLoading,
   };
 };

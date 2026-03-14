@@ -422,14 +422,11 @@ export const WeeklyProgressView = () => {
           <WeeklyProgressActions
             isWeekCompleted={isWeekCompleted}
             weekNumber={weekNumber}
-            feedPost={feedPost}
             isSavingNotes={isSavingNotes}
             isCompletingWeek={isPostingToFeed}
             isUncompletingWeek={isUncompletingWeek}
             onSaveNotes={handleSaveNotes}
-            onPostToFeed={handlePostToFeed}
             onEditWeek={handleEditWeek}
-            onViewPost={handleViewPost}
           />
         </CardContent>
       </Card>

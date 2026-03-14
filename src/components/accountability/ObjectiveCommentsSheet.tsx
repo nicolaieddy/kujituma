@@ -28,7 +28,6 @@ export const ObjectiveCommentsSheet = ({
   const { comments, isLoading, addComment, isAdding, markAsRead } = useObjectiveComments(open ? objectiveId : null);
   const [newMessage, setNewMessage] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Mark as read when sheet opens and has comments
   useEffect(() => {
