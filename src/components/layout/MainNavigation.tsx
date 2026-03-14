@@ -13,7 +13,6 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
   // Determine current section based on pathname
   const getCurrentSection = () => {
     const path = location.pathname;
-    if (path.startsWith('/feed')) return 'feed';
     if (path.startsWith('/admin')) return 'admin';
     if (path.startsWith('/goals') || path === '/') return 'goals';
     return 'goals';
