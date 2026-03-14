@@ -10,7 +10,6 @@ import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
-import { ShareConfirmationDialog } from "@/components/thisweek/ShareConfirmationDialog";
 import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
 import { CloseWeekDialog } from "@/components/thisweek/CloseWeekDialog";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
