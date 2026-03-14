@@ -48,7 +48,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const {
     objectives,
     progressPost,
-    feedPost,
     createObjective,
     updateObjective,
     deleteObjective,

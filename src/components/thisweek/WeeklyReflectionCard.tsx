@@ -83,7 +83,7 @@ export const WeeklyReflectionCard = ({
             {isReadOnly && (
               <div className="text-center py-2">
                 <span className="text-xs text-muted-foreground bg-muted px-3 py-1 rounded-full">
-                  ✅ Week completed and shared with community
+                  ✅ Week completed
                 </span>
               </div>
             )}
