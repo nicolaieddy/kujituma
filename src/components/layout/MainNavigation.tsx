@@ -35,7 +35,7 @@ export const MainNavigation = ({ isAdmin }: MainNavigationProps) => {
     <div className="w-full flex justify-center mb-6">
       <Tabs value={currentSection} onValueChange={handleTabChange} className="w-full max-w-2xl">
         <TabsList className={`grid w-full bg-accent border-border h-12 ${
-          isAdmin ? 'grid-cols-3' : 'grid-cols-2'
+          isAdmin ? 'grid-cols-2' : 'grid-cols-1'
         }`}>
           <TabsTrigger 
             value="goals" 
