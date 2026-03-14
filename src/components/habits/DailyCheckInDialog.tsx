@@ -454,12 +454,16 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
 
   const handleSubmit = async () => {
     hapticSuccess();
+    const mergedAnswers = {
+      ...customAnswers,
+      ...(emotionTags.length > 0 ? { _emotion_tags: JSON.stringify(emotionTags) } : {}),
+    };
     await submitCheckIn({
       mood_rating: moodRating,
       energy_level: energyLevel,
       focus_today: focusToday || undefined,
       journal_entry: journalEntry || undefined,
-      custom_answers: Object.keys(customAnswers).length > 0 ? customAnswers : undefined,
+      custom_answers: Object.keys(mergedAnswers).length > 0 ? mergedAnswers : undefined,
       location_lat: locationLat,
       location_lng: locationLng,
       location_name: locationName,
