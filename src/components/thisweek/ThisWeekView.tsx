@@ -29,8 +29,6 @@ import { toast } from "@/hooks/use-toast";
 import { HistoricalWeekSummary } from "@/components/thisweek/HistoricalWeekSummary";
 import { useWeeklyPlanning } from "@/hooks/useWeeklyPlanning";
 
-
-import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
 import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
 import { useIncompleteReflections } from "@/hooks/useIncompleteReflections";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
