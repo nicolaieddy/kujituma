@@ -42,7 +42,7 @@ const RequireProfileComplete = ({ children }: { children: React.ReactNode }) => 
 };
 
 // Lazy load pages for better performance
-const Feed = lazy(() => import("./pages/Feed"));
+
 const Auth = lazy(() => import("./pages/Auth"));
 const Admin = lazy(() => import("./pages/Admin"));
 const Goals = lazy(() => import("./pages/Goals"));
