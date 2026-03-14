@@ -61,6 +61,8 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   
   const [lastWeekReflection, setLastWeekReflection] = useState("");
   const [weekIntention, setWeekIntention] = useState("");
+  const [relationshipInvestment, setRelationshipInvestment] = useState("");
+  const [honestConversation, setHonestConversation] = useState("");
   
   useEffect(() => {
     if (planningSession) {
