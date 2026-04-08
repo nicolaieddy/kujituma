@@ -13,6 +13,9 @@ const PRESET_SUGGESTIONS = [
   "What would make today a success?",
   "What did I learn yesterday?",
   "How am I taking care of myself today?",
+  "Did I receive feedback today — was it guidance or opinion?",
+  "What triggered a strong reaction? What was signal vs. noise?",
+  "What feedback am I sitting on instead of acting on?",
 ];
 
 export const InlineCheckInSettings = () => {

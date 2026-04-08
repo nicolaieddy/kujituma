@@ -24,7 +24,7 @@ import { useWeeklyProgress } from "@/hooks/useWeeklyProgress";
 import { useWeeklyInsights } from "@/hooks/useWeeklyInsights";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { CalendarDays, Loader2, Sparkles, Target, CheckCircle, Circle, Brain, RefreshCw, Heart, MessageCircle } from "lucide-react";
+import { CalendarDays, Loader2, Sparkles, Target, CheckCircle, Circle, Brain, RefreshCw, Heart, MessageCircle, Shield, Users } from "lucide-react";
 import { hapticSuccess } from "@/utils/haptic";
 import { CachedDataIndicator } from "@/components/pwa/CachedDataIndicator";
 import { subDays } from "date-fns";
@@ -63,6 +63,9 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   const [weekIntention, setWeekIntention] = useState("");
   const [relationshipInvestment, setRelationshipInvestment] = useState("");
   const [honestConversation, setHonestConversation] = useState("");
+  const [feedbackCommitment, setFeedbackCommitment] = useState("");
+  const [trustedAdvisors, setTrustedAdvisors] = useState("");
+  const [identityReflection, setIdentityReflection] = useState("");
   
   useEffect(() => {
     if (planningSession) {
@@ -70,6 +73,9 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
       setWeekIntention(planningSession.week_intention || "");
       setRelationshipInvestment(planningSession.relationship_investment || "");
       setHonestConversation(planningSession.honest_conversation || "");
+      setFeedbackCommitment(planningSession.feedback_commitment || "");
+      setTrustedAdvisors(planningSession.trusted_advisors || "");
+      setIdentityReflection(planningSession.identity_reflection || "");
     }
   }, [planningSession]);
 
@@ -110,6 +116,9 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
       week_intention: weekIntention,
       relationship_investment: relationshipInvestment,
       honest_conversation: honestConversation,
+      feedback_commitment: feedbackCommitment,
+      trusted_advisors: trustedAdvisors,
+      identity_reflection: identityReflection,
     });
     await completePlanningSession();
     onOpenChange(false);
@@ -258,6 +267,55 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
             value={honestConversation}
             onChange={(e) => setHonestConversation(e.target.value)}
             placeholder="e.g. I need to tell my manager that the deadline isn't realistic…"
+            className="resize-none min-h-[80px]"
+          />
+        </div>
+      </div>
+
+      {/* Feedback & Growth (Olympic Athlete Principles) */}
+      <div className="space-y-4 bg-accent/30 rounded-lg p-4 border border-accent">
+        <div>
+          <Label className="flex items-center gap-2 text-sm font-medium">
+            <Brain className="h-4 w-4 text-primary" />
+            Feedback &amp; Growth
+          </Label>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Inspired by how Olympic athletes manage feedback
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label className="text-sm">What feedback will you commit to acting on this week?</Label>
+          <Textarea
+            value={feedbackCommitment}
+            onChange={(e) => setFeedbackCommitment(e.target.value)}
+            placeholder="e.g. My manager suggested I delegate more — I'll hand off the Q3 report…"
+            className="resize-none min-h-[80px]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm">
+            <Users className="h-3.5 w-3.5 text-muted-foreground" />
+            Who is in your trusted feedback circle?
+          </Label>
+          <Textarea
+            value={trustedAdvisors}
+            onChange={(e) => setTrustedAdvisors(e.target.value)}
+            placeholder="e.g. My mentor Sarah, my teammate Alex…"
+            className="resize-none min-h-[80px]"
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-sm">
+            <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+            Where did I tie my self-worth to an outcome this week?
+          </Label>
+          <Textarea
+            value={identityReflection}
+            onChange={(e) => setIdentityReflection(e.target.value)}
+            placeholder="e.g. I felt like a failure when the proposal was rejected — but the rejection isn't about me…"
             className="resize-none min-h-[80px]"
           />
         </div>

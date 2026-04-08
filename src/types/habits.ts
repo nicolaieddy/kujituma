@@ -59,6 +59,9 @@ export interface WeeklyPlanningSession {
   week_intention?: string;
   relationship_investment?: string;
   honest_conversation?: string;
+  feedback_commitment?: string;
+  trusted_advisors?: string;
+  identity_reflection?: string;
   created_at: string;
   updated_at: string;
 }
@@ -92,4 +95,7 @@ export interface CreateWeeklyPlanningSession {
   week_intention?: string;
   relationship_investment?: string;
   honest_conversation?: string;
+  feedback_commitment?: string;
+  trusted_advisors?: string;
+  identity_reflection?: string;
 }

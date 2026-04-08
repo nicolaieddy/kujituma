@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { CalendarDays, Lightbulb, Target, CheckCircle, Clock, Heart, MessageCircle } from "lucide-react";
+import { CalendarDays, Lightbulb, Target, CheckCircle, Clock, Heart, MessageCircle, Brain, Users, Shield } from "lucide-react";
 import { format, parseISO, getISOWeek } from "date-fns";
 
 interface WeeklySession {
@@ -17,6 +17,9 @@ interface WeeklySession {
   week_intention: string | null;
   relationship_investment?: string | null;
   honest_conversation?: string | null;
+  feedback_commitment?: string | null;
+  trusted_advisors?: string | null;
+  identity_reflection?: string | null;
   completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -37,6 +40,7 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
   const weekNum = getISOWeek(startDate);
 
   const hasRelationshipContent = session.relationship_investment || session.honest_conversation;
+  const hasFeedbackContent = session.feedback_commitment || session.trusted_advisors || session.identity_reflection;
   const hasReflectionContent = session.last_week_reflection || session.week_intention;
 
   return (
@@ -116,6 +120,44 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
             </div>
           )}
 
+          {(hasRelationshipContent || hasFeedbackContent) && hasFeedbackContent && <Separator />}
+
+          {session.feedback_commitment && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Brain className="h-4 w-4 text-primary" />
+                Feedback Commitment
+              </div>
+              <p className="text-sm text-muted-foreground pl-6 whitespace-pre-wrap">
+                {session.feedback_commitment}
+              </p>
+            </div>
+          )}
+
+          {session.trusted_advisors && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                Trusted Feedback Circle
+              </div>
+              <p className="text-sm text-muted-foreground pl-6 whitespace-pre-wrap">
+                {session.trusted_advisors}
+              </p>
+            </div>
+          )}
+
+          {session.identity_reflection && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                Identity vs. Performance
+              </div>
+              <p className="text-sm text-muted-foreground pl-6 whitespace-pre-wrap">
+                {session.identity_reflection}
+              </p>
+            </div>
+          )}
+
           {session.completed_at && (
             <>
               <Separator />
@@ -125,7 +167,7 @@ export const WeeklySessionDetailModal = ({ session, open, onOpenChange }: Weekly
             </>
           )}
 
-          {!session.last_week_reflection && !session.week_intention && !hasRelationshipContent && (
+          {!session.last_week_reflection && !session.week_intention && !hasRelationshipContent && !hasFeedbackContent && (
             <p className="text-sm text-muted-foreground text-center py-4">
               No details recorded for this planning session.
             </p>

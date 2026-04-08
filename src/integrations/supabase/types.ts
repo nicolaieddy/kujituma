@@ -2108,11 +2108,14 @@ export type Database = {
         Row: {
           completed_at: string | null
           created_at: string
+          feedback_commitment: string | null
           honest_conversation: string | null
           id: string
+          identity_reflection: string | null
           is_completed: boolean
           last_week_reflection: string | null
           relationship_investment: string | null
+          trusted_advisors: string | null
           updated_at: string
           user_id: string
           week_intention: string | null
@@ -2121,11 +2124,14 @@ export type Database = {
         Insert: {
           completed_at?: string | null
           created_at?: string
+          feedback_commitment?: string | null
           honest_conversation?: string | null
           id?: string
+          identity_reflection?: string | null
           is_completed?: boolean
           last_week_reflection?: string | null
           relationship_investment?: string | null
+          trusted_advisors?: string | null
           updated_at?: string
           user_id: string
           week_intention?: string | null
@@ -2134,11 +2140,14 @@ export type Database = {
         Update: {
           completed_at?: string | null
           created_at?: string
+          feedback_commitment?: string | null
           honest_conversation?: string | null
           id?: string
+          identity_reflection?: string | null
           is_completed?: boolean
           last_week_reflection?: string | null
           relationship_investment?: string | null
+          trusted_advisors?: string | null
           updated_at?: string
           user_id?: string
           week_intention?: string | null
