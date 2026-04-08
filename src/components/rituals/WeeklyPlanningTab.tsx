@@ -7,7 +7,7 @@ import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { PlanningTrendsChart } from "./PlanningTrendsChart";
 import { WeeklySessionDetailModal } from "./WeeklySessionDetailModal";
-import { CalendarDays, Target, Lightbulb, Plus, CheckCircle, Clock, ChevronRight, Heart, MessageCircle } from "lucide-react";
+import { CalendarDays, Target, Lightbulb, Plus, CheckCircle, Clock, ChevronRight, Heart, MessageCircle, Brain } from "lucide-react";
 import { format, parseISO, getISOWeek } from "date-fns";
 import { useState } from "react";
 
@@ -86,7 +86,15 @@ export const WeeklyPlanningTab = () => {
                   </div>
                 </div>
               )}
-              {currentSession.honest_conversation && (
+              {currentSession.feedback_commitment && (
+                <div className="flex gap-3">
+                  <Brain className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-1">Feedback Commitment</p>
+                    <p className="text-sm">{currentSession.feedback_commitment}</p>
+                  </div>
+                </div>
+              )}
                 <div className="flex gap-3">
                   <MessageCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
@@ -161,6 +169,13 @@ export const WeeklyPlanningTab = () => {
                     <div className="flex gap-2 text-sm">
                       <Heart className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
                       <p className="text-muted-foreground line-clamp-1">{session.relationship_investment}</p>
+                    </div>
+                  )}
+                  
+                  {session.feedback_commitment && (
+                    <div className="flex gap-2 text-sm">
+                      <Brain className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                      <p className="text-muted-foreground line-clamp-1">{session.feedback_commitment}</p>
                     </div>
                   )}
                 </div>
