@@ -95,6 +95,7 @@ export const WeeklyPlanningTab = () => {
                   </div>
                 </div>
               )}
+              {currentSession.honest_conversation && (
                 <div className="flex gap-3">
                   <MessageCircle className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
                   <div>
