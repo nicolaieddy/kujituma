@@ -21,6 +21,7 @@ import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { startOfWeek, addWeeks, startOfMonth, endOfMonth, isBefore, format, getMonth } from "date-fns";
 
 const getNextScheduledDate = (goal: Goal): string | null => {
@@ -421,15 +422,20 @@ export const GoalCard = ({
         <CardContent className="pt-0">
           <div className="space-y-3">
             {goal.description && (
-              <p className={cn(
+              <div className={cn(
                 "text-sm leading-relaxed",
                 isDeprioritized ? "text-muted-foreground/70" : "text-muted-foreground"
               )}>
-                {isExpanded ? goal.description : 
-                  goal.description.length > 100 ? 
-                    `${goal.description.substring(0, 100)}...` : 
-                    goal.description
-                }
+                {isExpanded ? (
+                  <MarkdownContent content={goal.description} />
+                ) : (
+                  <p>
+                    {goal.description.length > 100 ? 
+                      `${goal.description.substring(0, 100)}...` : 
+                      goal.description
+                    }
+                  </p>
+                )}
                 {goal.description.length > 100 && (
                   <button
                     onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
@@ -438,7 +444,7 @@ export const GoalCard = ({
                     {isExpanded ? 'Show less' : 'Show more'}
                   </button>
                 )}
-              </p>
+              </div>
             )}
             
             <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">

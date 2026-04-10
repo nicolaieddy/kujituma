@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Goal } from "@/types/goals";
@@ -359,7 +360,7 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
             <CardTitle className="text-white text-lg">Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-white/80 leading-relaxed">{goal.description}</p>
+            <MarkdownContent content={goal.description} className="text-white/80 leading-relaxed" />
           </CardContent>
         </Card>
       )}

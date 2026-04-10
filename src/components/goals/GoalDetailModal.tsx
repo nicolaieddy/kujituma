@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Goal, GoalStatus } from "@/types/goals";
 import { GoalForm } from "./GoalForm";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
 import { IntegrationsPromptCard } from "./IntegrationsPromptCard";
@@ -58,7 +59,7 @@ export const GoalDetailModal = ({
               </div>
               <DialogTitle className="text-2xl text-foreground">{goal.title}</DialogTitle>
               <DialogDescription className="sr-only">Goal details and actions</DialogDescription>
-              {goal.description && <p className="text-muted-foreground mt-2">{goal.description}</p>}
+              {goal.description && <MarkdownContent content={goal.description} className="text-muted-foreground mt-2" />}
             </div>
             <div className="flex gap-2">
               {!isEditing && (
