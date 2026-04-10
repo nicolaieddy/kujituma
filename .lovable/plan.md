@@ -1,51 +1,33 @@
 
 
-# Plan: Integrate Olympic Feedback Principles into Check-ins (Revised)
+# Plan: Add Markdown Rendering for Goal Descriptions
 
-## The Six Principles (mapped to features)
+## Why
+Customer feedback: goal descriptions lose formatting (newlines, bullets, numbered lists). The input is a textarea (already supports multi-line), but render uses plain `<p>` tags that collapse formatting.
 
-| Principle | Where | Implementation |
-|-----------|-------|----------------|
-| **1. Build a circle of advisors** | Weekly Planning | "Who is in your trusted feedback circle this week?" |
-| **2. Separate feedback from opinions** | Daily Check-in | Preset: "Did I receive feedback today? Was it guidance or opinion?" |
-| **3. Manage your emotional response** | Daily Check-in | Preset: "What triggered a strong reaction? What was signal vs. noise?" |
-| **4. Separate identity from performance** | **Weekly Planning** | "Where did I tie my self-worth to an outcome this week?" |
-| **5. Commit to applying feedback** | Weekly Planning | "What feedback am I committing to act on this week?" |
-| **6. Use feedback for growth** | Weekly Planning | Covered by feedback commitment field |
+## Approach
+Install `react-markdown` and render goal descriptions as markdown in all display locations. Plain text looks identical; users who add `-` bullets or `1.` numbered lists get proper formatting automatically.
 
 ## Changes
 
-### 1. Daily check-in presets (`InlineCheckInSettings.tsx`)
-Add **3** new suggestion chips (not 4 — #4 moves to weekly):
-- "Did I receive feedback today — was it guidance or opinion?"
-- "What triggered a strong reaction? What was signal vs. noise?"
-- "What feedback am I sitting on instead of acting on?"
+### 1. Install `react-markdown`
+Add the dependency (lightweight, no remark/rehype plugins needed for basic use).
 
-### 2. Weekly Planning dialog (`WeeklyPlanningDialog.tsx`)
-Add a "Feedback & Growth" section with **3** fields:
-- `feedback_commitment` — "What feedback will you commit to acting on this week?"
-- `trusted_advisors` — "Who is in your trusted feedback circle?"
-- `identity_reflection` — "Where did I tie my self-worth to an outcome this week?"
+### 2. Create a reusable `MarkdownContent` component (`src/components/ui/markdown-content.tsx`)
+A thin wrapper around `react-markdown` with consistent prose styling (text color, spacing, list styles). Used everywhere descriptions are displayed.
 
-### 3. Database migration
-Add three nullable text columns to `weekly_planning_sessions`:
-- `feedback_commitment`
-- `trusted_advisors`
-- `identity_reflection`
+### 3. Update render points (3 files)
+- **`GoalDetailOverview.tsx`** (line 362): Replace `<p>{goal.description}</p>` with `<MarkdownContent>`
+- **`GoalCard.tsx`** (lines 424-432): Replace truncated `<p>` with markdown for expanded view, keep plain text truncation for collapsed
+- **`GoalDetailModal.tsx`**: Check if description is rendered here too and update
 
-### 4. Types (`src/types/habits.ts` + `src/integrations/supabase/types.ts`)
-Add all three fields to `WeeklyPlanningSession` and `CreateWeeklyPlanningSession`.
-
-### 5. History views
-- `WeeklySessionDetailModal.tsx` — display new fields with Brain/Users/Shield icons
-- `WeeklyPlanningTab.tsx` — show snippets in list and current-week cards
+### 4. Style the markdown output
+Add Tailwind prose-like classes so bullets, numbered lists, headings, bold, and line breaks render cleanly within the existing dark/light theme cards.
 
 ## Files changed
-- `src/components/habits/InlineCheckInSettings.tsx` — 3 preset suggestions
-- `src/components/habits/WeeklyPlanningDialog.tsx` — Feedback & Growth section (3 fields)
-- `src/components/rituals/WeeklySessionDetailModal.tsx` — display new fields
-- `src/components/rituals/WeeklyPlanningTab.tsx` — display new fields
-- `src/types/habits.ts` — interface updates
-- `src/integrations/supabase/types.ts` — DB types
-- New migration SQL
+- `package.json` — add `react-markdown`
+- New: `src/components/ui/markdown-content.tsx`
+- `src/components/goals/GoalDetailOverview.tsx`
+- `src/components/goals/GoalCard.tsx`
+- `src/components/goals/GoalDetailModal.tsx` (if applicable)
 
