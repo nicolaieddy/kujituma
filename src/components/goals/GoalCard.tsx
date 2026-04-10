@@ -21,6 +21,7 @@ import { Goal, GoalStatus, GoalVisibility } from "@/types/goals";
 import { formatRelativeTime } from "@/utils/dateUtils";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { startOfWeek, addWeeks, startOfMonth, endOfMonth, isBefore, format, getMonth } from "date-fns";
 
 const getNextScheduledDate = (goal: Goal): string | null => {

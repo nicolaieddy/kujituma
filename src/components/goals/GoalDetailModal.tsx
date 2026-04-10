@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Goal, GoalStatus } from "@/types/goals";
 import { GoalForm } from "./GoalForm";
+import { MarkdownContent } from "@/components/ui/markdown-content";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
 import { IntegrationsPromptCard } from "./IntegrationsPromptCard";
