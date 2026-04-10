@@ -58,7 +58,7 @@ export const GoalDetailModal = ({
               </div>
               <DialogTitle className="text-2xl text-foreground">{goal.title}</DialogTitle>
               <DialogDescription className="sr-only">Goal details and actions</DialogDescription>
-              {goal.description && <p className="text-muted-foreground mt-2">{goal.description}</p>}
+              {goal.description && <MarkdownContent content={goal.description} className="text-muted-foreground mt-2" />}
             </div>
             <div className="flex gap-2">
               {!isEditing && (

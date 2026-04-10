@@ -359,7 +359,7 @@ export const GoalDetailOverview = ({ goal }: GoalDetailOverviewProps) => {
             <CardTitle className="text-white text-lg">Description</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-white/80 leading-relaxed">{goal.description}</p>
+            <MarkdownContent content={goal.description} className="text-white/80 leading-relaxed" />
           </CardContent>
         </Card>
       )}
