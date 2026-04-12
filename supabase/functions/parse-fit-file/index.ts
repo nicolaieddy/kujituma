@@ -392,8 +392,8 @@ Deno.serve(async (req) => {
         .eq("user_id", user.id)
         .is("matched_activity_id", null);
 
-      if (unmatchedWorkouts?.length) {
-        for (const workout of unmatchedWorkouts) {
+      if (candidateWorkouts?.length) {
+        for (const workout of candidateWorkouts) {
           const workoutDate = new Date(workout.week_start);
           workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
           const workoutDateStr = workoutDate.toISOString().split("T")[0];
