@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
         .from("synced_activities")
         .select("id, activity_type, start_date, duration_seconds, source, activity_name")
         .eq("user_id", user.id)
+        .eq("source", "fit_upload")
         .gte("start_date", `${activityDate}T00:00:00`)
         .lte("start_date", `${activityDate}T23:59:59`);
 
