@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { startOfWeek, endOfWeek, format } from "date-fns";
+import { getLocalDateString } from "@/utils/dateUtils";
 
 interface SyncedActivity {
   id: string;
@@ -16,6 +17,11 @@ interface SyncedActivity {
   habit_completion_created: boolean;
 }
 
+// Convert a UTC ISO string to a local YYYY-MM-DD string
+const toLocalDateStr = (isoString: string): string => {
+  return getLocalDateString(new Date(isoString));
+};
+
 export function useSyncedActivities(weekStart?: Date) {
   const { user } = useAuth();
   const currentWeekStart = weekStart || startOfWeek(new Date(), { weekStartsOn: 1 });
@@ -28,12 +34,16 @@ export function useSyncedActivities(weekStart?: Date) {
     queryFn: async () => {
       if (!user) return [];
       
+      // Use local date strings for the range to avoid timezone shift
+      const startStr = getLocalDateString(currentWeekStart);
+      const endStr = getLocalDateString(currentWeekEnd);
+
       const { data, error } = await supabase
         .from("synced_activities")
         .select("*")
         .eq("user_id", user.id)
-        .gte("start_date", currentWeekStart.toISOString())
-        .lte("start_date", currentWeekEnd.toISOString())
+        .gte("start_date", `${startStr}T00:00:00Z`)
+        .lte("start_date", `${endStr}T23:59:59Z`)
         .eq("habit_completion_created", true);
 
       if (error) {
@@ -44,16 +54,16 @@ export function useSyncedActivities(weekStart?: Date) {
       return (data || []) as SyncedActivity[];
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
   });
 
   // Get all Strava completions for a habit item on a specific date
   const getStravaCompletionsForDate = (habitItemId: string, date: Date): SyncedActivity[] => {
-    const dateStr = format(date, "yyyy-MM-dd");
+    const dateStr = getLocalDateString(date);
     
     return syncedActivities.filter(activity => 
       activity.matched_habit_item_id === habitItemId &&
-      activity.start_date?.startsWith(dateStr)
+      toLocalDateStr(activity.start_date) === dateStr
     );
   };
 
