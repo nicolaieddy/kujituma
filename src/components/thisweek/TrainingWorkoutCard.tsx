@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Pencil, Trash2, Target, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain } from "lucide-react";
+import { Pencil, Trash2, Target, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { TrainingPlanDisplayWorkout } from "@/components/thisweek/trainingPlanUtils";
 import { formatDistance, formatDuration, formatPace, getWorkoutStatus } from "@/components/thisweek/trainingPlanUtils";
 import { cn } from "@/lib/utils";
+import { FitUploadButton } from "@/components/training/FitUploadButton";
+import { useActivityLaps } from "@/hooks/useActivityLaps";
+import { LapSplitsTable } from "@/components/training/LapSplitsTable";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
