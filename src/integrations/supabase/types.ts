@@ -2236,6 +2236,7 @@ export type Database = {
           description: string | null
           goal_id: string | null
           id: string
+          matched_activity_id: string | null
           matched_strava_activity_id: number | null
           notes: string | null
           order_index: number
@@ -2254,6 +2255,7 @@ export type Database = {
           description?: string | null
           goal_id?: string | null
           id?: string
+          matched_activity_id?: string | null
           matched_strava_activity_id?: number | null
           notes?: string | null
           order_index?: number
@@ -2272,6 +2274,7 @@ export type Database = {
           description?: string | null
           goal_id?: string | null
           id?: string
+          matched_activity_id?: string | null
           matched_strava_activity_id?: number | null
           notes?: string | null
           order_index?: number
@@ -2290,6 +2293,13 @@ export type Database = {
             columns: ["goal_id"]
             isOneToOne: false
             referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plan_workouts_matched_activity_id_fkey"
+            columns: ["matched_activity_id"]
+            isOneToOne: false
+            referencedRelation: "synced_activities"
             referencedColumns: ["id"]
           },
         ]

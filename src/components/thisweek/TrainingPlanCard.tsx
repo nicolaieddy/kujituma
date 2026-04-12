@@ -47,7 +47,10 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     [displayWorkouts]
   );
 
-  const completedCount = displayWorkouts.filter((workout) => getMatchedActivity(workout.matched_strava_activity_id)).length;
+  const completedCount = displayWorkouts.filter((workout) => {
+    const source = workouts.find(w => w.id === workout.sourceWorkoutId) || workout;
+    return getMatchedActivity(source as any);
+  }).length;
   const totalCount = displayWorkouts.length;
 
   if (isLoading) return null;
@@ -154,8 +157,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
                     <div className="space-y-3">
                       {dayWorkouts.map((workout) => {
-                        const matched = workout.isDerivedSession ? null : getMatchedActivity(workout.matched_strava_activity_id);
                         const sourceWorkout = workouts.find((item) => item.id === workout.sourceWorkoutId) || null;
+                        const matched = workout.isDerivedSession ? null : getMatchedActivity(sourceWorkout || workout as any);
                         const goalNames = sourceWorkout ? getGoalNames(sourceWorkout) : [];
 
                         return (

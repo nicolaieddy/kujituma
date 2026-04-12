@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Pencil, Trash2, Target, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, Upload, File } from "lucide-react";
+import { Pencil, Trash2, Target, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Loader2, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { TrainingPlanDisplayWorkout } from "@/components/thisweek/trainingPlanUtils";
 import { formatDistance, formatDuration, formatPace, getWorkoutStatus } from "@/components/thisweek/trainingPlanUtils";
 import { cn } from "@/lib/utils";
-import { FitUploadButton } from "@/components/training/FitUploadButton";
+import { useFitFileUpload } from "@/hooks/useFitFileUpload";
 import { useActivityLaps } from "@/hooks/useActivityLaps";
 import { LapSplitsTable } from "@/components/training/LapSplitsTable";
 import { ActivityCharts } from "@/components/training/ActivityCharts";
+import { useRef } from "react";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
@@ -240,6 +241,8 @@ export function TrainingWorkoutCard({
   onDelete,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const { uploadFitFile, isUploading, progress } = useFitFileUpload();
   const status = getWorkoutStatus(workout, matchedActivity);
   const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
 
@@ -262,6 +265,16 @@ export function TrainingWorkoutCard({
         "hover:shadow-md"
       )}
     >
+      {/* Upload progress overlay */}
+      {isUploading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl">
+          <div className="flex items-center gap-3 text-sm font-medium text-primary">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>{progress || "Uploading..."}</span>
+          </div>
+        </div>
+      )}
+
       {/* Subtle left accent */}
       <div className={cn(
         "absolute inset-y-0 left-0 w-[3px]",
@@ -305,8 +318,30 @@ export function TrainingWorkoutCard({
         </div>
 
         {!isReadOnly && !workout.isDerivedSession && (
-          <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            <FitUploadButton workoutId={workout.id} variant="ghost" size="icon" />
+          <div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".fit"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                await uploadFitFile(file, workout.id);
+                if (fileRef.current) fileRef.current.value = "";
+              }}
+              disabled={isUploading}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-muted-foreground hover:text-foreground"
+              onClick={() => fileRef.current?.click()}
+              disabled={isUploading}
+            >
+              <Upload className="h-3.5 w-3.5" />
+              Upload
+            </Button>
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5" />
