@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -60,6 +61,7 @@ const PartnerDashboard = () => {
   const [commentsObjectiveId, setCommentsObjectiveId] = useState<string | null>(null);
   const [commentsObjectiveText, setCommentsObjectiveText] = useState('');
   
+  const queryClient = useQueryClient();
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
 
@@ -160,6 +162,7 @@ const PartnerDashboard = () => {
         refetch()
       ]).catch(console.error);
       toast.success('Check-in recorded!');
+      queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
     } catch (err) {
       console.error('Error recording check-in:', err);
       if (tempId) checkInsFeedRef.current?.removeOptimisticCheckIn(tempId);

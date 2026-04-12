@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { accountabilityService, AccountabilityPartner, CheckInRecord } from '@/services/accountabilityService';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { ChevronRight, Send, Loader2, MessageSquare, Check } from 'lucide-react';
@@ -30,6 +31,7 @@ interface PartnerCheckIn {
 
 export const PartnerCheckInsCard = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [partnerCheckIns, setPartnerCheckIns] = useState<PartnerCheckIn[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,6 +198,7 @@ export const PartnerCheckInsCard = () => {
       setReplyText('');
       setReplyingTo(null);
       setOpenPopover(null);
+      queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
       await fetchData();
     } catch (err) {
       console.error('Failed to send:', err);

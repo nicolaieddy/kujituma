@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useQueryClient } from '@tanstack/react-query';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter, Reply, Send, Pencil, Trash2, Check } from 'lucide-react';
@@ -65,6 +66,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   onRecordCheckIn
 }, ref) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [optimisticIds, setOptimisticIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -256,6 +258,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
         return next;
       });
       await fetchCheckIns();
+      queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
       toast.success('Reply sent!');
     } catch (error) {
       console.error('Error sending reply:', error);
