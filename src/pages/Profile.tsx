@@ -479,6 +479,18 @@ const Profile = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleTabChange("workouts")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "workouts"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Dumbbell className="h-4 w-4" />
+                  Workouts
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleTabChange("notifications")}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === "notifications"
@@ -516,6 +528,11 @@ const Profile = () => {
             {activeTab === "integrations" && (
               <div className="max-w-4xl mx-auto">
                 <IntegrationsSection />
+              </div>
+            )}
+            {activeTab === "workouts" && (
+              <div className="max-w-4xl mx-auto">
+                <WorkoutPreferencesSection />
               </div>
             )}
             {activeTab === "notifications" && (
