@@ -7,6 +7,7 @@ import { GoalForm } from "./GoalForm";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { GoalDetailHabitsSection } from "./GoalDetailHabitsSection";
 import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
+import { GoalDetailTrainingSection } from "./GoalDetailTrainingSection";
 import { IntegrationsPromptCard } from "./IntegrationsPromptCard";
 import { LanguageLearningIntegration } from "./LanguageLearningIntegration";
 import { Edit, CheckCircle, Play, Clock, Trash2 } from "lucide-react";
@@ -115,6 +116,8 @@ export const GoalDetailModal = ({
               goalId={goal.id}
               goalStartDate={goal.start_date}
             />
+            
+            <GoalDetailTrainingSection goalId={goal.id} />
           </div>
         )}
       </DialogContent>
