@@ -239,8 +239,8 @@ export function TrainingWorkoutCard({
   onDelete,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
-  const { uploadFitFile, isUploading, progress } = useFitFileUpload();
+  const status = getWorkoutStatus(workout, matchedActivity);
+  const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
   const status = getWorkoutStatus(workout, matchedActivity);
   const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
 
