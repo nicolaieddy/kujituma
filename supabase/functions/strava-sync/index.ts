@@ -118,15 +118,19 @@ async function autoMatchTrainingPlan(
   let matched = 0;
 
   for (const weekStart of weekStarts) {
-    // Get unmatched training plan workouts for this week
-    const { data: planWorkouts } = await supabase
+    // Get ALL training plan workouts for this week (including already matched, to track used IDs)
+    const { data: allPlanWorkouts } = await supabase
       .from("training_plan_workouts")
       .select("*")
       .eq("user_id", userId)
-      .eq("week_start", weekStart)
-      .is("matched_strava_activity_id", null);
+      .eq("week_start", weekStart);
 
-    if (!planWorkouts || planWorkouts.length === 0) continue;
+    const unmatchedWorkouts = (allPlanWorkouts || []).filter((w: any) => !w.matched_strava_activity_id);
+    const alreadyMatchedIds = new Set(
+      (allPlanWorkouts || [])
+        .filter((w: any) => w.matched_strava_activity_id)
+        .map((w: any) => w.matched_strava_activity_id)
+    );
 
     // Get synced activities for this week
     const weekEnd = new Date(weekStart + "T00:00:00");
@@ -142,18 +146,28 @@ async function autoMatchTrainingPlan(
 
     if (!activities || activities.length === 0) continue;
 
-    // Try to match each plan workout to an activity
-    const usedActivityIds = new Set<number>();
+    // Track used activity IDs (include already matched ones)
+    const usedActivityIds = new Set<number>(alreadyMatchedIds);
 
-    for (const workout of planWorkouts) {
+    // Step 1: Match planned workouts to activities
+    for (const workout of unmatchedWorkouts) {
+      // Skip rest/off workouts
+      if ((workout.workout_type || "").toLowerCase() === "rest") continue;
+
       const match = activities.find((a: any) => {
         if (usedActivityIds.has(a.strava_activity_id)) return false;
-        // start_date from DB can be "2026-04-06 21:23:26+00" or ISO with "T"
         const actLocalDate = (a.start_date || "").replace(" ", "T").split("T")[0];
         const actDow = getDayOfWeek(actLocalDate);
-        const typeMatch = (a.activity_type || "").toLowerCase() === (workout.workout_type || "").toLowerCase() ||
-                          (a.sport_type || "").toLowerCase() === (workout.workout_type || "").toLowerCase();
-        return actDow === workout.day_of_week && typeMatch;
+        if (actDow !== workout.day_of_week) return false;
+        // Flexible type matching: if planned is a general type, match broadly
+        const actType = (a.activity_type || "").toLowerCase();
+        const planType = (workout.workout_type || "").toLowerCase();
+        // Direct match or common equivalencies
+        return actType === planType ||
+               (actType === "run" && planType === "run") ||
+               (actType === "weighttraining" && (planType === "strength" || planType === "workout")) ||
+               (actType === "workout" && (planType === "strength" || planType === "weighttraining")) ||
+               planType === "workout"; // Generic "Workout" matches anything
       });
 
       if (match) {
@@ -163,6 +177,46 @@ async function autoMatchTrainingPlan(
           .eq("id", workout.id);
         usedActivityIds.add(match.strava_activity_id);
         matched++;
+      }
+    }
+
+    // Step 2: Create workout entries for activities with no matching planned workout
+    for (const activity of activities) {
+      if (usedActivityIds.has(activity.strava_activity_id)) continue;
+
+      const actLocalDate = (activity.start_date || "").replace(" ", "T").split("T")[0];
+      const actDow = getDayOfWeek(actLocalDate);
+      const actType = activity.activity_type || activity.sport_type || "Workout";
+
+      // Calculate order_index: count existing workouts for this day
+      const existingForDay = (allPlanWorkouts || []).filter((w: any) => w.day_of_week === actDow);
+      const orderIndex = existingForDay.length;
+
+      const distanceKm = activity.distance_meters ? (activity.distance_meters / 1000).toFixed(1) : null;
+      const durationMin = activity.duration_seconds ? Math.round(activity.duration_seconds / 60) : null;
+      const titleParts = [activity.activity_name || actType];
+
+      const { error: insertErr } = await supabase
+        .from("training_plan_workouts")
+        .insert({
+          user_id: userId,
+          week_start: weekStart,
+          day_of_week: actDow,
+          workout_type: actType,
+          title: titleParts.join(" "),
+          description: "",
+          target_distance_meters: activity.distance_meters || null,
+          target_duration_seconds: activity.duration_seconds || null,
+          notes: `Auto-created from Strava activity`,
+          order_index: orderIndex,
+          matched_strava_activity_id: activity.strava_activity_id,
+        });
+
+      if (!insertErr) {
+        usedActivityIds.add(activity.strava_activity_id);
+        matched++;
+      } else {
+        console.error(`Failed to create workout for activity ${activity.strava_activity_id}:`, insertErr);
       }
     }
   }
