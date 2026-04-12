@@ -357,6 +357,12 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
+      {/* Training Plan */}
+      <TrainingPlanCard
+        weekStart={currentWeekStart}
+        isReadOnly={!isCurrentWeek}
+      />
+
       {aiEnabled && isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
         <AISuggestionsCard
           suggestions={suggestions}
