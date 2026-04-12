@@ -3,6 +3,17 @@
  * This is crucial for features like daily check-ins where "today"
  * should match the user's local day, not UTC.
  */
+/**
+ * Parse a "YYYY-MM-DD" string as a local-timezone Date.
+ * Using `new Date("2026-04-07")` treats the string as UTC midnight,
+ * which shifts to the previous day for users west of UTC.
+ * This helper avoids that by constructing the Date with local components.
+ */
+export const parseLocalDate = (dateStr: string): Date => {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(y, m - 1, d);
+};
+
 export const getLocalDateString = (date: Date = new Date()): string => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');

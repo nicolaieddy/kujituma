@@ -350,7 +350,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           habits={habitStats}
           objectives={objectives || []}
           onToggleObjective={isCurrentWeek ? handleToggleObjective : undefined}
-          weekStart={new Date(currentWeekStart)}
+          weekStart={parseLocalDate(currentWeekStart)}
           isReadOnly={!isCurrentWeek}
         />
       )}
