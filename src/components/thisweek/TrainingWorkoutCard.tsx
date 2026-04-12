@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { FitUploadButton } from "@/components/training/FitUploadButton";
 import { useActivityLaps } from "@/hooks/useActivityLaps";
 import { LapSplitsTable } from "@/components/training/LapSplitsTable";
+import { ActivityCharts } from "@/components/training/ActivityCharts";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
