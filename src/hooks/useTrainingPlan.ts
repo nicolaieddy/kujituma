@@ -18,6 +18,7 @@ export interface TrainingPlanWorkout {
   notes: string;
   order_index: number;
   matched_strava_activity_id: number | null;
+  matched_activity_id?: string | null;
   created_at: string;
   updated_at: string;
   // Joined goal IDs from junction table

@@ -126,6 +126,7 @@ function splitWorkoutForDisplay(workout: TrainingPlanWorkout): TrainingPlanDispl
     target_duration_seconds: null,
     target_pace_per_km: null,
     matched_strava_activity_id: null,
+    matched_activity_id: null,
     sourceWorkoutId: workout.id,
     isDerivedSession: true,
     sessionLabel: "PM",

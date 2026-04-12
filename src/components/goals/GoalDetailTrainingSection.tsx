@@ -84,7 +84,7 @@ export function GoalDetailTrainingSection({ goalId }: GoalDetailTrainingSectionP
                         {formatDuration(w.target_duration_seconds)}
                       </span>
                     )}
-                    {w.matched_strava_activity_id && (
+                    {(w.matched_strava_activity_id || w.matched_activity_id) && (
                       <Badge variant="outline" className="border-success/30 bg-success/10 text-xs shrink-0">
                         ✓
                       </Badge>
