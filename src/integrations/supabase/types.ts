@@ -249,6 +249,71 @@ export type Database = {
           },
         ]
       }
+      activity_laps: {
+        Row: {
+          activity_id: string
+          avg_cadence: number | null
+          avg_heart_rate: number | null
+          avg_power: number | null
+          avg_speed: number | null
+          calories: number | null
+          created_at: string
+          distance_meters: number | null
+          duration_seconds: number | null
+          id: string
+          lap_index: number
+          max_heart_rate: number | null
+          max_speed: number | null
+          start_time: string | null
+          total_elevation_gain: number | null
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          avg_cadence?: number | null
+          avg_heart_rate?: number | null
+          avg_power?: number | null
+          avg_speed?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          id?: string
+          lap_index: number
+          max_heart_rate?: number | null
+          max_speed?: number | null
+          start_time?: string | null
+          total_elevation_gain?: number | null
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          avg_cadence?: number | null
+          avg_heart_rate?: number | null
+          avg_power?: number | null
+          avg_speed?: number | null
+          calories?: number | null
+          created_at?: string
+          distance_meters?: number | null
+          duration_seconds?: number | null
+          id?: string
+          lap_index?: number
+          max_heart_rate?: number | null
+          max_speed?: number | null
+          start_time?: string | null
+          total_elevation_gain?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_laps_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "synced_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       activity_mappings: {
         Row: {
           created_at: string | null
@@ -289,6 +354,59 @@ export type Database = {
             columns: ["goal_id"]
             isOneToOne: false
             referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      activity_streams: {
+        Row: {
+          activity_id: string
+          altitude: number | null
+          cadence: number | null
+          created_at: string
+          heart_rate: number | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          power: number | null
+          speed: number | null
+          timestamp_offset_seconds: number
+          user_id: string
+        }
+        Insert: {
+          activity_id: string
+          altitude?: number | null
+          cadence?: number | null
+          created_at?: string
+          heart_rate?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          power?: number | null
+          speed?: number | null
+          timestamp_offset_seconds: number
+          user_id: string
+        }
+        Update: {
+          activity_id?: string
+          altitude?: number | null
+          cadence?: number | null
+          created_at?: string
+          heart_rate?: number | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          power?: number | null
+          speed?: number | null
+          timestamp_offset_seconds?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "activity_streams_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "synced_activities"
             referencedColumns: ["id"]
           },
         ]
@@ -1830,24 +1948,31 @@ export type Database = {
           activity_type: string | null
           average_cadence: number | null
           average_heartrate: number | null
+          average_power: number | null
           average_speed: number | null
           calories: number | null
           distance_meters: number | null
           duration_seconds: number | null
           elapsed_time_seconds: number | null
+          fit_file_path: string | null
           habit_completion_created: boolean | null
           id: string
           matched_goal_id: string | null
           matched_habit_item_id: string | null
+          max_cadence: number | null
           max_heartrate: number | null
           max_speed: number | null
+          normalized_power: number | null
+          source: string
           sport_type: string | null
           start_date: string | null
-          strava_activity_id: number
+          strava_activity_id: number | null
           strava_description: string | null
           suffer_score: number | null
           synced_at: string | null
           total_elevation_gain: number | null
+          training_effect: number | null
+          tss: number | null
           user_id: string
           workout_type_id: number | null
         }
@@ -1856,24 +1981,31 @@ export type Database = {
           activity_type?: string | null
           average_cadence?: number | null
           average_heartrate?: number | null
+          average_power?: number | null
           average_speed?: number | null
           calories?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
           elapsed_time_seconds?: number | null
+          fit_file_path?: string | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
           matched_habit_item_id?: string | null
+          max_cadence?: number | null
           max_heartrate?: number | null
           max_speed?: number | null
+          normalized_power?: number | null
+          source?: string
           sport_type?: string | null
           start_date?: string | null
-          strava_activity_id: number
+          strava_activity_id?: number | null
           strava_description?: string | null
           suffer_score?: number | null
           synced_at?: string | null
           total_elevation_gain?: number | null
+          training_effect?: number | null
+          tss?: number | null
           user_id: string
           workout_type_id?: number | null
         }
@@ -1882,24 +2014,31 @@ export type Database = {
           activity_type?: string | null
           average_cadence?: number | null
           average_heartrate?: number | null
+          average_power?: number | null
           average_speed?: number | null
           calories?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
           elapsed_time_seconds?: number | null
+          fit_file_path?: string | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
           matched_habit_item_id?: string | null
+          max_cadence?: number | null
           max_heartrate?: number | null
           max_speed?: number | null
+          normalized_power?: number | null
+          source?: string
           sport_type?: string | null
           start_date?: string | null
-          strava_activity_id?: number
+          strava_activity_id?: number | null
           strava_description?: string | null
           suffer_score?: number | null
           synced_at?: string | null
           total_elevation_gain?: number | null
+          training_effect?: number | null
+          tss?: number | null
           user_id?: string
           workout_type_id?: number | null
         }
