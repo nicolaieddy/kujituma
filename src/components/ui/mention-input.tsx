@@ -61,7 +61,7 @@ export const MentionInput = ({
         .limit(10);
 
       if (error) throw error;
-      setSuggestions(data || []);
+      setSuggestions((data as any[] || []) as UserSuggestion[]);
     } catch (error) {
       console.error('Error fetching user suggestions:', error);
       setSuggestions([]);

@@ -208,7 +208,7 @@ class FriendsService {
           .in('id', Array.from(profileIds));
         
         if (profiles) {
-          profiles.forEach(p => {
+          (profiles as any[]).forEach((p: any) => {
             profilesMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
           });
         }
@@ -287,7 +287,7 @@ class FriendsService {
 
       if (error) throw error;
 
-      return data || [];
+      return (data as any[] || []) as UserProfile[];
     } catch (error: any) {
       console.error('Error searching users:', error);
       return [];

@@ -54,7 +54,7 @@ export const GoalCommentsSheet = ({ open, onOpenChange, goalId, goalTitle }: Goa
         .in('id', userIds);
 
       const profileMap = new Map(
-        (profilesData || []).map((p) => [p.id, { full_name: p.full_name, avatar_url: p.avatar_url }])
+        ((profilesData as any[]) || []).map((p: any) => [p.id, { full_name: p.full_name, avatar_url: p.avatar_url }])
       );
 
       return data.map((c) => ({

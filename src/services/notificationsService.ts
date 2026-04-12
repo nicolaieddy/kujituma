@@ -26,13 +26,13 @@ class NotificationsService {
       .select('id, full_name, avatar_url')
       .in('id', triggeredByIds);
 
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map((profiles as any[] || []).map((p: any) => [p.id, p]));
 
     return notifications.map(notification => ({
       ...notification,
       type: notification.type as Notification['type'],
       triggered_by: profileMap.get(notification.triggered_by_user_id) || null
-    })) as Notification[];
+    })) as unknown as Notification[];
   }
 
   async getUnreadCount(): Promise<number> {
@@ -103,8 +103,8 @@ class NotificationsService {
           onInsert({
             ...newNotification,
             type: newNotification.type as Notification['type'],
-            triggered_by: profile || null
-          } as Notification);
+            triggered_by: (profile as any) || null
+          } as unknown as Notification);
         }
       )
       .on(

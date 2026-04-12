@@ -363,7 +363,7 @@ class AccountabilityService {
       return null;
     }
 
-    return data;
+    return data as any;
   }
 
   async recordCheckIn(partnershipId: string, message?: string, replyToId?: string): Promise<{ success: boolean; error?: string; checkInId?: string }> {
