@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Copy, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Upload } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
 import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
@@ -11,6 +11,7 @@ import { TrainingWorkoutCard } from "@/components/thisweek/TrainingWorkoutCard";
 import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPlanUtils";
 import { parseLocalDate } from "@/utils/dateUtils";
 import { format, addDays } from "date-fns";
+import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
 
 interface TrainingPlanCardProps {
   weekStart: string;
@@ -21,6 +22,7 @@ interface TrainingPlanCardProps {
 export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: TrainingPlanCardProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<TrainingPlanWorkout | null>(null);
 
   const {
@@ -114,6 +116,10 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
               {!isReadOnly && (
                 <div className="flex flex-wrap gap-2 sm:justify-end">
+                  <Button variant="outline" size="sm" onClick={() => setBulkUploadOpen(true)}>
+                    <Upload className="h-4 w-4" />
+                    Upload .fit
+                  </Button>
                   {totalCount === 0 && (
                     <Button variant="outline" size="sm" onClick={() => copyFromPreviousWeek()} loading={isCopying}>
                       <Copy className="h-4 w-4" />
@@ -187,14 +193,20 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
       </Card>
 
       {!isReadOnly && (
-        <TrainingWorkoutDialog
-          open={dialogOpen}
-          onOpenChange={handleDialogChange}
-          editingWorkout={editingWorkout}
-          onSave={handleSave}
-          isSaving={isSaving}
-          defaultGoalIds={goalId ? [goalId] : []}
-        />
+        <>
+          <TrainingWorkoutDialog
+            open={dialogOpen}
+            onOpenChange={handleDialogChange}
+            editingWorkout={editingWorkout}
+            onSave={handleSave}
+            isSaving={isSaving}
+            defaultGoalIds={goalId ? [goalId] : []}
+          />
+          <BulkFitUploadDialog
+            open={bulkUploadOpen}
+            onOpenChange={setBulkUploadOpen}
+          />
+        </>
       )}
     </>
   );

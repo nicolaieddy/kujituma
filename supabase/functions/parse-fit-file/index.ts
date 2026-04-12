@@ -1,5 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import FitParser from "npm:fit-file-parser@2.1.0";
+import { JSZip } from "https://esm.sh/jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,7 +10,6 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-/** Convert Garmin semicircles to decimal degrees */
 const toDegrees = (sc: number | null | undefined): number | null =>
   sc != null ? sc * (180 / 2147483648) : null;
 
@@ -23,6 +23,21 @@ function parseFitBuffer(buffer: ArrayBuffer): Promise<any> {
   });
 }
 
+/** Extract .fit buffer from a .zip file, or return buffer as-is if already .fit */
+async function extractFitBuffer(buffer: ArrayBuffer, fileName: string): Promise<ArrayBuffer> {
+  if (fileName.toLowerCase().endsWith(".zip")) {
+    const zip = new JSZip();
+    const contents = await zip.loadAsync(buffer);
+    const fitFile = Object.keys(contents.files).find(name => name.toLowerCase().endsWith(".fit"));
+    if (!fitFile) {
+      throw new Error("No .fit file found inside the .zip archive");
+    }
+    console.log(`Extracted ${fitFile} from zip`);
+    return await contents.files[fitFile].async("arraybuffer");
+  }
+  return buffer;
+}
+
 function inferActivityType(sport?: string, _subSport?: string): string {
   const s = (sport || "").toLowerCase();
   if (s.includes("run")) return "Run";
@@ -34,7 +49,6 @@ function inferActivityType(sport?: string, _subSport?: string): string {
   return sport || "Workout";
 }
 
-/** Extract FTP from zones_target messages */
 function extractFtp(fitData: any): number | null {
   if (!fitData.zones_target) return null;
   for (const zt of Array.isArray(fitData.zones_target) ? fitData.zones_target : [fitData.zones_target]) {
@@ -43,7 +57,6 @@ function extractFtp(fitData: any): number | null {
   return null;
 }
 
-/** Build compact records_json from raw 1Hz records */
 function buildRecordsJson(records: any[]): any[] {
   if (!records?.length) return [];
   const out: any[] = [];
@@ -63,12 +76,11 @@ function buildRecordsJson(records: any[]): any[] {
     if (rec.cadence != null) entry.cad = rec.cadence;
     if (rec.power != null) entry.pwr = rec.power;
     if (rec.temperature != null) entry.temp = rec.temperature;
-    if (Object.keys(entry).length > 1) out.push(entry); // must have more than just timestamp
+    if (Object.keys(entry).length > 1) out.push(entry);
   }
   return out;
 }
 
-/** Compute GPS bounding box from records_json */
 function computeBbox(records: any[]): { bbox_north: number; bbox_south: number; bbox_east: number; bbox_west: number } | null {
   let n = -90, s = 90, e = -180, w = 180;
   let found = false;
@@ -107,7 +119,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { file_path, workout_id } = await req.json();
+    const { file_path, workout_id, overwrite_activity_id } = await req.json();
     if (!file_path) {
       return new Response(JSON.stringify({ error: "file_path is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -116,7 +128,6 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Download .fit file from storage
     const { data: fileData, error: downloadError } = await adminClient.storage
       .from("fit-files")
       .download(file_path);
@@ -127,7 +138,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    const buffer = await fileData.arrayBuffer();
+    const rawBuffer = await fileData.arrayBuffer();
+    const buffer = await extractFitBuffer(rawBuffer, file_path);
     const fitData = await parseFitBuffer(buffer);
 
     console.log("FIT parsed — sessions:", fitData.sessions?.length, "laps:", fitData.laps?.length, "records:", fitData.records?.length);
@@ -141,13 +153,67 @@ Deno.serve(async (req) => {
 
     const activityType = inferActivityType(session.sport, session.sub_sport);
     const startDate = session.start_time ? new Date(session.start_time).toISOString() : new Date().toISOString();
+    const durationSeconds = session.total_timer_time ? Math.round(session.total_timer_time) : null;
     const ftp = extractFtp(fitData);
 
-    // Build records_json from all 1Hz records
+    // Duplicate detection: check for existing activity with same date + type + similar duration
+    if (!overwrite_activity_id) {
+      const activityDate = startDate.split("T")[0];
+      const { data: existing } = await adminClient
+        .from("synced_activities")
+        .select("id, activity_type, start_date, duration_seconds, source, activity_name")
+        .eq("user_id", user.id)
+        .gte("start_date", `${activityDate}T00:00:00`)
+        .lte("start_date", `${activityDate}T23:59:59`);
+
+      if (existing?.length) {
+        const match = existing.find((a: any) => {
+          const typeMatch = a.activity_type?.toLowerCase() === activityType.toLowerCase();
+          if (!typeMatch) return false;
+          if (!a.duration_seconds || !durationSeconds) return typeMatch;
+          const durationDiff = Math.abs(a.duration_seconds - durationSeconds);
+          return durationDiff < 120; // within 2 minutes
+        });
+
+        if (match) {
+          return new Response(JSON.stringify({
+            duplicate: true,
+            existing_activity: {
+              id: match.id,
+              activity_type: match.activity_type,
+              start_date: match.start_date,
+              duration_seconds: match.duration_seconds,
+              source: match.source,
+              activity_name: match.activity_name,
+            },
+            new_activity: {
+              activity_type: activityType,
+              start_date: startDate,
+              duration_seconds: durationSeconds,
+            },
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
+    // If overwriting, delete old activity data first
+    if (overwrite_activity_id) {
+      console.log(`Overwriting activity ${overwrite_activity_id}`);
+      await adminClient.from("activity_streams").delete().eq("activity_id", overwrite_activity_id);
+      await adminClient.from("activity_laps").delete().eq("activity_id", overwrite_activity_id);
+      // Unlink any workouts pointing to the old activity
+      await adminClient
+        .from("training_plan_workouts")
+        .update({ matched_activity_id: null })
+        .eq("matched_activity_id", overwrite_activity_id);
+      await adminClient.from("synced_activities").delete().eq("id", overwrite_activity_id).eq("user_id", user.id);
+    }
+
     const recordsJson = buildRecordsJson(fitData.records || []);
     const bbox = computeBbox(recordsJson);
 
-    // Build synced_activity row with ALL fields from the brief
     const activityRow: Record<string, any> = {
       user_id: user.id,
       strava_activity_id: null,
@@ -158,62 +224,39 @@ Deno.serve(async (req) => {
       fit_file_path: file_path,
       habit_completion_created: false,
       synced_at: new Date().toISOString(),
-
-      // Device info
       device_manufacturer: session.manufacturer || fitData.file_id?.manufacturer || null,
       device_product: session.product != null ? String(session.product) : null,
       sub_sport: session.sub_sport || null,
-
-      // Timing
-      duration_seconds: session.total_timer_time ? Math.round(session.total_timer_time) : null,
+      duration_seconds: durationSeconds,
       elapsed_time_seconds: session.total_elapsed_time ? Math.round(session.total_elapsed_time) : null,
-
-      // Distance & speed
       distance_meters: session.total_distance || null,
       average_speed: session.enhanced_avg_speed ?? session.avg_speed ?? null,
       max_speed: session.enhanced_max_speed ?? session.max_speed ?? null,
-
-      // Heart rate
       average_heartrate: session.avg_heart_rate || null,
       max_heartrate: session.max_heart_rate || null,
-
-      // Power
       average_power: session.avg_power || null,
       max_power: session.max_power || null,
       normalized_power: session.normalized_power || null,
       ftp: ftp,
       tss: session.training_stress_score || null,
-
-      // Cadence
       average_cadence: session.avg_running_cadence ?? session.avg_cadence ?? null,
       max_cadence: session.max_running_cadence ?? session.max_cadence ?? null,
-
-      // Elevation
       total_elevation_gain: session.total_ascent || null,
       total_ascent: session.total_ascent || null,
       total_descent: session.total_descent || null,
-
-      // Running dynamics
       avg_vertical_oscillation: session.avg_vertical_oscillation || null,
       avg_stance_time: session.avg_stance_time || null,
       avg_vertical_ratio: session.avg_vertical_ratio || null,
       avg_step_length: session.avg_step_length || null,
-
-      // Summary
       calories: session.total_calories || null,
       total_strides: session.total_strides || null,
       training_effect: session.total_training_effect || null,
       avg_temperature: session.avg_temperature || null,
       num_laps: fitData.laps?.length || null,
-
-      // GPS bounding box
       ...(bbox || {}),
-
-      // Timeseries JSONB (all 1Hz records, compact)
       records_json: recordsJson.length > 0 ? recordsJson : null,
     };
 
-    // Insert activity
     const { data: insertedActivity, error: insertError } = await adminClient
       .from("synced_activities")
       .insert(activityRow)
@@ -228,7 +271,7 @@ Deno.serve(async (req) => {
 
     const activityId = insertedActivity.id;
 
-    // Insert laps with ALL fields from the brief
+    // Insert laps
     if (fitData.laps?.length > 0) {
       const lapRows = fitData.laps.map((lap: any, i: number) => {
         const lapStartLat = toDegrees(lap.start_position_lat);
@@ -240,62 +283,40 @@ Deno.serve(async (req) => {
           activity_id: activityId,
           user_id: user.id,
           lap_index: i,
-
-          // Timing — both fields
           start_time: lap.start_time ? new Date(lap.start_time).toISOString() : null,
           duration_seconds: lap.total_timer_time != null ? Math.round(lap.total_timer_time * 10) / 10 : null,
           total_timer_time: lap.total_timer_time || null,
           total_elapsed_time: lap.total_elapsed_time || null,
           moving_time_seconds: lap.total_moving_time ?? lap.total_timer_time ?? null,
-
-          // Distance
           distance_meters: lap.total_distance || null,
-
-          // Heart rate
           avg_heart_rate: lap.avg_heart_rate || null,
           max_heart_rate: lap.max_heart_rate || null,
-
-          // Speed
           avg_speed: lap.enhanced_avg_speed ?? lap.avg_speed ?? null,
           max_speed: lap.enhanced_max_speed ?? lap.max_speed ?? null,
           best_pace: lap.enhanced_max_speed ?? lap.max_speed ?? null,
-
-          // Power
           avg_power: lap.avg_power || null,
           max_power: lap.max_power || null,
           normalized_power: lap.normalized_power || null,
-
-          // Cadence
           avg_cadence: lap.avg_running_cadence ?? lap.avg_cadence ?? null,
           avg_run_cadence: lap.avg_running_cadence ?? lap.avg_cadence ?? null,
           max_run_cadence: lap.max_running_cadence ?? lap.max_cadence ?? null,
-
-          // Elevation
           total_elevation_gain: lap.total_ascent || null,
           total_ascent: lap.total_ascent || null,
           total_descent: lap.total_descent || null,
           min_altitude: lap.min_altitude ?? lap.enhanced_min_altitude ?? null,
           max_altitude: lap.max_altitude ?? lap.enhanced_max_altitude ?? null,
-
-          // Running dynamics
           avg_ground_contact_time: lap.avg_stance_time || null,
           avg_gct_balance: lap.avg_stance_time_balance || null,
           avg_stride_length: lap.avg_step_length || null,
           avg_vertical_oscillation: lap.avg_vertical_oscillation || null,
           avg_vertical_ratio: lap.avg_vertical_ratio || null,
-
-          // Summary
           calories: lap.total_calories || null,
           total_strides: lap.total_strides || null,
           avg_temperature: lap.avg_temperature || null,
-
-          // GPS endpoints (converted from semicircles)
           start_lat: lapStartLat,
           start_lng: lapStartLng,
           end_lat: lapEndLat,
           end_lng: lapEndLng,
-
-          // GAP approximation
           avg_gap: lap.enhanced_avg_speed ? (lap.total_ascent ? lap.enhanced_avg_speed * 1.05 : lap.enhanced_avg_speed) : null,
           avg_moving_pace: null as number | null,
           avg_step_speed_loss: null,
@@ -306,7 +327,6 @@ Deno.serve(async (req) => {
         };
       });
 
-      // Compute cumulative time & moving pace
       let cumTime = 0;
       for (const row of lapRows) {
         cumTime += row.duration_seconds || 0;
@@ -320,7 +340,7 @@ Deno.serve(async (req) => {
       if (lapError) console.error("Failed to insert laps:", lapError.message);
     }
 
-    // Also insert into activity_streams for backward compat (sampled every 5th)
+    // Insert activity_streams (sampled every 5th)
     if (fitData.records?.length > 0) {
       const streamRows: any[] = [];
       const startTime = new Date(startDate).getTime();
@@ -363,7 +383,6 @@ Deno.serve(async (req) => {
         .eq("user_id", user.id);
       console.log(`Linked workout ${workout_id} to fit activity ${activityId}`);
     } else {
-      // Auto-match by date if no explicit workout_id
       const activityDate = startDate.split("T")[0];
       const { data: unmatchedWorkouts } = await adminClient
         .from("training_plan_workouts")
