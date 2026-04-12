@@ -177,13 +177,16 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                             </div>
                           )}
                         </div>
-                        {isEditing && (
+                        {!isReadOnly && (
                           <div className="flex gap-1">
                             <Button
                               variant="ghost"
                               size="icon"
                               className="h-6 w-6"
-                              onClick={() => setEditingWorkout(workout)}
+                              onClick={() => {
+                                setIsEditing(true);
+                                setEditingWorkout(workout);
+                              }}
                             >
                               <Pencil className="h-3 w-3" />
                             </Button>
