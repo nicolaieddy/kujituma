@@ -280,6 +280,9 @@ export function McpSection() {
               { name: "get_analytics_summary", desc: "Productivity analytics" },
               { name: "get_partnerships", desc: "List accountability partners" },
               { name: "get_friends", desc: "List friends" },
+              { name: "get_training_plan", desc: "View planned vs actual workouts" },
+              { name: "get_training_history", desc: "Analyze training trends" },
+              { name: "get_strava_activity_details", desc: "See full Strava workout data" },
               { name: "create_goal", desc: "Create a new goal" },
               { name: "update_goal", desc: "Update goal status/details" },
               { name: "create_objective", desc: "Add weekly objective" },
@@ -289,6 +292,8 @@ export function McpSection() {
               { name: "log_habit_completion", desc: "Toggle habit completion" },
               { name: "send_check_in", desc: "Send partner check-in" },
               { name: "log_daily_check_in", desc: "Log daily check-in" },
+              { name: "set_training_plan", desc: "Create or update weekly workouts" },
+              { name: "match_workout", desc: "Manually link plan to Strava workout" },
             ].map((tool) => (
               <div
                 key={tool.name}
