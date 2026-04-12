@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Pencil, Trash2, Target, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain } from "lucide-react";
+import { Pencil, Trash2, Target, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, Upload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import type { TrainingPlanDisplayWorkout } from "@/components/thisweek/trainingPlanUtils";
 import { formatDistance, formatDuration, formatPace, getWorkoutStatus } from "@/components/thisweek/trainingPlanUtils";
 import { cn } from "@/lib/utils";
+import { FitUploadButton } from "@/components/training/FitUploadButton";
+import { useActivityLaps } from "@/hooks/useActivityLaps";
+import { LapSplitsTable } from "@/components/training/LapSplitsTable";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
@@ -237,9 +240,11 @@ export function TrainingWorkoutCard({
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
   const status = getWorkoutStatus(workout, matchedActivity);
+  const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
 
   const hasBreakdown = (() => {
     if (workout.notes) return true;
+    if (laps.length > 0) return true;
     if (!matchedActivity) return false;
     return !!(matchedActivity.max_heartrate || matchedActivity.max_speed || matchedActivity.average_cadence ||
       matchedActivity.calories || matchedActivity.suffer_score || matchedActivity.activity_name);
@@ -281,8 +286,11 @@ export function TrainingWorkoutCard({
           <StatusPill status={status} />
         </div>
 
-        {!isReadOnly && !workout.isDerivedSession && (onEdit || onDelete) && (
+        {!isReadOnly && !workout.isDerivedSession && (
           <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            {!matchedActivity && (
+              <FitUploadButton workoutId={workout.id} variant="ghost" size="icon" />
+            )}
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5" />
@@ -332,8 +340,9 @@ export function TrainingWorkoutCard({
             </button>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <div className="px-5 pb-4">
+            <div className="px-5 pb-4 space-y-4">
               <FullBreakdown workout={workout} activity={matchedActivity} />
+              {laps.length > 0 && <LapSplitsTable laps={laps} />}
             </div>
           </CollapsibleContent>
         </Collapsible>

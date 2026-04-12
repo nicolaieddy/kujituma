@@ -1,6 +1,7 @@
 import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
 import { DuolingoConnectionCard } from "@/components/duolingo/DuolingoConnectionCard";
 import { ActivityMappingCard } from "@/components/strava/ActivityMappingCard";
+import { FitFileUploadCard } from "@/components/training/FitFileUploadCard";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +28,8 @@ export function IntegrationsSection() {
         <StravaConnectionCard />
         <DuolingoConnectionCard />
       </div>
+
+      <FitFileUploadCard />
 
       {hasAnyConnection && (
         <ActivityMappingCard />
