@@ -411,4 +411,20 @@ export function registerTrainingWriteTools(mcp: McpServer, supabase: Supabase, u
       return { content: [{ type: "text" as const, text: `✅ Matched workout ${workout_id} to Strava activity ${strava_activity_id}` }] };
     },
   });
+
+  mcp.tool("get_workout_preferences", {
+    description: "Get the user's workout display preferences (units, pace format, etc.)",
+    inputSchema: { type: "object", properties: {} },
+    handler: async () => {
+      const { data, error } = await supabase
+        .from("workout_preferences")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data) return { content: [{ type: "text" as const, text: "No preferences set (using defaults: km, min/km, meters, celsius, kg, watts)" }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+    },
+  });
 }
