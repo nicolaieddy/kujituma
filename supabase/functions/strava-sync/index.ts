@@ -460,7 +460,19 @@ serve(async (req) => {
       }
     }
 
-    // Auto-match training plan workouts
+    // Auto-match training plan workouts — include all weeks with synced activities
+    // Gather weeks from ALL synced activities (not just newly fetched)
+    const { data: allSyncedDates } = await supabase
+      .from("synced_activities")
+      .select("start_date")
+      .eq("user_id", user.id);
+    if (allSyncedDates) {
+      for (const row of allSyncedDates) {
+        const dateStr = (row.start_date || "").replace(" ", "T");
+        if (dateStr) affectedWeeks.add(getMondayOfDate(dateStr));
+      }
+    }
+
     results.training_matched = await autoMatchTrainingPlan(supabase, user.id, affectedWeeks);
     if (results.training_matched > 0) {
       console.log(`Auto-matched ${results.training_matched} training plan workouts`);
