@@ -283,14 +283,29 @@ export function TrainingWorkoutCard({
               {workout.sessionLabel}
             </Badge>
           )}
+          {matchedActivity && (
+            <Badge
+              variant="outline"
+              className={cn(
+                "rounded-md text-[10px] font-semibold gap-1",
+                matchedActivity.source === "fit_upload"
+                  ? "border-orange-300/60 bg-orange-50/60 text-orange-700 dark:border-orange-700/40 dark:bg-orange-950/30 dark:text-orange-400"
+                  : "border-blue-300/60 bg-blue-50/60 text-blue-700 dark:border-blue-700/40 dark:bg-blue-950/30 dark:text-blue-400"
+              )}
+            >
+              {matchedActivity.source === "fit_upload" ? (
+                <><FileUp className="h-3 w-3" /> .FIT</>
+              ) : (
+                <><Activity className="h-3 w-3" /> Strava</>
+              )}
+            </Badge>
+          )}
           <StatusPill status={status} />
         </div>
 
         {!isReadOnly && !workout.isDerivedSession && (
           <div className="flex shrink-0 gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-            {!matchedActivity && (
-              <FitUploadButton workoutId={workout.id} variant="ghost" size="icon" />
-            )}
+            <FitUploadButton workoutId={workout.id} variant="ghost" size="icon" />
             {onEdit && (
               <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground" onClick={onEdit}>
                 <Pencil className="h-3.5 w-3.5" />
