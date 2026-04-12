@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { getLocalDateString, parseLocalDate } from "@/utils/dateUtils";
 
 export interface TrainingPlanWorkout {
   id: string;
@@ -95,10 +96,10 @@ export function useTrainingPlan(weekStart: string) {
     .map(w => (w as any).matched_activity_id as string);
 
   const { data: matchedActivities = [] } = useQuery({
-    queryKey: ["training-matched-activities", stravaActivityIds, directActivityIds],
+    queryKey: ["training-matched-activities", stravaActivityIds, directActivityIds, workouts.map(w => `${w.id}:${w.week_start}:${w.day_of_week}:${w.workout_type}`).join("|")],
     queryFn: async () => {
       const results: any[] = [];
-      // Fetch by strava_activity_id
+
       if (stravaActivityIds.length > 0) {
         const { data, error } = await supabase
           .from("synced_activities")
@@ -106,7 +107,7 @@ export function useTrainingPlan(weekStart: string) {
           .in("strava_activity_id", stravaActivityIds);
         if (!error && data) results.push(...data);
       }
-      // Fetch by direct activity UUID
+
       if (directActivityIds.length > 0) {
         const { data, error } = await supabase
           .from("synced_activities")
@@ -114,15 +115,61 @@ export function useTrainingPlan(weekStart: string) {
           .in("id", directActivityIds);
         if (!error && data) results.push(...data);
       }
-      // Deduplicate by id
+
+      const unresolvedWorkouts = workouts.filter(
+        (w) => !w.matched_activity_id && !w.matched_strava_activity_id
+      );
+
+      if (unresolvedWorkouts.length > 0) {
+        const weekStarts = Array.from(new Set(unresolvedWorkouts.map(w => w.week_start)));
+        const earliestWeek = weekStarts.slice().sort()[0];
+        const latestWeek = weekStarts.slice().sort().at(-1);
+
+        if (earliestWeek && latestWeek) {
+          const rangeStart = `${earliestWeek}T00:00:00Z`;
+          const latestWeekDate = parseLocalDate(latestWeek);
+          latestWeekDate.setDate(latestWeekDate.getDate() + 6);
+          const rangeEnd = `${getLocalDateString(latestWeekDate)}T23:59:59Z`;
+
+          const { data, error } = await supabase
+            .from("synced_activities")
+            .select("*")
+            .eq("user_id", user!.id)
+            .gte("start_date", rangeStart)
+            .lte("start_date", rangeEnd)
+            .order("start_date", { ascending: false });
+
+          if (!error && data) {
+            for (const workout of unresolvedWorkouts) {
+              const workoutDate = parseLocalDate(workout.week_start);
+              workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
+              const workoutDateStr = getLocalDateString(workoutDate);
+              const workoutType = (workout.workout_type || "").toLowerCase();
+
+              const fallback = data.find((activity) => {
+                const activityDate = getLocalDateString(new Date(activity.start_date));
+                if (activityDate !== workoutDateStr) return false;
+                const activityType = (activity.activity_type || "").toLowerCase();
+                return workoutType === activityType || workoutType.includes(activityType) || activityType.includes(workoutType) || workoutType === "workout";
+              });
+
+              if (fallback) {
+                results.push({ ...fallback, __fallbackWorkoutId: workout.id });
+              }
+            }
+          }
+        }
+      }
+
       const seen = new Set<string>();
-      return results.filter(a => {
-        if (seen.has(a.id)) return false;
-        seen.add(a.id);
+      return results.filter((a) => {
+        const key = `${a.id}:${a.__fallbackWorkoutId || ""}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
         return true;
       });
     },
-    enabled: stravaActivityIds.length > 0 || directActivityIds.length > 0,
+    enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -267,16 +314,13 @@ export function useTrainingPlan(weekStart: string) {
   });
 
   const getMatchedActivity = (workout: TrainingPlanWorkout) => {
-    // Check direct activity UUID first (FIT uploads)
-    const directId = (workout as any).matched_activity_id;
-    if (directId) {
-      return matchedActivities.find((a: any) => a.id === directId) || null;
+    if (workout.matched_activity_id) {
+      return matchedActivities.find((a: any) => a.id === workout.matched_activity_id) || null;
     }
-    // Fall back to strava_activity_id
     if (workout.matched_strava_activity_id) {
       return matchedActivities.find((a: any) => a.strava_activity_id === workout.matched_strava_activity_id) || null;
     }
-    return null;
+    return matchedActivities.find((a: any) => a.__fallbackWorkoutId === workout.id) || null;
   };
 
   return {
