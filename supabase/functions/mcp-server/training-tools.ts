@@ -238,31 +238,49 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
   });
 
   mcp.tool("get_activity_details", {
-    description: "Get full enriched data for a specific synced activity by its database ID or Strava activity ID. Supports both Strava-synced and .fit-uploaded activities.",
+    description: "Get full enriched data for a specific synced activity. Includes device info, running dynamics, GPS bbox, power/FTP, and records_json timeseries. Supports Strava-synced and .fit-uploaded activities.",
     inputSchema: {
       type: "object",
       properties: {
         activity_id: { type: "string", description: "Database UUID of the activity" },
         strava_activity_id: { type: "number", description: "Strava activity ID (alternative lookup)" },
+        include_records: { type: "boolean", description: "Include full records_json timeseries (can be large). Default false." },
       },
     },
-    handler: async ({ activity_id, strava_activity_id }: { activity_id?: string; strava_activity_id?: number }) => {
+    handler: async ({ activity_id, strava_activity_id, include_records }: { activity_id?: string; strava_activity_id?: number; include_records?: boolean }) => {
       if (!activity_id && !strava_activity_id) {
         return { content: [{ type: "text" as const, text: "Provide either activity_id or strava_activity_id" }] };
       }
 
-      let query = supabase.from("synced_activities").select("*").eq("user_id", userId);
+      // Select all columns except records_json by default (it can be huge)
+      const columns = include_records ? "*" : "id, user_id, source, activity_type, activity_name, start_date, duration_seconds, elapsed_time_seconds, distance_meters, average_speed, max_speed, average_heartrate, max_heartrate, average_power, max_power, normalized_power, ftp, tss, average_cadence, max_cadence, total_elevation_gain, total_ascent, total_descent, calories, total_strides, training_effect, avg_temperature, num_laps, avg_vertical_oscillation, avg_stance_time, avg_vertical_ratio, avg_step_length, device_manufacturer, device_product, sub_sport, bbox_north, bbox_south, bbox_east, bbox_west, fit_file_path, strava_activity_id, strava_description, suffer_score, sport_type, synced_at";
+
+      let query = supabase.from("synced_activities").select(columns).eq("user_id", userId);
       if (activity_id) query = query.eq("id", activity_id);
       else query = query.eq("strava_activity_id", strava_activity_id!);
 
       const { data, error } = await query.single();
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+
+      // Add summary of records_json if not included
+      if (!include_records && data) {
+        const { data: recCheck } = await supabase
+          .from("synced_activities")
+          .select("records_json")
+          .eq("id", data.id)
+          .single();
+        if (recCheck?.records_json) {
+          (data as any).records_count = Array.isArray(recCheck.records_json) ? recCheck.records_json.length : 0;
+          (data as any).has_gps = Array.isArray(recCheck.records_json) && recCheck.records_json.some((r: any) => r.lat != null);
+        }
+      }
+
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     },
   });
 
   mcp.tool("get_activity_laps", {
-    description: "Get per-lap split data for an activity. Returns distance, duration, HR, pace, cadence, power per lap.",
+    description: "Get per-lap split data for an activity. Returns all Garmin-enriched fields: distance, duration, HR, pace, cadence, power, running dynamics (GCT, stride length, vertical oscillation/ratio), elevation, GPS endpoints, temperature.",
     inputSchema: {
       type: "object",
       properties: {
@@ -284,9 +302,10 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       const lines = data.map((lap: any) => {
         const parts = [`Lap ${lap.lap_index + 1}`];
         if (lap.distance_meters) parts.push(`${(lap.distance_meters / 1000).toFixed(2)}km`);
-        if (lap.duration_seconds) {
-          const m = Math.floor(lap.duration_seconds / 60);
-          const s = Math.round(lap.duration_seconds % 60);
+        if (lap.total_timer_time || lap.duration_seconds) {
+          const secs = lap.total_timer_time || lap.duration_seconds;
+          const m = Math.floor(secs / 60);
+          const s = Math.round(secs % 60);
           parts.push(`${m}:${s.toString().padStart(2, "0")}`);
         }
         if (lap.avg_heart_rate) parts.push(`HR:${Math.round(lap.avg_heart_rate)}`);
@@ -298,9 +317,12 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         }
         if (lap.avg_power) parts.push(`Power:${Math.round(lap.avg_power)}W`);
         if (lap.avg_ground_contact_time) parts.push(`GCT:${Math.round(lap.avg_ground_contact_time)}ms`);
-        if (lap.avg_stride_length) parts.push(`Stride:${lap.avg_stride_length.toFixed(2)}m`);
-        if (lap.avg_vertical_oscillation) parts.push(`VO:${lap.avg_vertical_oscillation.toFixed(1)}cm`);
-        if (lap.avg_temperature) parts.push(`Temp:${lap.avg_temperature}°C`);
+        if (lap.avg_stride_length) parts.push(`Stride:${(lap.avg_stride_length / 10).toFixed(1)}cm`);
+        if (lap.avg_vertical_oscillation) parts.push(`VO:${(lap.avg_vertical_oscillation / 10).toFixed(1)}cm`);
+        if (lap.avg_vertical_ratio) parts.push(`VR:${lap.avg_vertical_ratio.toFixed(1)}%`);
+        if (lap.total_ascent) parts.push(`↑${lap.total_ascent}m`);
+        if (lap.total_descent) parts.push(`↓${lap.total_descent}m`);
+        if (lap.avg_temperature != null) parts.push(`${lap.avg_temperature}°C`);
         return parts.join(" | ");
       });
 
@@ -308,6 +330,40 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         content: [{
           type: "text" as const,
           text: `${data.length} laps:\n${lines.join("\n")}\n\nFull data:\n${JSON.stringify(data, null, 2)}`,
+        }],
+      };
+    },
+  });
+
+  mcp.tool("get_activity_records", {
+    description: "Get the 1Hz timeseries records_json for an activity. Contains per-second data: timestamp, lat, lng, distance, speed, altitude, heart_rate, cadence, power, temperature. Can be large.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        activity_id: { type: "string", description: "Database UUID of the synced activity" },
+        sample_every: { type: "number", description: "Return every Nth record to reduce size. Default 1 (all records)." },
+      },
+      required: ["activity_id"],
+    },
+    handler: async ({ activity_id, sample_every }: { activity_id: string; sample_every?: number }) => {
+      const { data, error } = await supabase
+        .from("synced_activities")
+        .select("records_json")
+        .eq("id", activity_id)
+        .eq("user_id", userId)
+        .single();
+
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data?.records_json) return { content: [{ type: "text" as const, text: "No timeseries data for this activity." }] };
+
+      const records = Array.isArray(data.records_json) ? data.records_json : [];
+      const step = sample_every && sample_every > 1 ? sample_every : 1;
+      const sampled = step > 1 ? records.filter((_: any, i: number) => i % step === 0) : records;
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `${sampled.length} records (of ${records.length} total, sampled every ${step}):\n${JSON.stringify(sampled, null, 2)}`,
         }],
       };
     },
