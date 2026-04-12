@@ -274,18 +274,28 @@ export type Database = {
           cumulative_time_seconds: number | null
           distance_meters: number | null
           duration_seconds: number | null
+          end_lat: number | null
+          end_lng: number | null
           id: string
           lap_index: number
+          max_altitude: number | null
           max_heart_rate: number | null
           max_power: number | null
           max_run_cadence: number | null
           max_speed: number | null
           max_watts_per_kg: number | null
+          min_altitude: number | null
           moving_time_seconds: number | null
+          normalized_power: number | null
+          start_lat: number | null
+          start_lng: number | null
           start_time: string | null
           total_ascent: number | null
           total_descent: number | null
+          total_elapsed_time: number | null
           total_elevation_gain: number | null
+          total_strides: number | null
+          total_timer_time: number | null
           user_id: string
         }
         Insert: {
@@ -312,18 +322,28 @@ export type Database = {
           cumulative_time_seconds?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
+          end_lat?: number | null
+          end_lng?: number | null
           id?: string
           lap_index: number
+          max_altitude?: number | null
           max_heart_rate?: number | null
           max_power?: number | null
           max_run_cadence?: number | null
           max_speed?: number | null
           max_watts_per_kg?: number | null
+          min_altitude?: number | null
           moving_time_seconds?: number | null
+          normalized_power?: number | null
+          start_lat?: number | null
+          start_lng?: number | null
           start_time?: string | null
           total_ascent?: number | null
           total_descent?: number | null
+          total_elapsed_time?: number | null
           total_elevation_gain?: number | null
+          total_strides?: number | null
+          total_timer_time?: number | null
           user_id: string
         }
         Update: {
@@ -350,18 +370,28 @@ export type Database = {
           cumulative_time_seconds?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
+          end_lat?: number | null
+          end_lng?: number | null
           id?: string
           lap_index?: number
+          max_altitude?: number | null
           max_heart_rate?: number | null
           max_power?: number | null
           max_run_cadence?: number | null
           max_speed?: number | null
           max_watts_per_kg?: number | null
+          min_altitude?: number | null
           moving_time_seconds?: number | null
+          normalized_power?: number | null
+          start_lat?: number | null
+          start_lng?: number | null
           start_time?: string | null
           total_ascent?: number | null
           total_descent?: number | null
+          total_elapsed_time?: number | null
           total_elevation_gain?: number | null
+          total_strides?: number | null
+          total_timer_time?: number | null
           user_id?: string
         }
         Relationships: [
@@ -2010,27 +2040,46 @@ export type Database = {
           average_heartrate: number | null
           average_power: number | null
           average_speed: number | null
+          avg_stance_time: number | null
+          avg_step_length: number | null
+          avg_temperature: number | null
+          avg_vertical_oscillation: number | null
+          avg_vertical_ratio: number | null
+          bbox_east: number | null
+          bbox_north: number | null
+          bbox_south: number | null
+          bbox_west: number | null
           calories: number | null
+          device_manufacturer: string | null
+          device_product: string | null
           distance_meters: number | null
           duration_seconds: number | null
           elapsed_time_seconds: number | null
           fit_file_path: string | null
+          ftp: number | null
           habit_completion_created: boolean | null
           id: string
           matched_goal_id: string | null
           matched_habit_item_id: string | null
           max_cadence: number | null
           max_heartrate: number | null
+          max_power: number | null
           max_speed: number | null
           normalized_power: number | null
+          num_laps: number | null
+          records_json: Json | null
           source: string
           sport_type: string | null
           start_date: string | null
           strava_activity_id: number | null
           strava_description: string | null
+          sub_sport: string | null
           suffer_score: number | null
           synced_at: string | null
+          total_ascent: number | null
+          total_descent: number | null
           total_elevation_gain: number | null
+          total_strides: number | null
           training_effect: number | null
           tss: number | null
           user_id: string
@@ -2043,27 +2092,46 @@ export type Database = {
           average_heartrate?: number | null
           average_power?: number | null
           average_speed?: number | null
+          avg_stance_time?: number | null
+          avg_step_length?: number | null
+          avg_temperature?: number | null
+          avg_vertical_oscillation?: number | null
+          avg_vertical_ratio?: number | null
+          bbox_east?: number | null
+          bbox_north?: number | null
+          bbox_south?: number | null
+          bbox_west?: number | null
           calories?: number | null
+          device_manufacturer?: string | null
+          device_product?: string | null
           distance_meters?: number | null
           duration_seconds?: number | null
           elapsed_time_seconds?: number | null
           fit_file_path?: string | null
+          ftp?: number | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
           matched_habit_item_id?: string | null
           max_cadence?: number | null
           max_heartrate?: number | null
+          max_power?: number | null
           max_speed?: number | null
           normalized_power?: number | null
+          num_laps?: number | null
+          records_json?: Json | null
           source?: string
           sport_type?: string | null
           start_date?: string | null
           strava_activity_id?: number | null
           strava_description?: string | null
+          sub_sport?: string | null
           suffer_score?: number | null
           synced_at?: string | null
+          total_ascent?: number | null
+          total_descent?: number | null
           total_elevation_gain?: number | null
+          total_strides?: number | null
           training_effect?: number | null
           tss?: number | null
           user_id: string
@@ -2076,27 +2144,46 @@ export type Database = {
           average_heartrate?: number | null
           average_power?: number | null
           average_speed?: number | null
+          avg_stance_time?: number | null
+          avg_step_length?: number | null
+          avg_temperature?: number | null
+          avg_vertical_oscillation?: number | null
+          avg_vertical_ratio?: number | null
+          bbox_east?: number | null
+          bbox_north?: number | null
+          bbox_south?: number | null
+          bbox_west?: number | null
           calories?: number | null
+          device_manufacturer?: string | null
+          device_product?: string | null
           distance_meters?: number | null
           duration_seconds?: number | null
           elapsed_time_seconds?: number | null
           fit_file_path?: string | null
+          ftp?: number | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
           matched_habit_item_id?: string | null
           max_cadence?: number | null
           max_heartrate?: number | null
+          max_power?: number | null
           max_speed?: number | null
           normalized_power?: number | null
+          num_laps?: number | null
+          records_json?: Json | null
           source?: string
           sport_type?: string | null
           start_date?: string | null
           strava_activity_id?: number | null
           strava_description?: string | null
+          sub_sport?: string | null
           suffer_score?: number | null
           synced_at?: string | null
+          total_ascent?: number | null
+          total_descent?: number | null
           total_elevation_gain?: number | null
+          total_strides?: number | null
           training_effect?: number | null
           tss?: number | null
           user_id?: string
