@@ -157,8 +157,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
                     <div className="space-y-3">
                       {dayWorkouts.map((workout) => {
-                        const matched = workout.isDerivedSession ? null : getMatchedActivity(sourceWorkout || workout as any);
                         const sourceWorkout = workouts.find((item) => item.id === workout.sourceWorkoutId) || null;
+                        const matched = workout.isDerivedSession ? null : getMatchedActivity(sourceWorkout || workout as any);
                         const goalNames = sourceWorkout ? getGoalNames(sourceWorkout) : [];
 
                         return (
