@@ -193,14 +193,20 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
       </Card>
 
       {!isReadOnly && (
-        <TrainingWorkoutDialog
-          open={dialogOpen}
-          onOpenChange={handleDialogChange}
-          editingWorkout={editingWorkout}
-          onSave={handleSave}
-          isSaving={isSaving}
-          defaultGoalIds={goalId ? [goalId] : []}
-        />
+        <>
+          <TrainingWorkoutDialog
+            open={dialogOpen}
+            onOpenChange={handleDialogChange}
+            editingWorkout={editingWorkout}
+            onSave={handleSave}
+            isSaving={isSaving}
+            defaultGoalIds={goalId ? [goalId] : []}
+          />
+          <BulkFitUploadDialog
+            open={bulkUploadOpen}
+            onOpenChange={setBulkUploadOpen}
+          />
+        </>
       )}
     </>
   );
