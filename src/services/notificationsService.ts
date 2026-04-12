@@ -22,17 +22,17 @@ class NotificationsService {
     
     // Batch fetch user profiles
     const { data: profiles } = await supabase
-      .from('profiles')
+      .from('profiles_public' as any)
       .select('id, full_name, avatar_url')
       .in('id', triggeredByIds);
 
-    const profileMap = new Map(profiles?.map(p => [p.id, p]) || []);
+    const profileMap = new Map((profiles as any[] || []).map((p: any) => [p.id, p]));
 
     return notifications.map(notification => ({
       ...notification,
       type: notification.type as Notification['type'],
       triggered_by: profileMap.get(notification.triggered_by_user_id) || null
-    })) as Notification[];
+    })) as unknown as Notification[];
   }
 
   async getUnreadCount(): Promise<number> {
@@ -95,7 +95,7 @@ class NotificationsService {
           
           // Fetch the triggered_by profile
           const { data: profile } = await supabase
-            .from('profiles')
+            .from('profiles_public' as any)
             .select('id, full_name, avatar_url')
             .eq('id', newNotification.triggered_by_user_id)
             .single();
@@ -103,8 +103,8 @@ class NotificationsService {
           onInsert({
             ...newNotification,
             type: newNotification.type as Notification['type'],
-            triggered_by: profile || null
-          } as Notification);
+            triggered_by: (profile as any) || null
+          } as unknown as Notification);
         }
       )
       .on(

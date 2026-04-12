@@ -3,7 +3,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { HabitCompletionsService } from "@/services/habitCompletionsService";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
-import { useRealtimeHabits } from "@/hooks/useRealtimeHabits";
 import { HabitCompletion } from "@/types/goals";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 
@@ -20,14 +19,13 @@ export const useHabitCompletions = (weekStart?: Date) => {
   const [year, month, day] = weekKey.split('-').map(Number);
   const currentWeekStart = new Date(year, month - 1, day);
 
-  // Subscribe to real-time habit completion changes
-  useRealtimeHabits(weekKey);
-
   const { data: completions = [], isLoading } = useQuery({
     queryKey: ["habit-completions", user?.id, weekKey],
     queryFn: () => HabitCompletionsService.getWeekCompletions(currentWeekStart),
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    staleTime: 1000 * 60 * 5,
+    refetchInterval: 30000, // Poll every 30s for cross-device sync (replaces Realtime)
+    refetchOnWindowFocus: true,
   });
 
   const toggleMutation = useMutation({

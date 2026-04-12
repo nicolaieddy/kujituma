@@ -55,13 +55,13 @@ export const MentionInput = ({
     try {
       const sanitizedQuery = sanitizeForIlike(trimmedQuery);
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_public' as any)
         .select('id, full_name, avatar_url')
         .ilike('full_name', `%${sanitizedQuery}%`)
         .limit(10);
 
       if (error) throw error;
-      setSuggestions(data || []);
+      setSuggestions((data as any[] || []) as UserSuggestion[]);
     } catch (error) {
       console.error('Error fetching user suggestions:', error);
       setSuggestions([]);

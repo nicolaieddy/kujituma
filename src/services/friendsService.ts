@@ -203,12 +203,12 @@ class FriendsService {
       
       if (profileIds.size > 0) {
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public' as any)
           .select('id, full_name, avatar_url')
           .in('id', Array.from(profileIds));
         
         if (profiles) {
-          profiles.forEach(p => {
+          (profiles as any[]).forEach((p: any) => {
             profilesMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
           });
         }
@@ -267,7 +267,7 @@ class FriendsService {
 
       // Build query - use filter for array exclusion
       let queryBuilder = supabase
-        .from('profiles')
+        .from('profiles_public' as any)
         .select('id, full_name, avatar_url, about_me, linkedin_url')
         .limit(20);
 
@@ -287,7 +287,7 @@ class FriendsService {
 
       if (error) throw error;
 
-      return data || [];
+      return (data as any[] || []) as UserProfile[];
     } catch (error: any) {
       console.error('Error searching users:', error);
       return [];

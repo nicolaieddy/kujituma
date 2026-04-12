@@ -31,12 +31,10 @@ export interface AccountabilityPartnerRequest {
   sender_profile?: {
     full_name: string;
     avatar_url: string | null;
-    email: string;
   };
   receiver_profile?: {
     full_name: string;
     avatar_url: string | null;
-    email: string;
   };
 }
 
@@ -164,58 +162,73 @@ class AccountabilityService {
     const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Fetch sent requests
-    const { data: sentData, error: sentError } = await supabase
-      .from('accountability_partner_requests')
-      .select(`
-        *,
-        receiver_profile:profiles!accountability_partner_requests_receiver_id_fkey (
-          full_name,
-          avatar_url,
-          email
-        )
-      `)
-      .eq('sender_id', user.id)
-      .eq('status', 'pending');
+    // Fetch sent and received requests
+    const [sentResult, receivedResult] = await Promise.all([
+      supabase
+        .from('accountability_partner_requests')
+        .select('*')
+        .eq('sender_id', user.id)
+        .eq('status', 'pending'),
+      supabase
+        .from('accountability_partner_requests')
+        .select('*')
+        .eq('receiver_id', user.id)
+        .eq('status', 'pending'),
+    ]);
+
+    const { data: sentData, error: sentError } = sentResult;
+    const { data: receivedData, error: receivedError } = receivedResult;
 
     if (sentError) {
       console.error('Error fetching sent requests:', sentError);
       throw sentError;
     }
-
-    // Fetch received requests
-    const { data: receivedData, error: receivedError } = await supabase
-      .from('accountability_partner_requests')
-      .select(`
-        *,
-        sender_profile:profiles!accountability_partner_requests_sender_id_fkey (
-          full_name,
-          avatar_url,
-          email
-        )
-      `)
-      .eq('receiver_id', user.id)
-      .eq('status', 'pending');
-
     if (receivedError) {
       console.error('Error fetching received requests:', receivedError);
       throw receivedError;
     }
 
-    // Filter out requests where a partnership already exists (if partnerIds provided)
     const sent = sentData || [];
     const received = receivedData || [];
-    
+
+    // Batch fetch profiles for all relevant users
+    const profileIds = new Set<string>();
+    sent.forEach(r => profileIds.add(r.receiver_id));
+    received.forEach(r => profileIds.add(r.sender_id));
+
+    let profileMap = new Map<string, { full_name: string; avatar_url: string | null }>();
+    if (profileIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles_public' as any)
+        .select('id, full_name, avatar_url')
+        .in('id', Array.from(profileIds));
+      if (profiles) {
+        (profiles as any[]).forEach((p: any) => {
+          profileMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
+        });
+      }
+    }
+
+    const sentWithProfiles = sent.map(r => ({
+      ...r,
+      receiver_profile: profileMap.get(r.receiver_id) || undefined,
+    })) as AccountabilityPartnerRequest[];
+
+    const receivedWithProfiles = received.map(r => ({
+      ...r,
+      sender_profile: profileMap.get(r.sender_id) || undefined,
+    })) as AccountabilityPartnerRequest[];
+
     if (existingPartnerIds && existingPartnerIds.size > 0) {
       return {
-        sent: sent.filter(r => !existingPartnerIds.has(r.receiver_id)) as AccountabilityPartnerRequest[],
-        received: received.filter(r => !existingPartnerIds.has(r.sender_id)) as AccountabilityPartnerRequest[],
+        sent: sentWithProfiles.filter(r => !existingPartnerIds.has(r.receiver_id)),
+        received: receivedWithProfiles.filter(r => !existingPartnerIds.has(r.sender_id)),
       };
     }
 
     return {
-      sent: sent as AccountabilityPartnerRequest[],
-      received: received as AccountabilityPartnerRequest[],
+      sent: sentWithProfiles,
+      received: receivedWithProfiles,
     };
   }
 
@@ -366,12 +379,11 @@ class AccountabilityService {
     id: string;
     full_name: string;
     avatar_url: string | null;
-    email: string;
     about_me: string | null;
   } | null> {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, avatar_url, email, about_me')
+      .from('profiles_public' as any)
+      .select('id, full_name, avatar_url, about_me')
       .eq('id', partnerId)
       .single();
 
@@ -380,7 +392,7 @@ class AccountabilityService {
       return null;
     }
 
-    return data;
+    return data as any;
   }
 
   async recordCheckIn(partnershipId: string, message?: string, replyToId?: string): Promise<{ success: boolean; error?: string; checkInId?: string }> {
