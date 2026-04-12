@@ -294,7 +294,7 @@ export function TrainingWorkoutCard({
               )}
             >
               {matchedActivity.source === "fit_upload" ? (
-                <><FileUp className="h-3 w-3" /> .FIT</>
+                <><File className="h-3 w-3" /> .FIT</>
               ) : (
                 <><Activity className="h-3 w-3" /> Strava</>
               )}
