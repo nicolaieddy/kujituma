@@ -150,7 +150,39 @@ Deno.serve(async (req) => {
         avg_power: lap.avg_power || null,
         total_elevation_gain: lap.total_ascent || null,
         calories: lap.total_calories || null,
+        // Enriched Garmin-style fields
+        cumulative_time_seconds: null, // computed below
+        avg_gap: lap.enhanced_avg_speed ? (lap.total_ascent ? lap.enhanced_avg_speed * 1.05 : lap.enhanced_avg_speed) : null,
+        total_ascent: lap.total_ascent || null,
+        total_descent: lap.total_descent || null,
+        avg_watts_per_kg: null, // requires user weight
+        max_power: lap.max_power || null,
+        max_watts_per_kg: null,
+        avg_run_cadence: lap.avg_running_cadence || lap.avg_cadence || null,
+        avg_ground_contact_time: lap.avg_stance_time || null,
+        avg_gct_balance: lap.avg_stance_time_balance || null,
+        avg_stride_length: lap.avg_step_length || lap.avg_stride_length || null,
+        avg_vertical_oscillation: lap.avg_vertical_oscillation || null,
+        avg_vertical_ratio: lap.avg_vertical_ratio || null,
+        avg_temperature: lap.avg_temperature || null,
+        best_pace: lap.max_speed || lap.enhanced_max_speed || null,
+        max_run_cadence: lap.max_running_cadence || lap.max_cadence || null,
+        moving_time_seconds: lap.total_moving_time || lap.total_timer_time || null,
+        avg_moving_pace: null, // derived from distance/moving_time
+        avg_step_speed_loss: null,
+        avg_step_speed_loss_percent: null,
       }));
+
+      // Compute cumulative time
+      let cumTime = 0;
+      for (const row of lapRows) {
+        cumTime += row.duration_seconds || 0;
+        row.cumulative_time_seconds = cumTime;
+        // Compute avg_moving_pace: seconds per meter
+        if (row.distance_meters && row.moving_time_seconds) {
+          row.avg_moving_pace = row.moving_time_seconds / row.distance_meters;
+        }
+      }
 
       const { error: lapError } = await adminClient.from("activity_laps").insert(lapRows);
       if (lapError) console.error("Failed to insert laps:", lapError.message);

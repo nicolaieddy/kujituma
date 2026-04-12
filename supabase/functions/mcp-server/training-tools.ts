@@ -297,6 +297,10 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
           parts.push(`Pace:${pm}:${ps.toString().padStart(2, "0")}/km`);
         }
         if (lap.avg_power) parts.push(`Power:${Math.round(lap.avg_power)}W`);
+        if (lap.avg_ground_contact_time) parts.push(`GCT:${Math.round(lap.avg_ground_contact_time)}ms`);
+        if (lap.avg_stride_length) parts.push(`Stride:${lap.avg_stride_length.toFixed(2)}m`);
+        if (lap.avg_vertical_oscillation) parts.push(`VO:${lap.avg_vertical_oscillation.toFixed(1)}cm`);
+        if (lap.avg_temperature) parts.push(`Temp:${lap.avg_temperature}°C`);
         return parts.join(" | ");
       });
 
@@ -405,6 +409,22 @@ export function registerTrainingWriteTools(mcp: McpServer, supabase: Supabase, u
 
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
       return { content: [{ type: "text" as const, text: `✅ Matched workout ${workout_id} to Strava activity ${strava_activity_id}` }] };
+    },
+  });
+
+  mcp.tool("get_workout_preferences", {
+    description: "Get the user's workout display preferences (units, pace format, etc.)",
+    inputSchema: { type: "object", properties: {} },
+    handler: async () => {
+      const { data, error } = await supabase
+        .from("workout_preferences")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data) return { content: [{ type: "text" as const, text: "No preferences set (using defaults: km, min/km, meters, celsius, kg, watts)" }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     },
   });
 }

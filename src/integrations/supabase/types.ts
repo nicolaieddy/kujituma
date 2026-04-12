@@ -253,54 +253,114 @@ export type Database = {
         Row: {
           activity_id: string
           avg_cadence: number | null
+          avg_gap: number | null
+          avg_gct_balance: number | null
+          avg_ground_contact_time: number | null
           avg_heart_rate: number | null
+          avg_moving_pace: number | null
           avg_power: number | null
+          avg_run_cadence: number | null
           avg_speed: number | null
+          avg_step_speed_loss: number | null
+          avg_step_speed_loss_percent: number | null
+          avg_stride_length: number | null
+          avg_temperature: number | null
+          avg_vertical_oscillation: number | null
+          avg_vertical_ratio: number | null
+          avg_watts_per_kg: number | null
+          best_pace: number | null
           calories: number | null
           created_at: string
+          cumulative_time_seconds: number | null
           distance_meters: number | null
           duration_seconds: number | null
           id: string
           lap_index: number
           max_heart_rate: number | null
+          max_power: number | null
+          max_run_cadence: number | null
           max_speed: number | null
+          max_watts_per_kg: number | null
+          moving_time_seconds: number | null
           start_time: string | null
+          total_ascent: number | null
+          total_descent: number | null
           total_elevation_gain: number | null
           user_id: string
         }
         Insert: {
           activity_id: string
           avg_cadence?: number | null
+          avg_gap?: number | null
+          avg_gct_balance?: number | null
+          avg_ground_contact_time?: number | null
           avg_heart_rate?: number | null
+          avg_moving_pace?: number | null
           avg_power?: number | null
+          avg_run_cadence?: number | null
           avg_speed?: number | null
+          avg_step_speed_loss?: number | null
+          avg_step_speed_loss_percent?: number | null
+          avg_stride_length?: number | null
+          avg_temperature?: number | null
+          avg_vertical_oscillation?: number | null
+          avg_vertical_ratio?: number | null
+          avg_watts_per_kg?: number | null
+          best_pace?: number | null
           calories?: number | null
           created_at?: string
+          cumulative_time_seconds?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
           id?: string
           lap_index: number
           max_heart_rate?: number | null
+          max_power?: number | null
+          max_run_cadence?: number | null
           max_speed?: number | null
+          max_watts_per_kg?: number | null
+          moving_time_seconds?: number | null
           start_time?: string | null
+          total_ascent?: number | null
+          total_descent?: number | null
           total_elevation_gain?: number | null
           user_id: string
         }
         Update: {
           activity_id?: string
           avg_cadence?: number | null
+          avg_gap?: number | null
+          avg_gct_balance?: number | null
+          avg_ground_contact_time?: number | null
           avg_heart_rate?: number | null
+          avg_moving_pace?: number | null
           avg_power?: number | null
+          avg_run_cadence?: number | null
           avg_speed?: number | null
+          avg_step_speed_loss?: number | null
+          avg_step_speed_loss_percent?: number | null
+          avg_stride_length?: number | null
+          avg_temperature?: number | null
+          avg_vertical_oscillation?: number | null
+          avg_vertical_ratio?: number | null
+          avg_watts_per_kg?: number | null
+          best_pace?: number | null
           calories?: number | null
           created_at?: string
+          cumulative_time_seconds?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
           id?: string
           lap_index?: number
           max_heart_rate?: number | null
+          max_power?: number | null
+          max_run_cadence?: number | null
           max_speed?: number | null
+          max_watts_per_kg?: number | null
+          moving_time_seconds?: number | null
           start_time?: string | null
+          total_ascent?: number | null
+          total_descent?: number | null
           total_elevation_gain?: number | null
           user_id?: string
         }
@@ -2464,6 +2524,45 @@ export type Database = {
           updated_at?: string
           user_id?: string
           week_start?: string
+        }
+        Relationships: []
+      }
+      workout_preferences: {
+        Row: {
+          created_at: string
+          distance_unit: string
+          elevation_unit: string
+          id: string
+          pace_format: string
+          power_display: string
+          temperature_unit: string
+          updated_at: string
+          user_id: string
+          weight_unit: string
+        }
+        Insert: {
+          created_at?: string
+          distance_unit?: string
+          elevation_unit?: string
+          id?: string
+          pace_format?: string
+          power_display?: string
+          temperature_unit?: string
+          updated_at?: string
+          user_id: string
+          weight_unit?: string
+        }
+        Update: {
+          created_at?: string
+          distance_unit?: string
+          elevation_unit?: string
+          id?: string
+          pace_format?: string
+          power_display?: string
+          temperature_unit?: string
+          updated_at?: string
+          user_id?: string
+          weight_unit?: string
         }
         Relationships: []
       }
