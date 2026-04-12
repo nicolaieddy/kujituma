@@ -181,25 +181,56 @@ class AccountabilityService {
     const { data: sentData, error: sentError } = sentResult;
     const { data: receivedData, error: receivedError } = receivedResult;
 
+    if (sentError) {
+      console.error('Error fetching sent requests:', sentError);
+      throw sentError;
+    }
     if (receivedError) {
       console.error('Error fetching received requests:', receivedError);
       throw receivedError;
     }
 
-    // Filter out requests where a partnership already exists (if partnerIds provided)
     const sent = sentData || [];
     const received = receivedData || [];
-    
+
+    // Batch fetch profiles for all relevant users
+    const profileIds = new Set<string>();
+    sent.forEach(r => profileIds.add(r.receiver_id));
+    received.forEach(r => profileIds.add(r.sender_id));
+
+    let profileMap = new Map<string, { full_name: string; avatar_url: string | null }>();
+    if (profileIds.size > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles_public' as any)
+        .select('id, full_name, avatar_url')
+        .in('id', Array.from(profileIds));
+      if (profiles) {
+        (profiles as any[]).forEach((p: any) => {
+          profileMap.set(p.id, { full_name: p.full_name, avatar_url: p.avatar_url });
+        });
+      }
+    }
+
+    const sentWithProfiles = sent.map(r => ({
+      ...r,
+      receiver_profile: profileMap.get(r.receiver_id) || undefined,
+    })) as AccountabilityPartnerRequest[];
+
+    const receivedWithProfiles = received.map(r => ({
+      ...r,
+      sender_profile: profileMap.get(r.sender_id) || undefined,
+    })) as AccountabilityPartnerRequest[];
+
     if (existingPartnerIds && existingPartnerIds.size > 0) {
       return {
-        sent: sent.filter(r => !existingPartnerIds.has(r.receiver_id)) as AccountabilityPartnerRequest[],
-        received: received.filter(r => !existingPartnerIds.has(r.sender_id)) as AccountabilityPartnerRequest[],
+        sent: sentWithProfiles.filter(r => !existingPartnerIds.has(r.receiver_id)),
+        received: receivedWithProfiles.filter(r => !existingPartnerIds.has(r.sender_id)),
       };
     }
 
     return {
-      sent: sent as AccountabilityPartnerRequest[],
-      received: received as AccountabilityPartnerRequest[],
+      sent: sentWithProfiles,
+      received: receivedWithProfiles,
     };
   }
 

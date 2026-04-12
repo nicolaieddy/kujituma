@@ -6,15 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
 import { offlineSyncService } from "@/services/offlineSyncService";
-import { useRealtimeGoals } from "@/hooks/useRealtimeGoals";
 
 export const useGoals = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isCached, setIsCached] = useState(false);
-
-  // Subscribe to real-time goal changes
-  useRealtimeGoals();
 
   const { data: goals = [], isLoading, error } = useQuery({
     queryKey: ['goals', user?.id],
@@ -44,8 +40,10 @@ export const useGoals = () => {
       }
     },
     enabled: !!user,
-    staleTime: 1000 * 60 * 5, // 5 minutes - goals don't change often
-    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchInterval: 30000, // Poll every 30s for cross-device sync (replaces Realtime)
+    refetchOnWindowFocus: true,
   });
   
   // Log any query errors
