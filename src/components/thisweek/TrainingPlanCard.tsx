@@ -22,6 +22,7 @@ interface TrainingPlanCardProps {
 export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: TrainingPlanCardProps) {
   const [isOpen, setIsOpen] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<TrainingPlanWorkout | null>(null);
 
   const {
