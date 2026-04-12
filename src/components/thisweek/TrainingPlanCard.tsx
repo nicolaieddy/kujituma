@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight, Copy, Plus } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
+import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
 import { TrainingWorkoutCard } from "@/components/thisweek/TrainingWorkoutCard";
 import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPlanUtils";
@@ -32,6 +33,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     isCopying,
   } = useTrainingPlan(weekStart);
 
+  const { goals } = useGoals();
+
   const displayWorkouts = useMemo(() => getDisplayWorkouts(workouts), [workouts]);
 
   const byDay = useMemo(
@@ -52,9 +55,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
   const handleDialogChange = (open: boolean) => {
     setDialogOpen(open);
-    if (!open) {
-      setEditingWorkout(null);
-    }
+    if (!open) setEditingWorkout(null);
   };
 
   const openCreateDialog = () => {
@@ -67,14 +68,20 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     setDialogOpen(true);
   };
 
-  const handleSave = async (data: Omit<CreateTrainingWorkoutData, "week_start" | "goal_id">) => {
+  const handleSave = async (data: Omit<CreateTrainingWorkoutData, "week_start"> & { goal_ids?: string[] }) => {
+    const { goal_ids, ...rest } = data;
     if (editingWorkout) {
-      await updateWorkout({ id: editingWorkout.id, ...data });
+      await updateWorkout({ id: editingWorkout.id, ...rest, goal_ids });
     } else {
-      await createWorkout({ ...data, week_start: weekStart, goal_id: goalId || null });
+      await createWorkout({ ...rest, week_start: weekStart, goal_id: goalId || null, goal_ids });
     }
-
     setEditingWorkout(null);
+  };
+
+  // Helper to get goal names for a workout
+  const getGoalNames = (workout: TrainingPlanWorkout) => {
+    const ids = workout.goal_ids || (workout.goal_id ? [workout.goal_id] : []);
+    return ids.map(id => goals.find(g => g.id === id)?.title).filter(Boolean) as string[];
   };
 
   return (
@@ -149,6 +156,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                       {dayWorkouts.map((workout) => {
                         const matched = workout.isDerivedSession ? null : getMatchedActivity(workout.matched_strava_activity_id);
                         const sourceWorkout = workouts.find((item) => item.id === workout.sourceWorkoutId) || null;
+                        const goalNames = sourceWorkout ? getGoalNames(sourceWorkout) : [];
 
                         return (
                           <TrainingWorkoutCard
@@ -156,6 +164,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                             workout={workout}
                             matchedActivity={matched}
                             isReadOnly={isReadOnly}
+                            goalNames={goalNames}
                             onEdit={sourceWorkout ? () => openEditDialog(sourceWorkout) : undefined}
                             onDelete={sourceWorkout ? () => deleteWorkout(sourceWorkout.id) : undefined}
                           />
@@ -177,6 +186,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
           editingWorkout={editingWorkout}
           onSave={handleSave}
           isSaving={isSaving}
+          defaultGoalIds={goalId ? [goalId] : []}
         />
       )}
     </>
