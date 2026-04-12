@@ -14,8 +14,25 @@ export interface ActivityLap {
   max_speed: number | null;
   avg_cadence: number | null;
   avg_power: number | null;
+  max_power: number | null;
   total_elevation_gain: number | null;
+  total_ascent: number | null;
+  total_descent: number | null;
   calories: number | null;
+  avg_ground_contact_time: number | null;
+  avg_stride_length: number | null;
+  avg_vertical_oscillation: number | null;
+  avg_vertical_ratio: number | null;
+  avg_temperature: number | null;
+  total_strides: number | null;
+  normalized_power: number | null;
+  moving_time_seconds: number | null;
+  min_altitude: number | null;
+  max_altitude: number | null;
+  start_lat: number | null;
+  start_lng: number | null;
+  end_lat: number | null;
+  end_lng: number | null;
 }
 
 export function useActivityLaps(activityId: string | null) {
