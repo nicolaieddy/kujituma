@@ -57,6 +57,8 @@ export function useFitFileUpload() {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
       queryClient.invalidateQueries({ queryKey: ["training-plan"] });
+      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-laps"] });
 
       toast.success("Activity imported successfully", {
         description: `${data.summary.activity_type} — ${data.summary.laps_count} laps recorded`,
