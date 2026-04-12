@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import FitParser from "npm:fit-file-parser@2.1.0";
-import { JSZip } from "https://esm.sh/jszip@3.10.1";
+import JSZip from "https://esm.sh/jszip@3.10.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
