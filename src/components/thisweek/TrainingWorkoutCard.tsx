@@ -358,6 +358,7 @@ export function TrainingWorkoutCard({
           <CollapsibleContent>
             <div className="px-5 pb-4 space-y-4">
               <FullBreakdown workout={workout} activity={matchedActivity} />
+              {laps.length > 0 && <ActivityCharts laps={laps} />}
               {laps.length > 0 && <LapSplitsTable laps={laps} />}
             </div>
           </CollapsibleContent>
