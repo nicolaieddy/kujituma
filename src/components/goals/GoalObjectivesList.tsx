@@ -102,7 +102,8 @@ export const GoalObjectivesList = ({
   };
 
   const getWeekNumber = (weekStart: string) => {
-    const startDate = new Date(weekStart);
+    const [y, m, d] = weekStart.split('-').map(Number);
+    const startDate = new Date(y, m - 1, d);
     const startOfYear = new Date(startDate.getFullYear(), 0, 1);
     const pastDaysOfYear = (startDate.getTime() - startOfYear.getTime()) / 86400000;
     return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);

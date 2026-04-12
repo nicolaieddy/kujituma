@@ -1,4 +1,5 @@
 import { useCallback, useState, useMemo } from "react";
+import { parseLocalDate } from "@/utils/dateUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, History } from "lucide-react";
@@ -350,7 +351,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
           habits={habitStats}
           objectives={objectives || []}
           onToggleObjective={isCurrentWeek ? handleToggleObjective : undefined}
-          weekStart={new Date(currentWeekStart)}
+          weekStart={parseLocalDate(currentWeekStart)}
           isReadOnly={!isCurrentWeek}
         />
       )}
