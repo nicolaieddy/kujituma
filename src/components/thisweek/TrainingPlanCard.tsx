@@ -9,6 +9,8 @@ import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
 import { TrainingWorkoutCard } from "@/components/thisweek/TrainingWorkoutCard";
 import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPlanUtils";
+import { parseLocalDate } from "@/utils/dateUtils";
+import { format, addDays } from "date-fns";
 
 interface TrainingPlanCardProps {
   weekStart: string;
