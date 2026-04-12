@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.mcp-server]
 verify_jwt = false
+
+[functions.parse-fit-file]
+verify_jwt = false
