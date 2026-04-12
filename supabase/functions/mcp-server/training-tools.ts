@@ -237,25 +237,75 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
     },
   });
 
-  mcp.tool("get_strava_activity_details", {
-    description: "Get full enriched data for a specific synced Strava activity by its Strava activity ID.",
+  mcp.tool("get_activity_details", {
+    description: "Get full enriched data for a specific synced activity by its database ID or Strava activity ID. Supports both Strava-synced and .fit-uploaded activities.",
     inputSchema: {
       type: "object",
       properties: {
-        strava_activity_id: { type: "number", description: "Strava activity ID" },
+        activity_id: { type: "string", description: "Database UUID of the activity" },
+        strava_activity_id: { type: "number", description: "Strava activity ID (alternative lookup)" },
       },
-      required: ["strava_activity_id"],
     },
-    handler: async ({ strava_activity_id }: { strava_activity_id: number }) => {
-      const { data, error } = await supabase
-        .from("synced_activities")
-        .select("*")
-        .eq("user_id", userId)
-        .eq("strava_activity_id", strava_activity_id)
-        .single();
+    handler: async ({ activity_id, strava_activity_id }: { activity_id?: string; strava_activity_id?: number }) => {
+      if (!activity_id && !strava_activity_id) {
+        return { content: [{ type: "text" as const, text: "Provide either activity_id or strava_activity_id" }] };
+      }
 
+      let query = supabase.from("synced_activities").select("*").eq("user_id", userId);
+      if (activity_id) query = query.eq("id", activity_id);
+      else query = query.eq("strava_activity_id", strava_activity_id!);
+
+      const { data, error } = await query.single();
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcp.tool("get_activity_laps", {
+    description: "Get per-lap split data for an activity. Returns distance, duration, HR, pace, cadence, power per lap.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        activity_id: { type: "string", description: "Database UUID of the synced activity" },
+      },
+      required: ["activity_id"],
+    },
+    handler: async ({ activity_id }: { activity_id: string }) => {
+      const { data, error } = await supabase
+        .from("activity_laps")
+        .select("*")
+        .eq("activity_id", activity_id)
+        .eq("user_id", userId)
+        .order("lap_index");
+
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data?.length) return { content: [{ type: "text" as const, text: "No lap data for this activity." }] };
+
+      const lines = data.map((lap: any) => {
+        const parts = [`Lap ${lap.lap_index + 1}`];
+        if (lap.distance_meters) parts.push(`${(lap.distance_meters / 1000).toFixed(2)}km`);
+        if (lap.duration_seconds) {
+          const m = Math.floor(lap.duration_seconds / 60);
+          const s = Math.round(lap.duration_seconds % 60);
+          parts.push(`${m}:${s.toString().padStart(2, "0")}`);
+        }
+        if (lap.avg_heart_rate) parts.push(`HR:${Math.round(lap.avg_heart_rate)}`);
+        if (lap.avg_speed) {
+          const paceTotal = 1000 / lap.avg_speed;
+          const pm = Math.floor(paceTotal / 60);
+          const ps = Math.round(paceTotal % 60);
+          parts.push(`Pace:${pm}:${ps.toString().padStart(2, "0")}/km`);
+        }
+        if (lap.avg_power) parts.push(`Power:${Math.round(lap.avg_power)}W`);
+        return parts.join(" | ");
+      });
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `${data.length} laps:\n${lines.join("\n")}\n\nFull data:\n${JSON.stringify(data, null, 2)}`,
+        }],
+      };
     },
   });
 }
