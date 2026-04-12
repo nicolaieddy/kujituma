@@ -9,6 +9,8 @@ import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
 import { TrainingWorkoutCard } from "@/components/thisweek/TrainingWorkoutCard";
 import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPlanUtils";
+import { parseLocalDate } from "@/utils/dateUtils";
+import { format, addDays } from "date-fns";
 
 interface TrainingPlanCardProps {
   weekStart: string;
@@ -149,7 +151,9 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                 byDay.map(({ label, dayIndex, workouts: dayWorkouts }) => (
                   <section key={dayIndex} className="space-y-3">
                     <div className="flex items-center justify-between border-b border-border pb-2">
-                      <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">{label}</h3>
+                      <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                        {label} – {format(addDays(parseLocalDate(weekStart), dayIndex), "d MMM")}
+                      </h3>
                       <span className="text-xs text-muted-foreground">
                         {dayWorkouts.length} session{dayWorkouts.length === 1 ? "" : "s"}
                       </span>
