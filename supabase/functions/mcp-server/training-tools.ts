@@ -4,6 +4,77 @@ import type { createClient } from "npm:@supabase/supabase-js@2";
 type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
+function splitPmSessionText(text?: string | null) {
+  if (!text) return null;
+
+  const match = text.match(/\bPM\s*:/i);
+  if (!match || match.index === undefined) return null;
+
+  const primary = text.slice(0, match.index).trim().replace(/[\s–—-]+$/, "").trim();
+  const secondary = text.slice(match.index + match[0].length).trim();
+
+  if (!secondary) return null;
+
+  return { primary, secondary };
+}
+
+function inferWorkoutType(text: string, fallback: string) {
+  const normalized = text.toLowerCase();
+
+  if (/\b(rest|off|recovery day)\b/.test(normalized)) return "Rest";
+  if (/\b(run|jog|tempo|fartlek|stride|interval|marathon|easy pace)\b/.test(normalized)) return "Run";
+  if (/\b(ride|bike|cycle|cycling)\b/.test(normalized)) return "Ride";
+  if (/\b(swim|pool|open water)\b/.test(normalized)) return "Swim";
+  if (/\b(hike|trail walk)\b/.test(normalized)) return "Hike";
+  if (/\b(walk)\b/.test(normalized)) return "Walk";
+  if (/\b(yoga|mobility|stretch)\b/.test(normalized)) return "Yoga";
+  if (/\b(gym|core|strength|lift|weights|stability)\b/.test(normalized)) return "Workout";
+
+  return fallback || "Workout";
+}
+
+function buildPmTitle(sourceTitle: string, pmText: string) {
+  const firstSentence = pmText
+    .replace(/^[\s•\-–—]+/, "")
+    .split(/(?<=[.!?])\s+/)[0]
+    ?.trim()
+    .replace(/[.!?]$/, "");
+
+  if (!firstSentence) return `${sourceTitle} · PM`;
+
+  return `PM · ${firstSentence.length > 42 ? `${firstSentence.slice(0, 39).trim()}…` : firstSentence}`;
+}
+
+function expandWorkoutSessions(workout: any) {
+  const descriptionSplit = splitPmSessionText(workout.description);
+  const notesSplit = descriptionSplit ? null : splitPmSessionText(workout.notes);
+  const pmText = descriptionSplit?.secondary || notesSplit?.secondary;
+
+  const primaryWorkout = {
+    ...workout,
+    description: descriptionSplit?.primary ?? (workout.description || ""),
+    notes: notesSplit?.primary ?? (workout.notes || ""),
+  };
+
+  if (!pmText) {
+    return [primaryWorkout];
+  }
+
+  return [
+    primaryWorkout,
+    {
+      ...workout,
+      title: buildPmTitle(workout.title || workout.workout_type || "Workout", pmText),
+      description: pmText,
+      notes: "",
+      workout_type: inferWorkoutType(pmText, workout.workout_type || "Workout"),
+      target_distance_meters: null,
+      target_duration_seconds: null,
+      target_pace_per_km: null,
+    },
+  ];
+}
+
 export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("get_training_plan", {
     description: "Get planned workouts for a week with matched Strava actual data. Returns all enriched fields (distance, pace, HR, elevation, etc.).",
@@ -29,7 +100,6 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         return { content: [{ type: "text" as const, text: `No training plan for week ${weekKey}` }] };
       }
 
-      // Get matched activities
       const matchedIds = workouts
         .filter((w: any) => w.matched_strava_activity_id)
         .map((w: any) => w.matched_strava_activity_id);
@@ -121,7 +191,6 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       const { data: workouts, error } = await query;
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
 
-      // Get all matched activities
       const matchedIds = (workouts || [])
         .filter((w: any) => w.matched_strava_activity_id)
         .map((w: any) => w.matched_strava_activity_id);
@@ -136,8 +205,6 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       }
 
       const activityMap = new Map(activities.map((a: any) => [a.strava_activity_id, a]));
-
-      // Group by week
       const weeklyData: Record<string, any> = {};
       for (const w of (workouts || [])) {
         if (!weeklyData[w.week_start]) {
@@ -240,7 +307,9 @@ export function registerTrainingWriteTools(mcp: McpServer, supabase: Supabase, u
           .eq("week_start", weekKey);
       }
 
-      const rows = workouts.map((w: any, i: number) => ({
+      const expandedWorkouts = workouts.flatMap((workout: any) => expandWorkoutSessions(workout));
+
+      const rows = expandedWorkouts.map((w: any, i: number) => ({
         user_id: userId,
         week_start: weekKey,
         goal_id: goal_id || null,

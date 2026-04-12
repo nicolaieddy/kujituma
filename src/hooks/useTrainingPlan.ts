@@ -192,6 +192,7 @@ export function useTrainingPlan(weekStart: string) {
     updateWorkout: updateWorkout.mutateAsync,
     deleteWorkout: deleteWorkout.mutateAsync,
     copyFromPreviousWeek: copyFromPreviousWeek.mutateAsync,
+    isSaving: createWorkout.isPending || updateWorkout.isPending,
     isCreating: createWorkout.isPending,
     isCopying: copyFromPreviousWeek.isPending,
   };
