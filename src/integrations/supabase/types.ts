@@ -2008,6 +2008,42 @@ export type Database = {
           },
         ]
       }
+      training_workout_goals: {
+        Row: {
+          created_at: string
+          goal_id: string
+          id: string
+          workout_id: string
+        }
+        Insert: {
+          created_at?: string
+          goal_id: string
+          id?: string
+          workout_id: string
+        }
+        Update: {
+          created_at?: string
+          goal_id?: string
+          id?: string
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_workout_goals_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_workout_goals_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "training_plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

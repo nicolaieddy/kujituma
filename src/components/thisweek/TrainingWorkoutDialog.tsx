@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Save, Plus } from "lucide-react";
 import type { CreateTrainingWorkoutData, TrainingPlanWorkout } from "@/hooks/useTrainingPlan";
+import { useGoals } from "@/hooks/useGoals";
 import {
   Dialog,
   DialogContent,
@@ -15,14 +16,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { DAY_OPTIONS, WORKOUT_TYPES } from "@/components/thisweek/trainingPlanUtils";
 
 interface TrainingWorkoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  editingWorkout: TrainingPlanWorkout | null;
-  onSave: (data: Omit<CreateTrainingWorkoutData, "week_start" | "goal_id">) => Promise<void>;
+  editingWorkout: (TrainingPlanWorkout & { goal_ids?: string[] }) | null;
+  onSave: (data: Omit<CreateTrainingWorkoutData, "week_start"> & { goal_ids?: string[] }) => Promise<void>;
   isSaving: boolean;
+  /** Pre-select these goal IDs for new workouts */
+  defaultGoalIds?: string[];
 }
 
 function formatPaceInput(secPerKm: number): string {
@@ -35,11 +40,9 @@ function parsePace(pace: string): number | null {
   if (!pace) return null;
   const parts = pace.split(":");
   if (parts.length !== 2) return null;
-
   const m = Number.parseInt(parts[0], 10);
   const s = Number.parseInt(parts[1], 10);
   if (Number.isNaN(m) || Number.isNaN(s)) return null;
-
   return m * 60 + s;
 }
 
@@ -49,6 +52,7 @@ export function TrainingWorkoutDialog({
   editingWorkout,
   onSave,
   isSaving,
+  defaultGoalIds = [],
 }: TrainingWorkoutDialogProps) {
   const [dayOfWeek, setDayOfWeek] = useState("0");
   const [workoutType, setWorkoutType] = useState("Run");
@@ -58,6 +62,10 @@ export function TrainingWorkoutDialog({
   const [targetDurationMin, setTargetDurationMin] = useState("");
   const [targetPace, setTargetPace] = useState("");
   const [notes, setNotes] = useState("");
+  const [selectedGoalIds, setSelectedGoalIds] = useState<string[]>([]);
+
+  const { goals } = useGoals();
+  const activeGoals = goals.filter(g => g.status === "in_progress" || g.status === "not_started");
 
   useEffect(() => {
     if (!open) return;
@@ -71,6 +79,7 @@ export function TrainingWorkoutDialog({
       setTargetDurationMin(editingWorkout.target_duration_seconds ? String(Math.round(editingWorkout.target_duration_seconds / 60)) : "");
       setTargetPace(editingWorkout.target_pace_per_km ? formatPaceInput(editingWorkout.target_pace_per_km) : "");
       setNotes(editingWorkout.notes || "");
+      setSelectedGoalIds(editingWorkout.goal_ids || (editingWorkout.goal_id ? [editingWorkout.goal_id] : []));
       return;
     }
 
@@ -82,7 +91,14 @@ export function TrainingWorkoutDialog({
     setTargetDurationMin("");
     setTargetPace("");
     setNotes("");
-  }, [editingWorkout, open]);
+    setSelectedGoalIds(defaultGoalIds);
+  }, [editingWorkout, open, defaultGoalIds]);
+
+  const toggleGoal = (goalId: string) => {
+    setSelectedGoalIds(prev =>
+      prev.includes(goalId) ? prev.filter(id => id !== goalId) : [...prev, goalId]
+    );
+  };
 
   const handleSubmit = async () => {
     await onSave({
@@ -94,6 +110,7 @@ export function TrainingWorkoutDialog({
       target_duration_seconds: targetDurationMin ? Math.round(Number.parseFloat(targetDurationMin) * 60) : null,
       target_pace_per_km: parsePace(targetPace.trim()),
       notes: notes.trim(),
+      goal_ids: selectedGoalIds,
     });
 
     onOpenChange(false);
@@ -105,24 +122,46 @@ export function TrainingWorkoutDialog({
         <DialogHeader className="border-b border-border px-6 py-5">
           <DialogTitle>{editingWorkout ? "Edit workout" : "Add workout"}</DialogTitle>
           <DialogDescription>
-            Keep each session as its own item. Plans imported from Claude will also split <strong>PM:</strong> sessions automatically.
+            Configure your workout session and link it to one or more goals.
           </DialogDescription>
         </DialogHeader>
 
         <ScrollArea className="max-h-[75vh]">
           <div className="space-y-5 px-6 py-5">
+            {/* Goal selector */}
+            {activeGoals.length > 0 && (
+              <div className="space-y-2">
+                <Label>Linked goals</Label>
+                <div className="rounded-lg border border-border p-3 space-y-2 max-h-40 overflow-y-auto">
+                  {activeGoals.map(goal => (
+                    <label key={goal.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <Checkbox
+                        checked={selectedGoalIds.includes(goal.id)}
+                        onCheckedChange={() => toggleGoal(goal.id)}
+                      />
+                      <span className="truncate text-foreground">{goal.title}</span>
+                      {goal.category && (
+                        <Badge variant="outline" className="ml-auto shrink-0 text-xs">
+                          {goal.category}
+                        </Badge>
+                      )}
+                    </label>
+                  ))}
+                </div>
+                {selectedGoalIds.length > 0 && (
+                  <p className="text-xs text-muted-foreground">{selectedGoalIds.length} goal{selectedGoalIds.length === 1 ? "" : "s"} selected</p>
+                )}
+              </div>
+            )}
+
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label>Day</Label>
                 <Select value={dayOfWeek} onValueChange={setDayOfWeek}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {DAY_OPTIONS.map((day) => (
-                      <SelectItem key={day.value} value={day.value}>
-                        {day.label}
-                      </SelectItem>
+                      <SelectItem key={day.value} value={day.value}>{day.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -131,14 +170,10 @@ export function TrainingWorkoutDialog({
               <div className="space-y-2">
                 <Label>Workout type</Label>
                 <Select value={workoutType} onValueChange={setWorkoutType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {WORKOUT_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -176,7 +211,6 @@ export function TrainingWorkoutDialog({
                   min="0"
                 />
               </div>
-
               <div className="space-y-2">
                 <Label>Duration (min)</Label>
                 <Input
@@ -188,7 +222,6 @@ export function TrainingWorkoutDialog({
                   min="0"
                 />
               </div>
-
               <div className="space-y-2">
                 <Label>Target pace</Label>
                 <Input

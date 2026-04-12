@@ -1,4 +1,4 @@
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TrainingPlanDisplayWorkout } from "@/components/thisweek/trainingPlanUtils";
@@ -9,6 +9,7 @@ interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
   matchedActivity: any;
   isReadOnly?: boolean;
+  goalNames?: string[];
   onEdit?: () => void;
   onDelete?: () => void;
 }
@@ -35,6 +36,7 @@ export function TrainingWorkoutCard({
   workout,
   matchedActivity,
   isReadOnly = false,
+  goalNames = [],
   onEdit,
   onDelete,
 }: TrainingWorkoutCardProps) {
@@ -76,6 +78,18 @@ export function TrainingWorkoutCard({
             <WorkoutStatusBadge workout={workout} matchedActivity={matchedActivity} />
           </div>
 
+          {/* Goal tags */}
+          {goalNames.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              <Target className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              {goalNames.map(name => (
+                <Badge key={name} variant="secondary" className="text-xs font-normal">
+                  {name}
+                </Badge>
+              ))}
+            </div>
+          )}
+
           {workout.description && (
             <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
               {workout.description}
@@ -91,10 +105,7 @@ export function TrainingWorkoutCard({
                   </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {plannedMetrics.map((metric) => (
-                      <span
-                        key={metric}
-                        className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground"
-                      >
+                      <span key={metric} className="rounded-full border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground">
                         {metric}
                       </span>
                     ))}
@@ -112,10 +123,7 @@ export function TrainingWorkoutCard({
                   )}
                   <div className="mt-2 flex flex-wrap gap-2">
                     {actualMetrics.map((metric) => (
-                      <span
-                        key={metric}
-                        className="rounded-full border border-success/20 bg-background/80 px-2.5 py-1 text-xs font-medium text-foreground"
-                      >
+                      <span key={metric} className="rounded-full border border-success/20 bg-background/80 px-2.5 py-1 text-xs font-medium text-foreground">
                         {metric}
                       </span>
                     ))}
@@ -143,12 +151,7 @@ export function TrainingWorkoutCard({
               </Button>
             )}
             {onDelete && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 min-h-0 min-w-0 text-destructive"
-                onClick={onDelete}
-              >
+              <Button variant="ghost" size="icon" className="h-9 w-9 min-h-0 min-w-0 text-destructive" onClick={onDelete}>
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
