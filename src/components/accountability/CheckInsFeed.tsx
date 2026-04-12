@@ -354,7 +354,8 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
 
   // Group check-ins by week for context
   const getWeekLabel = (weekStart: string, createdAt: string) => {
-    const weekDate = new Date(weekStart);
+    const [wy, wm, wd] = weekStart.split('-').map(Number);
+    const weekDate = new Date(wy, wm - 1, wd);
     const now = new Date();
     const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
     

@@ -27,7 +27,8 @@ interface StreakData {
 }
 
 const getWeekNumber = (weekStart: string) => {
-  const startDate = new Date(weekStart);
+  const [y, m, d] = weekStart.split('-').map(Number);
+  const startDate = new Date(y, m - 1, d);
   const startOfYear = new Date(startDate.getFullYear(), 0, 1);
   const pastDaysOfYear = (startDate.getTime() - startOfYear.getTime()) / 86400000;
   return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
@@ -160,9 +161,9 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
 
 
   const formatWeekLabel = (weekStart: string) => {
-    const start = new Date(weekStart);
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
+    const [y, m, d] = weekStart.split('-').map(Number);
+    const start = new Date(y, m - 1, d);
+    const end = new Date(y, m - 1, d + 6);
     return `${format(start, 'MMM d')} - ${format(end, 'MMM d')}`;
   };
 

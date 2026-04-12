@@ -115,7 +115,9 @@ export const GoalCard = ({
     
     // Check if both dates are in the same year
     const sameYear = (start: string, end: string) => {
-      return new Date(start).getFullYear() === new Date(end).getFullYear();
+      const [sy] = start.split('-').map(Number);
+      const [ey] = end.split('-').map(Number);
+      return sy === ey;
     };
     
     // For goals with dates
