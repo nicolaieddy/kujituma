@@ -1828,44 +1828,80 @@ export type Database = {
         Row: {
           activity_name: string | null
           activity_type: string | null
+          average_cadence: number | null
+          average_heartrate: number | null
+          average_speed: number | null
+          calories: number | null
           distance_meters: number | null
           duration_seconds: number | null
+          elapsed_time_seconds: number | null
           habit_completion_created: boolean | null
           id: string
           matched_goal_id: string | null
           matched_habit_item_id: string | null
+          max_heartrate: number | null
+          max_speed: number | null
+          sport_type: string | null
           start_date: string | null
           strava_activity_id: number
+          strava_description: string | null
+          suffer_score: number | null
           synced_at: string | null
+          total_elevation_gain: number | null
           user_id: string
+          workout_type_id: number | null
         }
         Insert: {
           activity_name?: string | null
           activity_type?: string | null
+          average_cadence?: number | null
+          average_heartrate?: number | null
+          average_speed?: number | null
+          calories?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
+          elapsed_time_seconds?: number | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
           matched_habit_item_id?: string | null
+          max_heartrate?: number | null
+          max_speed?: number | null
+          sport_type?: string | null
           start_date?: string | null
           strava_activity_id: number
+          strava_description?: string | null
+          suffer_score?: number | null
           synced_at?: string | null
+          total_elevation_gain?: number | null
           user_id: string
+          workout_type_id?: number | null
         }
         Update: {
           activity_name?: string | null
           activity_type?: string | null
+          average_cadence?: number | null
+          average_heartrate?: number | null
+          average_speed?: number | null
+          calories?: number | null
           distance_meters?: number | null
           duration_seconds?: number | null
+          elapsed_time_seconds?: number | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
           matched_habit_item_id?: string | null
+          max_heartrate?: number | null
+          max_speed?: number | null
+          sport_type?: string | null
           start_date?: string | null
           strava_activity_id?: number
+          strava_description?: string | null
+          suffer_score?: number | null
           synced_at?: string | null
+          total_elevation_gain?: number | null
           user_id?: string
+          workout_type_id?: number | null
         }
         Relationships: [
           {
@@ -1906,6 +1942,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      training_plan_workouts: {
+        Row: {
+          created_at: string
+          day_of_week: number
+          description: string | null
+          goal_id: string | null
+          id: string
+          matched_strava_activity_id: number | null
+          notes: string | null
+          order_index: number
+          target_distance_meters: number | null
+          target_duration_seconds: number | null
+          target_pace_per_km: number | null
+          title: string
+          updated_at: string
+          user_id: string
+          week_start: string
+          workout_type: string
+        }
+        Insert: {
+          created_at?: string
+          day_of_week: number
+          description?: string | null
+          goal_id?: string | null
+          id?: string
+          matched_strava_activity_id?: number | null
+          notes?: string | null
+          order_index?: number
+          target_distance_meters?: number | null
+          target_duration_seconds?: number | null
+          target_pace_per_km?: number | null
+          title?: string
+          updated_at?: string
+          user_id: string
+          week_start: string
+          workout_type?: string
+        }
+        Update: {
+          created_at?: string
+          day_of_week?: number
+          description?: string | null
+          goal_id?: string | null
+          id?: string
+          matched_strava_activity_id?: number | null
+          notes?: string | null
+          order_index?: number
+          target_distance_meters?: number | null
+          target_duration_seconds?: number | null
+          target_pace_per_km?: number | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+          workout_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_plan_workouts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {

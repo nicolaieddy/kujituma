@@ -22,6 +22,16 @@ interface StravaActivity {
   elapsed_time: number;
   moving_time: number;
   distance: number;
+  average_speed?: number;
+  max_speed?: number;
+  average_heartrate?: number;
+  max_heartrate?: number;
+  total_elevation_gain?: number;
+  calories?: number;
+  suffer_score?: number;
+  average_cadence?: number;
+  description?: string;
+  workout_type?: number;
 }
 
 async function refreshTokenIfNeeded(
@@ -31,7 +41,6 @@ async function refreshTokenIfNeeded(
   const expiresAt = new Date(connection.expires_at);
   const now = new Date();
   
-  // If token expires in less than 5 minutes, refresh it
   if (expiresAt.getTime() - now.getTime() < 5 * 60 * 1000) {
     console.log("Refreshing Strava token...");
     
@@ -52,7 +61,6 @@ async function refreshTokenIfNeeded(
 
     const tokenData = await refreshResponse.json();
     
-    // Update stored tokens
     await adminClient
       .from("strava_connections")
       .update({
@@ -67,6 +75,98 @@ async function refreshTokenIfNeeded(
   }
 
   return connection.access_token;
+}
+
+function buildEnrichedFields(activity: StravaActivity) {
+  return {
+    average_speed: activity.average_speed ?? null,
+    max_speed: activity.max_speed ?? null,
+    average_heartrate: activity.average_heartrate ?? null,
+    max_heartrate: activity.max_heartrate ?? null,
+    total_elevation_gain: activity.total_elevation_gain ?? null,
+    calories: activity.calories ?? null,
+    suffer_score: activity.suffer_score ?? null,
+    average_cadence: activity.average_cadence ?? null,
+    elapsed_time_seconds: activity.elapsed_time ?? null,
+    sport_type: activity.sport_type ?? null,
+    strava_description: activity.description ?? null,
+    workout_type_id: activity.workout_type ?? null,
+  };
+}
+
+// Get Monday YYYY-MM-DD from a date string
+function getMondayOfDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const day = d.getDay();
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+  return d.toISOString().split("T")[0];
+}
+
+// Get day_of_week (0=Mon, 6=Sun) from a local date string like "2026-04-07"
+function getDayOfWeek(localDateStr: string): number {
+  const d = new Date(localDateStr + "T12:00:00");
+  const jsDay = d.getDay(); // 0=Sun
+  return jsDay === 0 ? 6 : jsDay - 1; // convert to 0=Mon
+}
+
+async function autoMatchTrainingPlan(
+  supabase: any,
+  userId: string,
+  weekStarts: Set<string>
+) {
+  if (weekStarts.size === 0) return 0;
+  let matched = 0;
+
+  for (const weekStart of weekStarts) {
+    // Get unmatched training plan workouts for this week
+    const { data: planWorkouts } = await supabase
+      .from("training_plan_workouts")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("week_start", weekStart)
+      .is("matched_strava_activity_id", null);
+
+    if (!planWorkouts || planWorkouts.length === 0) continue;
+
+    // Get synced activities for this week
+    const weekEnd = new Date(weekStart + "T00:00:00");
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekEndStr = weekEnd.toISOString().split("T")[0];
+
+    const { data: activities } = await supabase
+      .from("synced_activities")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("start_date", `${weekStart}T00:00:00Z`)
+      .lte("start_date", `${weekEndStr}T23:59:59Z`);
+
+    if (!activities || activities.length === 0) continue;
+
+    // Try to match each plan workout to an activity
+    const usedActivityIds = new Set<number>();
+
+    for (const workout of planWorkouts) {
+      const match = activities.find((a: any) => {
+        if (usedActivityIds.has(a.strava_activity_id)) return false;
+        const actLocalDate = a.start_date.split("T")[0]; // approximate
+        const actDow = getDayOfWeek(actLocalDate);
+        const typeMatch = (a.activity_type || "").toLowerCase() === (workout.workout_type || "").toLowerCase() ||
+                          (a.sport_type || "").toLowerCase() === (workout.workout_type || "").toLowerCase();
+        return actDow === workout.day_of_week && typeMatch;
+      });
+
+      if (match) {
+        await supabase
+          .from("training_plan_workouts")
+          .update({ matched_strava_activity_id: match.strava_activity_id })
+          .eq("id", workout.id);
+        usedActivityIds.add(match.strava_activity_id);
+        matched++;
+      }
+    }
+  }
+
+  return matched;
 }
 
 serve(async (req) => {
@@ -102,7 +202,6 @@ serve(async (req) => {
       throw new Error("Strava not connected");
     }
 
-    // Refresh token if needed
     const accessToken = await refreshTokenIfNeeded(adminClient, connection);
 
     // Get user's activity mappings with goal start dates
@@ -133,7 +232,7 @@ serve(async (req) => {
       console.log(`Looking back to: ${new Date(earliestDate * 1000).toISOString()}`);
     }
 
-    // Fetch activities from the earliest goal start date
+    // Fetch activities from Strava
     const activitiesResponse = await fetch(
       `https://www.strava.com/api/v3/athlete/activities?after=${earliestDate}&per_page=200`,
       {
@@ -155,21 +254,23 @@ serve(async (req) => {
       .select("*")
       .eq("user_id", user.id);
 
-    const syncedMap = new Map((existingSynced || []).map(a => [a.strava_activity_id, a]));
+    const syncedMap = new Map((existingSynced || []).map((a: any) => [a.strava_activity_id, a]));
 
-    // Process activities
     const results = {
       synced: 0,
       matched: 0,
       skipped: 0,
       rematched: 0,
+      training_matched: 0,
     };
+
+    // Track which weeks have new activities for training plan matching
+    const affectedWeeks = new Set<string>();
 
     for (const activity of activities) {
       const existingSync = syncedMap.get(activity.id);
       
-      // Find matching mapping
-      const mapping = mappings?.find(m => 
+      const mapping = mappings?.find((m: any) => 
         m.strava_activity_type === activity.type || 
         m.strava_activity_type === activity.sport_type
       );
@@ -178,23 +279,35 @@ serve(async (req) => {
       const meetsMinDuration = !mapping || durationMinutes >= (mapping.min_duration_minutes || 0);
       const shouldMatch = mapping && meetsMinDuration;
 
-      // If already synced, check if we need to re-match with new mappings
+      const enrichedFields = buildEnrichedFields(activity);
+      const activityLocalDate = activity.start_date_local.split("T")[0];
+      const weekMonday = getMondayOfDate(activity.start_date_local);
+      affectedWeeks.add(weekMonday);
+
       if (existingSync) {
-        // If previously unmatched but now has a matching mapping, update it
+        // Update enriched fields on existing synced activities
+        const needsEnrichment = !existingSync.average_speed && activity.average_speed;
+        
+        if (needsEnrichment) {
+          await supabase
+            .from("synced_activities")
+            .update(enrichedFields)
+            .eq("id", existingSync.id);
+        }
+
         if (!existingSync.matched_habit_item_id && shouldMatch) {
           console.log(`Re-matching activity ${activity.id} (${activity.type}) to habit ${mapping.habit_item_id}`);
           
-          // Update the synced activity
           await supabase
             .from("synced_activities")
             .update({
               matched_habit_item_id: mapping.habit_item_id,
               matched_goal_id: mapping.goal_id,
+              ...enrichedFields,
             })
             .eq("id", existingSync.id);
 
-          // Create habit completion
-          const completionDate = activity.start_date_local.split("T")[0];
+          const completionDate = activityLocalDate;
           
           const { data: existingCompletion } = await supabase
             .from("habit_completions")
@@ -217,7 +330,6 @@ serve(async (req) => {
 
             if (!completionError) {
               results.rematched++;
-              
               await supabase
                 .from("synced_activities")
                 .update({ habit_completion_created: true })
@@ -232,7 +344,7 @@ serve(async (req) => {
         continue;
       }
 
-      // New activity - sync it
+      // New activity - sync it with enriched data
       const syncedActivity = {
         user_id: user.id,
         strava_activity_id: activity.id,
@@ -244,6 +356,7 @@ serve(async (req) => {
         matched_habit_item_id: shouldMatch ? mapping.habit_item_id : null,
         matched_goal_id: shouldMatch ? mapping.goal_id : null,
         habit_completion_created: false,
+        ...enrichedFields,
       };
 
       const { error: insertError } = await supabase
@@ -257,11 +370,9 @@ serve(async (req) => {
 
       results.synced++;
 
-      // Create habit completion if we have a match
       if (shouldMatch) {
-        const completionDate = activity.start_date_local.split("T")[0];
+        const completionDate = activityLocalDate;
         
-        // Check if completion already exists
         const { data: existingCompletion } = await supabase
           .from("habit_completions")
           .select("id")
@@ -283,17 +394,21 @@ serve(async (req) => {
 
           if (!completionError) {
             results.matched++;
-            
-            // Update synced activity to mark completion created
             await supabase
               .from("synced_activities")
               .update({ habit_completion_created: true })
               .eq("strava_activity_id", activity.id);
           }
         } else {
-          results.matched++; // Already had completion
+          results.matched++;
         }
       }
+    }
+
+    // Auto-match training plan workouts
+    results.training_matched = await autoMatchTrainingPlan(supabase, user.id, affectedWeeks);
+    if (results.training_matched > 0) {
+      console.log(`Auto-matched ${results.training_matched} training plan workouts`);
     }
 
     // Update last_synced_at timestamp

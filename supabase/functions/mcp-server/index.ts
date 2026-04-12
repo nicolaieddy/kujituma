@@ -4,6 +4,7 @@ import { getUser, corsHeaders } from "./helpers.ts";
 import { registerReadTools } from "./read-tools.ts";
 import { registerWriteTools } from "./write-tools.ts";
 import { registerResources, registerPrompts } from "./resources-prompts.ts";
+import { registerTrainingReadTools, registerTrainingWriteTools } from "./training-tools.ts";
 
 // ── MCP SERVER FACTORY ─────────────────────────────────────
 
@@ -15,6 +16,8 @@ function createConfiguredServer(supabase: any, userId: string) {
 
   registerReadTools(mcp, supabase, userId);
   registerWriteTools(mcp, supabase, userId);
+  registerTrainingReadTools(mcp, supabase, userId);
+  registerTrainingWriteTools(mcp, supabase, userId);
   registerResources(mcp, supabase, userId);
   registerPrompts(mcp);
 
