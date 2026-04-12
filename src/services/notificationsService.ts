@@ -22,7 +22,7 @@ class NotificationsService {
     
     // Batch fetch user profiles
     const { data: profiles } = await supabase
-      .from('profiles')
+      .from('profiles_public' as any)
       .select('id, full_name, avatar_url')
       .in('id', triggeredByIds);
 
@@ -95,7 +95,7 @@ class NotificationsService {
           
           // Fetch the triggered_by profile
           const { data: profile } = await supabase
-            .from('profiles')
+            .from('profiles_public' as any)
             .select('id, full_name, avatar_url')
             .eq('id', newNotification.triggered_by_user_id)
             .single();

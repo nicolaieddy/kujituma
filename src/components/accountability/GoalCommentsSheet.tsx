@@ -49,7 +49,7 @@ export const GoalCommentsSheet = ({ open, onOpenChange, goalId, goalTitle }: Goa
       // Fetch profile info for all unique users
       const userIds = [...new Set(data.map((c) => c.user_id))];
       const { data: profilesData } = await supabase
-        .from('profiles')
+        .from('profiles_public' as any)
         .select('id, full_name, avatar_url')
         .in('id', userIds);
 

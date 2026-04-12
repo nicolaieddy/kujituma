@@ -164,38 +164,22 @@ class AccountabilityService {
     const user = authStore.getUser();
     if (!user) throw new Error('Not authenticated');
 
-    // Fetch sent requests
-    const { data: sentData, error: sentError } = await supabase
-      .from('accountability_partner_requests')
-      .select(`
-        *,
-        receiver_profile:profiles!accountability_partner_requests_receiver_id_fkey (
-          full_name,
-          avatar_url,
-          email
-        )
-      `)
-      .eq('sender_id', user.id)
-      .eq('status', 'pending');
+    // Fetch sent and received requests
+    const [sentResult, receivedResult] = await Promise.all([
+      supabase
+        .from('accountability_partner_requests')
+        .select('*')
+        .eq('sender_id', user.id)
+        .eq('status', 'pending'),
+      supabase
+        .from('accountability_partner_requests')
+        .select('*')
+        .eq('receiver_id', user.id)
+        .eq('status', 'pending'),
+    ]);
 
-    if (sentError) {
-      console.error('Error fetching sent requests:', sentError);
-      throw sentError;
-    }
-
-    // Fetch received requests
-    const { data: receivedData, error: receivedError } = await supabase
-      .from('accountability_partner_requests')
-      .select(`
-        *,
-        sender_profile:profiles!accountability_partner_requests_sender_id_fkey (
-          full_name,
-          avatar_url,
-          email
-        )
-      `)
-      .eq('receiver_id', user.id)
-      .eq('status', 'pending');
+    const { data: sentData, error: sentError } = sentResult;
+    const { data: receivedData, error: receivedError } = receivedResult;
 
     if (receivedError) {
       console.error('Error fetching received requests:', receivedError);
@@ -366,12 +350,11 @@ class AccountabilityService {
     id: string;
     full_name: string;
     avatar_url: string | null;
-    email: string;
     about_me: string | null;
   } | null> {
     const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, avatar_url, email, about_me')
+      .from('profiles_public' as any)
+      .select('id, full_name, avatar_url, about_me')
       .eq('id', partnerId)
       .single();
 

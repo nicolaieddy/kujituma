@@ -203,7 +203,7 @@ class FriendsService {
       
       if (profileIds.size > 0) {
         const { data: profiles } = await supabase
-          .from('profiles')
+          .from('profiles_public' as any)
           .select('id, full_name, avatar_url')
           .in('id', Array.from(profileIds));
         
@@ -267,7 +267,7 @@ class FriendsService {
 
       // Build query - use filter for array exclusion
       let queryBuilder = supabase
-        .from('profiles')
+        .from('profiles_public' as any)
         .select('id, full_name, avatar_url, about_me, linkedin_url')
         .limit(20);
 

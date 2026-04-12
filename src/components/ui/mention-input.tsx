@@ -55,7 +55,7 @@ export const MentionInput = ({
     try {
       const sanitizedQuery = sanitizeForIlike(trimmedQuery);
       const { data, error } = await supabase
-        .from('profiles')
+        .from('profiles_public' as any)
         .select('id, full_name, avatar_url')
         .ilike('full_name', `%${sanitizedQuery}%`)
         .limit(10);
