@@ -265,6 +265,16 @@ export function TrainingWorkoutCard({
         "hover:shadow-md"
       )}
     >
+      {/* Upload progress overlay */}
+      {isUploading && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl">
+          <div className="flex items-center gap-3 text-sm font-medium text-primary">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            <span>{progress || "Uploading..."}</span>
+          </div>
+        </div>
+      )}
+
       {/* Subtle left accent */}
       <div className={cn(
         "absolute inset-y-0 left-0 w-[3px]",
