@@ -358,32 +358,37 @@ Deno.serve(async (req) => {
     if (workout_id) {
       await adminClient
         .from("training_plan_workouts")
-        .update({ matched_strava_activity_id: null })
+        .update({ matched_activity_id: activityId })
         .eq("id", workout_id)
         .eq("user_id", user.id);
       console.log(`Linked workout ${workout_id} to fit activity ${activityId}`);
-    }
+    } else {
+      // Auto-match by date if no explicit workout_id
+      const activityDate = startDate.split("T")[0];
+      const { data: unmatchedWorkouts } = await adminClient
+        .from("training_plan_workouts")
+        .select("id, workout_type, day_of_week, week_start")
+        .eq("user_id", user.id)
+        .is("matched_activity_id", null)
+        .is("matched_strava_activity_id", null);
 
-    // Auto-match by date
-    const activityDate = startDate.split("T")[0];
-    const { data: unmatchedWorkouts } = await adminClient
-      .from("training_plan_workouts")
-      .select("id, workout_type, day_of_week, week_start")
-      .eq("user_id", user.id)
-      .is("matched_strava_activity_id", null);
+      if (unmatchedWorkouts?.length) {
+        for (const workout of unmatchedWorkouts) {
+          const workoutDate = new Date(workout.week_start);
+          workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
+          const workoutDateStr = workoutDate.toISOString().split("T")[0];
 
-    if (unmatchedWorkouts?.length) {
-      for (const workout of unmatchedWorkouts) {
-        const workoutDate = new Date(workout.week_start);
-        workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
-        const workoutDateStr = workoutDate.toISOString().split("T")[0];
-
-        if (workoutDateStr === activityDate) {
-          const wType = (workout.workout_type || "").toLowerCase();
-          const aType = activityType.toLowerCase();
-          if (wType === aType || wType.includes(aType) || aType.includes(wType) || wType === "workout") {
-            console.log(`Auto-matched workout ${workout.id} to fit activity ${activityId}`);
-            break;
+          if (workoutDateStr === activityDate) {
+            const wType = (workout.workout_type || "").toLowerCase();
+            const aType = activityType.toLowerCase();
+            if (wType === aType || wType.includes(aType) || aType.includes(wType) || wType === "workout") {
+              await adminClient
+                .from("training_plan_workouts")
+                .update({ matched_activity_id: activityId })
+                .eq("id", workout.id);
+              console.log(`Auto-matched workout ${workout.id} to fit activity ${activityId}`);
+              break;
+            }
           }
         }
       }

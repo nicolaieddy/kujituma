@@ -85,23 +85,43 @@ export function useTrainingPlan(weekStart: string) {
     goal_ids: goalLinks.filter(l => l.workout_id === w.id).map(l => l.goal_id),
   }));
 
-  // Get matched strava activities for the workouts
-  const matchedActivityIds = workouts
+  // Get matched activities for the workouts (both Strava IDs and direct activity UUIDs)
+  const stravaActivityIds = workouts
     .filter(w => w.matched_strava_activity_id)
     .map(w => w.matched_strava_activity_id!);
+  const directActivityIds = workouts
+    .filter(w => (w as any).matched_activity_id)
+    .map(w => (w as any).matched_activity_id as string);
 
   const { data: matchedActivities = [] } = useQuery({
-    queryKey: ["training-matched-activities", matchedActivityIds],
+    queryKey: ["training-matched-activities", stravaActivityIds, directActivityIds],
     queryFn: async () => {
-      if (matchedActivityIds.length === 0) return [];
-      const { data, error } = await supabase
-        .from("synced_activities")
-        .select("*")
-        .in("strava_activity_id", matchedActivityIds);
-      if (error) throw error;
-      return data || [];
+      const results: any[] = [];
+      // Fetch by strava_activity_id
+      if (stravaActivityIds.length > 0) {
+        const { data, error } = await supabase
+          .from("synced_activities")
+          .select("*")
+          .in("strava_activity_id", stravaActivityIds);
+        if (!error && data) results.push(...data);
+      }
+      // Fetch by direct activity UUID
+      if (directActivityIds.length > 0) {
+        const { data, error } = await supabase
+          .from("synced_activities")
+          .select("*")
+          .in("id", directActivityIds);
+        if (!error && data) results.push(...data);
+      }
+      // Deduplicate by id
+      const seen = new Set<string>();
+      return results.filter(a => {
+        if (seen.has(a.id)) return false;
+        seen.add(a.id);
+        return true;
+      });
     },
-    enabled: matchedActivityIds.length > 0,
+    enabled: stravaActivityIds.length > 0 || directActivityIds.length > 0,
     staleTime: 1000 * 60 * 5,
   });
 
@@ -245,9 +265,17 @@ export function useTrainingPlan(weekStart: string) {
     },
   });
 
-  const getMatchedActivity = (stravaActivityId: number | null) => {
-    if (!stravaActivityId) return null;
-    return matchedActivities.find((a: any) => a.strava_activity_id === stravaActivityId) || null;
+  const getMatchedActivity = (workout: TrainingPlanWorkout) => {
+    // Check direct activity UUID first (FIT uploads)
+    const directId = (workout as any).matched_activity_id;
+    if (directId) {
+      return matchedActivities.find((a: any) => a.id === directId) || null;
+    }
+    // Fall back to strava_activity_id
+    if (workout.matched_strava_activity_id) {
+      return matchedActivities.find((a: any) => a.strava_activity_id === workout.matched_strava_activity_id) || null;
+    }
+    return null;
   };
 
   return {
