@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { FitUploadButton } from "@/components/training/FitUploadButton";
 import { useActivityLaps } from "@/hooks/useActivityLaps";
 import { LapSplitsTable } from "@/components/training/LapSplitsTable";
+import { ActivityCharts } from "@/components/training/ActivityCharts";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
@@ -357,6 +358,7 @@ export function TrainingWorkoutCard({
           <CollapsibleContent>
             <div className="px-5 pb-4 space-y-4">
               <FullBreakdown workout={workout} activity={matchedActivity} />
+              {laps.length > 0 && <ActivityCharts laps={laps} />}
               {laps.length > 0 && <LapSplitsTable laps={laps} />}
             </div>
           </CollapsibleContent>
