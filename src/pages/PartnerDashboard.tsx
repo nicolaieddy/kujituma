@@ -61,6 +61,7 @@ const PartnerDashboard = () => {
   const [commentsObjectiveId, setCommentsObjectiveId] = useState<string | null>(null);
   const [commentsObjectiveText, setCommentsObjectiveText] = useState('');
   
+  const queryClient = useQueryClient();
   const checkInsFeedRef = useRef<CheckInsFeedRef>(null);
   const partnerSwitcherRef = useRef<PartnerSwitcherRef>(null);
 
@@ -161,6 +162,7 @@ const PartnerDashboard = () => {
         refetch()
       ]).catch(console.error);
       toast.success('Check-in recorded!');
+      queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
     } catch (err) {
       console.error('Error recording check-in:', err);
       if (tempId) checkInsFeedRef.current?.removeOptimisticCheckIn(tempId);

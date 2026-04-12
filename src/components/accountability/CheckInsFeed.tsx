@@ -66,6 +66,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   onRecordCheckIn
 }, ref) => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [checkIns, setCheckIns] = useState<CheckInRecord[]>([]);
   const [optimisticIds, setOptimisticIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -257,6 +258,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
         return next;
       });
       await fetchCheckIns();
+      queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
       toast.success('Reply sent!');
     } catch (error) {
       console.error('Error sending reply:', error);
