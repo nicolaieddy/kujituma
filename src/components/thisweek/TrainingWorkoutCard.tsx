@@ -241,8 +241,6 @@ export function TrainingWorkoutCard({
   const [expanded, setExpanded] = useState(false);
   const status = getWorkoutStatus(workout, matchedActivity);
   const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
-  const status = getWorkoutStatus(workout, matchedActivity);
-  const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
 
   const hasBreakdown = (() => {
     if (workout.notes) return true;
@@ -263,15 +261,6 @@ export function TrainingWorkoutCard({
         "hover:shadow-md"
       )}
     >
-      {/* Upload progress overlay */}
-      {isUploading && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm rounded-xl">
-          <div className="flex items-center gap-3 text-sm font-medium text-primary">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>{progress || "Uploading..."}</span>
-          </div>
-        </div>
-      )}
 
       {/* Subtle left accent */}
       <div className={cn(
