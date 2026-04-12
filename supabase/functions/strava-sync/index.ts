@@ -148,7 +148,8 @@ async function autoMatchTrainingPlan(
     for (const workout of planWorkouts) {
       const match = activities.find((a: any) => {
         if (usedActivityIds.has(a.strava_activity_id)) return false;
-        const actLocalDate = a.start_date.split("T")[0]; // approximate
+        // start_date from DB can be "2026-04-06 21:23:26+00" or ISO with "T"
+        const actLocalDate = (a.start_date || "").replace(" ", "T").split("T")[0];
         const actDow = getDayOfWeek(actLocalDate);
         const typeMatch = (a.activity_type || "").toLowerCase() === (workout.workout_type || "").toLowerCase() ||
                           (a.sport_type || "").toLowerCase() === (workout.workout_type || "").toLowerCase();
