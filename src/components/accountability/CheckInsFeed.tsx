@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { useQueryClient } from '@tanstack/react-query';
 import { accountabilityService, CheckInRecord } from '@/services/accountabilityService';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageSquare, Clock, Calendar as CalendarIcon, ChevronDown, ChevronUp, Search, X, Filter, Reply, Send, Pencil, Trash2, Check } from 'lucide-react';
