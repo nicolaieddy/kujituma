@@ -116,6 +116,10 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
               {!isReadOnly && (
                 <div className="flex flex-wrap gap-2 sm:justify-end">
+                  <Button variant="outline" size="sm" onClick={() => setBulkUploadOpen(true)}>
+                    <Upload className="h-4 w-4" />
+                    Upload .fit
+                  </Button>
                   {totalCount === 0 && (
                     <Button variant="outline" size="sm" onClick={() => copyFromPreviousWeek()} loading={isCopying}>
                       <Copy className="h-4 w-4" />
