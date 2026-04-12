@@ -297,6 +297,10 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
           parts.push(`Pace:${pm}:${ps.toString().padStart(2, "0")}/km`);
         }
         if (lap.avg_power) parts.push(`Power:${Math.round(lap.avg_power)}W`);
+        if (lap.avg_ground_contact_time) parts.push(`GCT:${Math.round(lap.avg_ground_contact_time)}ms`);
+        if (lap.avg_stride_length) parts.push(`Stride:${lap.avg_stride_length.toFixed(2)}m`);
+        if (lap.avg_vertical_oscillation) parts.push(`VO:${lap.avg_vertical_oscillation.toFixed(1)}cm`);
+        if (lap.avg_temperature) parts.push(`Temp:${lap.avg_temperature}°C`);
         return parts.join(" | ");
       });
 
