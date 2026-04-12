@@ -26,7 +26,7 @@ export function FitUploadButton({ workoutId, variant = "outline", size = "sm", l
       <input
         ref={fileRef}
         type="file"
-        accept=".fit"
+        accept=".fit,.zip"
         className="hidden"
         onChange={handleFileChange}
         disabled={isUploading}
