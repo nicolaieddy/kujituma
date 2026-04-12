@@ -7,6 +7,7 @@ import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { McpSection } from "@/components/profile/McpSection";
+import { WorkoutPreferencesSection } from "@/components/profile/WorkoutPreferencesSection";
 
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -25,6 +26,7 @@ import {
   Zap,
   Bell,
   Terminal,
+  Dumbbell,
   Calendar,
   Clock,
   UserPlus,
@@ -88,9 +90,9 @@ const Profile = () => {
   const viewerContext = pageData?.viewer_context;
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "notifications" | "mcp">(() => {
+  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "workouts" | "notifications" | "mcp">(() => {
     const p = getSearchParams().get("tab");
-    if (p === "integrations" || p === "notifications" || p === "mcp") return p;
+    if (p === "integrations" || p === "workouts" || p === "notifications" || p === "mcp") return p;
     return "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -129,7 +131,7 @@ const Profile = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleTabChange = useCallback((tab: "profile" | "integrations" | "notifications" | "mcp") => {
+  const handleTabChange = useCallback((tab: "profile" | "integrations" | "workouts" | "notifications" | "mcp") => {
     setActiveTab(tab);
     setSearchParam("tab", tab);
   }, []);
