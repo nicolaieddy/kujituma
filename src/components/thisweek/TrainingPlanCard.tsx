@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Copy, Plus } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Upload } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
 import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
@@ -11,6 +11,7 @@ import { TrainingWorkoutCard } from "@/components/thisweek/TrainingWorkoutCard";
 import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPlanUtils";
 import { parseLocalDate } from "@/utils/dateUtils";
 import { format, addDays } from "date-fns";
+import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
 
 interface TrainingPlanCardProps {
   weekStart: string;
