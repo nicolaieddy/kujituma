@@ -31,12 +31,10 @@ export interface AccountabilityPartnerRequest {
   sender_profile?: {
     full_name: string;
     avatar_url: string | null;
-    email: string;
   };
   receiver_profile?: {
     full_name: string;
     avatar_url: string | null;
-    email: string;
   };
 }
 
