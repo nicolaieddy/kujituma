@@ -303,15 +303,20 @@ export function TrainingWorkoutCard({
               className={cn(
                 "rounded-md text-[10px] font-semibold gap-1",
                 matchedActivity.source === "fit_upload"
-                  ? "border-orange-300/60 bg-orange-50/60 text-orange-700 dark:border-orange-700/40 dark:bg-orange-950/30 dark:text-orange-400"
-                  : "border-blue-300/60 bg-blue-50/60 text-blue-700 dark:border-blue-700/40 dark:bg-blue-950/30 dark:text-blue-400"
+                  ? "border-warning/30 bg-warning/10 text-warning-foreground"
+                  : "border-primary/30 bg-primary/10 text-primary"
               )}
             >
               {matchedActivity.source === "fit_upload" ? (
-                <><File className="h-3 w-3" /> .FIT</>
+                <><File className="h-3 w-3" /> .FIT uploaded</>
               ) : (
                 <><Activity className="h-3 w-3" /> Strava</>
               )}
+            </Badge>
+          )}
+          {!matchedActivity && workout.matched_activity_id && (
+            <Badge variant="outline" className="rounded-md gap-1 border-warning/30 bg-warning/10 text-warning-foreground text-[10px] font-semibold">
+              <File className="h-3 w-3" /> .FIT uploaded
             </Badge>
           )}
           <StatusPill status={status} />
