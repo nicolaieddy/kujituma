@@ -75,9 +75,61 @@ function expandWorkoutSessions(workout: any) {
   ];
 }
 
+/** Fetch activities by both strava IDs and direct DB UUIDs, return two lookup maps */
+async function fetchActivitiesDual(
+  supabase: Supabase,
+  userId: string,
+  workouts: any[]
+): Promise<{ stravaMap: Map<number, any>; directMap: Map<string, any> }> {
+  const stravaIds = workouts
+    .map((w: any) => w.matched_strava_activity_id)
+    .filter(Boolean);
+  const directIds = workouts
+    .map((w: any) => w.matched_activity_id)
+    .filter(Boolean);
+
+  const stravaMap = new Map<number, any>();
+  const directMap = new Map<string, any>();
+
+  const promises: Promise<void>[] = [];
+
+  if (stravaIds.length > 0) {
+    promises.push(
+      supabase
+        .from("synced_activities")
+        .select("*")
+        .in("strava_activity_id", stravaIds)
+        .then(({ data }: any) => {
+          (data || []).forEach((a: any) => stravaMap.set(a.strava_activity_id, a));
+        })
+    );
+  }
+
+  if (directIds.length > 0) {
+    promises.push(
+      supabase
+        .from("synced_activities")
+        .select("*")
+        .in("id", directIds)
+        .then(({ data }: any) => {
+          (data || []).forEach((a: any) => directMap.set(a.id, a));
+        })
+    );
+  }
+
+  await Promise.all(promises);
+  return { stravaMap, directMap };
+}
+
+function resolveActual(workout: any, stravaMap: Map<number, any>, directMap: Map<string, any>) {
+  return directMap.get(workout.matched_activity_id)
+    || stravaMap.get(workout.matched_strava_activity_id)
+    || null;
+}
+
 export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("get_training_plan", {
-    description: "Get planned workouts for a week with matched Strava actual data. Returns all enriched fields (distance, pace, HR, elevation, etc.).",
+    description: "Get planned workouts for a week with matched actual data (Strava-synced or .fit uploads). Returns all enriched fields (distance, pace, HR, elevation, etc.).",
     inputSchema: {
       type: "object",
       properties: {
@@ -100,24 +152,11 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         return { content: [{ type: "text" as const, text: `No training plan for week ${weekKey}` }] };
       }
 
-      const matchedIds = workouts
-        .filter((w: any) => w.matched_strava_activity_id)
-        .map((w: any) => w.matched_strava_activity_id);
-
-      let activities: any[] = [];
-      if (matchedIds.length > 0) {
-        const { data } = await supabase
-          .from("synced_activities")
-          .select("*")
-          .in("strava_activity_id", matchedIds);
-        activities = data || [];
-      }
-
-      const activityMap = new Map(activities.map((a: any) => [a.strava_activity_id, a]));
+      const { stravaMap, directMap } = await fetchActivitiesDual(supabase, userId, workouts);
       const dayLabels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
       const result = workouts.map((w: any) => {
-        const actual = activityMap.get(w.matched_strava_activity_id);
+        const actual = resolveActual(w, stravaMap, directMap);
         return {
           day: dayLabels[w.day_of_week],
           title: w.title,
@@ -130,6 +169,8 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
             pace_per_km: w.target_pace_per_km,
           },
           actual: actual ? {
+            activity_id: actual.id,
+            source: actual.source || (actual.strava_activity_id ? "strava" : ".fit_upload"),
             activity_name: actual.activity_name,
             distance_meters: actual.distance_meters,
             duration_seconds: actual.duration_seconds,
@@ -142,6 +183,8 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
             calories: actual.calories,
             suffer_score: actual.suffer_score,
             average_cadence: actual.average_cadence,
+            average_power: actual.average_power,
+            normalized_power: actual.normalized_power,
             strava_activity_id: actual.strava_activity_id,
           } : null,
           status: actual ? "completed" : "pending",
@@ -159,7 +202,7 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
   });
 
   mcp.tool("get_training_history", {
-    description: "Get training plan vs actual data across multiple weeks for trend analysis.",
+    description: "Get training plan vs actual data (Strava or .fit upload) across multiple weeks for trend analysis.",
     inputSchema: {
       type: "object",
       properties: {
@@ -191,20 +234,8 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       const { data: workouts, error } = await query;
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
 
-      const matchedIds = (workouts || [])
-        .filter((w: any) => w.matched_strava_activity_id)
-        .map((w: any) => w.matched_strava_activity_id);
+      const { stravaMap, directMap } = await fetchActivitiesDual(supabase, userId, workouts || []);
 
-      let activities: any[] = [];
-      if (matchedIds.length > 0) {
-        const { data } = await supabase
-          .from("synced_activities")
-          .select("*")
-          .in("strava_activity_id", matchedIds);
-        activities = data || [];
-      }
-
-      const activityMap = new Map(activities.map((a: any) => [a.strava_activity_id, a]));
       const weeklyData: Record<string, any> = {};
       for (const w of (workouts || [])) {
         if (!weeklyData[w.week_start]) {
@@ -212,7 +243,7 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         }
         const wd = weeklyData[w.week_start];
         wd.planned++;
-        const actual = activityMap.get(w.matched_strava_activity_id);
+        const actual = resolveActual(w, stravaMap, directMap);
         if (actual) {
           wd.completed++;
           wd.total_actual_distance += actual.distance_meters || 0;
@@ -224,6 +255,9 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
           planned_distance: w.target_distance_meters,
           actual_distance: actual?.distance_meters || null,
           actual_hr: actual?.average_heartrate || null,
+          actual_power: actual?.average_power || null,
+          activity_id: actual?.id || null,
+          source: actual ? (actual.source || (actual.strava_activity_id ? "strava" : ".fit_upload")) : null,
           status: actual ? "completed" : "missed",
         });
       }
@@ -232,6 +266,62 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         content: [{
           type: "text" as const,
           text: JSON.stringify(weeklyData, null, 2),
+        }],
+      };
+    },
+  });
+
+  mcp.tool("list_activities", {
+    description: "List activity summaries by date range, type, or source. Use to discover activities (including .fit uploads) that can then be inspected with get_activity_details or get_activity_laps.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        week_start: { type: "string", description: "YYYY-MM-DD Monday. Defaults to current week. Activities from this week (Mon–Sun) are returned." },
+        activity_type: { type: "string", description: "Optional filter: Run, Ride, Swim, etc." },
+        source: { type: "string", description: "Optional filter: 'strava' or '.fit_upload'" },
+        limit: { type: "number", description: "Max results. Default 20." },
+      },
+    },
+    handler: async ({ week_start, activity_type, source, limit }: {
+      week_start?: string; activity_type?: string; source?: string; limit?: number;
+    }) => {
+      const weekKey = week_start || getMondayOfWeek(new Date());
+      const weekEnd = getWeekEnd(weekKey);
+      const maxResults = Math.min(limit || 20, 50);
+
+      let query = supabase
+        .from("synced_activities")
+        .select("id, source, activity_type, activity_name, start_date, duration_seconds, distance_meters, average_heartrate, average_speed, total_elevation_gain, calories, average_power, strava_activity_id, sport_type")
+        .eq("user_id", userId)
+        .gte("start_date", `${weekKey}T00:00:00`)
+        .lte("start_date", `${weekEnd}T23:59:59`)
+        .order("start_date", { ascending: true })
+        .limit(maxResults);
+
+      if (activity_type) query = query.eq("activity_type", activity_type);
+      if (source) query = query.eq("source", source);
+
+      const { data, error } = await query;
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data?.length) return { content: [{ type: "text" as const, text: `No activities found for week ${weekKey}` }] };
+
+      const summary = data.map((a: any) => ({
+        activity_id: a.id,
+        source: a.source,
+        type: a.activity_type || a.sport_type,
+        name: a.activity_name,
+        date: a.start_date,
+        distance_km: a.distance_meters ? +(a.distance_meters / 1000).toFixed(2) : null,
+        duration_min: a.duration_seconds ? +(a.duration_seconds / 60).toFixed(1) : null,
+        avg_hr: a.average_heartrate ? Math.round(a.average_heartrate) : null,
+        avg_power: a.average_power ? Math.round(a.average_power) : null,
+        strava_id: a.strava_activity_id,
+      }));
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `${summary.length} activities for week ${weekKey}:\n${JSON.stringify(summary, null, 2)}`,
         }],
       };
     },
@@ -252,7 +342,6 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         return { content: [{ type: "text" as const, text: "Provide either activity_id or strava_activity_id" }] };
       }
 
-      // Select all columns except records_json by default (it can be huge)
       const columns = include_records ? "*" : "id, user_id, source, activity_type, activity_name, start_date, duration_seconds, elapsed_time_seconds, distance_meters, average_speed, max_speed, average_heartrate, max_heartrate, average_power, max_power, normalized_power, ftp, tss, average_cadence, max_cadence, total_elevation_gain, total_ascent, total_descent, calories, total_strides, training_effect, avg_temperature, num_laps, avg_vertical_oscillation, avg_stance_time, avg_vertical_ratio, avg_step_length, device_manufacturer, device_product, sub_sport, bbox_north, bbox_south, bbox_east, bbox_west, fit_file_path, strava_activity_id, strava_description, suffer_score, sport_type, synced_at";
 
       let query = supabase.from("synced_activities").select(columns).eq("user_id", userId);
@@ -262,7 +351,6 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       const { data, error } = await query.single();
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
 
-      // Add summary of records_json if not included
       if (!include_records && data) {
         const { data: recCheck } = await supabase
           .from("synced_activities")
