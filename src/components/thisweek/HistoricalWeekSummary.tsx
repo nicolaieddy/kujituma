@@ -108,6 +108,7 @@ export const HistoricalWeekSummary = ({
               {hasObjectives && (
                 <Badge variant="secondary" className="text-xs">
                   {completedObjectives}/{totalObjectives} objectives
+                  {movedCount > 0 && ` (${movedCount} rescheduled)`}
                 </Badge>
               )}
             </div>
