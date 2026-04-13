@@ -187,9 +187,10 @@ export function TrainingWorkoutCard({
     <article
       className={cn(
         "group relative overflow-hidden rounded-xl border bg-card transition-all duration-200",
-        status === "done" && "border-emerald-200/60 dark:border-emerald-800/40",
-        status === "missed" && "border-red-200/50 dark:border-red-800/30",
-        status === "upcoming" && "border-border",
+        isRest && "border-border/40 bg-muted/20",
+        !isRest && status === "done" && "border-emerald-200/60 dark:border-emerald-800/40",
+        !isRest && status === "missed" && "border-red-200/50 dark:border-red-800/30",
+        !isRest && status === "upcoming" && "border-border",
         workout.isDerivedSession && "bg-accent/30",
       )}
     >
