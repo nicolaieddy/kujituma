@@ -3,7 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Copy, Plus, Upload } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ChevronDown, ChevronRight, Copy, Plus, Upload, Link2 } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
 import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
@@ -24,6 +26,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
   const [editingWorkout, setEditingWorkout] = useState<TrainingPlanWorkout | null>(null);
+  const [bulkLinkOpen, setBulkLinkOpen] = useState(false);
+  const [bulkSelectedGoals, setBulkSelectedGoals] = useState<string[]>([]);
 
   const {
     workouts,
@@ -38,6 +42,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
   } = useTrainingPlan(weekStart);
 
   const { goals } = useGoals();
+  const activeGoals = goals.filter(g => g.status === "in_progress" || g.status === "not_started");
 
   const displayWorkouts = useMemo(() => getDisplayWorkouts(workouts), [workouts]);
 
@@ -49,6 +54,35 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
         workouts: displayWorkouts.filter((workout) => workout.day_of_week === idx),
       })).filter((day) => day.workouts.length > 0),
     [displayWorkouts]
+  );
+
+  // Compute linked goals across all workouts
+  const linkedGoalIds = useMemo(() => {
+    const ids = new Set<string>();
+    workouts.forEach(w => {
+      const gids = w.goal_ids || (w.goal_id ? [w.goal_id] : []);
+      gids.forEach(id => ids.add(id));
+    });
+    return Array.from(ids);
+  }, [workouts]);
+
+  // Compute dominant goal IDs (most frequently used) for default selection
+  const dominantGoalIds = useMemo(() => {
+    const freq = new Map<string, number>();
+    workouts.forEach(w => {
+      const gids = w.goal_ids || (w.goal_id ? [w.goal_id] : []);
+      gids.forEach(id => freq.set(id, (freq.get(id) || 0) + 1));
+    });
+    if (freq.size === 0) return goalId ? [goalId] : [];
+    const maxCount = Math.max(...freq.values());
+    return Array.from(freq.entries())
+      .filter(([, count]) => count === maxCount)
+      .map(([id]) => id);
+  }, [workouts, goalId]);
+
+  const linkedGoalNames = useMemo(
+    () => linkedGoalIds.map(id => goals.find(g => g.id === id)).filter(Boolean),
+    [linkedGoalIds, goals]
   );
 
   const completedCount = displayWorkouts.filter((workout) => {
@@ -85,6 +119,19 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     setEditingWorkout(null);
   };
 
+  const handleBulkLink = async () => {
+    for (const w of workouts) {
+      await updateWorkout({ id: w.id, goal_ids: bulkSelectedGoals });
+    }
+    setBulkLinkOpen(false);
+  };
+
+  const toggleBulkGoal = (goalId: string) => {
+    setBulkSelectedGoals(prev =>
+      prev.includes(goalId) ? prev.filter(id => id !== goalId) : [...prev, goalId]
+    );
+  };
+
   // Helper to get goal names for a workout
   const getGoalNames = (workout: TrainingPlanWorkout) => {
     const ids = workout.goal_ids || (workout.goal_id ? [workout.goal_id] : []);
@@ -108,14 +155,57 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                       </Badge>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    Structured coach sessions, with PM workouts shown as separate items under each day.
-                  </p>
+                  {linkedGoalNames.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {linkedGoalNames.map(goal => (
+                        <Badge key={goal!.id} variant="secondary" className="text-xs font-normal">
+                          {goal!.title}
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+                  {linkedGoalNames.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      No goals linked yet
+                    </p>
+                  )}
                 </div>
               </CollapsibleTrigger>
 
               {!isReadOnly && (
                 <div className="flex flex-wrap gap-2 sm:justify-end">
+                  {activeGoals.length > 0 && totalCount > 0 && (
+                    <Popover open={bulkLinkOpen} onOpenChange={(open) => {
+                      setBulkLinkOpen(open);
+                      if (open) setBulkSelectedGoals(linkedGoalIds);
+                    }}>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <Link2 className="h-4 w-4" />
+                          Link to goal
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72" align="end">
+                        <div className="space-y-3">
+                          <p className="text-sm font-medium">Link all workouts to goals</p>
+                          <div className="space-y-2 max-h-48 overflow-y-auto">
+                            {activeGoals.map(goal => (
+                              <label key={goal.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                                <Checkbox
+                                  checked={bulkSelectedGoals.includes(goal.id)}
+                                  onCheckedChange={() => toggleBulkGoal(goal.id)}
+                                />
+                                <span className="truncate text-foreground">{goal.title}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <Button size="sm" className="w-full" onClick={handleBulkLink}>
+                            Apply to all workouts
+                          </Button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  )}
                   <Button variant="outline" size="sm" onClick={() => setBulkUploadOpen(true)}>
                     <Upload className="h-4 w-4" />
                     Upload .fit
@@ -200,7 +290,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
             editingWorkout={editingWorkout}
             onSave={handleSave}
             isSaving={isSaving}
-            defaultGoalIds={goalId ? [goalId] : []}
+            defaultGoalIds={dominantGoalIds}
           />
           <BulkFitUploadDialog
             open={bulkUploadOpen}
