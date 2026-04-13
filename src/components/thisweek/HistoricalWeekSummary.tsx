@@ -7,6 +7,7 @@ import { ChevronDown, Target, Activity, Calendar, FileText, Smile, Zap } from "l
 import { useHistoricalWeekData } from "@/hooks/useHistoricalWeekData";
 import { format, parseISO, addDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { countMovedObjectives } from "@/utils/movedObjectivesUtils";
 
 interface HistoricalWeekSummaryProps {
   weekStart: string;
@@ -64,8 +65,9 @@ export const HistoricalWeekSummary = ({
     isLoading,
   } = useHistoricalWeekData(weekStart);
 
-  // Objectives metrics
-  const totalObjectives = objectives.length;
+  // Objectives metrics — include moved objectives in the denominator
+  const movedCount = countMovedObjectives(incompleteReflections);
+  const totalObjectives = objectives.length + movedCount;
   const completedObjectives = objectives.filter((o) => o.is_completed).length;
   const objectiveRate = totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0;
 
@@ -106,6 +108,7 @@ export const HistoricalWeekSummary = ({
               {hasObjectives && (
                 <Badge variant="secondary" className="text-xs">
                   {completedObjectives}/{totalObjectives} objectives
+                  {movedCount > 0 && ` (${movedCount} rescheduled)`}
                 </Badge>
               )}
             </div>
@@ -139,8 +142,9 @@ export const HistoricalWeekSummary = ({
                       <span className={cn("text-2xl font-bold", completionColor(objectiveRate))}>
                         {objectiveRate}%
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                     <span className="text-xs text-muted-foreground">
                         {completedObjectives}/{totalObjectives} completed
+                        {movedCount > 0 && ` (${movedCount} rescheduled)`}
                       </span>
                     </div>
                     <Progress value={objectiveRate} className={cn("h-1.5", progressColor(objectiveRate))} />

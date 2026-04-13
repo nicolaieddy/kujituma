@@ -35,6 +35,7 @@ import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
 import { useIncompleteReflections } from "@/hooks/useIncompleteReflections";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
 import { useWeekTransition } from "@/hooks/useWeekTransition";
+import { countMovedObjectives } from "@/utils/movedObjectivesUtils";
 
 interface ThisWeekViewProps {
   weekStart?: string;
@@ -231,9 +232,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
-  // Computed values
+  // Compute moved objectives count from incomplete reflections
+  const incompleteReflectionsData = (progressPost?.incomplete_reflections as Record<string, string>) || {};
+  const movedCount = countMovedObjectives(incompleteReflectionsData);
+
+  // Computed values — include moved objectives in the denominator
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
-  const totalCount = objectives?.length || 0;
+  const totalCount = (objectives?.length || 0) + movedCount;
 
   // Loading state
   if (weeklyDataLoading) {
@@ -248,6 +253,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         currentWeekStart={currentWeekStart}
         completedCount={completedCount}
         totalCount={totalCount}
+        movedCount={movedCount}
         onNavigateWeek={handleNavigateWeek}
         isCached={objectivesCached || goalsCached || isOffline}
         lastSync={lastSyncTime || lastSync}
@@ -440,6 +446,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onOpenChange={setShowCloseDialog}
         completedObjectives={closeCompletedObjectives}
         incompleteObjectives={closeIncompleteObjectives}
+        movedCount={movedCount}
         goals={goals || []}
         onConfirmClose={closeWeek}
         isClosing={isClosingWeek}

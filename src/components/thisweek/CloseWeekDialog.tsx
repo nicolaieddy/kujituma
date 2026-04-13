@@ -19,6 +19,7 @@ interface CloseWeekDialogProps {
   onOpenChange: (open: boolean) => void;
   completedObjectives: WeeklyObjective[];
   incompleteObjectives: WeeklyObjective[];
+  movedCount?: number;
   goals: Goal[];
   onConfirmClose: (carryOverIds: string[]) => void;
   isClosing: boolean;
@@ -29,6 +30,7 @@ export const CloseWeekDialog = ({
   onOpenChange,
   completedObjectives,
   incompleteObjectives,
+  movedCount = 0,
   goals,
   onConfirmClose,
   isClosing,
@@ -67,8 +69,9 @@ export const CloseWeekDialog = ({
     onConfirmClose(Array.from(selectedCarryOver));
   };
 
-  const completionRate = completedObjectives.length + incompleteObjectives.length > 0
-    ? Math.round((completedObjectives.length / (completedObjectives.length + incompleteObjectives.length)) * 100)
+  const totalOriginal = completedObjectives.length + incompleteObjectives.length + movedCount;
+  const completionRate = totalOriginal > 0
+    ? Math.round((completedObjectives.length / totalOriginal) * 100)
     : 0;
 
   return (
@@ -93,7 +96,7 @@ export const CloseWeekDialog = ({
                 {completionRate}% Complete
               </Badge>
             </div>
-            <div className="flex gap-4 text-sm text-muted-foreground">
+            <div className="flex gap-4 text-sm text-muted-foreground flex-wrap">
               <span className="flex items-center gap-1">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 {completedObjectives.length} completed
@@ -102,6 +105,12 @@ export const CloseWeekDialog = ({
                 <Circle className="h-4 w-4 text-muted-foreground" />
                 {incompleteObjectives.length} incomplete
               </span>
+              {movedCount > 0 && (
+                <span className="flex items-center gap-1">
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  {movedCount} rescheduled
+                </span>
+              )}
             </div>
           </div>
 

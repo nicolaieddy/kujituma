@@ -22,6 +22,7 @@ interface WeekHeaderProps {
   currentWeekStart: string;
   completedCount: number;
   totalCount: number;
+  movedCount?: number;
   onNavigateWeek?: (direction: 'previous' | 'next') => void;
   isCached?: boolean;
   lastSync?: Date | null;
@@ -35,6 +36,7 @@ export const WeekHeader = ({
   currentWeekStart,
   completedCount,
   totalCount,
+  movedCount = 0,
   onNavigateWeek,
   isCached,
   lastSync,
@@ -179,6 +181,11 @@ export const WeekHeader = ({
               {totalCount > 0 && (
                 <div className="text-foreground text-sm">
                   {completedCount}/{totalCount} completed
+                  {movedCount > 0 && (
+                    <span className="text-muted-foreground text-xs ml-1">
+                      ({movedCount} rescheduled)
+                    </span>
+                  )}
                 </div>
               )}
             </div>
