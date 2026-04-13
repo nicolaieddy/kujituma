@@ -39,10 +39,58 @@ export const CloseWeekDialog = ({
   goals,
   onConfirmClose,
   isClosing,
+  weekStart,
 }: CloseWeekDialogProps) => {
   const [selectedCarryOver, setSelectedCarryOver] = useState<Set<string>>(
     new Set(incompleteObjectives.map(obj => obj.id))
   );
+
+  // Habit completions for the week
+  const weekDate = weekStart ? parseLocalDate(weekStart) : undefined;
+  const { completions } = useHabitCompletions(weekDate);
+  const { goals: allGoals } = useGoals();
+
+  // Calculate habit summary
+  const habitSummary = useMemo(() => {
+    const habitsGoals = (allGoals || []).filter(g =>
+      g.habit_items && g.habit_items.length > 0 && !g.is_paused &&
+      (g.status === 'not_started' || g.status === 'in_progress')
+    );
+    
+    let totalExpected = 0;
+    let totalCompleted = 0;
+    const goalSummaries: { title: string; completed: number; expected: number }[] = [];
+
+    habitsGoals.forEach(goal => {
+      const items = (goal.habit_items || []) as HabitItem[];
+      let goalCompleted = 0;
+      let goalExpected = 0;
+
+      items.forEach(item => {
+        // Calculate expected days per week based on frequency
+        let daysPerWeek = 7;
+        if (item.frequency === 'weekdays') daysPerWeek = 5;
+        else if (item.frequency === 'weekly') daysPerWeek = 1;
+        else if (item.frequency === 'biweekly') daysPerWeek = 1;
+        else if (item.frequency === 'custom' && item.customSchedule?.daysOfWeek) {
+          daysPerWeek = item.customSchedule.daysOfWeek.length;
+        }
+
+        const completed = completions.filter(c => c.habit_item_id === item.id).length;
+        goalCompleted += completed;
+        goalExpected += daysPerWeek;
+      });
+
+      if (goalExpected > 0) {
+        goalSummaries.push({ title: goal.title, completed: goalCompleted, expected: goalExpected });
+        totalCompleted += goalCompleted;
+        totalExpected += goalExpected;
+      }
+    });
+
+    const percentage = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
+    return { totalCompleted, totalExpected, percentage, goalSummaries };
+  }, [allGoals, completions]);
 
   const getGoalTitle = (goalId: string | null) => {
     if (!goalId) return null;
