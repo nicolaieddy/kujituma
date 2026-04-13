@@ -268,7 +268,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
-      {/* Historical Week Summary - shown when viewing past weeks */}
+      {/* Partner Check-ins Card - shows accountability partner activity */}
+      {isCurrentWeek && <PartnerCheckInsCard />}
+
       {!isCurrentWeek && (
         <HistoricalWeekSummary
           weekStart={currentWeekStart}
