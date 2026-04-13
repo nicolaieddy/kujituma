@@ -35,6 +35,7 @@ import { useObjectiveHandlers } from "@/hooks/useObjectiveHandlers";
 import { useIncompleteReflections } from "@/hooks/useIncompleteReflections";
 import { useAISuggestions } from "@/hooks/useAISuggestions";
 import { useWeekTransition } from "@/hooks/useWeekTransition";
+import { countMovedObjectives } from "@/utils/movedObjectivesUtils";
 
 interface ThisWeekViewProps {
   weekStart?: string;
