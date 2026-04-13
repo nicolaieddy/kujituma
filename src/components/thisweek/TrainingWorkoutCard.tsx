@@ -149,6 +149,7 @@ export function TrainingWorkoutCard({
   onDelete,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const isRest = workout.workout_type === "Rest";
   const status = getWorkoutStatus(workout, matchedActivity);
   const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
 

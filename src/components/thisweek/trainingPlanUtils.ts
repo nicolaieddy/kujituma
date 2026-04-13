@@ -42,7 +42,9 @@ export function formatPace(secPerKm: number | null): string {
   return `${m}:${s.toString().padStart(2, "0")}/km`;
 }
 
-export function getWorkoutStatus(workout: Pick<TrainingPlanWorkout, "week_start" | "day_of_week">, matchedActivity: unknown): WorkoutStatus {
+export function getWorkoutStatus(workout: Pick<TrainingPlanWorkout, "week_start" | "day_of_week" | "workout_type">, matchedActivity: unknown): WorkoutStatus {
+  // Rest days are always "done" — nothing to track
+  if (workout.workout_type === "Rest") return "done";
   if (matchedActivity) return "done";
 
   const today = new Date();
