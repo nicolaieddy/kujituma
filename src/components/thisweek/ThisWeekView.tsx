@@ -8,7 +8,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 import { WeekHeader } from "@/components/thisweek/WeekHeader";
-import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
+
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 
