@@ -8,7 +8,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useAuth } from "@/contexts/AuthContext";
 import { WeeklyObjectivesList } from "@/components/goals/WeeklyObjectivesList";
 import { WeekHeader } from "@/components/thisweek/WeekHeader";
-import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
+
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 
@@ -75,6 +75,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   
   // Week status
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
+  const isFutureWeek = (() => {
+    const [y, m, d] = currentWeekStart.split('-').map(Number);
+    const weekDate = new Date(y, m - 1, d);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return weekDate > today;
+  })();
   const isWeekCompleted = progressPost?.is_completed || false;
   const isReadOnly = isWeekCompleted;
   const isEndOfWeekTime = HabitsService.isEndOfWeek();
@@ -261,7 +268,9 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onRefresh={refetchObjectives}
       />
 
-      {/* Historical Week Summary - shown when viewing past weeks */}
+      {/* Partner Check-ins Card - shows accountability partner activity */}
+      {isCurrentWeek && <PartnerCheckInsCard />}
+
       {!isCurrentWeek && (
         <HistoricalWeekSummary
           weekStart={currentWeekStart}
@@ -397,23 +406,11 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      <WeeklyReflectionCard
-        initialNotes={progressPost?.notes || ""}
-        onUpdateNotes={updateProgressNotes}
-        isReadOnly={isReadOnly}
-        weekStart={currentWeekStart}
-      />
 
-      {/* Partner Check-ins Card - shows accountability partner activity */}
-      {isCurrentWeek && <PartnerCheckInsCard />}
-
-
-
-
-      {/* Training Plan */}
+      {/* Training Plan — editable for current and future weeks */}
       <TrainingPlanCard
         weekStart={currentWeekStart}
-        isReadOnly={!isCurrentWeek}
+        isReadOnly={!isCurrentWeek && !isFutureWeek}
       />
 
       {/* Carry-Over Activity Log */}
