@@ -167,6 +167,31 @@ export const CloseWeekDialog = ({
             </div>
           </div>
 
+          {/* Habit Summary */}
+          {habitSummary.totalExpected > 0 && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-primary" />
+                  Habits
+                </span>
+                <span className="text-sm font-semibold text-foreground">
+                  {habitSummary.totalCompleted}/{habitSummary.totalExpected}
+                </span>
+              </div>
+              <Progress value={habitSummary.percentage} className="h-2" />
+              <div className="space-y-1">
+                {habitSummary.goalSummaries.map(gs => (
+                  <div key={gs.title} className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="truncate">{gs.title}</span>
+                    <span className="tabular-nums font-medium shrink-0 ml-2">
+                      {gs.completed}/{gs.expected}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Carry Over Selection */}
           {incompleteObjectives.length > 0 && (
             <div className="space-y-3">
