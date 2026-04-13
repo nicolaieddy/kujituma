@@ -1,33 +1,57 @@
 
 
-## Current State
+## Problem
 
-The training plan **already supports goal linking** — the "Add workout" and edit workout dialogs both have a multi-goal selector. Goal names appear as small tags on workout cards when linked. However, this is not discoverable because:
+The MCP server has two gaps that caused Claude to report "all workouts unmatched":
 
-1. There's no indication on the Training Plan card header which goal(s) it's tied to
-2. Users must open the edit dialog on each individual workout to see or set the link
-3. There's no bulk "link all workouts to a goal" option
+1. **`get_training_plan` and `get_training_history` only look up `matched_strava_activity_id`** — they completely ignore `matched_activity_id` (the UUID field used by .fit file uploads). So any workout matched via .fit upload appears as "pending/missed" to Claude even though the data is there.
 
-## Proposed Changes
+2. **No "list activities" tool** — Claude has `get_activity_details` and `get_activity_laps` but both require knowing the activity ID upfront. There's no way to browse or search activities by date/type, so Claude can't discover .fit-uploaded activities that weren't auto-matched to a workout.
 
-### 1. Add goal association to the Training Plan card header
-Show which goal(s) the training plan is linked to right in the card header, next to "Training Plan". Display as clickable badge(s) with the goal title. If no goals are linked, show a subtle "+ Link to Goal" button.
+## Changes
 
-### 2. Add a "default goal" for the training plan
-When creating new workouts via the dialog, pre-select the most common goal already used by other workouts in that week's plan. This way, if you link the first workout to "Marathon Training", subsequent workouts auto-inherit that association.
+### 1. Fix `get_training_plan` to resolve both match types
+**File: `supabase/functions/mcp-server/training-tools.ts`**
 
-### 3. Bulk link option
-Add a dropdown action in the card header to "Link all workouts to goal..." which applies a goal to every workout in the plan at once.
+In the handler (lines 103-116), collect both `matched_strava_activity_id` values AND `matched_activity_id` UUIDs. Fetch activities using two queries (or a combined approach): one `in("strava_activity_id", ...)` and one `in("id", ...)`. Build two maps and resolve the `actual` data from either. Update the result mapping (line 120) to check both maps. Include `activity_id` (the DB UUID) in the response so Claude can call `get_activity_laps` directly.
 
-## Technical Details
+### 2. Fix `get_training_history` the same way
+Same pattern — lines 194-207 have the identical Strava-only bug. Apply the same dual-lookup fix.
 
-**Files to modify:**
-- `src/components/thisweek/TrainingPlanCard.tsx` — Add goal badges to header, compute dominant goal from workouts, add bulk-link action
-- `src/components/thisweek/TrainingWorkoutDialog.tsx` — Accept and use a `defaultGoalIds` prop to pre-select goals for new workouts
+### 3. Add `list_activities` tool
+A new tool that lists activities by date range, type, or source. Schema:
+- `week_start` (optional, defaults to current week)
+- `activity_type` (optional filter)
+- `source` (optional: "strava", ".fit_upload")
+- `limit` (default 20)
 
-**Implementation:**
-- Compute `dominantGoalIds` from the most frequently used goal_ids across workouts in the current week
-- Pass `defaultGoalIds={dominantGoalIds}` to `TrainingWorkoutDialog` for new workout creation
-- Add a "Link to Goal" button in the header that opens a simple goal picker popover, then bulk-updates all workouts
-- Show linked goal name(s) as Badge components next to the "Training Plan" title
+Returns activity summaries with IDs so Claude can drill into any of them with `get_activity_details` or `get_activity_laps`.
+
+### 4. Update description strings
+Change "matched Strava actual data" references to "matched actual data (Strava or .fit upload)" so Claude's prompts don't mislead about data availability.
+
+## Technical detail
+
+The dual-lookup pattern:
+
+```text
+// Collect both ID types
+stravaIds = workouts.filter(w => w.matched_strava_activity_id).map(...)
+directIds = workouts.filter(w => w.matched_activity_id).map(...)
+
+// Fetch both sets
+activities from strava_activity_id IN (stravaIds)
+activities from id IN (directIds)
+
+// Build lookup maps
+stravaMap: strava_activity_id → activity
+directMap: id → activity
+
+// Resolve per workout
+actual = directMap.get(w.matched_activity_id)
+       || stravaMap.get(w.matched_strava_activity_id)
+       || null
+```
+
+All changes are in a single file: `supabase/functions/mcp-server/training-tools.ts`.
 
