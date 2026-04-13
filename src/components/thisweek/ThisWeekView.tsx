@@ -343,35 +343,6 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      {/* Partner Check-ins Card - shows accountability partner activity */}
-      {isCurrentWeek && <PartnerCheckInsCard />}
-
-      {/* Habits section - shown for all weeks with habit data */}
-      {habitStats.length > 0 && (
-        <HabitsDueThisWeek
-          habits={habitStats}
-          objectives={objectives || []}
-          onToggleObjective={isCurrentWeek ? handleToggleObjective : undefined}
-          weekStart={parseLocalDate(currentWeekStart)}
-          isReadOnly={!isCurrentWeek}
-        />
-      )}
-
-      {/* Training Plan */}
-      <TrainingPlanCard
-        weekStart={currentWeekStart}
-        isReadOnly={!isCurrentWeek}
-      />
-
-      {aiEnabled && isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
-        <AISuggestionsCard
-          suggestions={suggestions}
-          isLoading={isSuggestionsLoading}
-          onAddSuggestion={handleAddSuggestion}
-          onRefresh={handleRefreshSuggestions}
-        />
-      )}
-
       <Card className="border-border">
         <CardHeader>
           <CardTitle className="text-foreground">This Week's Focus</CardTitle>
@@ -401,6 +372,15 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         </CardContent>
       </Card>
 
+      {aiEnabled && isCurrentWeek && !isReadOnly && (suggestions.length > 0 || isSuggestionsLoading) && (
+        <AISuggestionsCard
+          suggestions={suggestions}
+          isLoading={isSuggestionsLoading}
+          onAddSuggestion={handleAddSuggestion}
+          onRefresh={handleRefreshSuggestions}
+        />
+      )}
+
       {/* Show incomplete objectives reflection - only Friday 6pm through Sunday when there are incomplete objectives */}
       {isCurrentWeek && !isReadOnly && isEndOfWeekTime && objectives && objectives.some(obj => !obj.is_completed) && (
         <EndOfWeekReflection
@@ -416,6 +396,26 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onUpdateNotes={updateProgressNotes}
         isReadOnly={isReadOnly}
         weekStart={currentWeekStart}
+      />
+
+      {/* Partner Check-ins Card - shows accountability partner activity */}
+      {isCurrentWeek && <PartnerCheckInsCard />}
+
+      {/* Habits section - shown for all weeks with habit data */}
+      {habitStats.length > 0 && (
+        <HabitsDueThisWeek
+          habits={habitStats}
+          objectives={objectives || []}
+          onToggleObjective={isCurrentWeek ? handleToggleObjective : undefined}
+          weekStart={parseLocalDate(currentWeekStart)}
+          isReadOnly={!isCurrentWeek}
+        />
+      )}
+
+      {/* Training Plan */}
+      <TrainingPlanCard
+        weekStart={currentWeekStart}
+        isReadOnly={!isCurrentWeek}
       />
 
       {/* Carry-Over Activity Log */}
