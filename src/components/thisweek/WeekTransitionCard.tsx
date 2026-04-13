@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { countMovedObjectives } from "@/utils/movedObjectivesUtils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -66,11 +67,13 @@ export const WeekTransitionCard = ({
   const [selectedForCarryOver, setSelectedForCarryOver] = useState<Set<string>>(new Set());
   const [localIntention, setLocalIntention] = useState(intention);
 
-  // Compute stats
+  // Compute stats — include moved objectives in the denominator
+  const movedCount = countMovedObjectives(lastWeekReflections);
   const completedObjectives = lastWeekObjectives.filter(obj => obj.is_completed);
   const incompleteObjectives = lastWeekObjectives.filter(obj => !obj.is_completed);
-  const completionRate = lastWeekObjectives.length > 0 
-    ? Math.round((completedObjectives.length / lastWeekObjectives.length) * 100) 
+  const totalOriginal = lastWeekObjectives.length + movedCount;
+  const completionRate = totalOriginal > 0 
+    ? Math.round((completedObjectives.length / totalOriginal) * 100) 
     : 0;
   const hasIncomplete = incompleteObjectives.length > 0;
 
