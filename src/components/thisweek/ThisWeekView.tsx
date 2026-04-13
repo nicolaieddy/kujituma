@@ -442,6 +442,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         goals={goals || []}
         onConfirmClose={closeWeek}
         isClosing={isClosingWeek}
+        weekStart={currentWeekStart}
       />
 
       <CarryOverObjectivesModal
