@@ -347,5 +347,8 @@ export function TrainingWorkoutCard({
         </div>
       )}
     </article>
+    </>
+    )}
+    </article>
   );
 }
