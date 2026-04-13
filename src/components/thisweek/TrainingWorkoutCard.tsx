@@ -346,7 +346,6 @@ export function TrainingWorkoutCard({
           <ExpandedDetail workout={workout} activity={matchedActivity} laps={laps} />
         </div>
       )}
-    </article>
     </>
     )}
     </article>
