@@ -446,6 +446,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         onOpenChange={setShowCloseDialog}
         completedObjectives={closeCompletedObjectives}
         incompleteObjectives={closeIncompleteObjectives}
+        movedCount={movedCount}
         goals={goals || []}
         onConfirmClose={closeWeek}
         isClosing={isClosingWeek}
