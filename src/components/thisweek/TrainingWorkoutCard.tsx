@@ -149,6 +149,7 @@ export function TrainingWorkoutCard({
   onDelete,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const isRest = workout.workout_type === "Rest";
   const status = getWorkoutStatus(workout, matchedActivity);
   const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
 
@@ -186,12 +187,21 @@ export function TrainingWorkoutCard({
     <article
       className={cn(
         "group relative overflow-hidden rounded-xl border bg-card transition-all duration-200",
-        status === "done" && "border-emerald-200/60 dark:border-emerald-800/40",
-        status === "missed" && "border-red-200/50 dark:border-red-800/30",
-        status === "upcoming" && "border-border",
+        isRest && "border-border/40 bg-muted/20",
+        !isRest && status === "done" && "border-emerald-200/60 dark:border-emerald-800/40",
+        !isRest && status === "missed" && "border-red-200/50 dark:border-red-800/30",
+        !isRest && status === "upcoming" && "border-border",
         workout.isDerivedSession && "bg-accent/30",
       )}
     >
+    {/* Simple rest day row */}
+    {isRest ? (
+      <div className="flex items-center gap-3 px-4 py-2.5 text-muted-foreground/60">
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/20" />
+        <span className="text-sm italic">Rest Day</span>
+      </div>
+    ) : (
+    <>
       {/* Subtle left accent */}
       <div className={cn(
         "absolute inset-y-0 left-0 w-[3px]",
@@ -337,6 +347,8 @@ export function TrainingWorkoutCard({
           <ExpandedDetail workout={workout} activity={matchedActivity} laps={laps} />
         </div>
       )}
+    </>
+    )}
     </article>
   );
 }
