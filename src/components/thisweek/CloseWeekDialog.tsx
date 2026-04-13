@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Circle, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle, Circle, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { WeeklyObjective } from "@/types/weeklyProgress";
-import { Goal } from "@/types/goals";
+import { Goal, HabitItem } from "@/types/goals";
+import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { useGoals } from "@/hooks/useGoals";
+import { parseLocalDate } from "@/utils/dateUtils";
 
 interface CloseWeekDialogProps {
   open: boolean;
@@ -23,6 +27,7 @@ interface CloseWeekDialogProps {
   goals: Goal[];
   onConfirmClose: (carryOverIds: string[]) => void;
   isClosing: boolean;
+  weekStart?: string;
 }
 
 export const CloseWeekDialog = ({
@@ -34,10 +39,58 @@ export const CloseWeekDialog = ({
   goals,
   onConfirmClose,
   isClosing,
+  weekStart,
 }: CloseWeekDialogProps) => {
   const [selectedCarryOver, setSelectedCarryOver] = useState<Set<string>>(
     new Set(incompleteObjectives.map(obj => obj.id))
   );
+
+  // Habit completions for the week
+  const weekDate = weekStart ? parseLocalDate(weekStart) : undefined;
+  const { completions } = useHabitCompletions(weekDate);
+  const { goals: allGoals } = useGoals();
+
+  // Calculate habit summary
+  const habitSummary = useMemo(() => {
+    const habitsGoals = (allGoals || []).filter(g =>
+      g.habit_items && g.habit_items.length > 0 && !g.is_paused &&
+      (g.status === 'not_started' || g.status === 'in_progress')
+    );
+    
+    let totalExpected = 0;
+    let totalCompleted = 0;
+    const goalSummaries: { title: string; completed: number; expected: number }[] = [];
+
+    habitsGoals.forEach(goal => {
+      const items = (goal.habit_items || []) as HabitItem[];
+      let goalCompleted = 0;
+      let goalExpected = 0;
+
+      items.forEach(item => {
+        // Calculate expected days per week based on frequency
+        let daysPerWeek = 7;
+        if (item.frequency === 'weekdays') daysPerWeek = 5;
+        else if (item.frequency === 'weekly') daysPerWeek = 1;
+        else if (item.frequency === 'biweekly') daysPerWeek = 1;
+        else if (item.frequency === 'custom' && item.customSchedule?.daysOfWeek) {
+          daysPerWeek = item.customSchedule.daysOfWeek.length;
+        }
+
+        const completed = completions.filter(c => c.habit_item_id === item.id).length;
+        goalCompleted += completed;
+        goalExpected += daysPerWeek;
+      });
+
+      if (goalExpected > 0) {
+        goalSummaries.push({ title: goal.title, completed: goalCompleted, expected: goalExpected });
+        totalCompleted += goalCompleted;
+        totalExpected += goalExpected;
+      }
+    });
+
+    const percentage = totalExpected > 0 ? Math.round((totalCompleted / totalExpected) * 100) : 0;
+    return { totalCompleted, totalExpected, percentage, goalSummaries };
+  }, [allGoals, completions]);
 
   const getGoalTitle = (goalId: string | null) => {
     if (!goalId) return null;
@@ -114,6 +167,31 @@ export const CloseWeekDialog = ({
             </div>
           </div>
 
+          {/* Habit Summary */}
+          {habitSummary.totalExpected > 0 && (
+            <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 text-primary" />
+                  Habits
+                </span>
+                <span className="text-sm font-semibold text-foreground">
+                  {habitSummary.totalCompleted}/{habitSummary.totalExpected}
+                </span>
+              </div>
+              <Progress value={habitSummary.percentage} className="h-2" />
+              <div className="space-y-1">
+                {habitSummary.goalSummaries.map(gs => (
+                  <div key={gs.title} className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span className="truncate">{gs.title}</span>
+                    <span className="tabular-nums font-medium shrink-0 ml-2">
+                      {gs.completed}/{gs.expected}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {/* Carry Over Selection */}
           {incompleteObjectives.length > 0 && (
             <div className="space-y-3">
