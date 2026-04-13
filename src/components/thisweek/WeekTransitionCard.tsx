@@ -200,14 +200,19 @@ export const WeekTransitionCard = ({
               </div>
               <div className="flex-1">
                 <p className="font-medium">
-                  {completedObjectives.length} of {lastWeekObjectives.length} objectives completed
+                  {completedObjectives.length} of {totalOriginal} objectives completed
+                  {movedCount > 0 && (
+                    <span className="text-muted-foreground text-sm font-normal ml-1">
+                      ({movedCount} rescheduled)
+                    </span>
+                  )}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {completionRate >= 80 && "Amazing progress! 🎉"}
                   {completionRate >= 50 && completionRate < 80 && "Good work! Keep the momentum going."}
                   {completionRate < 50 && completionRate > 0 && "Every step counts. Let's reflect and improve."}
-                  {completionRate === 0 && lastWeekObjectives.length > 0 && "Let's understand what happened and plan better."}
-                  {lastWeekObjectives.length === 0 && "No objectives were set last week."}
+                  {completionRate === 0 && totalOriginal > 0 && "Let's understand what happened and plan better."}
+                  {totalOriginal === 0 && "No objectives were set last week."}
                 </p>
               </div>
             </div>
@@ -259,7 +264,7 @@ export const WeekTransitionCard = ({
             )}
 
             {/* Celebration for 100% */}
-            {completionRate === 100 && lastWeekObjectives.length > 0 && (
+            {completionRate === 100 && totalOriginal > 0 && (
               <div className="flex items-center gap-3 p-4 rounded-lg bg-success/10 border border-success/30">
                 <PartyPopper className="h-8 w-8 text-success" />
                 <div>
