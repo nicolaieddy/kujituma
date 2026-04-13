@@ -193,6 +193,14 @@ export function TrainingWorkoutCard({
         workout.isDerivedSession && "bg-accent/30",
       )}
     >
+    {/* Simple rest day row */}
+    {isRest ? (
+      <div className="flex items-center gap-3 px-4 py-2.5 text-muted-foreground/60">
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/20" />
+        <span className="text-sm italic">Rest Day</span>
+      </div>
+    ) : (
+    <>
       {/* Subtle left accent */}
       <div className={cn(
         "absolute inset-y-0 left-0 w-[3px]",
