@@ -271,7 +271,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       {/* Partner Check-ins Card - shows accountability partner activity */}
       {isCurrentWeek && <PartnerCheckInsCard />}
 
-      {!isCurrentWeek && (
+      {!isCurrentWeek && !isFutureWeek && (
         <HistoricalWeekSummary
           weekStart={currentWeekStart}
           objectives={objectives || []}
