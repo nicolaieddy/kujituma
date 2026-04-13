@@ -11,12 +11,12 @@ import { WeekHeader } from "@/components/thisweek/WeekHeader";
 import { WeeklyReflectionCard } from "@/components/thisweek/WeeklyReflectionCard";
 import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
-import { HabitsDueThisWeek } from "@/components/thisweek/HabitsDueThisWeek";
+
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
 import { CloseWeekDialog } from "@/components/thisweek/CloseWeekDialog";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
 import { PartnerCheckInsCard } from "@/components/thisweek/PartnerCheckInsCard";
-import { useHabitStats } from "@/hooks/useHabitStats";
+
 import { EndOfWeekReflection } from "@/components/habits/EndOfWeekReflection";
 import { useOfflineStatus } from "@/hooks/useOfflineStatus";
 import { useAllWeeklyObjectives } from "@/hooks/useAllWeeklyObjectives";
@@ -45,7 +45,7 @@ interface ThisWeekViewProps {
 export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) => {
   const { user } = useAuth();
   const { goals, isCached: goalsCached } = useGoals();
-  const { habitStats } = useHabitStats();
+  
   const { lastSync, isOffline } = useOfflineStatus();
   
   const {
@@ -407,16 +407,8 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       {/* Partner Check-ins Card - shows accountability partner activity */}
       {isCurrentWeek && <PartnerCheckInsCard />}
 
-      {/* Habits section - shown for all weeks with habit data */}
-      {habitStats.length > 0 && (
-        <HabitsDueThisWeek
-          habits={habitStats}
-          objectives={objectives || []}
-          onToggleObjective={isCurrentWeek ? handleToggleObjective : undefined}
-          weekStart={parseLocalDate(currentWeekStart)}
-          isReadOnly={!isCurrentWeek}
-        />
-      )}
+
+
 
       {/* Training Plan */}
       <TrainingPlanCard
