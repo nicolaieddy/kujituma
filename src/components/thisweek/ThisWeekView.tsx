@@ -75,7 +75,10 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   
   // Week status
   const isCurrentWeek = WeeklyProgressService.isCurrentWeek(currentWeekStart);
+  const isFutureWeek = WeeklyProgressService.isFutureWeek?.(currentWeekStart) || 
+    new Date(currentWeekStart) > new Date();
   const isWeekCompleted = progressPost?.is_completed || false;
+  const isReadOnly = isWeekCompleted;
   const isReadOnly = isWeekCompleted;
   const isEndOfWeekTime = HabitsService.isEndOfWeek();
 
