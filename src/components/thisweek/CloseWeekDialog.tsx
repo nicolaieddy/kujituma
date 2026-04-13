@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Circle, ArrowRight, Lock, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { CheckCircle, Circle, ArrowRight, Lock, Loader2, RefreshCw } from "lucide-react";
 import { WeeklyObjective } from "@/types/weeklyProgress";
-import { Goal } from "@/types/goals";
+import { Goal, HabitItem } from "@/types/goals";
+import { useHabitCompletions } from "@/hooks/useHabitCompletions";
+import { useGoals } from "@/hooks/useGoals";
+import { parseLocalDate } from "@/utils/dateUtils";
 
 interface CloseWeekDialogProps {
   open: boolean;
@@ -23,6 +27,7 @@ interface CloseWeekDialogProps {
   goals: Goal[];
   onConfirmClose: (carryOverIds: string[]) => void;
   isClosing: boolean;
+  weekStart?: string;
 }
 
 export const CloseWeekDialog = ({
