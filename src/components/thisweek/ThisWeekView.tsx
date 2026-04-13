@@ -404,23 +404,11 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         />
       )}
 
-      <WeeklyReflectionCard
-        initialNotes={progressPost?.notes || ""}
-        onUpdateNotes={updateProgressNotes}
-        isReadOnly={isReadOnly}
-        weekStart={currentWeekStart}
-      />
 
-      {/* Partner Check-ins Card - shows accountability partner activity */}
-      {isCurrentWeek && <PartnerCheckInsCard />}
-
-
-
-
-      {/* Training Plan */}
+      {/* Training Plan — editable for current and future weeks */}
       <TrainingPlanCard
         weekStart={currentWeekStart}
-        isReadOnly={!isCurrentWeek}
+        isReadOnly={!isCurrentWeek && !isFutureWeek}
       />
 
       {/* Carry-Over Activity Log */}
