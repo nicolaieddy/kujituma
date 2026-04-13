@@ -231,9 +231,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     }
   };
 
-  // Computed values
+  // Compute moved objectives count from incomplete reflections
+  const incompleteReflectionsData = (progressPost?.incomplete_reflections as Record<string, string>) || {};
+  const movedCount = countMovedObjectives(incompleteReflectionsData);
+
+  // Computed values — include moved objectives in the denominator
   const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
-  const totalCount = objectives?.length || 0;
+  const totalCount = (objectives?.length || 0) + movedCount;
 
   // Loading state
   if (weeklyDataLoading) {
@@ -248,6 +252,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         currentWeekStart={currentWeekStart}
         completedCount={completedCount}
         totalCount={totalCount}
+        movedCount={movedCount}
         onNavigateWeek={handleNavigateWeek}
         isCached={objectivesCached || goalsCached || isOffline}
         lastSync={lastSyncTime || lastSync}
