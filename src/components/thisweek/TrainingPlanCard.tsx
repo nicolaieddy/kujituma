@@ -36,9 +36,11 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     createWorkout,
     updateWorkout,
     deleteWorkout,
+    deleteActivity,
     copyFromPreviousWeek,
     isSaving,
     isCopying,
+    isDeletingActivity,
   } = useTrainingPlan(weekStart);
 
   const { goals } = useGoals();
