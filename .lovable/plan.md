@@ -1,57 +1,50 @@
 
 
-## Problem
+## Auto-Detect Timezone
 
-The MCP server has two gaps that caused Claude to report "all workouts unmatched":
+Instead of a manual timezone picker, Kujituma will automatically capture `Intl.DateTimeFormat().resolvedOptions().timeZone` from the browser on each login/session and persist it to the user's profile. The edge functions then use this stored timezone for date calculations.
 
-1. **`get_training_plan` and `get_training_history` only look up `matched_strava_activity_id`** — they completely ignore `matched_activity_id` (the UUID field used by .fit file uploads). So any workout matched via .fit upload appears as "pending/missed" to Claude even though the data is there.
+### Changes
 
-2. **No "list activities" tool** — Claude has `get_activity_details` and `get_activity_laps` but both require knowing the activity ID upfront. There's no way to browse or search activities by date/type, so Claude can't discover .fit-uploaded activities that weren't auto-matched to a workout.
-
-## Changes
-
-### 1. Fix `get_training_plan` to resolve both match types
-**File: `supabase/functions/mcp-server/training-tools.ts`**
-
-In the handler (lines 103-116), collect both `matched_strava_activity_id` values AND `matched_activity_id` UUIDs. Fetch activities using two queries (or a combined approach): one `in("strava_activity_id", ...)` and one `in("id", ...)`. Build two maps and resolve the `actual` data from either. Update the result mapping (line 120) to check both maps. Include `activity_id` (the DB UUID) in the response so Claude can call `get_activity_laps` directly.
-
-### 2. Fix `get_training_history` the same way
-Same pattern — lines 194-207 have the identical Strava-only bug. Apply the same dual-lookup fix.
-
-### 3. Add `list_activities` tool
-A new tool that lists activities by date range, type, or source. Schema:
-- `week_start` (optional, defaults to current week)
-- `activity_type` (optional filter)
-- `source` (optional: "strava", ".fit_upload")
-- `limit` (default 20)
-
-Returns activity summaries with IDs so Claude can drill into any of them with `get_activity_details` or `get_activity_laps`.
-
-### 4. Update description strings
-Change "matched Strava actual data" references to "matched actual data (Strava or .fit upload)" so Claude's prompts don't mislead about data availability.
-
-## Technical detail
-
-The dual-lookup pattern:
-
-```text
-// Collect both ID types
-stravaIds = workouts.filter(w => w.matched_strava_activity_id).map(...)
-directIds = workouts.filter(w => w.matched_activity_id).map(...)
-
-// Fetch both sets
-activities from strava_activity_id IN (stravaIds)
-activities from id IN (directIds)
-
-// Build lookup maps
-stravaMap: strava_activity_id → activity
-directMap: id → activity
-
-// Resolve per workout
-actual = directMap.get(w.matched_activity_id)
-       || stravaMap.get(w.matched_strava_activity_id)
-       || null
+**1. Migration: add `timezone` to `profiles`, `activity_date` to `synced_activities`**
+```sql
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS timezone text;
+ALTER TABLE synced_activities ADD COLUMN IF NOT EXISTS activity_date date;
 ```
 
-All changes are in a single file: `supabase/functions/mcp-server/training-tools.ts`.
+**2. Auto-detect on session start (`src/contexts/AuthContext.tsx`)**
+- After successful auth, call a small upsert:
+```typescript
+const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+await supabase.from('profiles').update({ timezone: tz }).eq('id', user.id);
+```
+- This runs silently on every login/page load, so if the user travels, the timezone updates automatically.
+- Debounce or guard so it only fires once per session (e.g., compare against a ref).
+
+**3. Fix `parse-fit-file/index.ts`**
+- After authenticating the user, fetch their timezone:
+```typescript
+const { data: profile } = await adminClient
+  .from('profiles').select('timezone').eq('id', user.id).single();
+const tz = profile?.timezone || 'UTC';
+```
+- Derive local activity date:
+```typescript
+const activityDate = new Date(startDate)
+  .toLocaleDateString('en-CA', { timeZone: tz }); // "2026-04-13"
+```
+- Use `activityDate` for duplicate detection and workout auto-matching instead of `startDate.split("T")[0]`.
+- Store it in the new `activity_date` column.
+
+**4. Fix `strava-sync/index.ts`**
+- Same pattern: fetch user timezone, derive `activity_date` from the UTC timestamp.
+
+**5. Backfill existing activities**
+- Migration to recompute `activity_date` for existing rows using a default timezone (UTC), which can be corrected on next login when the real timezone is stored.
+
+### Why This Is Better
+- Zero user effort — no settings page, no picker
+- Automatically adapts when traveling
+- Browser API is reliable and gives IANA timezone strings (e.g., `America/Chicago`)
+- Edge functions get the timezone from the DB, so server-side date logic is always correct
 
