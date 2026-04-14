@@ -259,6 +259,14 @@ serve(async (req) => {
 
     const accessToken = await refreshTokenIfNeeded(adminClient, connection);
 
+    // Fetch user's timezone for correct local date derivation
+    const { data: userProfile } = await adminClient
+      .from("profiles")
+      .select("timezone")
+      .eq("id", user.id)
+      .single();
+    const userTimezone = userProfile?.timezone || "UTC";
+
     // Get user's activity mappings with goal start dates
     const { data: mappings, error: mappingsError } = await supabase
       .from("activity_mappings")
@@ -335,8 +343,9 @@ serve(async (req) => {
       const shouldMatch = mapping && meetsMinDuration;
 
       const enrichedFields = buildEnrichedFields(activity);
-      const activityLocalDate = activity.start_date_local.split("T")[0];
-      const weekMonday = getMondayOfDate(activity.start_date_local);
+      // Derive local date using user's stored timezone for consistency
+      const activityLocalDate = new Date(activity.start_date).toLocaleDateString("en-CA", { timeZone: userTimezone });
+      const weekMonday = getMondayOfDate(activityLocalDate + "T12:00:00");
       affectedWeeks.add(weekMonday);
 
       if (existingSync) {
@@ -406,6 +415,7 @@ serve(async (req) => {
         activity_type: activity.sport_type || activity.type,
         activity_name: activity.name,
         start_date: activity.start_date,
+        activity_date: activityLocalDate,
         duration_seconds: activity.moving_time,
         distance_meters: activity.distance,
         matched_habit_item_id: shouldMatch ? mapping.habit_item_id : null,
