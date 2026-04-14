@@ -1813,6 +1813,7 @@ export type Database = {
           substack_url: string | null
           telegram_url: string | null
           tiktok_url: string | null
+          timezone: string | null
           twitter_url: string | null
           updated_at: string
           website_url: string | null
@@ -1848,6 +1849,7 @@ export type Database = {
           substack_url?: string | null
           telegram_url?: string | null
           tiktok_url?: string | null
+          timezone?: string | null
           twitter_url?: string | null
           updated_at?: string
           website_url?: string | null
@@ -1883,6 +1885,7 @@ export type Database = {
           substack_url?: string | null
           telegram_url?: string | null
           tiktok_url?: string | null
+          timezone?: string | null
           twitter_url?: string | null
           updated_at?: string
           website_url?: string | null
@@ -2034,6 +2037,7 @@ export type Database = {
       }
       synced_activities: {
         Row: {
+          activity_date: string | null
           activity_name: string | null
           activity_type: string | null
           average_cadence: number | null
@@ -2086,6 +2090,7 @@ export type Database = {
           workout_type_id: number | null
         }
         Insert: {
+          activity_date?: string | null
           activity_name?: string | null
           activity_type?: string | null
           average_cadence?: number | null
@@ -2138,6 +2143,7 @@ export type Database = {
           workout_type_id?: number | null
         }
         Update: {
+          activity_date?: string | null
           activity_name?: string | null
           activity_type?: string | null
           average_cadence?: number | null
