@@ -32,6 +32,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Track if initial auth has been processed to prevent duplicate profile checks
   const hasCheckedProfile = useRef<string | null>(null);
 
+  // Sync browser timezone to profile (once per session)
+  const hasSyncedTimezone = useRef(false);
+  const syncTimezone = useCallback(async (userId: string) => {
+    if (hasSyncedTimezone.current) return;
+    hasSyncedTimezone.current = true;
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      await supabase.from('profiles').update({ timezone: tz }).eq('id', userId);
+    } catch (e) {
+      console.error('[AuthContext] Failed to sync timezone:', e);
+    }
+  }, []);
+
   // Check if user's profile is complete - stable function, no deps needed
   const checkProfileComplete = useCallback(async (userId: string) => {
     // Prevent duplicate checks for the same user
@@ -98,6 +111,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (session?.user) {
           setTimeout(() => {
             checkProfileComplete(session.user.id);
+            syncTimezone(session.user.id);
           }, 0);
         } else {
           setIsNewUser(false);
@@ -137,9 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       authStore.setAuth(session?.user ?? null, session);
       setLoading(false);
       
-      // Check profile completion for initial session
+      // Check profile completion and sync timezone for initial session
       if (session?.user) {
         checkProfileComplete(session.user.id);
+        syncTimezone(session.user.id);
       }
     });
 
@@ -147,7 +162,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('[AuthContext] Cleaning up subscription');
       subscription.unsubscribe();
     };
-  }, [checkProfileComplete]);
+  }, [checkProfileComplete, syncTimezone]);
 
   const signInWithGoogle = useCallback(async (redirectToPath?: string) => {
     try {

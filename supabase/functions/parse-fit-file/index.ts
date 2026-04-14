@@ -128,6 +128,15 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
+    // Fetch user's timezone for correct local date derivation
+    const { data: userProfile } = await adminClient
+      .from("profiles")
+      .select("timezone")
+      .eq("id", user.id)
+      .single();
+    const userTimezone = userProfile?.timezone || "UTC";
+    console.log(`User timezone: ${userTimezone}`);
+
     const { data: fileData, error: downloadError } = await adminClient.storage
       .from("fit-files")
       .download(file_path);
@@ -156,9 +165,12 @@ Deno.serve(async (req) => {
     const durationSeconds = session.total_timer_time ? Math.round(session.total_timer_time) : null;
     const ftp = extractFtp(fitData);
 
+    // Derive local activity date using user's timezone
+    const activityDate = new Date(startDate).toLocaleDateString("en-CA", { timeZone: userTimezone });
+    console.log(`Activity date (local): ${activityDate} (UTC: ${startDate.split("T")[0]})`);
+
     // Duplicate detection: check for existing activity with same date + type + similar duration
     if (!overwrite_activity_id) {
-      const activityDate = startDate.split("T")[0];
       const { data: existing } = await adminClient
         .from("synced_activities")
         .select("id, activity_type, start_date, duration_seconds, source, activity_name")
@@ -222,6 +234,7 @@ Deno.serve(async (req) => {
       activity_type: activityType,
       activity_name: session.sport ? `${activityType} (FIT Upload)` : "FIT Upload",
       start_date: startDate,
+      activity_date: activityDate,
       fit_file_path: file_path,
       habit_completion_created: false,
       synced_at: new Date().toISOString(),
@@ -386,7 +399,6 @@ Deno.serve(async (req) => {
     } else {
       // Auto-match by date — include workouts that already have a Strava match
       // (FIT upload takes priority and provides richer data)
-      const activityDate = startDate.split("T")[0];
       const { data: candidateWorkouts } = await adminClient
         .from("training_plan_workouts")
         .select("id, workout_type, day_of_week, week_start")
