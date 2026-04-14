@@ -36,9 +36,11 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     createWorkout,
     updateWorkout,
     deleteWorkout,
+    deleteActivity,
     copyFromPreviousWeek,
     isSaving,
     isCopying,
+    isDeletingActivity,
   } = useTrainingPlan(weekStart);
 
   const { goals } = useGoals();
@@ -270,6 +272,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                             goalNames={goalNames}
                             onEdit={sourceWorkout ? () => openEditDialog(sourceWorkout) : undefined}
                             onDelete={sourceWorkout ? () => deleteWorkout(sourceWorkout.id) : undefined}
+                            onDeleteActivity={matched?.source === "fit_upload" ? (id) => deleteActivity(id) : undefined}
+                            isDeletingActivity={isDeletingActivity}
                           />
                         );
                       })}
