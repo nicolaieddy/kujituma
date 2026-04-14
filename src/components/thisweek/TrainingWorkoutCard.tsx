@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target } from "lucide-react";
+import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TrainingPlanDisplayWorkout } from "@/components/thisweek/trainingPlanUtils";
@@ -149,8 +149,11 @@ export function TrainingWorkoutCard({
   goalNames = [],
   onEdit,
   onDelete,
+  onDeleteActivity,
+  isDeletingActivity,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [confirmDeleteActivity, setConfirmDeleteActivity] = useState(false);
   const isRest = workout.workout_type === "Rest";
   const status = getWorkoutStatus(workout, matchedActivity);
   const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
