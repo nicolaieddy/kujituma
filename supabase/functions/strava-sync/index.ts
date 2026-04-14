@@ -94,6 +94,21 @@ function buildEnrichedFields(activity: StravaActivity) {
   };
 }
 
+/** Reliable timezone-aware local date derivation using Intl.DateTimeFormat parts */
+function getLocalDate(utcIso: string, tz: string): string {
+  const d = new Date(utcIso);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find(p => p.type === "year")!.value;
+  const m = parts.find(p => p.type === "month")!.value;
+  const dd = parts.find(p => p.type === "day")!.value;
+  return `${y}-${m}-${dd}`;
+}
+
 // Get Monday YYYY-MM-DD from a date string
 function getMondayOfDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -343,8 +358,8 @@ serve(async (req) => {
       const shouldMatch = mapping && meetsMinDuration;
 
       const enrichedFields = buildEnrichedFields(activity);
-      // Derive local date using user's stored timezone for consistency
-      const activityLocalDate = new Date(activity.start_date).toLocaleDateString("en-CA", { timeZone: userTimezone });
+      // Derive local date using reliable Intl.DateTimeFormat parts extraction
+      const activityLocalDate = getLocalDate(activity.start_date, userTimezone);
       const weekMonday = getMondayOfDate(activityLocalDate + "T12:00:00");
       affectedWeeks.add(weekMonday);
 

@@ -11,6 +11,21 @@ const STRAVA_CLIENT_SECRET = Deno.env.get("STRAVA_CLIENT_SECRET");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
+/** Reliable timezone-aware local date derivation using Intl.DateTimeFormat parts */
+function getLocalDate(utcIso: string, tz: string): string {
+  const d = new Date(utcIso);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find(p => p.type === "year")!.value;
+  const m = parts.find(p => p.type === "month")!.value;
+  const dd = parts.find(p => p.type === "day")!.value;
+  return `${y}-${m}-${dd}`;
+}
+
 interface StravaActivity {
   id: number;
   name: string;

@@ -20,6 +20,7 @@ import { CountrySelect } from "@/components/ui/country-select";
 import { CitySelect } from "@/components/ui/city-select";
 import { Country } from "country-state-city";
 import { formatTimeAgo } from "@/utils/timeUtils";
+import { TimezoneField } from "./TimezoneField";
 
 interface Profile {
   id: string;
@@ -991,6 +992,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 />
               </div>
             </div>
+
+            {/* Timezone Display */}
+            <TimezoneField userId={user?.id} />
           </div>
 
           {/* Social Links Section */}
