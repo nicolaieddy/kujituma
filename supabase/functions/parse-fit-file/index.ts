@@ -49,6 +49,21 @@ function inferActivityType(sport?: string, _subSport?: string): string {
   return sport || "Workout";
 }
 
+/** Reliable timezone-aware local date derivation using Intl.DateTimeFormat parts */
+function getLocalDate(utcIso: string, tz: string): string {
+  const d = new Date(utcIso);
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const y = parts.find(p => p.type === "year")!.value;
+  const m = parts.find(p => p.type === "month")!.value;
+  const dd = parts.find(p => p.type === "day")!.value;
+  return `${y}-${m}-${dd}`;
+}
+
 function extractFtp(fitData: any): number | null {
   if (!fitData.zones_target) return null;
   for (const zt of Array.isArray(fitData.zones_target) ? fitData.zones_target : [fitData.zones_target]) {
@@ -119,7 +134,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { file_path, workout_id, overwrite_activity_id } = await req.json();
+    const { file_path, workout_id, overwrite_activity_id, timezone: requestTimezone } = await req.json();
     if (!file_path) {
       return new Response(JSON.stringify({ error: "file_path is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -128,13 +143,16 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Fetch user's timezone for correct local date derivation
-    const { data: userProfile } = await adminClient
-      .from("profiles")
-      .select("timezone")
-      .eq("id", user.id)
-      .single();
-    const userTimezone = userProfile?.timezone || "UTC";
+    // Determine timezone: prefer request body, fall back to profile, then UTC
+    let userTimezone = requestTimezone || null;
+    if (!userTimezone) {
+      const { data: userProfile } = await adminClient
+        .from("profiles")
+        .select("timezone")
+        .eq("id", user.id)
+        .single();
+      userTimezone = userProfile?.timezone || "UTC";
+    }
     console.log(`User timezone: ${userTimezone}`);
 
     const { data: fileData, error: downloadError } = await adminClient.storage
@@ -165,8 +183,8 @@ Deno.serve(async (req) => {
     const durationSeconds = session.total_timer_time ? Math.round(session.total_timer_time) : null;
     const ftp = extractFtp(fitData);
 
-    // Derive local activity date using user's timezone
-    const activityDate = new Date(startDate).toLocaleDateString("en-CA", { timeZone: userTimezone });
+    // Derive local activity date using reliable Intl.DateTimeFormat parts extraction
+    const activityDate = getLocalDate(startDate, userTimezone);
     console.log(`Activity date (local): ${activityDate} (UTC: ${startDate.split("T")[0]})`);
 
     // Duplicate detection: check for existing activity with same date + type + similar duration

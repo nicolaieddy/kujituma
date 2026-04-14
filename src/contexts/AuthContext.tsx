@@ -32,14 +32,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Track if initial auth has been processed to prevent duplicate profile checks
   const hasCheckedProfile = useRef<string | null>(null);
 
-  // Sync browser timezone to profile (once per session)
+  // Sync browser timezone to profile only if not already set (first-time setup)
   const hasSyncedTimezone = useRef(false);
   const syncTimezone = useCallback(async (userId: string) => {
     if (hasSyncedTimezone.current) return;
     hasSyncedTimezone.current = true;
     try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      await supabase.from('profiles').update({ timezone: tz }).eq('id', userId);
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('timezone')
+        .eq('id', userId)
+        .single();
+      
+      // Only set timezone if the profile doesn't have one yet
+      if (!profile?.timezone) {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        await supabase.from('profiles').update({ timezone: tz }).eq('id', userId);
+        console.log('[AuthContext] Set initial timezone:', tz);
+      }
     } catch (e) {
       console.error('[AuthContext] Failed to sync timezone:', e);
     }

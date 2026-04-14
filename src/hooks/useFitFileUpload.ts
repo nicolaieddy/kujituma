@@ -67,7 +67,10 @@ export function useFitFileUpload() {
       return { fileName: file.name, success: false, error: uploadError.message };
     }
 
-    const body: Record<string, any> = { file_path: filePath };
+    const body: Record<string, any> = {
+      file_path: filePath,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    };
     if (workoutId) body.workout_id = workoutId;
     if (overwriteActivityId) body.overwrite_activity_id = overwriteActivityId;
 

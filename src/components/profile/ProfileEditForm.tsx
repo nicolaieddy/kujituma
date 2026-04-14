@@ -991,6 +991,9 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
                 />
               </div>
             </div>
+
+            {/* Timezone Display */}
+            <TimezoneField userId={user?.id} />
           </div>
 
           {/* Social Links Section */}
