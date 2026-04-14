@@ -323,6 +323,48 @@ export function useTrainingPlan(weekStart: string) {
     return matchedActivities.find((a: any) => a.__fallbackWorkoutId === workout.id) || null;
   };
 
+  const deleteActivity = useMutation({
+    mutationFn: async (activityId: string) => {
+      if (!user) throw new Error("Not authenticated");
+
+      // 1. Unlink any training_plan_workouts pointing to this activity
+      await supabase
+        .from("training_plan_workouts")
+        .update({ matched_activity_id: null })
+        .eq("matched_activity_id", activityId);
+
+      // 2. Get the activity to find the storage file path
+      const { data: activity } = await supabase
+        .from("synced_activities")
+        .select("fit_file_path")
+        .eq("id", activityId)
+        .eq("user_id", user.id)
+        .single();
+
+      // 3. Delete the synced_activities row (cascades to activity_laps & activity_streams)
+      const { error } = await supabase
+        .from("synced_activities")
+        .delete()
+        .eq("id", activityId)
+        .eq("user_id", user.id);
+      if (error) throw error;
+
+      // 4. Delete the storage file if present
+      if (activity?.fit_file_path) {
+        await supabase.storage.from("fit-files").remove([activity.fit_file_path]);
+      }
+    },
+    onSuccess: () => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-laps"] });
+      toast({ title: "Activity deleted", description: "All associated data has been removed." });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to delete activity", description: error.message, variant: "destructive" });
+    },
+  });
+
   return {
     workouts,
     isLoading,
@@ -331,10 +373,12 @@ export function useTrainingPlan(weekStart: string) {
     createWorkout: createWorkout.mutateAsync,
     updateWorkout: updateWorkout.mutateAsync,
     deleteWorkout: deleteWorkout.mutateAsync,
+    deleteActivity: deleteActivity.mutateAsync,
     copyFromPreviousWeek: copyFromPreviousWeek.mutateAsync,
     isSaving: createWorkout.isPending || updateWorkout.isPending,
     isCreating: createWorkout.isPending,
     isCopying: copyFromPreviousWeek.isPending,
+    isDeletingActivity: deleteActivity.isPending,
   };
 }
 

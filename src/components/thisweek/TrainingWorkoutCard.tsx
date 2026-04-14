@@ -16,6 +16,8 @@ interface TrainingWorkoutCardProps {
   goalNames?: string[];
   onEdit?: () => void;
   onDelete?: () => void;
+  onDeleteActivity?: (activityId: string) => void;
+  isDeletingActivity?: boolean;
 }
 
 function formatSpeed(metersPerSec: number | null): string {
