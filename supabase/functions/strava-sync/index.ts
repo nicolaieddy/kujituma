@@ -441,13 +441,17 @@ serve(async (req) => {
       affectedWeeks.add(weekMonday);
 
       if (existingSync) {
-        // Update enriched fields on existing synced activities
+        // Update enriched fields and backfill activity_date on existing synced activities
         const needsEnrichment = !existingSync.average_speed && activity.average_speed;
+        const needsDateFix = !existingSync.activity_date || existingSync.activity_date !== activityLocalDate;
         
-        if (needsEnrichment) {
+        if (needsEnrichment || needsDateFix) {
           await supabase
             .from("synced_activities")
-            .update(enrichedFields)
+            .update({
+              ...enrichedFields,
+              activity_date: activityLocalDate,
+            })
             .eq("id", existingSync.id);
         }
 
