@@ -2310,6 +2310,45 @@ export type Database = {
           },
         ]
       }
+      training_workout_activities: {
+        Row: {
+          activity_id: string
+          created_at: string
+          id: string
+          session_order: number
+          workout_id: string
+        }
+        Insert: {
+          activity_id: string
+          created_at?: string
+          id?: string
+          session_order?: number
+          workout_id: string
+        }
+        Update: {
+          activity_id?: string
+          created_at?: string
+          id?: string
+          session_order?: number
+          workout_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_workout_activities_activity_id_fkey"
+            columns: ["activity_id"]
+            isOneToOne: false
+            referencedRelation: "synced_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_workout_activities_workout_id_fkey"
+            columns: ["workout_id"]
+            isOneToOne: false
+            referencedRelation: "training_plan_workouts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_workout_goals: {
         Row: {
           created_at: string
