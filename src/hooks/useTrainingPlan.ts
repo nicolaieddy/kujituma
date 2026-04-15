@@ -200,6 +200,7 @@ export function useTrainingPlan(weekStart: string) {
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["training-plan", user?.id, weekStart] });
     queryClient.invalidateQueries({ queryKey: ["training-workout-goals"] });
+    queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
     queryClient.invalidateQueries({ queryKey: ["training-workouts-for-goal"] });
   };
 
@@ -338,6 +339,13 @@ export function useTrainingPlan(weekStart: string) {
   });
 
   const getMatchedActivity = (workout: TrainingPlanWorkout) => {
+    // First check junction table links
+    const junctionIds = activityLinks
+      .filter(l => l.workout_id === workout.id)
+      .map(l => l.activity_id);
+    if (junctionIds.length > 0) {
+      return matchedActivities.find((a: any) => a.id === junctionIds[0]) || null;
+    }
     if (workout.matched_activity_id) {
       return matchedActivities.find((a: any) => a.id === workout.matched_activity_id) || null;
     }
@@ -345,6 +353,24 @@ export function useTrainingPlan(weekStart: string) {
       return matchedActivities.find((a: any) => a.strava_activity_id === workout.matched_strava_activity_id) || null;
     }
     return matchedActivities.find((a: any) => a.__fallbackWorkoutId === workout.id) || null;
+  };
+
+  /** Get ALL matched activities for a workout (multi-session support) */
+  const getMatchedActivities = (workout: TrainingPlanWorkout): any[] => {
+    const junctionIds = activityLinks
+      .filter(l => l.workout_id === workout.id)
+      .sort((a, b) => a.session_order - b.session_order)
+      .map(l => l.activity_id);
+
+    if (junctionIds.length > 0) {
+      return junctionIds
+        .map(id => matchedActivities.find((a: any) => a.id === id))
+        .filter(Boolean);
+    }
+
+    // Legacy fallback: single activity
+    const single = getMatchedActivity(workout);
+    return single ? [single] : [];
   };
 
   const deleteActivity = useMutation({
