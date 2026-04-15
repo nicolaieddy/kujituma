@@ -2,8 +2,8 @@ import { useState } from "react";
 import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { TrainingPlanDisplayWorkout } from "@/components/thisweek/trainingPlanUtils";
-import { formatDistance, formatDuration, formatPace, getWorkoutStatus } from "@/components/thisweek/trainingPlanUtils";
+import type { TrainingPlanDisplayWorkout, MergedSession } from "@/components/thisweek/trainingPlanUtils";
+import { formatDistance, formatDuration, formatPace, getWorkoutStatus, mergeActivitiesIntoSessions } from "@/components/thisweek/trainingPlanUtils";
 import { cn } from "@/lib/utils";
 import { useActivityLaps } from "@/hooks/useActivityLaps";
 import { LapSplitsTable } from "@/components/training/LapSplitsTable";
@@ -143,47 +143,53 @@ function ExpandedDetail({ workout, activity, laps }: {
 
 /* ── Single session expanded (used for single-activity workouts) ──── */
 
-function SingleSessionExpanded({ workout, activity, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
+function SingleSessionExpanded({ workout, session, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
   workout: TrainingPlanDisplayWorkout;
-  activity: any;
+  session: MergedSession | null;
   onDeleteActivity?: (id: string) => void;
   confirmDeleteId: string | null;
   setConfirmDeleteId: (id: string | null) => void;
   isDeletingActivity?: boolean;
 }) {
-  const { data: laps = [] } = useActivityLaps(activity?.id || null);
+  const activity = session?.displayActivity || null;
+  const { data: laps = [] } = useActivityLaps(session?.lapsActivityId || null);
+  const fitActivities = session?.activities.filter(a => a.source === "fit_upload") || [];
 
   return (
     <>
       <ExpandedDetail workout={workout} activity={activity} laps={laps} />
-      {activity && onDeleteActivity && activity.source === "fit_upload" && (
+      {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-4 pb-4 border-t border-border/40 pt-3">
-          {confirmDeleteId !== activity.id ? (
-            <Button
-              variant="ghost" size="sm"
-              className="h-7 text-xs text-muted-foreground hover:text-destructive gap-1"
-              onClick={() => setConfirmDeleteId(activity.id)}
-              disabled={isDeletingActivity}
-            >
-              <FileX className="h-3 w-3" />
-              Delete activity data
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-destructive">Delete all data (laps, streams, file)?</p>
-              <Button variant="destructive" size="sm" className="h-7 text-xs"
-                onClick={() => { onDeleteActivity(activity.id); setConfirmDeleteId(null); }}
-                disabled={isDeletingActivity}
-              >
-                {isDeletingActivity ? "Deleting..." : "Confirm"}
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs"
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                Cancel
-              </Button>
+          {fitActivities.map(fitAct => (
+            <div key={fitAct.id}>
+              {confirmDeleteId !== fitAct.id ? (
+                <Button
+                  variant="ghost" size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive gap-1"
+                  onClick={() => setConfirmDeleteId(fitAct.id)}
+                  disabled={isDeletingActivity}
+                >
+                  <FileX className="h-3 w-3" />
+                  Delete .FIT data
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-destructive">Delete all .FIT data (laps, streams, file)?</p>
+                  <Button variant="destructive" size="sm" className="h-7 text-xs"
+                    onClick={() => { onDeleteActivity(fitAct.id); setConfirmDeleteId(null); }}
+                    disabled={isDeletingActivity}
+                  >
+                    {isDeletingActivity ? "Deleting..." : "Confirm"}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </>
@@ -192,8 +198,8 @@ function SingleSessionExpanded({ workout, activity, onDeleteActivity, confirmDel
 
 /* ── Session section (for multi-session workouts) ──────────────── */
 
-function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
-  activity: any;
+function SessionSection({ session, sessionIndex, totalSessions, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
+  session: MergedSession;
   sessionIndex: number;
   totalSessions: number;
   onDeleteActivity?: (id: string) => void;
@@ -201,7 +207,9 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
   setConfirmDeleteId: (id: string | null) => void;
   isDeletingActivity?: boolean;
 }) {
-  const { data: laps = [] } = useActivityLaps(activity?.id || null);
+  const { data: laps = [] } = useActivityLaps(session.lapsActivityId);
+  const activity = session.displayActivity;
+  const fitActivities = session.activities.filter(a => a.source === "fit_upload");
 
   return (
     <div className="rounded-lg border border-border/40 bg-muted/10 overflow-hidden">
@@ -210,21 +218,24 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
           <span className="text-xs font-semibold text-muted-foreground">
             Session {sessionIndex + 1} of {totalSessions}
           </span>
-          <Badge
-            variant="outline"
-            className={cn(
-              "rounded-md text-[10px] px-1.5 py-0 h-5 font-medium gap-0.5",
-              activity.source === "fit_upload"
-                ? "border-warning/30 bg-warning/10 text-warning-foreground"
-                : "border-primary/30 bg-primary/10 text-primary"
-            )}
-          >
-            {activity.source === "fit_upload" ? (
-              <><File className="h-2.5 w-2.5" />.FIT</>
-            ) : (
-              <><Activity className="h-2.5 w-2.5" />Strava</>
-            )}
-          </Badge>
+          {session.sources.map((source: string) => (
+            <Badge
+              key={source}
+              variant="outline"
+              className={cn(
+                "rounded-md text-[10px] px-1.5 py-0 h-5 font-medium gap-0.5",
+                source === "fit_upload"
+                  ? "border-warning/30 bg-warning/10 text-warning-foreground"
+                  : "border-primary/30 bg-primary/10 text-primary"
+              )}
+            >
+              {source === "fit_upload" ? (
+                <><File className="h-2.5 w-2.5" />.FIT</>
+              ) : (
+                <><Activity className="h-2.5 w-2.5" />Strava</>
+              )}
+            </Badge>
+          ))}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           {activity.duration_seconds && (
@@ -252,32 +263,36 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
         </div>
       )}
 
-      {activity.source === "fit_upload" && onDeleteActivity && (
+      {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-3 pb-2 border-t border-border/30 pt-2">
-          {confirmDeleteId !== activity.id ? (
-            <Button variant="ghost" size="sm"
-              className="h-6 text-[11px] text-muted-foreground hover:text-destructive gap-1"
-              onClick={() => setConfirmDeleteId(activity.id)}
-              disabled={isDeletingActivity}
-            >
-              <FileX className="h-3 w-3" /> Delete session data
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] text-destructive">Delete this session's data?</p>
-              <Button variant="destructive" size="sm" className="h-6 text-[11px]"
-                onClick={() => { onDeleteActivity(activity.id); setConfirmDeleteId(null); }}
-                disabled={isDeletingActivity}
-              >
-                Confirm
-              </Button>
-              <Button variant="ghost" size="sm" className="h-6 text-[11px]"
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                Cancel
-              </Button>
+          {fitActivities.map(fitAct => (
+            <div key={fitAct.id}>
+              {confirmDeleteId !== fitAct.id ? (
+                <Button variant="ghost" size="sm"
+                  className="h-6 text-[11px] text-muted-foreground hover:text-destructive gap-1"
+                  onClick={() => setConfirmDeleteId(fitAct.id)}
+                  disabled={isDeletingActivity}
+                >
+                  <FileX className="h-3 w-3" /> Delete .FIT data
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] text-destructive">Delete this .FIT data?</p>
+                  <Button variant="destructive" size="sm" className="h-6 text-[11px]"
+                    onClick={() => { onDeleteActivity(fitAct.id); setConfirmDeleteId(null); }}
+                    disabled={isDeletingActivity}
+                  >
+                    Confirm
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-6 text-[11px]"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
@@ -301,23 +316,25 @@ export function TrainingWorkoutCard({
   const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<string | null>(null);
   const isRest = workout.workout_type === "Rest";
   const activities = matchedActivities.length > 0 ? matchedActivities : matchedActivity ? [matchedActivity] : [];
-  const primaryActivity = activities[0] || null;
-  const isMultiSession = activities.length > 1;
+  const sessions = mergeActivitiesIntoSessions(activities);
+  const primaryActivity = sessions[0]?.displayActivity || null;
+  const isMultiSession = sessions.length > 1;
   const status = getWorkoutStatus(workout, primaryActivity);
 
-  // Aggregate stats across all sessions
+  // Aggregate stats across all sessions (use session displayActivities, not raw activities)
+  const sessionDisplays = sessions.map(s => s.displayActivity);
   const aggregated = isMultiSession ? {
-    duration_seconds: activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0),
-    distance_meters: activities.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0),
-    total_elevation_gain: activities.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0),
+    duration_seconds: sessionDisplays.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0),
+    distance_meters: sessionDisplays.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0),
+    total_elevation_gain: sessionDisplays.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0),
     average_heartrate: (() => {
-      const weighted = activities.reduce((s: number, a: any) => s + (a.average_heartrate || 0) * (a.duration_seconds || 0), 0);
-      const totalDur = activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
+      const weighted = sessionDisplays.reduce((s: number, a: any) => s + (a.average_heartrate || 0) * (a.duration_seconds || 0), 0);
+      const totalDur = sessionDisplays.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
       return totalDur > 0 ? weighted / totalDur : null;
     })(),
     average_speed: (() => {
-      const totalDist = activities.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0);
-      const totalDur = activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
+      const totalDist = sessionDisplays.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0);
+      const totalDur = sessionDisplays.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
       return totalDur > 0 ? totalDist / totalDur : null;
     })(),
   } : null;
@@ -337,7 +354,7 @@ export function TrainingWorkoutCard({
     if (displayActivity.average_speed) summaryStats.push({ icon: Gauge, value: formatSpeed(displayActivity.average_speed) });
     if (displayActivity.average_heartrate) summaryStats.push({ icon: Heart, value: `${Math.round(displayActivity.average_heartrate)}` });
     if (displayActivity.total_elevation_gain) summaryStats.push({ icon: Mountain, value: `+${Math.round(displayActivity.total_elevation_gain)}m` });
-    if (isMultiSession) summaryStats.push({ icon: File, value: `${activities.length} sessions` });
+    if (isMultiSession) summaryStats.push({ icon: File, value: `${sessions.length} sessions` });
   } else if (workout.target_duration_seconds) {
     summaryStats.push({ icon: Clock, value: formatDuration(workout.target_duration_seconds) });
     if (workout.target_distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(workout.target_distance_meters) });
@@ -525,12 +542,12 @@ export function TrainingWorkoutCard({
             <div className="px-4 pb-4 pt-1 space-y-4">
               {/* Plan + description */}
               <ExpandedDetail workout={workout} activity={null} laps={[]} />
-              {activities.map((activity: any, idx: number) => (
+              {sessions.map((session: MergedSession, idx: number) => (
                 <SessionSection
-                  key={activity.id}
-                  activity={activity}
+                  key={session.displayActivity.id}
+                  session={session}
                   sessionIndex={idx}
-                  totalSessions={activities.length}
+                  totalSessions={sessions.length}
                   onDeleteActivity={onDeleteActivity}
                   confirmDeleteId={confirmDeleteActivity}
                   setConfirmDeleteId={setConfirmDeleteActivity}
@@ -542,7 +559,7 @@ export function TrainingWorkoutCard({
             <>
               <SingleSessionExpanded
                 workout={workout}
-                activity={primaryActivity}
+                session={sessions[0] || null}
                 onDeleteActivity={onDeleteActivity}
                 confirmDeleteId={confirmDeleteActivity}
                 setConfirmDeleteId={setConfirmDeleteActivity}
