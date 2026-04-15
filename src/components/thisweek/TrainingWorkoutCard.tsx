@@ -146,6 +146,7 @@ function ExpandedDetail({ workout, activity, laps }: {
 export function TrainingWorkoutCard({
   workout,
   matchedActivity,
+  matchedActivities = [],
   isReadOnly = false,
   goalNames = [],
   onEdit,
@@ -154,10 +155,31 @@ export function TrainingWorkoutCard({
   isDeletingActivity,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [confirmDeleteActivity, setConfirmDeleteActivity] = useState(false);
+  const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<string | null>(null);
   const isRest = workout.workout_type === "Rest";
-  const status = getWorkoutStatus(workout, matchedActivity);
-  const { data: laps = [] } = useActivityLaps(matchedActivity?.id || null);
+  const activities = matchedActivities.length > 0 ? matchedActivities : matchedActivity ? [matchedActivity] : [];
+  const primaryActivity = activities[0] || null;
+  const isMultiSession = activities.length > 1;
+  const status = getWorkoutStatus(workout, primaryActivity);
+
+  // Aggregate stats across all sessions
+  const aggregated = isMultiSession ? {
+    duration_seconds: activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0),
+    distance_meters: activities.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0),
+    total_elevation_gain: activities.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0),
+    average_heartrate: (() => {
+      const weighted = activities.reduce((s: number, a: any) => s + (a.average_heartrate || 0) * (a.duration_seconds || 0), 0);
+      const totalDur = activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
+      return totalDur > 0 ? weighted / totalDur : null;
+    })(),
+    average_speed: (() => {
+      const totalDist = activities.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0);
+      const totalDur = activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
+      return totalDur > 0 ? totalDist / totalDur : null;
+    })(),
+  } : null;
+
+  const displayActivity = aggregated || primaryActivity;
 
   const delta = matchedActivity
     ? timeDelta(workout.target_duration_seconds, matchedActivity.duration_seconds)
