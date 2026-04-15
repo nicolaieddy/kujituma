@@ -1,76 +1,91 @@
 
 
-## Problem
+## Multi-Session Workouts + Fix Date Matching Bug
 
-The `activity_date` for .fit uploads is still wrong despite the timezone fix. Database confirms: your Monday evening run (`start_date: 2026-04-14 00:28:10+00`) has `activity_date: 2026-04-14` instead of `2026-04-13`. Your profile timezone is correctly stored as `America/Detroit`.
+### Problem 1: Date matching bug (still broken)
+Lines 428-430 in `parse-fit-file/index.ts` compute the workout date using `new Date(week_start)` + `.toISOString().split("T")[0]`, which is the exact UTC-sensitive pattern that causes day drift. The activity date is correctly computed as Monday, but the workout date comparison drifts to Tuesday, so the auto-match links to the wrong day.
 
-The likely cause: the Deno runtime's `toLocaleDateString("en-CA", { timeZone })` may not behave reliably, OR the edge function was deployed before the timezone fix was applied. Either way, the approach of relying on the server to do timezone conversion has a fragile dependency.
+### Problem 2: Multi-session workouts
+Currently `training_plan_workouts.matched_activity_id` is a single UUID. When you split a workout into 2-3 recordings (e.g., a Fartlek saved as two back-to-back sessions), only one can be linked.
 
-## Your Request (3 parts)
+### Design
 
-1. **Send the browser timezone with the upload request** so the edge function doesn't depend on a potentially stale/unsynced profile value
-2. **Historical activities stay untouched** — changing your timezone should never retroactively update old `activity_date` values
-3. **Show timezone in profile settings** with a manual override option
+**Multi-activity linking via a junction table.** A new `training_workout_activities` table maps one workout to many activities. The existing `matched_activity_id` column is kept for backward compatibility but the UI and auto-match logic use the junction table as the source of truth.
 
-## Changes
+**Auto-grouping logic:** When a FIT file is uploaded, the auto-match checks if a workout already has one linked activity. If the new activity is:
+- Same sport type
+- Same `activity_date`
+- Start time within 2 hours of the previous session's end time
 
-### 1. Send timezone from the browser with the upload
-**File: `src/hooks/useFitFileUpload.ts`**
+...it gets added as an additional session on the same workout rather than creating a new unplanned workout.
 
-In `uploadAndParse()`, add `timezone: Intl.DateTimeFormat().resolvedOptions().timeZone` to the request body sent to `parse-fit-file`. This ensures the edge function always has the correct timezone at upload time, regardless of profile sync state.
+**UI changes:** When a workout has multiple linked activities, the card shows:
+- Aggregated totals in the collapsed row (sum of duration, distance, elevation; weighted avg HR/pace)
+- An expandable list of individual sessions inside the detail view, each with its own laps and charts
+- A "Session 1 / Session 2" label on each sub-section
 
-### 2. Fix the edge function date derivation
-**File: `supabase/functions/parse-fit-file/index.ts`**
+### Changes
 
-- Accept `timezone` from the request body, fall back to profile timezone, then UTC
-- Replace `toLocaleDateString("en-CA", ...)` with a more reliable manual offset calculation using `Intl.DateTimeFormat` parts extraction (which is more reliable across runtimes)
-- The computed `activity_date` is baked into the row at insert time and **never updated retroactively**
-
-### 3. Apply the same fix to Strava sync
-**File: `supabase/functions/strava-sync/index.ts`**
-
-Same timezone-aware date derivation for Strava-sourced activities.
-
-### 4. Show timezone in profile + manual update
-**File: `src/components/profile/ProfileEditForm.tsx`**
-
-- Add a read-only "Timezone" field in the profile settings showing the current stored value (e.g., "America/Detroit")
-- Add a small "Update to current" button that detects the browser timezone and updates the profile if different
-- This is display + manual override only — it does NOT retroactively change any existing activity dates
-
-### 5. Ensure historical immutability
-- Remove the `syncTimezone` auto-update from `AuthContext.tsx` that silently overwrites timezone on every session. Instead, only set it if the profile has no timezone yet (first-time setup)
-- The `activity_date` column is write-once at ingestion time — no triggers or cascading updates
-
-## Technical detail
-
-Reliable timezone date extraction in Deno:
-```typescript
-function getLocalDate(utcIso: string, tz: string): string {
-  const d = new Date(utcIso);
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: tz,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(d);
-  const y = parts.find(p => p.type === "year")!.value;
-  const m = parts.find(p => p.type === "month")!.value;
-  const dd = parts.find(p => p.type === "day")!.value;
-  return `${y}-${m}-${dd}`;
-}
+**1. New junction table: `training_workout_activities`**
+```sql
+CREATE TABLE training_workout_activities (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workout_id UUID NOT NULL REFERENCES training_plan_workouts(id) ON DELETE CASCADE,
+  activity_id UUID NOT NULL REFERENCES synced_activities(id) ON DELETE CASCADE,
+  session_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(workout_id, activity_id)
+);
+-- RLS: user can manage their own
+-- Backfill from existing matched_activity_id
+INSERT INTO training_workout_activities (workout_id, activity_id, session_order)
+SELECT id, matched_activity_id, 0
+FROM training_plan_workouts
+WHERE matched_activity_id IS NOT NULL;
 ```
 
-## Files to change
+**2. Fix date matching in `parse-fit-file/index.ts`**
+Replace lines 428-430:
+```typescript
+// Before (broken):
+const workoutDate = new Date(workout.week_start);
+workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
+const workoutDateStr = workoutDate.toISOString().split("T")[0];
 
-- `src/hooks/useFitFileUpload.ts` — send timezone in request body
-- `supabase/functions/parse-fit-file/index.ts` — accept request timezone, use reliable date derivation
-- `supabase/functions/strava-sync/index.ts` — same date derivation fix
-- `src/components/profile/ProfileEditForm.tsx` — show timezone + manual update button
-- `src/contexts/AuthContext.tsx` — only set timezone if not already stored (preserve historical)
+// After (safe):
+const [wy, wm, wd] = workout.week_start.split("-").map(Number);
+const d = new Date(wy, wm - 1, wd + workout.day_of_week);
+const workoutDateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+```
 
-## What stays the same
+**3. Update auto-match to support multi-session**
+In `parse-fit-file/index.ts`, after finding a matching workout:
+- Check if it already has a linked activity via the junction table
+- If yes, check if the new activity qualifies as a continuation (same sport, same date, start time within 2h of previous end)
+- If it qualifies, insert into junction table with `session_order = existing_count`
+- If no match found with existing workouts, also check workouts that already have a match (not just `matched_activity_id IS NULL`)
 
-- Existing `activity_date` values in the database are **not touched**
-- The `timezone` column on `profiles` remains — it's just not auto-overwritten on every login anymore
+**4. Update `useTrainingPlan.ts`**
+- Fetch from `training_workout_activities` to get all linked activity IDs per workout
+- Load all linked activities
+- Provide `getMatchedActivities(workout)` returning an array instead of a single activity
+- Aggregate stats for the collapsed row (total duration, total distance, avg HR weighted by duration)
+
+**5. Update `TrainingWorkoutCard.tsx`**
+- When multiple activities exist, show aggregated stats in the collapsed row
+- In expanded view, show a "Session 1", "Session 2" breakdown with individual laps/charts per session
+- Each session shows its own source badge (.FIT / Strava)
+- Delete button works per-session (removes from junction table and optionally deletes the activity data)
+
+**6. Update `TrainingPlanCard.tsx`**
+- Pass array of matched activities instead of single activity
+- Completion status: "done" if at least one activity is linked
+
+### Files to change
+- **Migration**: new `training_workout_activities` table + backfill
+- `supabase/functions/parse-fit-file/index.ts` — fix date math + multi-session auto-match
+- `src/hooks/useTrainingPlan.ts` — fetch junction table, return arrays, aggregate stats
+- `src/components/thisweek/TrainingWorkoutCard.tsx` — multi-session UI
+- `src/components/thisweek/TrainingPlanCard.tsx` — wire new data shape
+- `src/components/thisweek/trainingPlanUtils.ts` — aggregation helpers
 
