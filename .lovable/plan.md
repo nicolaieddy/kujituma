@@ -1,46 +1,43 @@
 
 
-## Strava Multi-Session Support
+## Fix Data Issues + Prevent Recurrence
 
-### Problem
+### Problem Summary
 
-The Strava sync's `autoMatchTrainingPlan` function (lines 127-239 in `strava-sync/index.ts`) only ever links **one** activity per workout via `matched_strava_activity_id`. When two back-to-back Strava activities happen for the same workout (e.g., a Fartlek saved as two recordings), the first gets matched and the second creates a **new unplanned workout entry** — resulting in two separate workout rows instead of one workout with two sessions.
+Three issues visible in the database:
 
-The junction table (`training_workout_activities`) that was added for .FIT multi-session support is **never populated by the Strava sync**. The `autoMatchTrainingPlan` function doesn't know about it at all.
+1. **Strava duplicate of Monday's run**: Strava activity 18105040374 ("Evening Run", 5.3km) is the same physical run as the Monday .FIT upload. The Strava sync used the old UTC-based `activity_date` logic and placed it on Tuesday. This created a ghost unplanned workout on Tuesday.
 
-### Root cause (3 issues)
+2. **Orphaned FIT upload**: Activity `a2759c62` is a leftover from a previous upload — no workout link, duplicate data.
 
-1. **Strava sync ignores junction table**: `autoMatchTrainingPlan` only sets `matched_strava_activity_id` on the workout row. It never inserts into `training_workout_activities`.
-2. **One-to-one assumption**: The matching loop skips workouts that already have a `matched_strava_activity_id`, so a second activity for the same workout always falls through to the "create unplanned workout" path.
-3. **Frontend `getMatchedActivities`**: Only looks up junction table entries by UUID (`activity_id`), but Strava activities are referenced by `strava_activity_id` (an integer). Even if junction entries existed, the Strava-linked activities wouldn't resolve properly unless the junction stores the `synced_activities.id` UUID.
+3. **Fartlek mis-matching**: The real Fartlek was two sessions (9.2km "Afternoon Run" + 2.0km "Evening Run", 42 min apart). Instead of being grouped under the Fartlek workout, each got its own unplanned workout. The Fartlek workout matched only the small 2.0km piece.
 
 ### Changes
 
-**1. Update `autoMatchTrainingPlan` in `strava-sync/index.ts`**
-- After matching a workout via `matched_strava_activity_id`, also insert a row into `training_workout_activities` (mapping `workout.id` → `synced_activity.id` UUID).
-- When a second activity matches the same workout (same sport, same day, within 2h of the previous session's end), **don't create a new unplanned workout**. Instead, add it to the junction table with an incremented `session_order`.
-- To detect this: after step 1 matching, before step 2 (unplanned creation), check if an unmatched activity shares the same day + sport as an already-matched workout. If so, check temporal proximity and link it as an additional session.
+**1. Data cleanup migration**
 
-**2. Apply the same logic to `strava-scheduled-sync/index.ts`**
-- The scheduled sync function has its own `syncUserActivities` that also does one-to-one matching. Apply the same junction table + multi-session grouping.
+- Delete orphaned activity `a2759c62` and its ghost workout `9fe5c6c8` ("Run (FIT Upload)" on Tuesday)
+- Delete the Strava duplicate activity `52ea7860` ("Evening Run" 5.3km on Tuesday) and its ghost workout `429af13a`
+- Re-link the Fartlek workout (`502d7b9b`) to both real Tuesday sessions via the junction table:
+  - Session 0: "Afternoon Run" `0192a5d9` (9.2km, the main session)
+  - Session 1: "Evening Run" `b31447d9` (2.0km, the continuation)
+- Delete the unplanned "Afternoon Run" workout `6d581a53` (its activity stays, just re-linked to Fartlek)
+- Update `activity_date` on the two real Tuesday Strava activities to `2026-04-14`
 
-**3. Apply to `strava-webhook/index.ts`**
-- The webhook handler also does single-activity matching. Update it to check for existing workout matches and add to junction table.
+**2. Fix Strava sync duplicate detection (`strava-sync/index.ts`)**
 
-**4. Update `parse-fit-file/index.ts` auto-match**
-- The .FIT auto-match already inserts into the junction table, but verify it also handles the case where a Strava activity was already matched to the same workout (don't create duplicates).
+The Strava sync currently does not check if a Strava activity duplicates an existing .FIT-uploaded activity with the same timestamp/distance. Add a check: before inserting a new synced_activity, look for an existing activity with the same `start_date` and similar `distance_meters` (within 1%). If found, skip the Strava activity (the FIT upload has higher fidelity data).
 
-**5. Ensure `getMatchedActivities` in `useTrainingPlan.ts` resolves Strava-linked activities**
-- Currently, if no junction table entries exist, it falls back to `getMatchedActivity` which looks up by `matched_strava_activity_id`. With junction entries now being populated for Strava too, the primary path will work. But verify the fallback still handles legacy data.
+**3. Fix `activity_date` computation in Strava sync**
+
+The `activity_date` for Strava activities is still computed using the old UTC-sensitive approach for some code paths. The `getLocalDate` function in `strava-sync` should be used consistently. Verify that ALL new synced_activities get `activity_date` set using the timezone-aware `getLocalDate` function.
+
+**4. Fix Fartlek multi-session grouping in `autoMatchTrainingPlan`**
+
+The current multi-session logic (Step 2 in `autoMatchTrainingPlan`) only checks activities against workouts that already have junction table entries. But the Fartlek's first match goes through Step 1 (which sets `matched_strava_activity_id` but the junction insert may not be queryable yet in the same loop). Fix: after Step 1 matching completes, rebuild the `usedActivityIds` set and re-check remaining activities against ALL matched workouts (including ones just matched in Step 1).
 
 ### Files to change
-- `supabase/functions/strava-sync/index.ts` — main fix: junction table + multi-session grouping in `autoMatchTrainingPlan`
-- `supabase/functions/strava-scheduled-sync/index.ts` — same pattern for scheduled sync
-- `supabase/functions/strava-webhook/index.ts` — same pattern for webhook
-- `supabase/functions/parse-fit-file/index.ts` — verify no conflicts with Strava-linked workouts
 
-### What stays the same
-- Database schema (junction table already exists)
-- Frontend UI (already handles multi-session display from junction table)
-- Legacy `matched_strava_activity_id` column (kept for backward compat, but junction table becomes source of truth)
+- New migration: data cleanup (delete duplicates, re-link Fartlek sessions)
+- `supabase/functions/strava-sync/index.ts`: duplicate detection vs FIT uploads + ensure `activity_date` is always set + fix multi-session grouping order
 
