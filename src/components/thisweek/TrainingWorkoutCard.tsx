@@ -181,19 +181,20 @@ export function TrainingWorkoutCard({
 
   const displayActivity = aggregated || primaryActivity;
 
-  const delta = matchedActivity
-    ? timeDelta(workout.target_duration_seconds, matchedActivity.duration_seconds)
+  const delta = displayActivity
+    ? timeDelta(workout.target_duration_seconds, displayActivity.duration_seconds)
     : null;
 
   // Build inline summary stats for collapsed row
   const summaryStats: { icon: React.ElementType; value: string; delta?: { text: string; positive: boolean } | null }[] = [];
 
-  if (matchedActivity) {
-    if (matchedActivity.duration_seconds) summaryStats.push({ icon: Clock, value: formatDuration(matchedActivity.duration_seconds), delta });
-    if (matchedActivity.distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(matchedActivity.distance_meters) });
-    if (matchedActivity.average_speed) summaryStats.push({ icon: Gauge, value: formatSpeed(matchedActivity.average_speed) });
-    if (matchedActivity.average_heartrate) summaryStats.push({ icon: Heart, value: `${Math.round(matchedActivity.average_heartrate)}` });
-    if (matchedActivity.total_elevation_gain) summaryStats.push({ icon: Mountain, value: `+${Math.round(matchedActivity.total_elevation_gain)}m` });
+  if (displayActivity) {
+    if (displayActivity.duration_seconds) summaryStats.push({ icon: Clock, value: formatDuration(displayActivity.duration_seconds), delta });
+    if (displayActivity.distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(displayActivity.distance_meters) });
+    if (displayActivity.average_speed) summaryStats.push({ icon: Gauge, value: formatSpeed(displayActivity.average_speed) });
+    if (displayActivity.average_heartrate) summaryStats.push({ icon: Heart, value: `${Math.round(displayActivity.average_heartrate)}` });
+    if (displayActivity.total_elevation_gain) summaryStats.push({ icon: Mountain, value: `+${Math.round(displayActivity.total_elevation_gain)}m` });
+    if (isMultiSession) summaryStats.push({ icon: File, value: `${activities.length} sessions` });
   } else if (workout.target_duration_seconds) {
     summaryStats.push({ icon: Clock, value: formatDuration(workout.target_duration_seconds) });
     if (workout.target_distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(workout.target_distance_meters) });
