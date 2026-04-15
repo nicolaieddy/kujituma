@@ -227,9 +227,21 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
           </Badge>
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          {activity.duration_seconds && <span>{formatDuration(activity.duration_seconds)}</span>}
-          {activity.distance_meters && <span>{formatDistance(activity.distance_meters)}</span>}
-          {activity.average_heartrate && <span>{Math.round(activity.average_heartrate)} bpm</span>}
+          {activity.duration_seconds && (
+            <InlineStat icon={Clock} value={formatDuration(activity.duration_seconds)} />
+          )}
+          {activity.distance_meters && (
+            <InlineStat icon={Activity} value={formatDistance(activity.distance_meters)} />
+          )}
+          {activity.average_speed && (
+            <InlineStat icon={Gauge} value={formatSpeed(activity.average_speed)} />
+          )}
+          {activity.average_heartrate && (
+            <InlineStat icon={Heart} value={`${Math.round(activity.average_heartrate)}`} />
+          )}
+          {activity.total_elevation_gain > 0 && (
+            <InlineStat icon={Mountain} value={`+${Math.round(activity.total_elevation_gain)}m`} />
+          )}
         </div>
       </div>
 
