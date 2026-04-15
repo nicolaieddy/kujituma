@@ -81,25 +81,54 @@ export function useTrainingPlan(weekStart: string) {
     staleTime: 1000 * 60 * 5,
   });
 
+  // Fetch activity links from junction table
+  const { data: activityLinks = [] } = useQuery({
+    queryKey: ["training-workout-activities", workoutIds],
+    queryFn: async () => {
+      if (workoutIds.length === 0) return [];
+      const { data, error } = await supabase
+        .from("training_workout_activities")
+        .select("workout_id, activity_id, session_order")
+        .in("workout_id", workoutIds)
+        .order("session_order", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: workoutIds.length > 0,
+    staleTime: 1000 * 60 * 5,
+  });
+
   // Merge goal_ids into workouts
   const workouts: TrainingPlanWorkout[] = rawWorkouts.map(w => ({
     ...w,
     goal_ids: goalLinks.filter(l => l.workout_id === w.id).map(l => l.goal_id),
   }));
 
-  // Get matched activities for the workouts (both Strava IDs and direct activity UUIDs)
+  // Collect all activity IDs we need to fetch (from junction table + legacy columns)
+  const junctionActivityIds = activityLinks.map(l => l.activity_id);
   const stravaActivityIds = workouts
     .filter(w => w.matched_strava_activity_id)
     .map(w => w.matched_strava_activity_id!);
   const directActivityIds = workouts
     .filter(w => (w as any).matched_activity_id)
     .map(w => (w as any).matched_activity_id as string);
+  const allActivityIdsToFetch = Array.from(new Set([...junctionActivityIds, ...directActivityIds]));
 
   const { data: matchedActivities = [] } = useQuery({
-    queryKey: ["training-matched-activities", stravaActivityIds, directActivityIds, workouts.map(w => `${w.id}:${w.week_start}:${w.day_of_week}:${w.workout_type}`).join("|")],
+    queryKey: ["training-matched-activities", allActivityIdsToFetch, stravaActivityIds, workouts.map(w => `${w.id}:${w.week_start}:${w.day_of_week}:${w.workout_type}`).join("|")],
     queryFn: async () => {
       const results: any[] = [];
 
+      // Fetch by direct UUIDs (junction + legacy matched_activity_id)
+      if (allActivityIdsToFetch.length > 0) {
+        const { data, error } = await supabase
+          .from("synced_activities")
+          .select("*")
+          .in("id", allActivityIdsToFetch);
+        if (!error && data) results.push(...data);
+      }
+
+      // Fetch by Strava IDs
       if (stravaActivityIds.length > 0) {
         const { data, error } = await supabase
           .from("synced_activities")
@@ -108,16 +137,10 @@ export function useTrainingPlan(weekStart: string) {
         if (!error && data) results.push(...data);
       }
 
-      if (directActivityIds.length > 0) {
-        const { data, error } = await supabase
-          .from("synced_activities")
-          .select("*")
-          .in("id", directActivityIds);
-        if (!error && data) results.push(...data);
-      }
-
+      // Fallback matching for unresolved workouts (no junction link, no direct/strava match)
+      const resolvedWorkoutIds = new Set(activityLinks.map(l => l.workout_id));
       const unresolvedWorkouts = workouts.filter(
-        (w) => !w.matched_activity_id && !w.matched_strava_activity_id
+        (w) => !resolvedWorkoutIds.has(w.id) && !w.matched_activity_id && !w.matched_strava_activity_id
       );
 
       if (unresolvedWorkouts.length > 0) {
@@ -146,9 +169,10 @@ export function useTrainingPlan(weekStart: string) {
               const workoutDateStr = getLocalDateString(workoutDate);
               const workoutType = (workout.workout_type || "").toLowerCase();
 
+              // Use activity_date if available, fall back to start_date-derived date
               const fallback = data.find((activity) => {
-                const activityDate = getLocalDateString(new Date(activity.start_date));
-                if (activityDate !== workoutDateStr) return false;
+                const actDate = activity.activity_date || getLocalDateString(new Date(activity.start_date));
+                if (actDate !== workoutDateStr) return false;
                 const activityType = (activity.activity_type || "").toLowerCase();
                 return workoutType === activityType || workoutType.includes(activityType) || activityType.includes(workoutType) || workoutType === "workout";
               });
