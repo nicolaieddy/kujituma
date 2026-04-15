@@ -273,7 +273,7 @@ export function TrainingWorkoutCard({
               variant="outline"
               className={cn(
                 "rounded-md text-[10px] shrink-0 px-1.5 py-0 h-5 font-medium gap-0.5",
-                matchedActivity.source === "fit_upload"
+                primaryActivity?.source === "fit_upload"
                   ? "border-warning/30 bg-warning/10 text-warning-foreground"
                   : "border-primary/30 bg-primary/10 text-primary"
               )}
