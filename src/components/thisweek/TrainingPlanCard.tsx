@@ -33,6 +33,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     workouts,
     isLoading,
     getMatchedActivity,
+    getMatchedActivities,
     createWorkout,
     updateWorkout,
     deleteWorkout,
@@ -89,7 +90,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
   const completedCount = displayWorkouts.filter((workout) => {
     const source = workouts.find(w => w.id === workout.sourceWorkoutId) || workout;
-    return getMatchedActivity(source as any);
+    const activities = getMatchedActivities(source as any);
+    return activities.length > 0;
   }).length;
   const totalCount = displayWorkouts.length;
 
@@ -258,9 +260,10 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                     </div>
 
                     <div className="space-y-3">
-                      {dayWorkouts.map((workout) => {
+                    {dayWorkouts.map((workout) => {
                         const sourceWorkout = workouts.find((item) => item.id === workout.sourceWorkoutId) || null;
-                        const matched = workout.isDerivedSession ? null : getMatchedActivity(sourceWorkout || workout as any);
+                        const allActivities = workout.isDerivedSession ? [] : getMatchedActivities(sourceWorkout || workout as any);
+                        const matched = allActivities[0] || null;
                         const goalNames = sourceWorkout ? getGoalNames(sourceWorkout) : [];
 
                         return (
@@ -268,11 +271,12 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                             key={workout.id}
                             workout={workout}
                             matchedActivity={matched}
+                            matchedActivities={allActivities}
                             isReadOnly={isReadOnly}
                             goalNames={goalNames}
                             onEdit={sourceWorkout ? () => openEditDialog(sourceWorkout) : undefined}
                             onDelete={sourceWorkout ? () => deleteWorkout(sourceWorkout.id) : undefined}
-                            onDeleteActivity={matched?.source === "fit_upload" ? (id) => deleteActivity(id) : undefined}
+                            onDeleteActivity={(id) => deleteActivity(id)}
                             isDeletingActivity={isDeletingActivity}
                           />
                         );
