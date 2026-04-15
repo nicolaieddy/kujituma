@@ -141,6 +141,137 @@ function ExpandedDetail({ workout, activity, laps }: {
   );
 }
 
+/* ── Single session expanded (used for single-activity workouts) ──── */
+
+function SingleSessionExpanded({ workout, activity, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
+  workout: TrainingPlanDisplayWorkout;
+  activity: any;
+  onDeleteActivity?: (id: string) => void;
+  confirmDeleteId: string | null;
+  setConfirmDeleteId: (id: string | null) => void;
+  isDeletingActivity?: boolean;
+}) {
+  const { data: laps = [] } = useActivityLaps(activity?.id || null);
+
+  return (
+    <>
+      <ExpandedDetail workout={workout} activity={activity} laps={laps} />
+      {activity && onDeleteActivity && activity.source === "fit_upload" && (
+        <div className="px-4 pb-4 border-t border-border/40 pt-3">
+          {confirmDeleteId !== activity.id ? (
+            <Button
+              variant="ghost" size="sm"
+              className="h-7 text-xs text-muted-foreground hover:text-destructive gap-1"
+              onClick={() => setConfirmDeleteId(activity.id)}
+              disabled={isDeletingActivity}
+            >
+              <FileX className="h-3 w-3" />
+              Delete activity data
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-xs text-destructive">Delete all data (laps, streams, file)?</p>
+              <Button variant="destructive" size="sm" className="h-7 text-xs"
+                onClick={() => { onDeleteActivity(activity.id); setConfirmDeleteId(null); }}
+                disabled={isDeletingActivity}
+              >
+                {isDeletingActivity ? "Deleting..." : "Confirm"}
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-xs"
+                onClick={() => setConfirmDeleteId(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ── Session section (for multi-session workouts) ──────────────── */
+
+function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
+  activity: any;
+  sessionIndex: number;
+  totalSessions: number;
+  onDeleteActivity?: (id: string) => void;
+  confirmDeleteId: string | null;
+  setConfirmDeleteId: (id: string | null) => void;
+  isDeletingActivity?: boolean;
+}) {
+  const { data: laps = [] } = useActivityLaps(activity?.id || null);
+
+  return (
+    <div className="rounded-lg border border-border/40 bg-muted/10 overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-2 bg-muted/20 border-b border-border/30">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-muted-foreground">
+            Session {sessionIndex + 1} of {totalSessions}
+          </span>
+          <Badge
+            variant="outline"
+            className={cn(
+              "rounded-md text-[10px] px-1.5 py-0 h-5 font-medium gap-0.5",
+              activity.source === "fit_upload"
+                ? "border-warning/30 bg-warning/10 text-warning-foreground"
+                : "border-primary/30 bg-primary/10 text-primary"
+            )}
+          >
+            {activity.source === "fit_upload" ? (
+              <><File className="h-2.5 w-2.5" />.FIT</>
+            ) : (
+              <><Activity className="h-2.5 w-2.5" />Strava</>
+            )}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          {activity.duration_seconds && <span>{formatDuration(activity.duration_seconds)}</span>}
+          {activity.distance_meters && <span>{formatDistance(activity.distance_meters)}</span>}
+          {activity.average_heartrate && <span>{Math.round(activity.average_heartrate)} bpm</span>}
+        </div>
+      </div>
+
+      {laps.length > 0 && (
+        <div className="px-3 pb-3 pt-2 space-y-3">
+          <ActivityCharts laps={laps} />
+          <LapSplitsTable laps={laps} />
+        </div>
+      )}
+
+      {activity.source === "fit_upload" && onDeleteActivity && (
+        <div className="px-3 pb-2 border-t border-border/30 pt-2">
+          {confirmDeleteId !== activity.id ? (
+            <Button variant="ghost" size="sm"
+              className="h-6 text-[11px] text-muted-foreground hover:text-destructive gap-1"
+              onClick={() => setConfirmDeleteId(activity.id)}
+              disabled={isDeletingActivity}
+            >
+              <FileX className="h-3 w-3" /> Delete session data
+            </Button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] text-destructive">Delete this session's data?</p>
+              <Button variant="destructive" size="sm" className="h-6 text-[11px]"
+                onClick={() => { onDeleteActivity(activity.id); setConfirmDeleteId(null); }}
+                disabled={isDeletingActivity}
+              >
+                Confirm
+              </Button>
+              <Button variant="ghost" size="sm" className="h-6 text-[11px]"
+                onClick={() => setConfirmDeleteId(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ── Main card ───────────────────────────────────────────────── */
 
 export function TrainingWorkoutCard({
