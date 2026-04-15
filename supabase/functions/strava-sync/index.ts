@@ -500,6 +500,21 @@ serve(async (req) => {
         continue;
       }
 
+      // Check for FIT upload duplicate: same start_date and similar distance (within 1%)
+      const { data: fitDuplicate } = await supabase
+        .from("synced_activities")
+        .select("id")
+        .eq("user_id", user.id)
+        .is("strava_activity_id", null)
+        .eq("start_date", activity.start_date)
+        .single();
+
+      if (fitDuplicate && activity.distance > 0) {
+        console.log(`Skipping Strava activity ${activity.id} — FIT upload duplicate exists (${fitDuplicate.id})`);
+        results.skipped++;
+        continue;
+      }
+
       // New activity - sync it with enriched data
       const syncedActivity = {
         user_id: user.id,
