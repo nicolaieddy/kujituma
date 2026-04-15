@@ -23,6 +23,90 @@ export interface TrainingPlanDisplayWorkout extends TrainingPlanWorkout {
   sessionLabel?: string;
 }
 
+/** A merged session groups activities from different sources (Strava + .FIT) that represent the same physical effort */
+export interface MergedSession {
+  /** The activity used for primary display stats (prefer Strava for naming, .FIT for detailed data) */
+  displayActivity: any;
+  /** All activities in this session (e.g. one Strava + one .FIT) */
+  activities: any[];
+  /** Unique data sources in this session */
+  sources: string[];
+  /** Which activity ID to use for lap/chart data (prefer .FIT) */
+  lapsActivityId: string | null;
+}
+
+/**
+ * Merges activities that represent the same physical session.
+ * A Strava sync and .FIT upload for the same workout produce two rows in synced_activities —
+ * this function groups them so they display as a single session with multiple source badges.
+ */
+export function mergeActivitiesIntoSessions(activities: any[]): MergedSession[] {
+  if (activities.length === 0) return [];
+
+  // Sort by start_date
+  const sorted = [...activities].sort((a, b) =>
+    new Date(a.start_date).getTime() - new Date(b.start_date).getTime()
+  );
+
+  const sessions: MergedSession[] = [];
+  const used = new Set<string>();
+
+  for (let i = 0; i < sorted.length; i++) {
+    if (used.has(sorted[i].id)) continue;
+
+    const group = [sorted[i]];
+    used.add(sorted[i].id);
+
+    // Look for other activities that match this one (same physical session)
+    for (let j = i + 1; j < sorted.length; j++) {
+      if (used.has(sorted[j].id)) continue;
+      if (isSamePhysicalSession(sorted[i], sorted[j])) {
+        group.push(sorted[j]);
+        used.add(sorted[j].id);
+      }
+    }
+
+    // Prefer .FIT for laps (richer data), Strava for display name/description
+    const fitActivity = group.find(a => a.source === "fit_upload");
+    const stravaActivity = group.find(a => a.source !== "fit_upload");
+    // Use Strava as primary display if available (has name/description), else .FIT
+    const displayActivity = stravaActivity || fitActivity || group[0];
+
+    sessions.push({
+      displayActivity,
+      activities: group,
+      sources: [...new Set(group.map(a => a.source))],
+      lapsActivityId: fitActivity?.id || group[0]?.id || null,
+    });
+  }
+
+  return sessions;
+}
+
+function isSamePhysicalSession(a: any, b: any): boolean {
+  // Different sources is a strong signal (Strava + .FIT for same workout)
+  if (a.source === b.source) return false;
+
+  // Must be on the same date
+  const dateA = a.activity_date || a.start_date?.split("T")[0];
+  const dateB = b.activity_date || b.start_date?.split("T")[0];
+  if (dateA !== dateB) return false;
+
+  // Check duration similarity (within 25%)
+  if (a.duration_seconds && b.duration_seconds) {
+    const ratio = a.duration_seconds / b.duration_seconds;
+    if (ratio < 0.75 || ratio > 1.33) return false;
+  }
+
+  // Check distance similarity (within 25%)
+  if (a.distance_meters && b.distance_meters) {
+    const ratio = a.distance_meters / b.distance_meters;
+    if (ratio < 0.75 || ratio > 1.33) return false;
+  }
+
+  return true;
+}
+
 export function formatDistance(meters: number | null): string {
   if (!meters) return "";
   return meters >= 1000 ? `${(meters / 1000).toFixed(1)} km` : `${Math.round(meters)} m`;
