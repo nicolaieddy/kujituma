@@ -373,48 +373,35 @@ export function TrainingWorkoutCard({
             </div>
           )}
 
-          <ExpandedDetail workout={workout} activity={matchedActivity} laps={laps} />
-
-          {/* Delete activity data */}
-          {matchedActivity && onDeleteActivity && (
-            <div className="px-4 pb-4 border-t border-border/40 pt-3">
-              {!confirmDeleteActivity ? (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-7 text-xs text-muted-foreground hover:text-destructive gap-1"
-                  onClick={() => setConfirmDeleteActivity(true)}
-                  disabled={isDeletingActivity}
-                >
-                  <FileX className="h-3 w-3" />
-                  Delete activity data
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <p className="text-xs text-destructive">Delete all data (laps, streams, file)?</p>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      onDeleteActivity(matchedActivity.id);
-                      setConfirmDeleteActivity(false);
-                    }}
-                    disabled={isDeletingActivity}
-                  >
-                    {isDeletingActivity ? "Deleting..." : "Confirm"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => setConfirmDeleteActivity(false)}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              )}
+          {/* Multi-session expanded view */}
+          {isMultiSession ? (
+            <div className="px-4 pb-4 pt-1 space-y-4">
+              {/* Plan + description */}
+              <ExpandedDetail workout={workout} activity={null} laps={[]} />
+              {activities.map((activity: any, idx: number) => (
+                <SessionSection
+                  key={activity.id}
+                  activity={activity}
+                  sessionIndex={idx}
+                  totalSessions={activities.length}
+                  onDeleteActivity={onDeleteActivity}
+                  confirmDeleteId={confirmDeleteActivity}
+                  setConfirmDeleteId={setConfirmDeleteActivity}
+                  isDeletingActivity={isDeletingActivity}
+                />
+              ))}
             </div>
+          ) : (
+            <>
+              <SingleSessionExpanded
+                workout={workout}
+                activity={primaryActivity}
+                onDeleteActivity={onDeleteActivity}
+                confirmDeleteId={confirmDeleteActivity}
+                setConfirmDeleteId={setConfirmDeleteActivity}
+                isDeletingActivity={isDeletingActivity}
+              />
+            </>
           )}
         </div>
       )}
