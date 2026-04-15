@@ -143,47 +143,53 @@ function ExpandedDetail({ workout, activity, laps }: {
 
 /* ── Single session expanded (used for single-activity workouts) ──── */
 
-function SingleSessionExpanded({ workout, activity, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
+function SingleSessionExpanded({ workout, session, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
   workout: TrainingPlanDisplayWorkout;
-  activity: any;
+  session: MergedSession | null;
   onDeleteActivity?: (id: string) => void;
   confirmDeleteId: string | null;
   setConfirmDeleteId: (id: string | null) => void;
   isDeletingActivity?: boolean;
 }) {
-  const { data: laps = [] } = useActivityLaps(activity?.id || null);
+  const activity = session?.displayActivity || null;
+  const { data: laps = [] } = useActivityLaps(session?.lapsActivityId || null);
+  const fitActivities = session?.activities.filter(a => a.source === "fit_upload") || [];
 
   return (
     <>
       <ExpandedDetail workout={workout} activity={activity} laps={laps} />
-      {activity && onDeleteActivity && activity.source === "fit_upload" && (
+      {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-4 pb-4 border-t border-border/40 pt-3">
-          {confirmDeleteId !== activity.id ? (
-            <Button
-              variant="ghost" size="sm"
-              className="h-7 text-xs text-muted-foreground hover:text-destructive gap-1"
-              onClick={() => setConfirmDeleteId(activity.id)}
-              disabled={isDeletingActivity}
-            >
-              <FileX className="h-3 w-3" />
-              Delete activity data
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-xs text-destructive">Delete all data (laps, streams, file)?</p>
-              <Button variant="destructive" size="sm" className="h-7 text-xs"
-                onClick={() => { onDeleteActivity(activity.id); setConfirmDeleteId(null); }}
-                disabled={isDeletingActivity}
-              >
-                {isDeletingActivity ? "Deleting..." : "Confirm"}
-              </Button>
-              <Button variant="ghost" size="sm" className="h-7 text-xs"
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                Cancel
-              </Button>
+          {fitActivities.map(fitAct => (
+            <div key={fitAct.id}>
+              {confirmDeleteId !== fitAct.id ? (
+                <Button
+                  variant="ghost" size="sm"
+                  className="h-7 text-xs text-muted-foreground hover:text-destructive gap-1"
+                  onClick={() => setConfirmDeleteId(fitAct.id)}
+                  disabled={isDeletingActivity}
+                >
+                  <FileX className="h-3 w-3" />
+                  Delete .FIT data
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-xs text-destructive">Delete all .FIT data (laps, streams, file)?</p>
+                  <Button variant="destructive" size="sm" className="h-7 text-xs"
+                    onClick={() => { onDeleteActivity(fitAct.id); setConfirmDeleteId(null); }}
+                    disabled={isDeletingActivity}
+                  >
+                    {isDeletingActivity ? "Deleting..." : "Confirm"}
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-7 text-xs"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </>
@@ -553,7 +559,7 @@ export function TrainingWorkoutCard({
             <>
               <SingleSessionExpanded
                 workout={workout}
-                activity={primaryActivity}
+                session={sessions[0] || null}
                 onDeleteActivity={onDeleteActivity}
                 confirmDeleteId={confirmDeleteActivity}
                 setConfirmDeleteId={setConfirmDeleteActivity}
