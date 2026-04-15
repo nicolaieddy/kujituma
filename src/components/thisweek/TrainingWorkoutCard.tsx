@@ -315,19 +315,20 @@ export function TrainingWorkoutCard({
   const isMultiSession = sessions.length > 1;
   const status = getWorkoutStatus(workout, primaryActivity);
 
-  // Aggregate stats across all sessions
+  // Aggregate stats across all sessions (use session displayActivities, not raw activities)
+  const sessionDisplays = sessions.map(s => s.displayActivity);
   const aggregated = isMultiSession ? {
-    duration_seconds: activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0),
-    distance_meters: activities.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0),
-    total_elevation_gain: activities.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0),
+    duration_seconds: sessionDisplays.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0),
+    distance_meters: sessionDisplays.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0),
+    total_elevation_gain: sessionDisplays.reduce((s: number, a: any) => s + (a.total_elevation_gain || 0), 0),
     average_heartrate: (() => {
-      const weighted = activities.reduce((s: number, a: any) => s + (a.average_heartrate || 0) * (a.duration_seconds || 0), 0);
-      const totalDur = activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
+      const weighted = sessionDisplays.reduce((s: number, a: any) => s + (a.average_heartrate || 0) * (a.duration_seconds || 0), 0);
+      const totalDur = sessionDisplays.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
       return totalDur > 0 ? weighted / totalDur : null;
     })(),
     average_speed: (() => {
-      const totalDist = activities.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0);
-      const totalDur = activities.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
+      const totalDist = sessionDisplays.reduce((s: number, a: any) => s + (a.distance_meters || 0), 0);
+      const totalDur = sessionDisplays.reduce((s: number, a: any) => s + (a.duration_seconds || 0), 0);
       return totalDur > 0 ? totalDist / totalDur : null;
     })(),
   } : null;
@@ -347,7 +348,7 @@ export function TrainingWorkoutCard({
     if (displayActivity.average_speed) summaryStats.push({ icon: Gauge, value: formatSpeed(displayActivity.average_speed) });
     if (displayActivity.average_heartrate) summaryStats.push({ icon: Heart, value: `${Math.round(displayActivity.average_heartrate)}` });
     if (displayActivity.total_elevation_gain) summaryStats.push({ icon: Mountain, value: `+${Math.round(displayActivity.total_elevation_gain)}m` });
-    if (isMultiSession) summaryStats.push({ icon: File, value: `${activities.length} sessions` });
+    if (isMultiSession) summaryStats.push({ icon: File, value: `${sessions.length} sessions` });
   } else if (workout.target_duration_seconds) {
     summaryStats.push({ icon: Clock, value: formatDuration(workout.target_duration_seconds) });
     if (workout.target_distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(workout.target_distance_meters) });
@@ -535,12 +536,12 @@ export function TrainingWorkoutCard({
             <div className="px-4 pb-4 pt-1 space-y-4">
               {/* Plan + description */}
               <ExpandedDetail workout={workout} activity={null} laps={[]} />
-              {activities.map((activity: any, idx: number) => (
+              {sessions.map((session: MergedSession, idx: number) => (
                 <SessionSection
-                  key={activity.id}
-                  activity={activity}
+                  key={session.displayActivity.id}
+                  session={session}
                   sessionIndex={idx}
-                  totalSessions={activities.length}
+                  totalSessions={sessions.length}
                   onDeleteActivity={onDeleteActivity}
                   confirmDeleteId={confirmDeleteActivity}
                   setConfirmDeleteId={setConfirmDeleteActivity}
