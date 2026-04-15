@@ -1,91 +1,46 @@
 
 
-## Multi-Session Workouts + Fix Date Matching Bug
+## Strava Multi-Session Support
 
-### Problem 1: Date matching bug (still broken)
-Lines 428-430 in `parse-fit-file/index.ts` compute the workout date using `new Date(week_start)` + `.toISOString().split("T")[0]`, which is the exact UTC-sensitive pattern that causes day drift. The activity date is correctly computed as Monday, but the workout date comparison drifts to Tuesday, so the auto-match links to the wrong day.
+### Problem
 
-### Problem 2: Multi-session workouts
-Currently `training_plan_workouts.matched_activity_id` is a single UUID. When you split a workout into 2-3 recordings (e.g., a Fartlek saved as two back-to-back sessions), only one can be linked.
+The Strava sync's `autoMatchTrainingPlan` function (lines 127-239 in `strava-sync/index.ts`) only ever links **one** activity per workout via `matched_strava_activity_id`. When two back-to-back Strava activities happen for the same workout (e.g., a Fartlek saved as two recordings), the first gets matched and the second creates a **new unplanned workout entry** — resulting in two separate workout rows instead of one workout with two sessions.
 
-### Design
+The junction table (`training_workout_activities`) that was added for .FIT multi-session support is **never populated by the Strava sync**. The `autoMatchTrainingPlan` function doesn't know about it at all.
 
-**Multi-activity linking via a junction table.** A new `training_workout_activities` table maps one workout to many activities. The existing `matched_activity_id` column is kept for backward compatibility but the UI and auto-match logic use the junction table as the source of truth.
+### Root cause (3 issues)
 
-**Auto-grouping logic:** When a FIT file is uploaded, the auto-match checks if a workout already has one linked activity. If the new activity is:
-- Same sport type
-- Same `activity_date`
-- Start time within 2 hours of the previous session's end time
-
-...it gets added as an additional session on the same workout rather than creating a new unplanned workout.
-
-**UI changes:** When a workout has multiple linked activities, the card shows:
-- Aggregated totals in the collapsed row (sum of duration, distance, elevation; weighted avg HR/pace)
-- An expandable list of individual sessions inside the detail view, each with its own laps and charts
-- A "Session 1 / Session 2" label on each sub-section
+1. **Strava sync ignores junction table**: `autoMatchTrainingPlan` only sets `matched_strava_activity_id` on the workout row. It never inserts into `training_workout_activities`.
+2. **One-to-one assumption**: The matching loop skips workouts that already have a `matched_strava_activity_id`, so a second activity for the same workout always falls through to the "create unplanned workout" path.
+3. **Frontend `getMatchedActivities`**: Only looks up junction table entries by UUID (`activity_id`), but Strava activities are referenced by `strava_activity_id` (an integer). Even if junction entries existed, the Strava-linked activities wouldn't resolve properly unless the junction stores the `synced_activities.id` UUID.
 
 ### Changes
 
-**1. New junction table: `training_workout_activities`**
-```sql
-CREATE TABLE training_workout_activities (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  workout_id UUID NOT NULL REFERENCES training_plan_workouts(id) ON DELETE CASCADE,
-  activity_id UUID NOT NULL REFERENCES synced_activities(id) ON DELETE CASCADE,
-  session_order INTEGER NOT NULL DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(workout_id, activity_id)
-);
--- RLS: user can manage their own
--- Backfill from existing matched_activity_id
-INSERT INTO training_workout_activities (workout_id, activity_id, session_order)
-SELECT id, matched_activity_id, 0
-FROM training_plan_workouts
-WHERE matched_activity_id IS NOT NULL;
-```
+**1. Update `autoMatchTrainingPlan` in `strava-sync/index.ts`**
+- After matching a workout via `matched_strava_activity_id`, also insert a row into `training_workout_activities` (mapping `workout.id` → `synced_activity.id` UUID).
+- When a second activity matches the same workout (same sport, same day, within 2h of the previous session's end), **don't create a new unplanned workout**. Instead, add it to the junction table with an incremented `session_order`.
+- To detect this: after step 1 matching, before step 2 (unplanned creation), check if an unmatched activity shares the same day + sport as an already-matched workout. If so, check temporal proximity and link it as an additional session.
 
-**2. Fix date matching in `parse-fit-file/index.ts`**
-Replace lines 428-430:
-```typescript
-// Before (broken):
-const workoutDate = new Date(workout.week_start);
-workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
-const workoutDateStr = workoutDate.toISOString().split("T")[0];
+**2. Apply the same logic to `strava-scheduled-sync/index.ts`**
+- The scheduled sync function has its own `syncUserActivities` that also does one-to-one matching. Apply the same junction table + multi-session grouping.
 
-// After (safe):
-const [wy, wm, wd] = workout.week_start.split("-").map(Number);
-const d = new Date(wy, wm - 1, wd + workout.day_of_week);
-const workoutDateStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
-```
+**3. Apply to `strava-webhook/index.ts`**
+- The webhook handler also does single-activity matching. Update it to check for existing workout matches and add to junction table.
 
-**3. Update auto-match to support multi-session**
-In `parse-fit-file/index.ts`, after finding a matching workout:
-- Check if it already has a linked activity via the junction table
-- If yes, check if the new activity qualifies as a continuation (same sport, same date, start time within 2h of previous end)
-- If it qualifies, insert into junction table with `session_order = existing_count`
-- If no match found with existing workouts, also check workouts that already have a match (not just `matched_activity_id IS NULL`)
+**4. Update `parse-fit-file/index.ts` auto-match**
+- The .FIT auto-match already inserts into the junction table, but verify it also handles the case where a Strava activity was already matched to the same workout (don't create duplicates).
 
-**4. Update `useTrainingPlan.ts`**
-- Fetch from `training_workout_activities` to get all linked activity IDs per workout
-- Load all linked activities
-- Provide `getMatchedActivities(workout)` returning an array instead of a single activity
-- Aggregate stats for the collapsed row (total duration, total distance, avg HR weighted by duration)
-
-**5. Update `TrainingWorkoutCard.tsx`**
-- When multiple activities exist, show aggregated stats in the collapsed row
-- In expanded view, show a "Session 1", "Session 2" breakdown with individual laps/charts per session
-- Each session shows its own source badge (.FIT / Strava)
-- Delete button works per-session (removes from junction table and optionally deletes the activity data)
-
-**6. Update `TrainingPlanCard.tsx`**
-- Pass array of matched activities instead of single activity
-- Completion status: "done" if at least one activity is linked
+**5. Ensure `getMatchedActivities` in `useTrainingPlan.ts` resolves Strava-linked activities**
+- Currently, if no junction table entries exist, it falls back to `getMatchedActivity` which looks up by `matched_strava_activity_id`. With junction entries now being populated for Strava too, the primary path will work. But verify the fallback still handles legacy data.
 
 ### Files to change
-- **Migration**: new `training_workout_activities` table + backfill
-- `supabase/functions/parse-fit-file/index.ts` — fix date math + multi-session auto-match
-- `src/hooks/useTrainingPlan.ts` — fetch junction table, return arrays, aggregate stats
-- `src/components/thisweek/TrainingWorkoutCard.tsx` — multi-session UI
-- `src/components/thisweek/TrainingPlanCard.tsx` — wire new data shape
-- `src/components/thisweek/trainingPlanUtils.ts` — aggregation helpers
+- `supabase/functions/strava-sync/index.ts` — main fix: junction table + multi-session grouping in `autoMatchTrainingPlan`
+- `supabase/functions/strava-scheduled-sync/index.ts` — same pattern for scheduled sync
+- `supabase/functions/strava-webhook/index.ts` — same pattern for webhook
+- `supabase/functions/parse-fit-file/index.ts` — verify no conflicts with Strava-linked workouts
+
+### What stays the same
+- Database schema (junction table already exists)
+- Frontend UI (already handles multi-session display from junction table)
+- Legacy `matched_strava_activity_id` column (kept for backward compat, but junction table becomes source of truth)
 
