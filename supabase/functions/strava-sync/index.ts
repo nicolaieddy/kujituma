@@ -441,13 +441,17 @@ serve(async (req) => {
       affectedWeeks.add(weekMonday);
 
       if (existingSync) {
-        // Update enriched fields on existing synced activities
+        // Update enriched fields and backfill activity_date on existing synced activities
         const needsEnrichment = !existingSync.average_speed && activity.average_speed;
+        const needsDateFix = !existingSync.activity_date || existingSync.activity_date !== activityLocalDate;
         
-        if (needsEnrichment) {
+        if (needsEnrichment || needsDateFix) {
           await supabase
             .from("synced_activities")
-            .update(enrichedFields)
+            .update({
+              ...enrichedFields,
+              activity_date: activityLocalDate,
+            })
             .eq("id", existingSync.id);
         }
 
@@ -497,6 +501,21 @@ serve(async (req) => {
         } else {
           results.skipped++;
         }
+        continue;
+      }
+
+      // Check for FIT upload duplicate: same start_date and similar distance (within 1%)
+      const { data: fitDuplicate } = await supabase
+        .from("synced_activities")
+        .select("id")
+        .eq("user_id", user.id)
+        .is("strava_activity_id", null)
+        .eq("start_date", activity.start_date)
+        .single();
+
+      if (fitDuplicate && activity.distance > 0) {
+        console.log(`Skipping Strava activity ${activity.id} — FIT upload duplicate exists (${fitDuplicate.id})`);
+        results.skipped++;
         continue;
       }
 
