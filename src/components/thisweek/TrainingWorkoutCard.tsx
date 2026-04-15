@@ -192,8 +192,8 @@ function SingleSessionExpanded({ workout, activity, onDeleteActivity, confirmDel
 
 /* ── Session section (for multi-session workouts) ──────────────── */
 
-function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
-  activity: any;
+function SessionSection({ session, sessionIndex, totalSessions, onDeleteActivity, confirmDeleteId, setConfirmDeleteId, isDeletingActivity }: {
+  session: MergedSession;
   sessionIndex: number;
   totalSessions: number;
   onDeleteActivity?: (id: string) => void;
@@ -201,7 +201,9 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
   setConfirmDeleteId: (id: string | null) => void;
   isDeletingActivity?: boolean;
 }) {
-  const { data: laps = [] } = useActivityLaps(activity?.id || null);
+  const { data: laps = [] } = useActivityLaps(session.lapsActivityId);
+  const activity = session.displayActivity;
+  const fitActivities = session.activities.filter(a => a.source === "fit_upload");
 
   return (
     <div className="rounded-lg border border-border/40 bg-muted/10 overflow-hidden">
@@ -210,21 +212,24 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
           <span className="text-xs font-semibold text-muted-foreground">
             Session {sessionIndex + 1} of {totalSessions}
           </span>
-          <Badge
-            variant="outline"
-            className={cn(
-              "rounded-md text-[10px] px-1.5 py-0 h-5 font-medium gap-0.5",
-              activity.source === "fit_upload"
-                ? "border-warning/30 bg-warning/10 text-warning-foreground"
-                : "border-primary/30 bg-primary/10 text-primary"
-            )}
-          >
-            {activity.source === "fit_upload" ? (
-              <><File className="h-2.5 w-2.5" />.FIT</>
-            ) : (
-              <><Activity className="h-2.5 w-2.5" />Strava</>
-            )}
-          </Badge>
+          {session.sources.map((source: string) => (
+            <Badge
+              key={source}
+              variant="outline"
+              className={cn(
+                "rounded-md text-[10px] px-1.5 py-0 h-5 font-medium gap-0.5",
+                source === "fit_upload"
+                  ? "border-warning/30 bg-warning/10 text-warning-foreground"
+                  : "border-primary/30 bg-primary/10 text-primary"
+              )}
+            >
+              {source === "fit_upload" ? (
+                <><File className="h-2.5 w-2.5" />.FIT</>
+              ) : (
+                <><Activity className="h-2.5 w-2.5" />Strava</>
+              )}
+            </Badge>
+          ))}
         </div>
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           {activity.duration_seconds && (
@@ -252,32 +257,36 @@ function SessionSection({ activity, sessionIndex, totalSessions, onDeleteActivit
         </div>
       )}
 
-      {activity.source === "fit_upload" && onDeleteActivity && (
+      {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-3 pb-2 border-t border-border/30 pt-2">
-          {confirmDeleteId !== activity.id ? (
-            <Button variant="ghost" size="sm"
-              className="h-6 text-[11px] text-muted-foreground hover:text-destructive gap-1"
-              onClick={() => setConfirmDeleteId(activity.id)}
-              disabled={isDeletingActivity}
-            >
-              <FileX className="h-3 w-3" /> Delete session data
-            </Button>
-          ) : (
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] text-destructive">Delete this session's data?</p>
-              <Button variant="destructive" size="sm" className="h-6 text-[11px]"
-                onClick={() => { onDeleteActivity(activity.id); setConfirmDeleteId(null); }}
-                disabled={isDeletingActivity}
-              >
-                Confirm
-              </Button>
-              <Button variant="ghost" size="sm" className="h-6 text-[11px]"
-                onClick={() => setConfirmDeleteId(null)}
-              >
-                Cancel
-              </Button>
+          {fitActivities.map(fitAct => (
+            <div key={fitAct.id}>
+              {confirmDeleteId !== fitAct.id ? (
+                <Button variant="ghost" size="sm"
+                  className="h-6 text-[11px] text-muted-foreground hover:text-destructive gap-1"
+                  onClick={() => setConfirmDeleteId(fitAct.id)}
+                  disabled={isDeletingActivity}
+                >
+                  <FileX className="h-3 w-3" /> Delete .FIT data
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] text-destructive">Delete this .FIT data?</p>
+                  <Button variant="destructive" size="sm" className="h-6 text-[11px]"
+                    onClick={() => { onDeleteActivity(fitAct.id); setConfirmDeleteId(null); }}
+                    disabled={isDeletingActivity}
+                  >
+                    Confirm
+                  </Button>
+                  <Button variant="ghost" size="sm" className="h-6 text-[11px]"
+                    onClick={() => setConfirmDeleteId(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
+          ))}
         </div>
       )}
     </div>
@@ -301,8 +310,9 @@ export function TrainingWorkoutCard({
   const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<string | null>(null);
   const isRest = workout.workout_type === "Rest";
   const activities = matchedActivities.length > 0 ? matchedActivities : matchedActivity ? [matchedActivity] : [];
-  const primaryActivity = activities[0] || null;
-  const isMultiSession = activities.length > 1;
+  const sessions = mergeActivitiesIntoSessions(activities);
+  const primaryActivity = sessions[0]?.displayActivity || null;
+  const isMultiSession = sessions.length > 1;
   const status = getWorkoutStatus(workout, primaryActivity);
 
   // Aggregate stats across all sessions
