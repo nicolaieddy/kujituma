@@ -132,13 +132,33 @@ serve(async (req) => {
       const activity = await activityResponse.json();
       console.log(`Processing activity: ${activity.name} (${activity.sport_type || activity.type})`);
 
+      // Get user's timezone for correct local date
+      const { data: userProfile } = await adminClient
+        .from("profiles")
+        .select("timezone")
+        .eq("id", connection.user_id)
+        .single();
+      const userTimezone = userProfile?.timezone || "UTC";
+
+      // Derive local date
+      function getLocalDateWh(utcIso: string, tz: string): string {
+        const d = new Date(utcIso);
+        const parts = new Intl.DateTimeFormat("en-CA", {
+          timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit",
+        }).formatToParts(d);
+        const y = parts.find(p => p.type === "year")!.value;
+        const m = parts.find(p => p.type === "month")!.value;
+        const dd = parts.find(p => p.type === "day")!.value;
+        return `${y}-${m}-${dd}`;
+      }
+      const activityLocalDate = getLocalDateWh(activity.start_date, userTimezone);
+
       // Get user's activity mappings
       const { data: mappings } = await adminClient
         .from("activity_mappings")
         .select("*")
         .eq("user_id", connection.user_id);
 
-      // Find matching mapping
       const mapping = mappings?.find(m => 
         m.strava_activity_type === activity.type || 
         m.strava_activity_type === activity.sport_type
@@ -148,7 +168,7 @@ serve(async (req) => {
       const meetsMinDuration = !mapping || durationMinutes >= (mapping.min_duration_minutes || 0);
 
       // Store synced activity
-      await adminClient
+      const { data: syncedRow } = await adminClient
         .from("synced_activities")
         .insert({
           user_id: connection.user_id,
@@ -156,18 +176,20 @@ serve(async (req) => {
           activity_type: activity.sport_type || activity.type,
           activity_name: activity.name,
           start_date: activity.start_date,
+          activity_date: activityLocalDate,
           duration_seconds: activity.moving_time,
           distance_meters: activity.distance,
           matched_habit_item_id: mapping && meetsMinDuration ? mapping.habit_item_id : null,
           matched_goal_id: mapping && meetsMinDuration ? mapping.goal_id : null,
           habit_completion_created: false,
-        });
+        })
+        .select("id")
+        .single();
 
       // Create habit completion if we have a match
       if (mapping && meetsMinDuration) {
-        const completionDate = activity.start_date_local.split("T")[0];
+        const completionDate = activityLocalDate;
         
-        // Check if completion already exists
         const { data: existingCompletion } = await adminClient
           .from("habit_completions")
           .select("id")
@@ -193,6 +215,136 @@ serve(async (req) => {
             .eq("strava_activity_id", activity.id);
 
           console.log(`Created habit completion for ${activity.name}`);
+        }
+      }
+
+      // Auto-match training plan
+      if (syncedRow?.id) {
+        const actType = (activity.sport_type || activity.type || "").toLowerCase();
+        // Get Monday of the activity's local date
+        function getMondayWh(dateStr: string): string {
+          const d = new Date(dateStr + "T12:00:00");
+          const day = d.getDay();
+          d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+        }
+        function getDayOfWeekWh(localDateStr: string): number {
+          const d = new Date(localDateStr + "T12:00:00");
+          const jsDay = d.getDay();
+          return jsDay === 0 ? 6 : jsDay - 1;
+        }
+        const weekStart = getMondayWh(activityLocalDate);
+        const actDow = getDayOfWeekWh(activityLocalDate);
+
+        // Try to match unmatched workout
+        const { data: unmatchedWorkouts } = await adminClient
+          .from("training_plan_workouts")
+          .select("id, workout_type, day_of_week")
+          .eq("user_id", connection.user_id)
+          .eq("week_start", weekStart)
+          .eq("day_of_week", actDow)
+          .is("matched_strava_activity_id", null);
+
+        let trainingMatched = false;
+        for (const workout of (unmatchedWorkouts || [])) {
+          const planType = (workout.workout_type || "").toLowerCase();
+          if (planType === "rest") continue;
+          const typeMatch = actType === planType || planType === "workout" ||
+            (actType === "run" && planType === "run") ||
+            (actType === "weighttraining" && (planType === "strength" || planType === "workout"));
+          if (!typeMatch) continue;
+
+          await adminClient
+            .from("training_plan_workouts")
+            .update({ matched_strava_activity_id: activity.id })
+            .eq("id", workout.id);
+          await adminClient
+            .from("training_workout_activities")
+            .upsert(
+              { workout_id: workout.id, activity_id: syncedRow.id, session_order: 0 },
+              { onConflict: "workout_id,activity_id" }
+            );
+          console.log(`Webhook: matched workout ${workout.id} to Strava activity ${activity.id}`);
+          trainingMatched = true;
+          break;
+        }
+
+        // If no unmatched workout, try multi-session grouping
+        if (!trainingMatched) {
+          const { data: matchedWorkouts } = await adminClient
+            .from("training_plan_workouts")
+            .select("id, workout_type, day_of_week")
+            .eq("user_id", connection.user_id)
+            .eq("week_start", weekStart)
+            .eq("day_of_week", actDow)
+            .not("matched_strava_activity_id", "is", null);
+
+          for (const workout of (matchedWorkouts || [])) {
+            const planType = (workout.workout_type || "").toLowerCase();
+            const typeMatch = actType === planType || planType === "workout" ||
+              (actType === "run" && planType === "run");
+            if (!typeMatch) continue;
+
+            const { data: existingLinks } = await adminClient
+              .from("training_workout_activities")
+              .select("activity_id, session_order")
+              .eq("workout_id", workout.id)
+              .order("session_order", { ascending: false });
+
+            if (!existingLinks || existingLinks.length === 0) continue;
+
+            const { data: lastAct } = await adminClient
+              .from("synced_activities")
+              .select("start_date, duration_seconds")
+              .eq("id", existingLinks[0].activity_id)
+              .single();
+
+            if (!lastAct) continue;
+
+            const prevEnd = new Date(lastAct.start_date).getTime() + (lastAct.duration_seconds || 0) * 1000;
+            const newStart = new Date(activity.start_date).getTime();
+            if (Math.abs(newStart - prevEnd) <= 2 * 60 * 60 * 1000) {
+              const nextOrder = (existingLinks[0].session_order ?? 0) + 1;
+              await adminClient
+                .from("training_workout_activities")
+                .upsert(
+                  { workout_id: workout.id, activity_id: syncedRow.id, session_order: nextOrder },
+                  { onConflict: "workout_id,activity_id" }
+                );
+              console.log(`Webhook multi-session: added activity as session ${nextOrder} to workout ${workout.id}`);
+              trainingMatched = true;
+              break;
+            }
+          }
+        }
+
+        // If still no match, create unplanned workout
+        if (!trainingMatched) {
+          const { data: newWorkout } = await adminClient
+            .from("training_plan_workouts")
+            .insert({
+              user_id: connection.user_id,
+              week_start: weekStart,
+              day_of_week: actDow,
+              workout_type: activity.sport_type || activity.type || "Workout",
+              title: activity.name || "Strava Activity",
+              description: "",
+              notes: "Auto-created from Strava webhook",
+              order_index: 0,
+              matched_strava_activity_id: activity.id,
+            })
+            .select("id")
+            .single();
+
+          if (newWorkout) {
+            await adminClient
+              .from("training_workout_activities")
+              .upsert(
+                { workout_id: newWorkout.id, activity_id: syncedRow.id, session_order: 0 },
+                { onConflict: "workout_id,activity_id" }
+              );
+            console.log(`Webhook: created unplanned workout for Strava activity ${activity.id}`);
+          }
         }
       }
 
