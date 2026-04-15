@@ -12,6 +12,7 @@ import { ActivityCharts } from "@/components/training/ActivityCharts";
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
   matchedActivity: any;
+  matchedActivities?: any[];
   isReadOnly?: boolean;
   goalNames?: string[];
   onEdit?: () => void;
