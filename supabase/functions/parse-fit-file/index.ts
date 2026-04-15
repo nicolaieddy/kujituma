@@ -406,38 +406,111 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Auto-match to training plan workout
+    // Helper: compute workout date string from week_start + day_of_week (local-safe)
+    function workoutDateString(ws: string, dow: number): string {
+      const [wy, wm, wd] = ws.split("-").map(Number);
+      const d = new Date(wy, wm - 1, wd + dow);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    }
+
+    // Helper: check if activity type matches workout type
+    function typesMatch(workoutType: string, actType: string): boolean {
+      const wt = workoutType.toLowerCase();
+      const at = actType.toLowerCase();
+      return wt === at || wt.includes(at) || at.includes(wt) || wt === "workout";
+    }
+
+    // Auto-match to training plan workout + insert into junction table
     if (workout_id) {
+      // Explicit workout_id: link directly
       await adminClient
         .from("training_plan_workouts")
         .update({ matched_activity_id: activityId })
         .eq("id", workout_id)
         .eq("user_id", user.id);
+      // Also insert into junction table
+      await adminClient
+        .from("training_workout_activities")
+        .insert({ workout_id, activity_id: activityId, session_order: 0 })
+        .then(() => {});
       console.log(`Linked workout ${workout_id} to fit activity ${activityId}`);
     } else {
-      // Auto-match by date — include workouts that already have a Strava match
-      // (FIT upload takes priority and provides richer data)
-      const { data: candidateWorkouts } = await adminClient
+      // Auto-match by date + type
+      // 1. First try unmatched workouts
+      const { data: unmatchedWorkouts } = await adminClient
         .from("training_plan_workouts")
         .select("id, workout_type, day_of_week, week_start")
         .eq("user_id", user.id)
         .is("matched_activity_id", null);
 
-      if (candidateWorkouts?.length) {
-        for (const workout of candidateWorkouts) {
-          const workoutDate = new Date(workout.week_start);
-          workoutDate.setDate(workoutDate.getDate() + workout.day_of_week);
-          const workoutDateStr = workoutDate.toISOString().split("T")[0];
+      let matched = false;
 
-          if (workoutDateStr === activityDate) {
-            const wType = (workout.workout_type || "").toLowerCase();
-            const aType = activityType.toLowerCase();
-            if (wType === aType || wType.includes(aType) || aType.includes(wType) || wType === "workout") {
+      if (unmatchedWorkouts?.length) {
+        for (const workout of unmatchedWorkouts) {
+          const wDateStr = workoutDateString(workout.week_start, workout.day_of_week);
+          if (wDateStr === activityDate && typesMatch(workout.workout_type, activityType)) {
+            await adminClient
+              .from("training_plan_workouts")
+              .update({ matched_activity_id: activityId })
+              .eq("id", workout.id);
+            await adminClient
+              .from("training_workout_activities")
+              .insert({ workout_id: workout.id, activity_id: activityId, session_order: 0 })
+              .then(() => {});
+            console.log(`Auto-matched workout ${workout.id} to fit activity ${activityId}`);
+            matched = true;
+            break;
+          }
+        }
+      }
+
+      // 2. If no unmatched workout found, check if this is a multi-session
+      //    (same date + same sport + start within 2h of previous session end)
+      if (!matched) {
+        const { data: allWorkouts } = await adminClient
+          .from("training_plan_workouts")
+          .select("id, workout_type, day_of_week, week_start, matched_activity_id")
+          .eq("user_id", user.id)
+          .not("matched_activity_id", "is", null);
+
+        if (allWorkouts?.length) {
+          for (const workout of allWorkouts) {
+            const wDateStr = workoutDateString(workout.week_start, workout.day_of_week);
+            if (wDateStr !== activityDate || !typesMatch(workout.workout_type, activityType)) continue;
+
+            // Check existing linked activities for this workout via junction table
+            const { data: existingLinks } = await adminClient
+              .from("training_workout_activities")
+              .select("activity_id, session_order")
+              .eq("workout_id", workout.id)
+              .order("session_order", { ascending: false });
+
+            // Get the last linked activity to check time proximity
+            const lastActivityId = existingLinks?.[0]?.activity_id || workout.matched_activity_id;
+            if (!lastActivityId) continue;
+
+            const { data: lastActivity } = await adminClient
+              .from("synced_activities")
+              .select("start_date, duration_seconds")
+              .eq("id", lastActivityId)
+              .single();
+
+            if (!lastActivity) continue;
+
+            // Check if new activity starts within 2 hours of previous session end
+            const prevEnd = new Date(lastActivity.start_date).getTime() + (lastActivity.duration_seconds || 0) * 1000;
+            const newStart = new Date(startDate).getTime();
+            const gapMs = Math.abs(newStart - prevEnd);
+            const twoHours = 2 * 60 * 60 * 1000;
+
+            if (gapMs <= twoHours) {
+              const nextOrder = (existingLinks?.[0]?.session_order ?? -1) + 1;
               await adminClient
-                .from("training_plan_workouts")
-                .update({ matched_activity_id: activityId })
-                .eq("id", workout.id);
-              console.log(`Auto-matched workout ${workout.id} to fit activity ${activityId}`);
+                .from("training_workout_activities")
+                .insert({ workout_id: workout.id, activity_id: activityId, session_order: nextOrder })
+                .then(() => {});
+              console.log(`Multi-session: added activity ${activityId} as session ${nextOrder} to workout ${workout.id}`);
+              matched = true;
               break;
             }
           }
