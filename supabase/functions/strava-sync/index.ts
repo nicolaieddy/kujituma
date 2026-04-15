@@ -133,7 +133,7 @@ async function autoMatchTrainingPlan(
   let matched = 0;
 
   for (const weekStart of weekStarts) {
-    // Get ALL training plan workouts for this week (including already matched, to track used IDs)
+    // Get ALL training plan workouts for this week
     const { data: allPlanWorkouts } = await supabase
       .from("training_plan_workouts")
       .select("*")
@@ -166,23 +166,20 @@ async function autoMatchTrainingPlan(
 
     // Step 1: Match planned workouts to activities
     for (const workout of unmatchedWorkouts) {
-      // Skip rest/off workouts
       if ((workout.workout_type || "").toLowerCase() === "rest") continue;
 
       const match = activities.find((a: any) => {
         if (usedActivityIds.has(a.strava_activity_id)) return false;
-        const actLocalDate = (a.start_date || "").replace(" ", "T").split("T")[0];
+        const actLocalDate = (a.activity_date || (a.start_date || "").replace(" ", "T").split("T")[0]);
         const actDow = getDayOfWeek(actLocalDate);
         if (actDow !== workout.day_of_week) return false;
-        // Flexible type matching: if planned is a general type, match broadly
         const actType = (a.activity_type || "").toLowerCase();
         const planType = (workout.workout_type || "").toLowerCase();
-        // Direct match or common equivalencies
         return actType === planType ||
                (actType === "run" && planType === "run") ||
                (actType === "weighttraining" && (planType === "strength" || planType === "workout")) ||
                (actType === "workout" && (planType === "strength" || planType === "weighttraining")) ||
-               planType === "workout"; // Generic "Workout" matches anything
+               planType === "workout";
       });
 
       if (match) {
@@ -190,28 +187,99 @@ async function autoMatchTrainingPlan(
           .from("training_plan_workouts")
           .update({ matched_strava_activity_id: match.strava_activity_id })
           .eq("id", workout.id);
+
+        // Also insert into junction table using the synced_activities UUID
+        await supabase
+          .from("training_workout_activities")
+          .upsert(
+            { workout_id: workout.id, activity_id: match.id, session_order: 0 },
+            { onConflict: "workout_id,activity_id" }
+          );
+
         usedActivityIds.add(match.strava_activity_id);
         matched++;
       }
     }
 
-    // Step 2: Create workout entries for activities with no matching planned workout
+    // Step 2: Check for multi-session grouping before creating unplanned workouts
+    // For each unmatched activity, see if it belongs to an already-matched workout
+    const remainingActivities: any[] = [];
     for (const activity of activities) {
       if (usedActivityIds.has(activity.strava_activity_id)) continue;
 
-      const actLocalDate = (activity.start_date || "").replace(" ", "T").split("T")[0];
+      const actLocalDate = activity.activity_date || (activity.start_date || "").replace(" ", "T").split("T")[0];
+      const actDow = getDayOfWeek(actLocalDate);
+      const actType = (activity.activity_type || "").toLowerCase();
+
+      // Find a matched workout on the same day with the same sport type
+      let linkedAsSession = false;
+      for (const workout of (allPlanWorkouts || [])) {
+        if (workout.day_of_week !== actDow) continue;
+        const planType = (workout.workout_type || "").toLowerCase();
+        const typeMatch = actType === planType ||
+          (actType === "run" && planType === "run") ||
+          (actType === "weighttraining" && (planType === "strength" || planType === "workout")) ||
+          (actType === "workout" && (planType === "strength" || planType === "weighttraining")) ||
+          planType === "workout";
+        if (!typeMatch) continue;
+
+        // Check existing linked activities via junction table
+        const { data: existingLinks } = await supabase
+          .from("training_workout_activities")
+          .select("activity_id, session_order")
+          .eq("workout_id", workout.id)
+          .order("session_order", { ascending: false });
+
+        if (!existingLinks || existingLinks.length === 0) continue;
+
+        // Get the last linked activity to check time proximity
+        const lastLink = existingLinks[0];
+        const { data: lastActivity } = await supabase
+          .from("synced_activities")
+          .select("start_date, duration_seconds")
+          .eq("id", lastLink.activity_id)
+          .single();
+
+        if (!lastActivity) continue;
+
+        const prevEnd = new Date(lastActivity.start_date).getTime() + (lastActivity.duration_seconds || 0) * 1000;
+        const newStart = new Date(activity.start_date).getTime();
+        const gapMs = Math.abs(newStart - prevEnd);
+        const twoHours = 2 * 60 * 60 * 1000;
+
+        if (gapMs <= twoHours) {
+          const nextOrder = (lastLink.session_order ?? 0) + 1;
+          await supabase
+            .from("training_workout_activities")
+            .upsert(
+              { workout_id: workout.id, activity_id: activity.id, session_order: nextOrder },
+              { onConflict: "workout_id,activity_id" }
+            );
+          console.log(`Multi-session: added Strava activity ${activity.strava_activity_id} as session ${nextOrder} to workout ${workout.id}`);
+          usedActivityIds.add(activity.strava_activity_id);
+          linkedAsSession = true;
+          matched++;
+          break;
+        }
+      }
+
+      if (!linkedAsSession) {
+        remainingActivities.push(activity);
+      }
+    }
+
+    // Step 3: Create workout entries for truly unmatched activities
+    for (const activity of remainingActivities) {
+      const actLocalDate = activity.activity_date || (activity.start_date || "").replace(" ", "T").split("T")[0];
       const actDow = getDayOfWeek(actLocalDate);
       const actType = activity.activity_type || activity.sport_type || "Workout";
 
-      // Calculate order_index: count existing workouts for this day
       const existingForDay = (allPlanWorkouts || []).filter((w: any) => w.day_of_week === actDow);
       const orderIndex = existingForDay.length;
 
-      const distanceKm = activity.distance_meters ? (activity.distance_meters / 1000).toFixed(1) : null;
-      const durationMin = activity.duration_seconds ? Math.round(activity.duration_seconds / 60) : null;
       const titleParts = [activity.activity_name || actType];
 
-      const { error: insertErr } = await supabase
+      const { data: newWorkout, error: insertErr } = await supabase
         .from("training_plan_workouts")
         .insert({
           user_id: userId,
@@ -225,12 +293,21 @@ async function autoMatchTrainingPlan(
           notes: `Auto-created from Strava activity`,
           order_index: orderIndex,
           matched_strava_activity_id: activity.strava_activity_id,
-        });
+        })
+        .select("id")
+        .single();
 
-      if (!insertErr) {
+      if (!insertErr && newWorkout) {
+        // Insert into junction table
+        await supabase
+          .from("training_workout_activities")
+          .upsert(
+            { workout_id: newWorkout.id, activity_id: activity.id, session_order: 0 },
+            { onConflict: "workout_id,activity_id" }
+          );
         usedActivityIds.add(activity.strava_activity_id);
         matched++;
-      } else {
+      } else if (insertErr) {
         console.error(`Failed to create workout for activity ${activity.strava_activity_id}:`, insertErr);
       }
     }
