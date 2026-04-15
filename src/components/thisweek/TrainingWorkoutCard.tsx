@@ -399,17 +399,17 @@ export function TrainingWorkoutCard({
           <Badge variant="outline" className="rounded-md text-[10px] shrink-0 px-1.5 py-0 h-5 font-medium text-muted-foreground border-border/60">
             {workout.workout_type}
           </Badge>
-          {matchedActivity && (
+          {primaryActivity && (
             <Badge
               variant="outline"
               className={cn(
                 "rounded-md text-[10px] shrink-0 px-1.5 py-0 h-5 font-medium gap-0.5",
-                primaryActivity?.source === "fit_upload"
+                primaryActivity.source === "fit_upload"
                   ? "border-warning/30 bg-warning/10 text-warning-foreground"
                   : "border-primary/30 bg-primary/10 text-primary"
               )}
             >
-              {matchedActivity.source === "fit_upload" ? (
+              {primaryActivity.source === "fit_upload" ? (
                 <><File className="h-2.5 w-2.5" />.FIT</>
               ) : (
                 <><Activity className="h-2.5 w-2.5" />Strava</>
