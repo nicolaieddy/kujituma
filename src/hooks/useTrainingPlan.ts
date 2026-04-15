@@ -377,7 +377,8 @@ export function useTrainingPlan(weekStart: string) {
     mutationFn: async (activityId: string) => {
       if (!user) throw new Error("Not authenticated");
 
-      // 1. Unlink any training_plan_workouts pointing to this activity
+      // 1. Remove from junction table (CASCADE on synced_activities delete would handle this,
+      //    but we also need to unlink the legacy column)
       await supabase
         .from("training_plan_workouts")
         .update({ matched_activity_id: null })
@@ -391,7 +392,7 @@ export function useTrainingPlan(weekStart: string) {
         .eq("user_id", user.id)
         .single();
 
-      // 3. Delete the synced_activities row (cascades to activity_laps & activity_streams)
+      // 3. Delete the synced_activities row (cascades to activity_laps, activity_streams, AND training_workout_activities)
       const { error } = await supabase
         .from("synced_activities")
         .delete()
@@ -420,6 +421,7 @@ export function useTrainingPlan(weekStart: string) {
     isLoading,
     matchedActivities,
     getMatchedActivity,
+    getMatchedActivities,
     createWorkout: createWorkout.mutateAsync,
     updateWorkout: updateWorkout.mutateAsync,
     deleteWorkout: deleteWorkout.mutateAsync,
