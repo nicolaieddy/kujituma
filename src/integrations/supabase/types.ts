@@ -2072,6 +2072,8 @@ export type Database = {
           normalized_power: number | null
           num_laps: number | null
           records_json: Json | null
+          reflection: string | null
+          reflection_updated_at: string | null
           source: string
           sport_type: string | null
           start_date: string | null
@@ -2125,6 +2127,8 @@ export type Database = {
           normalized_power?: number | null
           num_laps?: number | null
           records_json?: Json | null
+          reflection?: string | null
+          reflection_updated_at?: string | null
           source?: string
           sport_type?: string | null
           start_date?: string | null
@@ -2178,6 +2182,8 @@ export type Database = {
           normalized_power?: number | null
           num_laps?: number | null
           records_json?: Json | null
+          reflection?: string | null
+          reflection_updated_at?: string | null
           source?: string
           sport_type?: string | null
           start_date?: string | null
