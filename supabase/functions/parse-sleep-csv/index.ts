@@ -88,6 +88,7 @@ Deno.serve(async (req) => {
     }
 
     const { file_path } = await req.json();
+    console.log("parse-sleep-csv: file_path =", file_path);
     if (!file_path) {
       return new Response(JSON.stringify({ error: "file_path is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -100,13 +101,16 @@ Deno.serve(async (req) => {
       .from("fit-files")
       .download(file_path);
     if (downloadError || !fileData) {
+      console.error("parse-sleep-csv: download failed", downloadError);
       return new Response(JSON.stringify({ error: `Failed to download file: ${downloadError?.message}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const text = await fileData.text();
+    console.log("parse-sleep-csv: file size =", text.length, "first 200 chars =", text.slice(0, 200));
     const rows = parseCsv(text);
+    console.log("parse-sleep-csv: row count =", rows.length, "header =", rows[0]);
     if (rows.length < 2) {
       return new Response(JSON.stringify({ error: "CSV is empty or has no data rows" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },

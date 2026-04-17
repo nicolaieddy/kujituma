@@ -112,7 +112,18 @@ export function useFitFileUpload() {
 
     // Sleep CSV branch
     const { data, error } = await supabase.functions.invoke("parse-sleep-csv", { body });
-    if (error) return { fileName: file.name, success: false, kind, error: error.message };
+    if (error) {
+      // FunctionsHttpError exposes the response on error.context — read the JSON body for real error
+      let serverMsg = error.message;
+      try {
+        const ctx: any = (error as any).context;
+        if (ctx && typeof ctx.json === "function") {
+          const j = await ctx.json();
+          if (j?.error) serverMsg = j.error;
+        }
+      } catch { /* ignore */ }
+      return { fileName: file.name, success: false, kind, error: serverMsg };
+    }
     if (data?.error) return { fileName: file.name, success: false, kind, error: data.error };
     return { fileName: file.name, success: true, kind, summary: data.summary };
   };
