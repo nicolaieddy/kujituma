@@ -237,7 +237,7 @@ export function useFitFileUpload() {
 
     if (result.success) {
       updateFileStatus(fileIndex, { status: "done", summary: result.summary, duplicate: undefined });
-      invalidateQueries();
+      invalidateQueries(new Set([result.kind]));
     } else {
       updateFileStatus(fileIndex, { status: "error", error: result.error, duplicate: undefined });
     }
