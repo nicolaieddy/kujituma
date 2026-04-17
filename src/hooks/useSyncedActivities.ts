@@ -15,6 +15,8 @@ interface SyncedActivity {
   matched_habit_item_id: string | null;
   matched_goal_id: string | null;
   habit_completion_created: boolean;
+  reflection: string | null;
+  reflection_updated_at: string | null;
 }
 
 // Convert a UTC ISO string to a local YYYY-MM-DD string
