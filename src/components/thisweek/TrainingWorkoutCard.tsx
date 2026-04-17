@@ -159,6 +159,11 @@ function SingleSessionExpanded({ workout, session, onDeleteActivity, confirmDele
   return (
     <>
       <ExpandedDetail workout={workout} activity={activity} laps={laps} />
+      {activity && (
+        <div className="px-4 pb-4">
+          <ActivityReflection activityId={activity.id} reflection={activity.reflection} />
+        </div>
+      )}
       {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-4 pb-4 border-t border-border/40 pt-3">
           {fitActivities.map(fitAct => (
