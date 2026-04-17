@@ -55,6 +55,9 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
   const lastWeekStart = WeeklyProgressService.getWeekStart(lastWeekStartDate);
   const { planningSession: lastWeekPlanning } = useWeeklyPlanning(lastWeekStart);
   const { objectives: lastWeekObjectives, progressPost: lastWeekProgress } = useWeeklyProgress(lastWeekStart);
+
+  // Activity reflections from last week (for the roll-up)
+  const { data: weekReflections = [] } = useWeekActivityReflections(lastWeekStart);
   
   // AI insights
   const { insight, isLoading: isLoadingInsight, generateInsights } = useWeeklyInsights();
