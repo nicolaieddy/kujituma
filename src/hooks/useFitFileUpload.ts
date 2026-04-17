@@ -4,12 +4,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+export type UploadKind = "activity" | "sleep";
+
 export interface FitUploadResult {
   fileName: string;
   success: boolean;
+  kind: UploadKind;
   summary?: any;
   error?: string;
-  /** Set when the server detects a duplicate — client must confirm overwrite */
+  /** Set when the server detects a duplicate — client must confirm overwrite (activity uploads only) */
   duplicate?: {
     existing_activity: any;
     new_activity: any;
@@ -18,11 +21,19 @@ export interface FitUploadResult {
 
 export type FileUploadStatus = {
   fileName: string;
+  kind: UploadKind;
   status: "queued" | "uploading" | "parsing" | "duplicate" | "done" | "error";
   error?: string;
   summary?: any;
   duplicate?: FitUploadResult["duplicate"];
 };
+
+function detectKind(fileName: string): UploadKind | null {
+  const n = fileName.toLowerCase();
+  if (n.endsWith(".fit") || n.endsWith(".zip")) return "activity";
+  if (n.endsWith(".csv")) return "sleep";
+  return null;
+}
 
 export function useFitFileUpload() {
   const { user } = useAuth();
@@ -31,11 +42,16 @@ export function useFitFileUpload() {
   const [progress, setProgress] = useState<string | null>(null);
   const [fileStatuses, setFileStatuses] = useState<FileUploadStatus[]>([]);
 
-  const invalidateQueries = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
-    queryClient.invalidateQueries({ queryKey: ["training-plan"] });
-    queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
-    queryClient.invalidateQueries({ queryKey: ["activity-laps"] });
+  const invalidateQueries = useCallback((kinds: Set<UploadKind>) => {
+    if (kinds.has("activity")) {
+      queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["training-plan"] });
+      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["activity-laps"] });
+    }
+    if (kinds.has("sleep")) {
+      queryClient.invalidateQueries({ queryKey: ["sleep-entries"] });
+    }
   }, [queryClient]);
 
   const updateFileStatus = (index: number, update: Partial<FileUploadStatus>) => {
@@ -47,14 +63,14 @@ export function useFitFileUpload() {
     workoutId?: string,
     overwriteActivityId?: string
   ): Promise<FitUploadResult> => {
-    if (!user) return { fileName: file.name, success: false, error: "Not logged in" };
+    const kind = detectKind(file.name);
+    if (!user) return { fileName: file.name, success: false, kind: kind ?? "activity", error: "Not logged in" };
 
-    const ext = file.name.toLowerCase();
-    if (!ext.endsWith(".fit") && !ext.endsWith(".zip")) {
-      return { fileName: file.name, success: false, error: "Must be a .fit or .zip file" };
+    if (!kind) {
+      return { fileName: file.name, success: false, kind: "activity", error: "Must be a .fit, .zip, or .csv file" };
     }
     if (file.size > 20 * 1024 * 1024) {
-      return { fileName: file.name, success: false, error: "File too large (max 20MB)" };
+      return { fileName: file.name, success: false, kind, error: "File too large (max 20MB)" };
     }
 
     const filePath = `${user.id}/${Date.now()}_${file.name}`;
@@ -64,36 +80,41 @@ export function useFitFileUpload() {
       .upload(filePath, file);
 
     if (uploadError) {
-      return { fileName: file.name, success: false, error: uploadError.message };
+      return { fileName: file.name, success: false, kind, error: uploadError.message };
     }
 
     const body: Record<string, any> = {
       file_path: filePath,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     };
-    if (workoutId) body.workout_id = workoutId;
-    if (overwriteActivityId) body.overwrite_activity_id = overwriteActivityId;
 
-    const { data, error } = await supabase.functions.invoke("parse-fit-file", { body });
+    if (kind === "activity") {
+      if (workoutId) body.workout_id = workoutId;
+      if (overwriteActivityId) body.overwrite_activity_id = overwriteActivityId;
 
-    if (error) {
-      return { fileName: file.name, success: false, error: error.message };
-    }
-    if (data?.error) {
-      return { fileName: file.name, success: false, error: data.error };
-    }
-    if (data?.duplicate) {
-      return {
-        fileName: file.name,
-        success: false,
-        duplicate: {
-          existing_activity: data.existing_activity,
-          new_activity: data.new_activity,
-        },
-      };
+      const { data, error } = await supabase.functions.invoke("parse-fit-file", { body });
+
+      if (error) return { fileName: file.name, success: false, kind, error: error.message };
+      if (data?.error) return { fileName: file.name, success: false, kind, error: data.error };
+      if (data?.duplicate) {
+        return {
+          fileName: file.name,
+          success: false,
+          kind,
+          duplicate: {
+            existing_activity: data.existing_activity,
+            new_activity: data.new_activity,
+          },
+        };
+      }
+      return { fileName: file.name, success: true, kind, summary: data.summary };
     }
 
-    return { fileName: file.name, success: true, summary: data.summary };
+    // Sleep CSV branch
+    const { data, error } = await supabase.functions.invoke("parse-sleep-csv", { body });
+    if (error) return { fileName: file.name, success: false, kind, error: error.message };
+    if (data?.error) return { fileName: file.name, success: false, kind, error: data.error };
+    return { fileName: file.name, success: true, kind, summary: data.summary };
   };
 
   /** Upload a single .fit/.zip file (legacy API for per-workout upload) */
@@ -111,7 +132,6 @@ export function useFitFileUpload() {
       const result = await uploadAndParse(file, workoutId);
 
       if (result.duplicate) {
-        // For single upload, auto-overwrite
         setProgress("Overwriting existing...");
         const overwriteResult = await uploadAndParse(
           file,
@@ -119,7 +139,7 @@ export function useFitFileUpload() {
           result.duplicate.existing_activity.id
         );
         if (!overwriteResult.success) throw new Error(overwriteResult.error);
-        invalidateQueries();
+        invalidateQueries(new Set([overwriteResult.kind]));
         toast.success("Activity replaced successfully", {
           description: `${overwriteResult.summary.activity_type} — ${overwriteResult.summary.laps_count} laps`,
         });
@@ -128,7 +148,7 @@ export function useFitFileUpload() {
 
       if (!result.success) throw new Error(result.error);
 
-      invalidateQueries();
+      invalidateQueries(new Set([result.kind]));
       toast.success("Activity imported successfully", {
         description: `${result.summary.activity_type} — ${result.summary.laps_count} laps recorded`,
       });
@@ -143,27 +163,24 @@ export function useFitFileUpload() {
     }
   };
 
-  /** Upload multiple .fit/.zip files with per-file status tracking */
+  /** Upload multiple files (.fit/.zip activities and/or .csv sleep) with per-file status tracking */
   const uploadMultipleFitFiles = async (files: File[]): Promise<FitUploadResult[]> => {
     if (!user) {
       toast.error("You must be logged in to upload files");
       return [];
     }
 
-    const validFiles = files.filter(f => {
-      const n = f.name.toLowerCase();
-      return n.endsWith(".fit") || n.endsWith(".zip");
-    });
+    const validFiles = files.filter(f => detectKind(f.name) !== null);
     if (validFiles.length === 0) {
-      toast.error("No .fit or .zip files selected");
+      toast.error("No .fit, .zip, or .csv files selected");
       return [];
     }
 
     setIsUploading(true);
 
-    // Initialize statuses
     const initialStatuses: FileUploadStatus[] = validFiles.map(f => ({
       fileName: f.name,
+      kind: detectKind(f.name)!,
       status: "queued",
     }));
     setFileStatuses(initialStatuses);
@@ -178,10 +195,7 @@ export function useFitFileUpload() {
       const result = await uploadAndParse(file);
 
       if (result.duplicate) {
-        updateFileStatus(i, {
-          status: "duplicate",
-          duplicate: result.duplicate,
-        });
+        updateFileStatus(i, { status: "duplicate", duplicate: result.duplicate });
         results.push(result);
       } else if (result.success) {
         updateFileStatus(i, { status: "done", summary: result.summary });
@@ -192,7 +206,8 @@ export function useFitFileUpload() {
       }
     }
 
-    invalidateQueries();
+    const kinds = new Set<UploadKind>(results.filter(r => r.success).map(r => r.kind));
+    invalidateQueries(kinds);
 
     const succeeded = results.filter(r => r.success).length;
     const dupes = results.filter(r => r.duplicate).length;
@@ -222,7 +237,7 @@ export function useFitFileUpload() {
 
     if (result.success) {
       updateFileStatus(fileIndex, { status: "done", summary: result.summary, duplicate: undefined });
-      invalidateQueries();
+      invalidateQueries(new Set([result.kind]));
     } else {
       updateFileStatus(fileIndex, { status: "error", error: result.error, duplicate: undefined });
     }
