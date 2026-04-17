@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useActivityLaps } from "@/hooks/useActivityLaps";
 import { LapSplitsTable } from "@/components/training/LapSplitsTable";
 import { ActivityCharts } from "@/components/training/ActivityCharts";
+import { ActivityReflection } from "@/components/training/ActivityReflection";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
