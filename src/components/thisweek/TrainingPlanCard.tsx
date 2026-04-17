@@ -14,6 +14,8 @@ import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPl
 import { parseLocalDate } from "@/utils/dateUtils";
 import { format, addDays } from "date-fns";
 import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
+import { useWeekSleepEntries } from "@/hooks/useWeekSleepEntries";
+import { SleepSummaryRow } from "@/components/thisweek/SleepSummaryRow";
 
 interface TrainingPlanCardProps {
   weekStart: string;
@@ -46,6 +48,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
   const { goals } = useGoals();
   const activeGoals = goals.filter(g => g.status === "in_progress" || g.status === "not_started");
+  const { data: sleepByDate = {} } = useWeekSleepEntries(weekStart);
 
   const displayWorkouts = useMemo(() => getDisplayWorkouts(workouts), [workouts]);
 
@@ -212,7 +215,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                   )}
                   <Button variant="outline" size="sm" onClick={() => setBulkUploadOpen(true)}>
                     <Upload className="h-4 w-4" />
-                    Upload .fit
+                    Upload activity / sleep
                   </Button>
                   {totalCount === 0 && (
                     <Button variant="outline" size="sm" onClick={() => copyFromPreviousWeek()} loading={isCopying}>
