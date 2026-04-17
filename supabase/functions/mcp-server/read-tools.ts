@@ -368,6 +368,8 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       };
     },
   });
+
+  mcp.tool("get_week_summary", {
     description: "Combined snapshot for a week: objectives completion %, habits done, check-in status, planning status",
     inputSchema: {
       type: "object",
