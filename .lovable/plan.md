@@ -1,83 +1,100 @@
 
-## Per-Workout Reflection Field
 
-Add a persistent free-text "reflection" field to each synced activity, exposed via UI, MCP tools, and rolled up in weekly planning.
+## Sleep Data Ingestion (CSV) + Daily Display + MCP Exposure
 
-### 1. Database (migration)
+Add support for uploading Garmin-style sleep CSVs alongside existing `.fit`/`.zip` uploads, store one row per night, surface it on the matching day in the Training Plan, and expose it via MCP.
 
-Add to `synced_activities`:
-- `reflection text` (nullable)
-- `reflection_updated_at timestamptz` (auto-updated via trigger when `reflection` changes)
+### 1. Database — new `sleep_entries` table
 
-`created_at` already exists on the table, so we reuse it.
-
-### 2. Hook: `useActivityReflection.ts` (new)
-
-Small hook with TanStack Query:
-- `useQuery` keyed by activity id (optional — value comes from parent activity already)
-- `useMutation` to upsert: `update synced_activities set reflection = ... where id = ...`
-- Invalidates `["synced-activities"]` and `["training-plan"]` queries on success
-
-### 3. UI — Activity reflection section
-
-**New component**: `src/components/training/ActivityReflection.tsx`
-- Inline display in collapsed/expanded card
-- View mode: italic muted text + Copy button (clipboard) + Edit pencil
-- Empty state: "Add reflection" placeholder button
-- Edit mode: `Textarea` with placeholder describing the 3 prompts (plan vs actual / pattern callout / structural implication), Save / Cancel
-- Copy uses `navigator.clipboard.writeText` + toast confirmation (so you can paste to WhatsApp)
-
-**Integration points** (`TrainingWorkoutCard.tsx`):
-- Inside collapsed row: one-line truncated italic preview when reflection present
-- Inside `ExpandedDetail` per session: full `ActivityReflection` component
-- For merged Strava+.FIT sessions, reflection is stored on the **display activity** (Strava-preferred) so it survives source merging
-
-### 4. MCP tools
-
-Add to `supabase/functions/mcp-server/read-tools.ts`:
+Migration adds:
 ```
-get_activity_reflection(activity_id) → returns { activity_id, reflection, updated_at }
-  - resolves activity_id via dual lookup (UUID or strava_activity_id) per existing pattern
+sleep_entries (
+  id uuid pk, user_id uuid, sleep_date date,           -- one per user per date
+  score int, quality text,                              -- e.g. 91, 'Excellent'
+  duration_seconds int, sleep_need_seconds int,
+  bedtime time, wake_time time,
+  resting_heart_rate int, body_battery int,
+  pulse_ox numeric, respiration numeric,
+  skin_temp_change numeric, hrv_status text,
+  sleep_alignment text, source text default 'garmin_csv',
+  raw_row jsonb,
+  created_at, updated_at
+  unique (user_id, sleep_date)
+)
 ```
+RLS: standard user-scoped CRUD policies.
 
-Add to `supabase/functions/mcp-server/write-tools.ts`:
+### 2. Edge function — new `parse-sleep-csv`
+
+Accepts `{ file_path, timezone }`, downloads from `fit-files` bucket (reuse), parses CSV:
+- Skips Garmin BOM + header row
+- Parses each data row, ignoring rows where Score is `--`
+- Converts `7h 21min` → seconds, `1:22 AM` → time, `--` → null
+- Upserts on `(user_id, sleep_date)` (overwrite latest)
+- Returns `{ summary: { entries_imported, dates: [...] } }`
+
+No duplicate confirmation flow needed — sleep upserts are non-destructive (new data wins, since it represents the latest reading from the device for that night).
+
+### 3. Hook — extend `useFitFileUpload` → rename or keep, add CSV branch
+
+Inside `uploadAndParse`:
+- Detect extension: `.fit`/`.zip` → `parse-fit-file` (existing); `.csv` → `parse-sleep-csv` (new)
+- `FileUploadStatus` gains a `kind: "activity" | "sleep"` field for display
+- Result summary differs by kind (sleep shows `N nights imported`)
+
+### 4. UI — single multi-type upload entry point
+
+`BulkFitUploadDialog`:
+- File input `accept=".fit,.zip,.csv"`, multiple
+- Header label updated to "Bulk Upload Activities & Sleep"
+- Per-row result rendering: activity rows show type/laps; sleep rows show `N nights · score range`
+- Title/help text mentions both formats
+
+The button in `TrainingPlanCard` stays the same — just opens the now-multi-format dialog.
+
+### 5. Daily display — `SleepSummaryRow` on each day
+
+In `TrainingPlanCard`'s per-day section header, query sleep entries for the visible week range (one new hook `useWeekSleepEntries(weekStart)`).
+
+For each day, render a compact row above the workouts list when sleep data exists for that date:
+```text
+[moon icon] 7h 21m • Score 91 (Excellent) • RHR 41 • Body Battery 36 • 1:22 AM → 8:52 AM
 ```
-set_activity_reflection(activity_id, reflection) → upsert reflection text
-  - uses same dual lookup
-  - returns confirmation with truncated preview
-```
+- Subtle styling: muted bg, small text, single line on desktop, wraps on mobile
+- Empty days show nothing (no placeholder noise)
 
-### 5. Weekly planning roll-up
+### 6. MCP tools — expose full sleep data per day
 
-Modify `WeeklyPlanningDialog.tsx`:
-- New read-only section "Run reflections this week" above the Last Week Reflection textarea
-- Query `synced_activities` for the planning week range where `reflection is not null`
-- Render as bullet list: `• [activity_name, date] — reflection`
-- Visible only when at least one reflection exists for the week
+In `read-tools.ts`, add:
+- `get_sleep_entry({ date })` — returns full row for that date (or null)
+- `get_sleep_entries({ start_date, end_date })` — range query (capped at 90 days)
 
-### 6. Memory
+Both return all columns including `raw_row` so the agent has complete fidelity. Update `mem://architecture/mcp-server-v2` reference list.
 
-Update `mem://features/training/` with a new entry:
-- `mem://features/training/per-activity-reflection` — describes the field, where it lives (synced_activities), MCP tools, and weekly roll-up behavior
-- Update `mem://index.md` to reference it
+### 7. Memory
 
-### Files touched
+- New: `mem://features/training/sleep-ingestion` — describes CSV parser, upsert semantics, daily UI placement, and MCP exposure
+- Update `mem://index.md` references list
+
+### Files
 
 **New**:
-- `src/components/training/ActivityReflection.tsx`
-- `src/hooks/useActivityReflection.ts`
 - `supabase/migrations/<new>.sql`
-- `mem://features/training/per-activity-reflection`
+- `supabase/functions/parse-sleep-csv/index.ts`
+- `src/hooks/useWeekSleepEntries.ts`
+- `src/components/thisweek/SleepSummaryRow.tsx`
+- `mem://features/training/sleep-ingestion`
 
 **Edited**:
-- `src/components/thisweek/TrainingWorkoutCard.tsx` (inline preview + expanded section)
-- `src/components/habits/WeeklyPlanningDialog.tsx` (week roll-up)
-- `supabase/functions/mcp-server/read-tools.ts` (+ register in `index.ts` if needed)
-- `supabase/functions/mcp-server/write-tools.ts`
-- `src/hooks/useSyncedActivities.ts` (include `reflection` in select)
+- `src/hooks/useFitFileUpload.ts` (add CSV branch + kind field)
+- `src/components/training/BulkFitUploadDialog.tsx` (accept .csv, label updates, sleep result rendering)
+- `src/components/thisweek/TrainingPlanCard.tsx` (render `SleepSummaryRow` per day)
+- `supabase/functions/mcp-server/read-tools.ts` (sleep tools)
 - `mem://index.md`
 
 ### Notes
-- Plain text storage (no markdown), preserves newlines via `whitespace-pre-wrap`
-- RLS: existing `synced_activities` policies (user-scoped) cover the new column; no policy changes needed
-- No CHECK constraint; the trigger only updates `reflection_updated_at`
+- Sleep is stored independent of activities (no FK) — sleep is a separate signal
+- Date attribution: `sleep_date` as written in CSV (already local-day on Garmin export)
+- Garmin CSV has UTF-8 BOM — strip it before parsing
+- No timezone-shift risk because sleep_date is a `date`, not a timestamp
+
