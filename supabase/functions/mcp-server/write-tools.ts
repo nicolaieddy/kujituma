@@ -269,6 +269,37 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
     },
   });
 
+  mcp.tool("set_activity_reflection", {
+    description: "Create or update the per-workout reflection text on a synced activity. Pass an empty string to clear it. Accepts either a database UUID or a Strava activity ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        activity_id: { type: "string", description: "Database UUID of the activity" },
+        strava_activity_id: { type: "number", description: "Strava activity ID (alternative lookup)" },
+        reflection: { type: "string", description: "Reflection text. Empty string clears it." },
+      },
+      required: ["reflection"],
+    },
+    handler: async ({ activity_id, strava_activity_id, reflection }: { activity_id?: string; strava_activity_id?: number; reflection: string }) => {
+      if (!activity_id && !strava_activity_id) {
+        return { content: [{ type: "text" as const, text: "Provide either activity_id or strava_activity_id" }] };
+      }
+      const trimmed = (reflection || "").trim();
+      const newValue = trimmed.length > 0 ? trimmed : null;
+
+      let query = supabase.from("synced_activities").update({ reflection: newValue }).eq("user_id", userId);
+      if (activity_id) query = query.eq("id", activity_id);
+      else query = query.eq("strava_activity_id", strava_activity_id!);
+
+      const { data, error } = await query.select("id, activity_name, reflection, reflection_updated_at").maybeSingle();
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data) return { content: [{ type: "text" as const, text: "Activity not found or not owned by user." }] };
+
+      const preview = data.reflection ? `"${(data.reflection as string).slice(0, 80)}${(data.reflection as string).length > 80 ? "..." : ""}"` : "(cleared)";
+      return { content: [{ type: "text" as const, text: `✅ Reflection saved for "${data.activity_name}": ${preview}` }] };
+    },
+  });
+
   mcp.tool("create_weekly_planning", {
     description: "Start or update a weekly planning session with intention and/or reflection",
     inputSchema: {

@@ -280,6 +280,33 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
+  mcp.tool("get_activity_reflection", {
+    description: "Get the per-workout reflection text for a specific synced activity. Accepts either a database UUID or a Strava activity ID.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        activity_id: { type: "string", description: "Database UUID of the activity" },
+        strava_activity_id: { type: "number", description: "Strava activity ID (alternative lookup)" },
+      },
+    },
+    handler: async ({ activity_id, strava_activity_id }: { activity_id?: string; strava_activity_id?: number }) => {
+      if (!activity_id && !strava_activity_id) {
+        return { content: [{ type: "text" as const, text: "Provide either activity_id or strava_activity_id" }] };
+      }
+      let query = supabase
+        .from("synced_activities")
+        .select("id, activity_name, start_date, reflection, reflection_updated_at")
+        .eq("user_id", userId);
+      if (activity_id) query = query.eq("id", activity_id);
+      else query = query.eq("strava_activity_id", strava_activity_id!);
+
+      const { data, error } = await query.maybeSingle();
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data) return { content: [{ type: "text" as const, text: "Activity not found." }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
   mcp.tool("get_week_summary", {
     description: "Combined snapshot for a week: objectives completion %, habits done, check-in status, planning status",
     inputSchema: {

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useActivityLaps } from "@/hooks/useActivityLaps";
 import { LapSplitsTable } from "@/components/training/LapSplitsTable";
 import { ActivityCharts } from "@/components/training/ActivityCharts";
+import { ActivityReflection } from "@/components/training/ActivityReflection";
 
 interface TrainingWorkoutCardProps {
   workout: TrainingPlanDisplayWorkout;
@@ -158,6 +159,11 @@ function SingleSessionExpanded({ workout, session, onDeleteActivity, confirmDele
   return (
     <>
       <ExpandedDetail workout={workout} activity={activity} laps={laps} />
+      {activity && (
+        <div className="px-4 pb-4">
+          <ActivityReflection activityId={activity.id} reflection={activity.reflection} />
+        </div>
+      )}
       {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-4 pb-4 border-t border-border/40 pt-3">
           {fitActivities.map(fitAct => (
@@ -262,6 +268,10 @@ function SessionSection({ session, sessionIndex, totalSessions, onDeleteActivity
           <LapSplitsTable laps={laps} />
         </div>
       )}
+
+      <div className="px-3 pb-3 pt-2">
+        <ActivityReflection activityId={activity.id} reflection={activity.reflection} />
+      </div>
 
       {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-3 pb-2 border-t border-border/30 pt-2">
@@ -505,6 +515,17 @@ export function TrainingWorkoutCard({
           {goalNames.map(name => (
             <span key={name} className="text-[10px] text-muted-foreground/70">{name}</span>
           ))}
+        </div>
+      )}
+
+      {/* Reflection preview - shown in collapsed state when present (uses primary session) */}
+      {!expanded && primaryActivity?.reflection && (
+        <div className="px-4 pb-2.5 pl-[52px]">
+          <ActivityReflection
+            activityId={primaryActivity.id}
+            reflection={primaryActivity.reflection}
+            variant="preview"
+          />
         </div>
       )}
 
