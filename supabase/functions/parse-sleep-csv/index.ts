@@ -8,16 +8,14 @@ const corsHeaders = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-/** Strip BOM, split into rows, parse simple CSV (no embedded commas in values). */
+/** Strip BOM, normalize line endings, split into rows. */
 function parseCsv(text: string): string[][] {
   const cleaned = text.replace(/^\uFEFF/, "").replace(/\r/g, "");
   return cleaned
     .split("\n")
-    .filter(line => line.trim().length > 0)
     .map(line => line.split(",").map(c => c.trim()));
 }
 
-/** "--" or empty becomes null; otherwise return the trimmed string. */
 function nullable(v: string | undefined): string | null {
   if (v == null) return null;
   const t = v.trim();
@@ -40,8 +38,8 @@ function toNum(v: string | undefined): number | null {
 }
 
 /** "7h 21min" or "7h 21m" → seconds. */
-function parseDurationToSeconds(v: string | undefined): number | null {
-  const s = nullable(v);
+function parseDurationToSeconds(v: string | undefined | null): number | null {
+  const s = nullable(v ?? undefined);
   if (!s) return null;
   const hMatch = s.match(/(\d+)\s*h/i);
   const mMatch = s.match(/(\d+)\s*m/i);
@@ -52,8 +50,8 @@ function parseDurationToSeconds(v: string | undefined): number | null {
 }
 
 /** "1:22 AM" or "8:52 AM" → "01:22:00" (Postgres `time`). */
-function parseTime12h(v: string | undefined): string | null {
-  const s = nullable(v);
+function parseTime12h(v: string | undefined | null): string | null {
+  const s = nullable(v ?? undefined);
   if (!s) return null;
   const m = s.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)?$/i);
   if (!m) return null;
@@ -64,6 +62,119 @@ function parseTime12h(v: string | undefined): string | null {
   if (meridian === "AM" && hour === 12) hour = 0;
   if (hour < 0 || hour > 23 || minute < 0 || minute > 59) return null;
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`;
+}
+
+/** Strip a unit suffix like "41 bpm", "97%", "97 ms" → "41". */
+function stripUnit(v: string | null): string | null {
+  if (!v) return null;
+  const m = v.match(/^([+-]?\d+(?:\.\d+)?)/);
+  return m ? m[1] : v;
+}
+
+/** ============================================================
+ *  Format A: Multi-day table (Garmin "Sleep Score 7 Days" export)
+ *  Header row, then one row per night.
+ *  ============================================================ */
+function tryParseMultiDay(rows: string[][], userId: string): any[] | null {
+  if (rows.length < 2) return null;
+  const header = rows[0].map(h => h.toLowerCase());
+  const idx = (name: string) => header.findIndex(h => h === name.toLowerCase());
+
+  const scoreIdx = idx("score");
+  const qualityIdx = idx("quality");
+  const durationIdx = idx("duration");
+  if (scoreIdx === -1 || qualityIdx === -1 || durationIdx === -1) return null;
+
+  const dateIdx = 0;
+  const rhrIdx = idx("resting heart rate");
+  const bbIdx = idx("body battery");
+  const pulseOxIdx = idx("pulse ox");
+  const respIdx = idx("respiration");
+  const skinTempIdx = idx("skin temp change");
+  const hrvIdx = idx("hrv status");
+  const needIdx = idx("sleep need");
+  const bedtimeIdx = idx("bedtime");
+  const wakeIdx = idx("wake time");
+  const alignIdx = idx("sleep alignment");
+
+  const upserts: any[] = [];
+  for (const row of rows.slice(1)) {
+    const sleepDate = nullable(row[dateIdx]);
+    if (!sleepDate || !/^\d{4}-\d{2}-\d{2}$/.test(sleepDate)) continue;
+    const score = toInt(row[scoreIdx]);
+    const quality = nullable(row[qualityIdx]);
+    const duration = parseDurationToSeconds(row[durationIdx]);
+    if (score == null && quality == null && duration == null) continue;
+
+    const rawRow: Record<string, string | null> = {};
+    rows[0].forEach((col, i) => { rawRow[col] = nullable(row[i]); });
+
+    upserts.push({
+      user_id: userId,
+      sleep_date: sleepDate,
+      score,
+      quality,
+      duration_seconds: duration,
+      sleep_need_seconds: parseDurationToSeconds(row[needIdx]),
+      bedtime: parseTime12h(row[bedtimeIdx]),
+      wake_time: parseTime12h(row[wakeIdx]),
+      resting_heart_rate: toInt(row[rhrIdx]),
+      body_battery: toInt(row[bbIdx]),
+      pulse_ox: toNum(row[pulseOxIdx]),
+      respiration: toNum(row[respIdx]),
+      skin_temp_change: toNum(row[skinTempIdx]),
+      hrv_status: nullable(row[hrvIdx]),
+      sleep_alignment: nullable(row[alignIdx]),
+      source: "garmin_csv",
+      raw_row: rawRow,
+    });
+  }
+  return upserts;
+}
+
+/** ============================================================
+ *  Format B: Single-night vertical export ("Sleep Score 1 Day")
+ *  Vertical key/value rows organized in sections.
+ *  ============================================================ */
+function tryParseSingleNight(rows: string[][], userId: string): any[] | null {
+  // Build a flat key→value map from all rows that look like "key,value"
+  const kv: Record<string, string> = {};
+  let isSingleNight = false;
+  for (const row of rows) {
+    if (row.length === 0) continue;
+    const key = (row[0] ?? "").trim();
+    const val = (row[1] ?? "").trim();
+    if (!key) continue;
+    if (key.toLowerCase().startsWith("sleep score 1 day")) isSingleNight = true;
+    if (val) kv[key.toLowerCase()] = val;
+  }
+  if (!isSingleNight) return null;
+
+  const sleepDate = nullable(kv["date"]);
+  if (!sleepDate || !/^\d{4}-\d{2}-\d{2}$/.test(sleepDate)) return null;
+
+  const rawRow: Record<string, string> = {};
+  for (const [k, v] of Object.entries(kv)) rawRow[k] = v;
+
+  return [{
+    user_id: userId,
+    sleep_date: sleepDate,
+    score: toInt(kv["sleep score"]),
+    quality: nullable(kv["quality"]),
+    duration_seconds: parseDurationToSeconds(kv["sleep duration"]),
+    sleep_need_seconds: null,
+    bedtime: null,
+    wake_time: null,
+    resting_heart_rate: toInt(stripUnit(nullable(kv["resting heart rate"]))),
+    body_battery: toInt(stripUnit(nullable(kv["body battery change"]))),
+    pulse_ox: toNum(stripUnit(nullable(kv["avg spo₂"] ?? kv["avg spo2"]))),
+    respiration: toNum(stripUnit(nullable(kv["avg respiration"]))),
+    skin_temp_change: null, // "Calibrating" is non-numeric
+    hrv_status: nullable(kv["7d avg hrv"]),
+    sleep_alignment: nullable(kv["sleep alignment"]),
+    source: "garmin_csv_single",
+    raw_row: rawRow,
+  }];
 }
 
 Deno.serve(async (req) => {
@@ -96,7 +207,6 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-
     const { data: fileData, error: downloadError } = await adminClient.storage
       .from("fit-files")
       .download(file_path);
@@ -108,89 +218,35 @@ Deno.serve(async (req) => {
     }
 
     const text = await fileData.text();
-    console.log("parse-sleep-csv: file size =", text.length, "first 200 chars =", text.slice(0, 200));
     const rows = parseCsv(text);
-    console.log("parse-sleep-csv: row count =", rows.length, "header =", rows[0]);
+    console.log("parse-sleep-csv: rows =", rows.length, "first row =", rows[0]);
     if (rows.length < 2) {
-      return new Response(JSON.stringify({ error: "CSV is empty or has no data rows" }), {
+      return new Response(JSON.stringify({ error: "CSV is empty" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Header validation: expect Garmin columns. First col is date (mislabeled "Sleep Score 7 Days").
-    const header = rows[0].map(h => h.toLowerCase());
-    const idx = (name: string) => header.findIndex(h => h === name.toLowerCase());
+    // Try multi-day table format, then fall back to single-night vertical format.
+    let upserts = tryParseMultiDay(rows, user.id);
+    let formatUsed = "multi_day";
+    if (!upserts || upserts.length === 0) {
+      const singleNight = tryParseSingleNight(rows, user.id);
+      if (singleNight && singleNight.length > 0) {
+        upserts = singleNight;
+        formatUsed = "single_night";
+      }
+    }
 
-    const dateIdx = 0; // first column is always the date
-    const scoreIdx = idx("score");
-    const rhrIdx = idx("resting heart rate");
-    const bbIdx = idx("body battery");
-    const pulseOxIdx = idx("pulse ox");
-    const respIdx = idx("respiration");
-    const skinTempIdx = idx("skin temp change");
-    const hrvIdx = idx("hrv status");
-    const qualityIdx = idx("quality");
-    const durationIdx = idx("duration");
-    const needIdx = idx("sleep need");
-    const bedtimeIdx = idx("bedtime");
-    const wakeIdx = idx("wake time");
-    const alignIdx = idx("sleep alignment");
-
-    if (scoreIdx === -1 || qualityIdx === -1 || durationIdx === -1) {
+    if (!upserts || upserts.length === 0) {
       return new Response(JSON.stringify({
-        error: "Unrecognized CSV format — expected Garmin sleep export with Score/Quality/Duration columns",
+        error: "Unrecognized CSV format — supported: Garmin multi-day table OR single-night vertical export",
       }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const dataRows = rows.slice(1);
-    const upserts: any[] = [];
-    const datesImported: string[] = [];
-
-    for (const row of dataRows) {
-      const sleepDate = nullable(row[dateIdx]);
-      if (!sleepDate || !/^\d{4}-\d{2}-\d{2}$/.test(sleepDate)) continue;
-
-      const score = toInt(row[scoreIdx]);
-      const quality = nullable(row[qualityIdx]);
-      const duration = parseDurationToSeconds(row[durationIdx]);
-
-      // Skip nights with no real data (Score, Quality, and Duration all null = no reading)
-      if (score == null && quality == null && duration == null) continue;
-
-      const rawRow: Record<string, string | null> = {};
-      rows[0].forEach((col, i) => { rawRow[col] = nullable(row[i]); });
-
-      upserts.push({
-        user_id: user.id,
-        sleep_date: sleepDate,
-        score,
-        quality,
-        duration_seconds: duration,
-        sleep_need_seconds: parseDurationToSeconds(row[needIdx]),
-        bedtime: parseTime12h(row[bedtimeIdx]),
-        wake_time: parseTime12h(row[wakeIdx]),
-        resting_heart_rate: toInt(row[rhrIdx]),
-        body_battery: toInt(row[bbIdx]),
-        pulse_ox: toNum(row[pulseOxIdx]),
-        respiration: toNum(row[respIdx]),
-        skin_temp_change: toNum(row[skinTempIdx]),
-        hrv_status: nullable(row[hrvIdx]),
-        sleep_alignment: nullable(row[alignIdx]),
-        source: "garmin_csv",
-        raw_row: rawRow,
-      });
-      datesImported.push(sleepDate);
-    }
-
-    if (upserts.length === 0) {
-      return new Response(JSON.stringify({
-        summary: { entries_imported: 0, dates: [], note: "No nights with valid data found in CSV" },
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    const datesImported = upserts.map(u => u.sleep_date).sort();
+    console.log(`parse-sleep-csv: format=${formatUsed} importing ${upserts.length} entries`);
 
     const { error: upsertError } = await adminClient
       .from("sleep_entries")
@@ -206,8 +262,9 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       summary: {
         kind: "sleep",
+        format: formatUsed,
         entries_imported: upserts.length,
-        dates: datesImported.sort(),
+        dates: datesImported,
       },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
