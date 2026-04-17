@@ -269,6 +269,10 @@ function SessionSection({ session, sessionIndex, totalSessions, onDeleteActivity
         </div>
       )}
 
+      <div className="px-3 pb-3 pt-2">
+        <ActivityReflection activityId={activity.id} reflection={activity.reflection} />
+      </div>
+
       {fitActivities.length > 0 && onDeleteActivity && (
         <div className="px-3 pb-2 border-t border-border/30 pt-2">
           {fitActivities.map(fitAct => (
