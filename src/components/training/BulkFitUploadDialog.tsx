@@ -123,15 +123,19 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
 
               {selectedFiles.length > 0 && (
                 <div className="space-y-1 rounded-lg border border-border bg-muted/20 p-3 max-h-40 overflow-y-auto">
-                  {selectedFiles.map((f, i) => (
-                    <div key={i} className="flex items-center gap-2 text-sm text-foreground">
-                      <FileArchive className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate">{f.name}</span>
-                      <span className="ml-auto text-xs text-muted-foreground shrink-0">
-                        {(f.size / 1024).toFixed(0)} KB
-                      </span>
-                    </div>
-                  ))}
+                  {selectedFiles.map((f, i) => {
+                    const isCsv = f.name.toLowerCase().endsWith(".csv");
+                    const Icon = isCsv ? Moon : FileArchive;
+                    return (
+                      <div key={i} className="flex items-center gap-2 text-sm text-foreground">
+                        <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                        <span className="truncate">{f.name}</span>
+                        <span className="ml-auto text-xs text-muted-foreground shrink-0">
+                          {(f.size / 1024).toFixed(0)} KB
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 
@@ -176,10 +180,17 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
                     </span>
                   </div>
 
-                  {fs.status === "done" && fs.summary && (
+                  {fs.status === "done" && fs.summary && fs.kind === "activity" && (
                     <p className="text-xs text-muted-foreground pl-5">
                       {fs.summary.activity_type} · {fs.summary.laps_count} laps
                       {fs.summary.duration_seconds ? ` · ${formatDuration(fs.summary.duration_seconds)}` : ""}
+                    </p>
+                  )}
+
+                  {fs.status === "done" && fs.summary && fs.kind === "sleep" && (
+                    <p className="text-xs text-muted-foreground pl-5">
+                      {fs.summary.entries_imported} night{fs.summary.entries_imported === 1 ? "" : "s"} imported
+                      {fs.summary.dates?.length ? ` · ${fs.summary.dates[0]} → ${fs.summary.dates[fs.summary.dates.length - 1]}` : ""}
                     </p>
                   )}
 
