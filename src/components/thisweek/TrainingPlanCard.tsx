@@ -291,7 +291,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                       })}
                     </div>
                   </section>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </CollapsibleContent>
