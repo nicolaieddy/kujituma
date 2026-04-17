@@ -294,6 +294,10 @@ export function McpSection() {
               { name: "log_daily_check_in", desc: "Log daily check-in" },
               { name: "set_training_plan", desc: "Create or update weekly workouts" },
               { name: "match_workout", desc: "Manually link plan to Strava workout" },
+              { name: "get_activity_reflection", desc: "Read a workout's reflection note" },
+              { name: "set_activity_reflection", desc: "Save a workout reflection note" },
+              { name: "get_sleep_entry", desc: "Sleep data for a specific date" },
+              { name: "get_sleep_entries", desc: "Sleep data over a date range" },
             ].map((tool) => (
               <div
                 key={tool.name}
