@@ -1987,6 +1987,75 @@ export type Database = {
         }
         Relationships: []
       }
+      sleep_entries: {
+        Row: {
+          bedtime: string | null
+          body_battery: number | null
+          created_at: string
+          duration_seconds: number | null
+          hrv_status: string | null
+          id: string
+          pulse_ox: number | null
+          quality: string | null
+          raw_row: Json | null
+          respiration: number | null
+          resting_heart_rate: number | null
+          score: number | null
+          skin_temp_change: number | null
+          sleep_alignment: string | null
+          sleep_date: string
+          sleep_need_seconds: number | null
+          source: string
+          updated_at: string
+          user_id: string
+          wake_time: string | null
+        }
+        Insert: {
+          bedtime?: string | null
+          body_battery?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          hrv_status?: string | null
+          id?: string
+          pulse_ox?: number | null
+          quality?: string | null
+          raw_row?: Json | null
+          respiration?: number | null
+          resting_heart_rate?: number | null
+          score?: number | null
+          skin_temp_change?: number | null
+          sleep_alignment?: string | null
+          sleep_date: string
+          sleep_need_seconds?: number | null
+          source?: string
+          updated_at?: string
+          user_id: string
+          wake_time?: string | null
+        }
+        Update: {
+          bedtime?: string | null
+          body_battery?: number | null
+          created_at?: string
+          duration_seconds?: number | null
+          hrv_status?: string | null
+          id?: string
+          pulse_ox?: number | null
+          quality?: string | null
+          raw_row?: Json | null
+          respiration?: number | null
+          resting_heart_rate?: number | null
+          score?: number | null
+          skin_temp_change?: number | null
+          sleep_alignment?: string | null
+          sleep_date?: string
+          sleep_need_seconds?: number | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+          wake_time?: string | null
+        }
+        Relationships: []
+      }
       strava_connections: {
         Row: {
           access_token: string
