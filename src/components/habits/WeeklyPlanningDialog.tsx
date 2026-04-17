@@ -206,6 +206,29 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
         </div>
       )}
       
+      {/* Run reflections from last week (read-only roll-up) */}
+      {weekReflections.length > 0 && (
+        <div className="bg-muted/30 rounded-lg p-4 border border-border/40">
+          <div className="flex items-center gap-2 mb-3">
+            <ActivityIcon className="h-4 w-4 text-primary" />
+            <p className="text-sm font-medium">Run reflections from last week</p>
+            <Badge variant="secondary" className="text-xs ml-auto">
+              {weekReflections.length}
+            </Badge>
+          </div>
+          <ul className="space-y-2.5">
+            {weekReflections.map((r) => (
+              <li key={r.id} className="text-xs leading-relaxed">
+                <div className="text-muted-foreground font-medium mb-0.5">
+                  • {r.activity_name} <span className="text-muted-foreground/60">— {format(parseISO(r.start_date), "EEE d MMM")}</span>
+                </div>
+                <p className="pl-3 italic text-foreground/80 whitespace-pre-wrap">{r.reflection}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Last Week Reflection */}
       <div className="space-y-2">
         <Label className="flex items-center gap-2">
