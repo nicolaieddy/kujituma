@@ -518,6 +518,17 @@ export function TrainingWorkoutCard({
         </div>
       )}
 
+      {/* Reflection preview - shown in collapsed state when present (uses primary session) */}
+      {!expanded && primaryActivity?.reflection && (
+        <div className="px-4 pb-2.5 pl-[52px]">
+          <ActivityReflection
+            activityId={primaryActivity.id}
+            reflection={primaryActivity.reflection}
+            variant="preview"
+          />
+        </div>
+      )}
+
       {/* Expanded content */}
       {expanded && (
         <div className="border-t border-border/40">
