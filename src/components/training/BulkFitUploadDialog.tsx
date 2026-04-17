@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Upload, Loader2, CheckCircle2, XCircle, AlertTriangle, FileArchive } from "lucide-react";
+import { Upload, Loader2, CheckCircle2, XCircle, AlertTriangle, FileArchive, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useFitFileUpload, type FileUploadStatus } from "@/hooks/useFitFileUpload";
@@ -89,10 +89,10 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileArchive className="h-5 w-5 text-primary" />
-            Bulk Upload Activities
+            Bulk Upload Activities & Sleep
           </DialogTitle>
           <DialogDescription>
-            Select .fit or .zip files — each is auto-matched to workouts by date and type.
+            Select .fit / .zip activity files or .csv sleep exports — each is auto-routed by file type.
           </DialogDescription>
         </DialogHeader>
 
@@ -100,7 +100,7 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
           <input
             ref={fileRef}
             type="file"
-            accept=".fit,.zip"
+            accept=".fit,.zip,.csv"
             multiple
             className="hidden"
             onChange={handleFileSelect}
@@ -118,7 +118,7 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
                 <Upload className="h-4 w-4" />
                 {selectedFiles.length > 0
                   ? `${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""} selected`
-                  : "Select .fit / .zip files"}
+                  : "Select .fit / .zip / .csv files"}
               </Button>
 
               {selectedFiles.length > 0 && (
