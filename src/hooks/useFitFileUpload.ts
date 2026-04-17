@@ -4,12 +4,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+export type UploadKind = "activity" | "sleep";
+
 export interface FitUploadResult {
   fileName: string;
   success: boolean;
+  kind: UploadKind;
   summary?: any;
   error?: string;
-  /** Set when the server detects a duplicate — client must confirm overwrite */
+  /** Set when the server detects a duplicate — client must confirm overwrite (activity uploads only) */
   duplicate?: {
     existing_activity: any;
     new_activity: any;
@@ -18,11 +21,19 @@ export interface FitUploadResult {
 
 export type FileUploadStatus = {
   fileName: string;
+  kind: UploadKind;
   status: "queued" | "uploading" | "parsing" | "duplicate" | "done" | "error";
   error?: string;
   summary?: any;
   duplicate?: FitUploadResult["duplicate"];
 };
+
+function detectKind(fileName: string): UploadKind | null {
+  const n = fileName.toLowerCase();
+  if (n.endsWith(".fit") || n.endsWith(".zip")) return "activity";
+  if (n.endsWith(".csv")) return "sleep";
+  return null;
+}
 
 export function useFitFileUpload() {
   const { user } = useAuth();
