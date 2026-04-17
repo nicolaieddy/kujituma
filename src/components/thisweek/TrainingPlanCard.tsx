@@ -251,7 +251,10 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                   )}
                 </div>
               ) : (
-                byDay.map(({ label, dayIndex, workouts: dayWorkouts }) => (
+                byDay.map(({ label, dayIndex, workouts: dayWorkouts }) => {
+                  const dayDate = format(addDays(parseLocalDate(weekStart), dayIndex), "yyyy-MM-dd");
+                  const sleep = sleepByDate[dayDate];
+                  return (
                   <section key={dayIndex} className="space-y-3">
                     <div className="flex items-center justify-between border-b border-border pb-2">
                       <h3 className="text-sm font-semibold uppercase tracking-[0.24em] text-muted-foreground">
@@ -261,6 +264,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                         {dayWorkouts.length} session{dayWorkouts.length === 1 ? "" : "s"}
                       </span>
                     </div>
+
+                    {sleep && <SleepSummaryRow entry={sleep} />}
 
                     <div className="space-y-3">
                     {dayWorkouts.map((workout) => {
