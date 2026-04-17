@@ -307,7 +307,67 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     },
   });
 
-  mcp.tool("get_week_summary", {
+  mcp.tool("get_sleep_entry", {
+    description: "Get the full sleep record for a specific date (YYYY-MM-DD). Returns null if no entry exists.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        date: { type: "string", description: "YYYY-MM-DD date" },
+      },
+      required: ["date"],
+    },
+    handler: async ({ date }: { date: string }) => {
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return { content: [{ type: "text" as const, text: "Provide a valid YYYY-MM-DD date" }] };
+      }
+      const { data, error } = await supabase
+        .from("sleep_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("sleep_date", date)
+        .maybeSingle();
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data) return { content: [{ type: "text" as const, text: `No sleep entry for ${date}` }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcp.tool("get_sleep_entries", {
+    description: "Get sleep records for a date range (inclusive). Capped at 90 days.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        start_date: { type: "string", description: "YYYY-MM-DD start date (inclusive)" },
+        end_date: { type: "string", description: "YYYY-MM-DD end date (inclusive)" },
+      },
+      required: ["start_date", "end_date"],
+    },
+    handler: async ({ start_date, end_date }: { start_date: string; end_date: string }) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(start_date) || !/^\d{4}-\d{2}-\d{2}$/.test(end_date)) {
+        return { content: [{ type: "text" as const, text: "Provide valid YYYY-MM-DD dates" }] };
+      }
+      const start = new Date(start_date);
+      const end = new Date(end_date);
+      const days = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+      if (days > 90 || days < 1) {
+        return { content: [{ type: "text" as const, text: "Range must be between 1 and 90 days" }] };
+      }
+      const { data, error } = await supabase
+        .from("sleep_entries")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("sleep_date", start_date)
+        .lte("sleep_date", end_date)
+        .order("sleep_date", { ascending: true });
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      return {
+        content: [{
+          type: "text" as const,
+          text: `${data?.length || 0} sleep entr${data?.length === 1 ? "y" : "ies"} found between ${start_date} and ${end_date}\n\n${JSON.stringify(data, null, 2)}`,
+        }],
+      };
+    },
+  });
     description: "Combined snapshot for a week: objectives completion %, habits done, check-in status, planning status",
     inputSchema: {
       type: "object",
