@@ -1,10 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, BarChart, Bar, Cell } from 'recharts';
-import { Target, Flame, CheckCircle2, TrendingUp, Calendar, Trophy } from 'lucide-react';
+import { Target, Flame, CheckCircle2, TrendingUp, Calendar, Trophy, ArrowRight } from 'lucide-react';
 import { useAnalyticsSummary } from '@/hooks/useAnalyticsSummary';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/empty-state';
+import { AnalyticsEmpty } from '@/components/illustrations/AnalyticsEmpty';
 
 export const AnalyticsDashboard = () => {
   const { data: rawData, isLoading } = useAnalyticsSummary();
@@ -184,9 +188,20 @@ export const AnalyticsDashboard = () => {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                No data yet. Start adding objectives!
-              </div>
+              <EmptyState
+                compact
+                illustration={<AnalyticsEmpty />}
+                title="Nothing to chart yet"
+                description="Add objectives this week and check them off — your trends will appear here within a few days."
+                actions={
+                  <Button asChild size="sm">
+                    <Link to="/">
+                      Go to This Week
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                }
+              />
             )}
           </CardContent>
         </Card>
@@ -239,9 +254,20 @@ export const AnalyticsDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                No categorized goals yet
-              </div>
+              <EmptyState
+                compact
+                illustration={<AnalyticsEmpty />}
+                title="No categorized goals yet"
+                description="Assign categories to your goals to see how your focus splits across life areas."
+                actions={
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/goals">
+                      Open Goals
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                }
+              />
             )}
           </CardContent>
         </Card>

@@ -7,13 +7,16 @@ import { CollapsibleGoalSection } from "./CollapsibleGoalSection";
 import { GoalYearGroup } from "./GoalYearGroup";
 import { CarryOverBanner } from "./CarryOverBanner";
 import { GoalSearchFilter, GoalFilters } from "./GoalSearchFilter";
-import { Clock, Play, Archive, Trophy, SearchX } from "lucide-react";
+import { Clock, Play, Archive, Trophy, SearchX, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter, DragOverEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { useGoalObjectiveCounts } from "@/hooks/useGoalObjectiveCounts";
+import { EmptyState } from "@/components/ui/empty-state";
+import { GoalsEmpty } from "@/components/illustrations/GoalsEmpty";
 
 interface OrganizedGoalsViewProps {
   activeGoals: Goal[];
@@ -34,6 +37,7 @@ interface OrganizedGoalsViewProps {
   isLoading?: boolean;
   habitStreaks?: Record<string, number>; // Map of goal ID to current streak
   duolingoStreak?: number; // Duolingo streak for language learning goals
+  onCreateGoal?: () => void;
 }
 
 const initialFilters: GoalFilters = {
@@ -62,7 +66,8 @@ export const OrganizedGoalsView = ({
   onReorder,
   isLoading = false,
   habitStreaks = {},
-  duolingoStreak
+  duolingoStreak,
+  onCreateGoal,
 }: OrganizedGoalsViewProps) => {
   const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
@@ -288,11 +293,17 @@ export const OrganizedGoalsView = ({
 
       {/* No Results State */}
       {hasActiveFilters && totalFiltered === 0 && (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <SearchX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No goals found</h3>
-          <p className="text-muted-foreground">Try adjusting your search or filters</p>
-        </div>
+        <EmptyState
+          illustration={<SearchX className="h-10 w-10" strokeWidth={1.25} />}
+          title="No goals match these filters"
+          description="Try a different search term, or clear your filters to see everything."
+          actions={
+            <Button variant="outline" onClick={() => setFilters(initialFilters)}>
+              <X className="h-4 w-4" />
+              Clear filters
+            </Button>
+          }
+        />
       )}
 
       {/* Only show content if there are results or no filters active */}
@@ -552,11 +563,19 @@ export const OrganizedGoalsView = ({
 
           {/* Empty State - Only show when no filters and no goals */}
           {!hasActiveFilters && activeGoals.length === 0 && deprioritizedGoals.length === 0 && Object.keys(completedGoalsByYear).length === 0 && (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No goals yet</h3>
-              <p className="text-muted-foreground">Create your first goal to start tracking your progress</p>
-            </div>
+            <EmptyState
+              illustration={<GoalsEmpty />}
+              title="Set your first goal"
+              description="Goals turn intentions into weekly objectives. Start with one that matters this quarter."
+              actions={
+                onCreateGoal ? (
+                  <Button onClick={onCreateGoal}>
+                    <Plus className="h-4 w-4" />
+                    Create a goal
+                  </Button>
+                ) : undefined
+              }
+            />
           )}
         </>
       )}

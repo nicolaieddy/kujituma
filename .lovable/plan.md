@@ -1,100 +1,57 @@
+# Polished empty states for Training, Goals & Analytics
 
+Replace the three plain "No … yet" blocks with a reusable, on-brand empty-state component that pairs a light SVG illustration with a one-line headline, a short helper sentence, and a primary call-to-action button.
 
-## Sleep Data Ingestion (CSV) + Daily Display + MCP Exposure
+## What you'll see
 
-Add support for uploading Garmin-style sleep CSVs alongside existing `.fit`/`.zip` uploads, store one row per night, surface it on the matching day in the Training Plan, and expose it via MCP.
+**Training** (This Week → Training Plan, when no workouts):
+- Illustration: minimalist running track / pulse-line motif
+- Headline: "Plan your training week"
+- Helper: "Add your first workout, or copy last week's plan to get rolling."
+- CTAs: `Add first workout` (primary) · `Copy last week` (ghost)
 
-### 1. Database — new `sleep_entries` table
+**Goals** (Goals page, when user has none):
+- Illustration: light flag-on-summit motif
+- Headline: "Set your first goal"
+- Helper: "Goals turn intentions into weekly objectives. Start with one that matters this quarter."
+- CTA: `Create a goal` (primary, opens existing create dialog)
 
-Migration adds:
-```
-sleep_entries (
-  id uuid pk, user_id uuid, sleep_date date,           -- one per user per date
-  score int, quality text,                              -- e.g. 91, 'Excellent'
-  duration_seconds int, sleep_need_seconds int,
-  bedtime time, wake_time time,
-  resting_heart_rate int, body_battery int,
-  pulse_ox numeric, respiration numeric,
-  skin_temp_change numeric, hrv_status text,
-  sleep_alignment text, source text default 'garmin_csv',
-  raw_row jsonb,
-  created_at, updated_at
-  unique (user_id, sleep_date)
-)
-```
-RLS: standard user-scoped CRUD policies.
+**Goals — filtered no-results** (existing search-empty block):
+- Same component, search-icon variant, no CTA except `Clear filters`.
 
-### 2. Edge function — new `parse-sleep-csv`
+**Analytics** (two charts: Weekly Progress, Goals by Category, when empty):
+- Illustration: gentle sparkline/bar wisps
+- Headline: "Nothing to chart yet"
+- Helper: "Add objectives and check them off — your trends will appear here within a week."
+- CTA: `Go to This Week` (link to `/`)
 
-Accepts `{ file_path, timezone }`, downloads from `fit-files` bucket (reuse), parses CSV:
-- Skips Garmin BOM + header row
-- Parses each data row, ignoring rows where Score is `--`
-- Converts `7h 21min` → seconds, `1:22 AM` → time, `--` → null
-- Upserts on `(user_id, sleep_date)` (overwrite latest)
-- Returns `{ summary: { entries_imported, dates: [...] } }`
+## Design language
 
-No duplicate confirmation flow needed — sleep upserts are non-destructive (new data wins, since it represents the latest reading from the device for that night).
+- **Light & minimal**: SVGs use only `currentColor` + one accent (`hsl(var(--primary))` at 60–80% opacity), thin 1.5px strokes, generous negative space, ~140×100px.
+- **Container**: existing dashed-border card style (`rounded-2xl border border-dashed border-border bg-muted/20`), centered, ~py-10.
+- **Typography**: Plus Jakarta semibold headline (text-base), muted helper text (text-sm), tight 2-line max.
+- **Motion**: subtle `animate-fade-in` on mount; CTA gets `hover-scale` already in the design system.
+- **Dark-mode safe**: all colors via tokens, no hex.
 
-### 3. Hook — extend `useFitFileUpload` → rename or keep, add CSV branch
+## Technical details
 
-Inside `uploadAndParse`:
-- Detect extension: `.fit`/`.zip` → `parse-fit-file` (existing); `.csv` → `parse-sleep-csv` (new)
-- `FileUploadStatus` gains a `kind: "activity" | "sleep"` field for display
-- Result summary differs by kind (sleep shows `N nights imported`)
+1. **New shared component** `src/components/ui/empty-state.tsx`
+   - Props: `illustration: ReactNode`, `title: string`, `description: string`, `actions?: ReactNode`, `className?`.
+   - Renders the dashed-card container + centered stack.
 
-### 4. UI — single multi-type upload entry point
+2. **New illustrations directory** `src/components/illustrations/`
+   - `TrainingEmpty.tsx`, `GoalsEmpty.tsx`, `AnalyticsEmpty.tsx` — pure inline SVG components (no external assets, no network).
+   - Each accepts `className` so size/color can be overridden.
 
-`BulkFitUploadDialog`:
-- File input `accept=".fit,.zip,.csv"`, multiple
-- Header label updated to "Bulk Upload Activities & Sleep"
-- Per-row result rendering: activity rows show type/laps; sleep rows show `N nights · score range`
-- Title/help text mentions both formats
+3. **Wire-ups** (replace existing blocks only — no behavior change):
+   - `src/components/thisweek/TrainingPlanCard.tsx` lines ~237–252
+   - `src/components/goals/OrganizedGoalsView.tsx` lines ~290–296 (filtered) and ~554–560 (no goals) — reuse existing "create goal" handler already in scope; if not in scope, add a prop or trigger the existing top-bar `New goal` button via a callback already available on the page.
+   - `src/components/analytics/AnalyticsDashboard.tsx` lines ~186–190 and ~241–245.
 
-The button in `TrainingPlanCard` stays the same — just opens the now-multi-format dialog.
+4. **No new dependencies, no DB changes, no edge functions.** Pure presentational refactor.
 
-### 5. Daily display — `SleepSummaryRow` on each day
+## Out of scope
 
-In `TrainingPlanCard`'s per-day section header, query sleep entries for the visible week range (one new hook `useWeekSleepEntries(weekStart)`).
-
-For each day, render a compact row above the workouts list when sleep data exists for that date:
-```text
-[moon icon] 7h 21m • Score 91 (Excellent) • RHR 41 • Body Battery 36 • 1:22 AM → 8:52 AM
-```
-- Subtle styling: muted bg, small text, single line on desktop, wraps on mobile
-- Empty days show nothing (no placeholder noise)
-
-### 6. MCP tools — expose full sleep data per day
-
-In `read-tools.ts`, add:
-- `get_sleep_entry({ date })` — returns full row for that date (or null)
-- `get_sleep_entries({ start_date, end_date })` — range query (capped at 90 days)
-
-Both return all columns including `raw_row` so the agent has complete fidelity. Update `mem://architecture/mcp-server-v2` reference list.
-
-### 7. Memory
-
-- New: `mem://features/training/sleep-ingestion` — describes CSV parser, upsert semantics, daily UI placement, and MCP exposure
-- Update `mem://index.md` references list
-
-### Files
-
-**New**:
-- `supabase/migrations/<new>.sql`
-- `supabase/functions/parse-sleep-csv/index.ts`
-- `src/hooks/useWeekSleepEntries.ts`
-- `src/components/thisweek/SleepSummaryRow.tsx`
-- `mem://features/training/sleep-ingestion`
-
-**Edited**:
-- `src/hooks/useFitFileUpload.ts` (add CSV branch + kind field)
-- `src/components/training/BulkFitUploadDialog.tsx` (accept .csv, label updates, sleep result rendering)
-- `src/components/thisweek/TrainingPlanCard.tsx` (render `SleepSummaryRow` per day)
-- `supabase/functions/mcp-server/read-tools.ts` (sleep tools)
-- `mem://index.md`
-
-### Notes
-- Sleep is stored independent of activities (no FK) — sleep is a separate signal
-- Date attribution: `sleep_date` as written in CSV (already local-day on Garmin export)
-- Garmin CSV has UTF-8 BOM — strip it before parsing
-- No timezone-shift risk because sleep_date is a `date`, not a timestamp
-
+- No animated Lottie files (keeps bundle light, matches "minimal" brief).
+- No copy changes elsewhere on these pages.
+- No changes to the populated states.
