@@ -176,7 +176,11 @@ const Goals = () => {
     updateGoal(updatedGoal.id, updatedGoal);
   };
 
-  const navigateToWeek = (direction: 'previous' | 'next') => {
+  const navigateToWeek = (direction: 'previous' | 'next' | 'current') => {
+    if (direction === 'current') {
+      setCurrentWeekStart(WeeklyProgressService.getWeekStart());
+      return;
+    }
     const deltaDays = direction === 'previous' ? -7 : 7;
     const newWeekStart = WeeklyProgressService.addDaysToWeekStart(currentWeekStart, deltaDays);
     setCurrentWeekStart(newWeekStart);
