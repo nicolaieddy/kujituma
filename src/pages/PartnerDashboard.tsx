@@ -562,76 +562,7 @@ const PartnerDashboard = () => {
             weekStart={selectedWeekStart}
           />
 
-          {/* Check-ins Feed - Collapsible */}
-          {partnershipDetails && partnerProfile && (
-            <Collapsible open={checkInsOpen} onOpenChange={setCheckInsOpen}>
-              <Card className="border-border">
-                <CollapsibleTrigger asChild>
-                  <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-                        <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                        Check-in History
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setCheckInDialogOpen(true);
-                          }}
-                          className="text-xs"
-                        >
-                          New Check-in
-                        </Button>
-                        <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${checkInsOpen ? 'rotate-180' : ''}`} />
-                      </div>
-                    </div>
-                  </CardHeader>
-                </CollapsibleTrigger>
-                {/* Quick message — always visible, above the collapsible feed */}
-                <CardContent className="pt-0 pb-3">
-                  <div className="flex gap-2">
-                    <Textarea
-                      placeholder={`Send ${partnerProfile.full_name.split(' ')[0]} a quick message...`}
-                      value={weeklyNote}
-                      onChange={(e) => setWeeklyNote(e.target.value)}
-                      className="min-h-[40px] h-10 resize-none text-sm"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendWeeklyNote();
-                        }
-                      }}
-                    />
-                    <Button
-                      size="sm"
-                      onClick={handleSendWeeklyNote}
-                      disabled={!weeklyNote.trim() || isSendingNote}
-                      className="px-3 self-end"
-                    >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-
-                <CollapsibleContent>
-                  <CardContent className="pt-0">
-                    <CheckInsFeed
-                      ref={checkInsFeedRef}
-                      partnershipId={partnershipDetails.id}
-                      currentUserId={user.id}
-                      currentUserProfile={currentUserProfile || undefined}
-                      partnerName={partnerProfile.full_name}
-                      maxVisible={2}
-                      onRecordCheckIn={() => setCheckInDialogOpen(true)}
-                    />
-                  </CardContent>
-                </CollapsibleContent>
-              </Card>
-            </Collapsible>
-          )}
+          {/* Check-in History moved to top — see after Partner Header */}
 
           {/* Goals Kanban */}
           <Card className="border-border">
