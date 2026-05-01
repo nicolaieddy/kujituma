@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronLeft, ChevronRight, ClipboardList, Sun, CalendarDays, CheckCircle } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, ClipboardList, Sun, CalendarDays, CheckCircle, CalendarCheck } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
@@ -23,7 +23,7 @@ interface WeekHeaderProps {
   completedCount: number;
   totalCount: number;
   movedCount?: number;
-  onNavigateWeek?: (direction: 'previous' | 'next') => void;
+  onNavigateWeek?: (direction: 'previous' | 'next' | 'current') => void;
   isCached?: boolean;
   lastSync?: Date | null;
   isRefetching?: boolean;
@@ -79,6 +79,24 @@ export const WeekHeader = ({
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+                {!isCurrentWeek && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onNavigateWeek('current')}
+                        className="px-2 gap-1.5"
+                      >
+                        <CalendarCheck className="h-4 w-4" />
+                        <span className="hidden sm:inline">This Week</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Jump to current week</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             )}
             <div>

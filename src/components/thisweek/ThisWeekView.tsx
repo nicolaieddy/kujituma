@@ -39,7 +39,7 @@ import { countMovedObjectives } from "@/utils/movedObjectivesUtils";
 
 interface ThisWeekViewProps {
   weekStart?: string;
-  onNavigateWeek?: (direction: 'previous' | 'next') => void;
+  onNavigateWeek?: (direction: 'previous' | 'next' | 'current') => void;
 }
 
 export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) => {
@@ -220,7 +220,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
 
 
   // Navigation
-  const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
+  const handleNavigateWeek = useCallback((direction: 'previous' | 'next' | 'current') => {
     if (onNavigateWeek) {
       onNavigateWeek(direction);
     }
