@@ -42,7 +42,7 @@ export const EmptyState = ({
           {illustration}
         </div>
         <div className="space-y-1.5 max-w-sm">
-          <h3 className="font-display text-base font-semibold text-foreground">
+          <h3 className="font-heading text-base font-semibold text-foreground">
             {title}
           </h3>
           <p className="text-sm leading-relaxed text-muted-foreground">
