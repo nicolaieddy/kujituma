@@ -270,10 +270,27 @@ export function useFitFileUpload() {
     const dupes = results.filter(r => r.duplicate).length;
     const failed = results.filter(r => !r.success && !r.duplicate).length;
 
+    // Build a per-file detail line so the user sees exactly where each file landed
+    const successDetails = results
+      .filter(r => r.success)
+      .map(r => {
+        const desc = r.kind === "sleep"
+          ? describeSleepSummary(r.summary)
+          : describeActivitySummary(r.summary);
+        return `• ${r.fileName} — ${desc}`;
+      })
+      .join("\n");
+
     if (succeeded > 0 && failed === 0 && dupes === 0) {
-      toast.success(`${succeeded} file${succeeded > 1 ? "s" : ""} imported`);
+      toast.success(`${succeeded} file${succeeded > 1 ? "s" : ""} imported`, {
+        description: successDetails || undefined,
+        duration: 8000,
+      });
     } else if (dupes > 0) {
-      toast.info(`${succeeded} imported, ${dupes} duplicate${dupes > 1 ? "s" : ""} found — confirm below`);
+      toast.info(`${succeeded} imported, ${dupes} duplicate${dupes > 1 ? "s" : ""} found — confirm below`, {
+        description: successDetails || undefined,
+        duration: 8000,
+      });
     }
 
     setIsUploading(false);
