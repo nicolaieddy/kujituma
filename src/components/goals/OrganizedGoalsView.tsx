@@ -293,11 +293,17 @@ export const OrganizedGoalsView = ({
 
       {/* No Results State */}
       {hasActiveFilters && totalFiltered === 0 && (
-        <div className="text-center py-12 border-2 border-dashed rounded-lg">
-          <SearchX className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-foreground mb-2">No goals found</h3>
-          <p className="text-muted-foreground">Try adjusting your search or filters</p>
-        </div>
+        <EmptyState
+          illustration={<SearchX className="h-10 w-10" strokeWidth={1.25} />}
+          title="No goals match these filters"
+          description="Try a different search term, or clear your filters to see everything."
+          actions={
+            <Button variant="outline" onClick={() => setFilters(initialFilters)}>
+              <X className="h-4 w-4" />
+              Clear filters
+            </Button>
+          }
+        />
       )}
 
       {/* Only show content if there are results or no filters active */}
@@ -557,11 +563,19 @@ export const OrganizedGoalsView = ({
 
           {/* Empty State - Only show when no filters and no goals */}
           {!hasActiveFilters && activeGoals.length === 0 && deprioritizedGoals.length === 0 && Object.keys(completedGoalsByYear).length === 0 && (
-            <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <Trophy className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-foreground mb-2">No goals yet</h3>
-              <p className="text-muted-foreground">Create your first goal to start tracking your progress</p>
-            </div>
+            <EmptyState
+              illustration={<GoalsEmpty />}
+              title="Set your first goal"
+              description="Goals turn intentions into weekly objectives. Start with one that matters this quarter."
+              actions={
+                onCreateGoal ? (
+                  <Button onClick={onCreateGoal}>
+                    <Plus className="h-4 w-4" />
+                    Create a goal
+                  </Button>
+                ) : undefined
+              }
+            />
           )}
         </>
       )}

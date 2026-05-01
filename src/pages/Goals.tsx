@@ -301,6 +301,7 @@ const Goals = () => {
                       onReorder={handleGoalReorder}
                       isLoading={goalsLoading}
                       duolingoStreak={duolingoConnection?.current_streak}
+                      onCreateGoal={() => setShowForm(true)}
                     />
                   )}
                 </>
