@@ -153,7 +153,7 @@ export function useFitFileUpload() {
           result.duplicate.existing_activity.id
         );
         if (!overwriteResult.success) throw new Error(overwriteResult.error);
-        invalidateQueries(new Set([overwriteResult.kind]));
+        await invalidateQueries(new Set([overwriteResult.kind]));
         toast.success("Activity replaced successfully", {
           description: `${overwriteResult.summary.activity_type} — ${overwriteResult.summary.laps_count} laps`,
         });
@@ -162,7 +162,7 @@ export function useFitFileUpload() {
 
       if (!result.success) throw new Error(result.error);
 
-      invalidateQueries(new Set([result.kind]));
+      await invalidateQueries(new Set([result.kind]));
       toast.success("Activity imported successfully", {
         description: `${result.summary.activity_type} — ${result.summary.laps_count} laps recorded`,
       });
@@ -221,7 +221,7 @@ export function useFitFileUpload() {
     }
 
     const kinds = new Set<UploadKind>(results.filter(r => r.success).map(r => r.kind));
-    invalidateQueries(kinds);
+    await invalidateQueries(kinds);
 
     const succeeded = results.filter(r => r.success).length;
     const dupes = results.filter(r => r.duplicate).length;
@@ -251,7 +251,7 @@ export function useFitFileUpload() {
 
     if (result.success) {
       updateFileStatus(fileIndex, { status: "done", summary: result.summary, duplicate: undefined });
-      invalidateQueries(new Set([result.kind]));
+      await invalidateQueries(new Set([result.kind]));
     } else {
       updateFileStatus(fileIndex, { status: "error", error: result.error, duplicate: undefined });
     }
