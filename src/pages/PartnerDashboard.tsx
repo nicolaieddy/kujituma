@@ -55,7 +55,7 @@ const PartnerDashboard = () => {
   );
   const [checkInDialogOpen, setCheckInDialogOpen] = useState(false);
   const [settingsModalOpen, setSettingsModalOpen] = useState(false);
-  const [checkInsOpen, setCheckInsOpen] = useState(false);
+  const [checkInsOpen, setCheckInsOpen] = useState(true);
   const [weeklyNote, setWeeklyNote] = useState('');
   const [isSendingNote, setIsSendingNote] = useState(false);
   const [commentsObjectiveId, setCommentsObjectiveId] = useState<string | null>(null);
