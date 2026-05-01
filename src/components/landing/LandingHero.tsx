@@ -1,10 +1,4 @@
-import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
-import { useNavigate } from "react-router-dom";
-
 export const LandingHero = () => {
-  const navigate = useNavigate();
-
   return (
     <section className="relative min-h-[100svh] flex items-center justify-center">
       {/* Full-bleed background image */}
@@ -31,17 +25,6 @@ export const LandingHero = () => {
         <h1 className="text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight text-foreground font-heading">
           Kujituma
         </h1>
-        <div className="mt-10">
-          <Button
-            size="lg"
-            variant="outline"
-            onClick={() => navigate("/auth?mode=signup")}
-            className="bg-background/40 backdrop-blur-sm border-foreground/30 hover:bg-background/60"
-          >
-            Begin
-            <ArrowRight className="ml-1 h-4 w-4" />
-          </Button>
-        </div>
       </div>
     </section>
   );
