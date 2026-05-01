@@ -42,16 +42,19 @@ export function useFitFileUpload() {
   const [progress, setProgress] = useState<string | null>(null);
   const [fileStatuses, setFileStatuses] = useState<FileUploadStatus[]>([]);
 
-  const invalidateQueries = useCallback((kinds: Set<UploadKind>) => {
+  const invalidateQueries = useCallback(async (kinds: Set<UploadKind>) => {
+    const tasks: Promise<unknown>[] = [];
     if (kinds.has("activity")) {
-      queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
-      queryClient.invalidateQueries({ queryKey: ["training-plan"] });
-      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
-      queryClient.invalidateQueries({ queryKey: ["activity-laps"] });
+      tasks.push(queryClient.refetchQueries({ queryKey: ["synced-activities"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["training-plan"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["training-matched-activities"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["training-workout-activities"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["activity-laps"], type: "active" }));
     }
     if (kinds.has("sleep")) {
-      queryClient.invalidateQueries({ queryKey: ["sleep-entries"] });
+      tasks.push(queryClient.refetchQueries({ queryKey: ["sleep-entries"], type: "active" }));
     }
+    await Promise.all(tasks);
   }, [queryClient]);
 
   const updateFileStatus = (index: number, update: Partial<FileUploadStatus>) => {
@@ -150,7 +153,7 @@ export function useFitFileUpload() {
           result.duplicate.existing_activity.id
         );
         if (!overwriteResult.success) throw new Error(overwriteResult.error);
-        invalidateQueries(new Set([overwriteResult.kind]));
+        await invalidateQueries(new Set([overwriteResult.kind]));
         toast.success("Activity replaced successfully", {
           description: `${overwriteResult.summary.activity_type} — ${overwriteResult.summary.laps_count} laps`,
         });
@@ -159,7 +162,7 @@ export function useFitFileUpload() {
 
       if (!result.success) throw new Error(result.error);
 
-      invalidateQueries(new Set([result.kind]));
+      await invalidateQueries(new Set([result.kind]));
       toast.success("Activity imported successfully", {
         description: `${result.summary.activity_type} — ${result.summary.laps_count} laps recorded`,
       });
@@ -218,7 +221,7 @@ export function useFitFileUpload() {
     }
 
     const kinds = new Set<UploadKind>(results.filter(r => r.success).map(r => r.kind));
-    invalidateQueries(kinds);
+    await invalidateQueries(kinds);
 
     const succeeded = results.filter(r => r.success).length;
     const dupes = results.filter(r => r.duplicate).length;
@@ -248,7 +251,7 @@ export function useFitFileUpload() {
 
     if (result.success) {
       updateFileStatus(fileIndex, { status: "done", summary: result.summary, duplicate: undefined });
-      invalidateQueries(new Set([result.kind]));
+      await invalidateQueries(new Set([result.kind]));
     } else {
       updateFileStatus(fileIndex, { status: "error", error: result.error, duplicate: undefined });
     }
