@@ -9,7 +9,7 @@ import { accountabilityService, AccountabilityPartner, CheckInRecord } from '@/s
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronRight, Send, Loader2, MessageSquare, Check } from 'lucide-react';
+import { ChevronRight, Send, Loader2, MessageSquare, Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDuePartnerCheckIns } from '@/hooks/useDuePartnerCheckIns';
 import { formatDistanceToNow } from 'date-fns';
@@ -39,6 +39,7 @@ export const PartnerCheckInsCard = () => {
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
   const { dueCheckIns } = useDuePartnerCheckIns();
   
   // Stabilize duePartnerIds with a string key to avoid re-render loops
@@ -269,178 +270,193 @@ export const PartnerCheckInsCard = () => {
   const getInitials = (name: string) =>
     name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '??';
 
-  return (
-    <div className="flex items-center gap-3 py-1">
-      <div className="flex items-center gap-2">
-        <div className="flex -space-x-1.5">
-          {partnerCheckIns.map(({ partner, hasNewMessage, needsCheckIn, latestCheckIn, recentMessages }) => {
-            const status = hasNewMessage ? 'new-message' : needsCheckIn ? 'needs-checkin' : 'none';
-            
-            return (
-              <Popover 
-                key={partner.partner_id} 
-                open={openPopover === partner.partner_id}
-                onOpenChange={(open) => {
-                  setOpenPopover(open ? partner.partner_id : null);
-                  if (!open) {
-                    setReplyingTo(null);
-                    setReplyText('');
-                  }
-                }}
-              >
-                <PopoverTrigger asChild>
-                  <button
-                    className="relative focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded-full"
+  const activePartners = partnerCheckIns.filter(pc => pc.partner.my_check_in_cadence !== 'none');
+  const inactivePartners = partnerCheckIns.filter(pc => pc.partner.my_check_in_cadence === 'none');
+
+  const renderPartnerPopover = (
+    pc: PartnerCheckIn,
+    opts: { overlap: boolean; dim?: boolean }
+  ) => {
+    const { partner, hasNewMessage, needsCheckIn, latestCheckIn, recentMessages } = pc;
+    const status = hasNewMessage ? 'new-message' : needsCheckIn ? 'needs-checkin' : 'none';
+
+    return (
+      <Popover
+        key={partner.partner_id}
+        open={openPopover === partner.partner_id}
+        onOpenChange={(open) => {
+          setOpenPopover(open ? partner.partner_id : null);
+          if (!open) {
+            setReplyingTo(null);
+            setReplyText('');
+          }
+        }}
+      >
+        <PopoverTrigger asChild>
+          <button
+            className="relative focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 rounded-full"
+          >
+            <Avatar
+              className={cn(
+                "h-7 w-7 border-2 border-background transition-all cursor-pointer",
+                status === 'new-message' && "ring-2 ring-primary",
+                status === 'needs-checkin' && "ring-2 ring-amber-500/50",
+                status === 'none' && !opts.dim && "opacity-60 hover:opacity-100",
+                opts.dim && "opacity-50 hover:opacity-100 grayscale"
+              )}
+            >
+              <AvatarImage src={partner.avatar_url || undefined} />
+              <AvatarFallback className="text-[10px] bg-muted">
+                {getInitials(partner.full_name)}
+              </AvatarFallback>
+            </Avatar>
+            {status === 'new-message' && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary border border-background" />
+            )}
+            {status === 'needs-checkin' && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-500 border border-background" />
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent className="w-80 p-3" align="start">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-7 w-7 flex-shrink-0">
+                  <AvatarImage src={partner.avatar_url || undefined} />
+                  <AvatarFallback className="text-xs">
+                    {getInitials(partner.full_name)}
+                  </AvatarFallback>
+                </Avatar>
+                <p className="font-medium text-sm">{partner.full_name}</p>
+              </div>
+              {opts.dim ? (
+                <span className="text-[10px] text-muted-foreground font-medium">Not checking in</span>
+              ) : needsCheckIn && !hasNewMessage ? (
+                <span className="text-[10px] text-amber-500 font-medium">Check-in due</span>
+              ) : null}
+            </div>
+
+            {/* Message history */}
+            {recentMessages.length > 0 ? (
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                {recentMessages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={cn(
+                      "text-xs p-2 rounded-lg",
+                      msg.is_mine
+                        ? "bg-primary/10 ml-4"
+                        : "bg-muted mr-4"
+                    )}
                   >
-                    <Avatar 
-                      className={cn(
-                        "h-7 w-7 border-2 border-background transition-all cursor-pointer",
-                        status === 'new-message' && "ring-2 ring-primary",
-                        status === 'needs-checkin' && "ring-2 ring-amber-500/50",
-                        status === 'none' && "opacity-60 hover:opacity-100"
-                      )}
-                    >
-                      <AvatarImage src={partner.avatar_url || undefined} />
-                      <AvatarFallback className="text-[10px] bg-muted">
-                        {getInitials(partner.full_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    {status === 'new-message' && (
-                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-primary border border-background" />
-                    )}
-                    {status === 'needs-checkin' && (
-                      <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-500 border border-background" />
-                    )}
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-3" align="start">
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7 flex-shrink-0">
-                          <AvatarImage src={partner.avatar_url || undefined} />
-                          <AvatarFallback className="text-xs">
-                            {getInitials(partner.full_name)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <p className="font-medium text-sm">{partner.full_name}</p>
-                      </div>
-                      {needsCheckIn && !hasNewMessage && (
-                        <span className="text-[10px] text-amber-500 font-medium">Check-in due</span>
-                      )}
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="font-medium text-[10px]">
+                        {msg.is_mine ? 'You' : partner.full_name.split(' ')[0]}
+                      </span>
+                      <span className="text-muted-foreground/60 text-[9px]">
+                        {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
+                      </span>
                     </div>
-                    
-                    {/* Message history */}
-                    {recentMessages.length > 0 ? (
-                      <div className="space-y-2 max-h-32 overflow-y-auto">
-                        {recentMessages.map((msg, idx) => (
-                          <div 
-                            key={idx} 
-                            className={cn(
-                              "text-xs p-2 rounded-lg",
-                              msg.is_mine 
-                                ? "bg-primary/10 ml-4" 
-                                : "bg-muted mr-4"
-                            )}
-                          >
-                            <div className="flex items-center gap-1.5 mb-0.5">
-                              <span className="font-medium text-[10px]">
-                                {msg.is_mine ? 'You' : partner.full_name.split(' ')[0]}
-                              </span>
-                              <span className="text-muted-foreground/60 text-[9px]">
-                                {formatDistanceToNow(new Date(msg.created_at), { addSuffix: true })}
-                              </span>
-                            </div>
-                            <p className="text-muted-foreground line-clamp-2">{msg.message}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground text-center py-2">
-                        No messages yet
-                      </p>
-                    )}
-                    
-                    {replyingTo === partner.partner_id ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          placeholder="Write a message..."
-                          value={replyText}
-                          onChange={(e) => setReplyText(e.target.value)}
-                          className="min-h-[60px] text-sm resize-none"
-                          autoFocus
-                        />
-                        <div className="flex justify-end gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => {
-                              setReplyingTo(null);
-                              setReplyText('');
-                            }}
-                            disabled={isSending}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            size="sm"
-                            className="h-7 text-xs gap-1"
-                            onClick={() => handleSendCheckIn(
-                              partner.partner_id, 
-                              partner.partnership_id, 
-                              hasNewMessage && latestCheckIn ? latestCheckIn.id : undefined
-                            )}
-                            disabled={!replyText.trim() || isSending}
-                          >
-                            {isSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
-                            Send
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex gap-1.5">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1 h-7 text-xs"
-                          onClick={() => setReplyingTo(partner.partner_id)}
-                        >
-                          <MessageSquare className="h-3 w-3 mr-1" />
-                          {hasNewMessage ? 'Reply' : 'Check in'}
-                        </Button>
-                        {hasNewMessage && latestCheckIn && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-7 text-xs"
-                            onClick={() => handleMarkAsRead(partner.partnership_id, latestCheckIn.id)}
-                            disabled={isSending}
-                          >
-                            {isSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-0.5" />}
-                            Read
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 text-xs"
-                          onClick={() => {
-                            setOpenPopover(null);
-                            navigate(`/partner/${partner.partner_id}`);
-                          }}
-                        >
-                          View
-                          <ChevronRight className="h-3 w-3 ml-0.5" />
-                        </Button>
-                      </div>
-                    )}
+                    <p className="text-muted-foreground line-clamp-2">{msg.message}</p>
                   </div>
-                </PopoverContent>
-              </Popover>
-            );
-          })}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2">
+                No messages yet
+              </p>
+            )}
+
+            {replyingTo === partner.partner_id ? (
+              <div className="space-y-2">
+                <Textarea
+                  placeholder="Write a message..."
+                  value={replyText}
+                  onChange={(e) => setReplyText(e.target.value)}
+                  className="min-h-[60px] text-sm resize-none"
+                  autoFocus
+                />
+                <div className="flex justify-end gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => {
+                      setReplyingTo(null);
+                      setReplyText('');
+                    }}
+                    disabled={isSending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs gap-1"
+                    onClick={() => handleSendCheckIn(
+                      partner.partner_id,
+                      partner.partnership_id,
+                      hasNewMessage && latestCheckIn ? latestCheckIn.id : undefined
+                    )}
+                    disabled={!replyText.trim() || isSending}
+                  >
+                    {isSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                    Send
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex gap-1.5">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 h-7 text-xs"
+                  onClick={() => setReplyingTo(partner.partner_id)}
+                >
+                  <MessageSquare className="h-3 w-3 mr-1" />
+                  {hasNewMessage ? 'Reply' : 'Send message'}
+                </Button>
+                {hasNewMessage && latestCheckIn && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 text-xs"
+                    onClick={() => handleMarkAsRead(partner.partnership_id, latestCheckIn.id)}
+                    disabled={isSending}
+                  >
+                    {isSending ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-0.5" />}
+                    Read
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 text-xs"
+                  onClick={() => {
+                    setOpenPopover(null);
+                    navigate(`/partner/${partner.partner_id}`);
+                  }}
+                >
+                  View
+                  <ChevronRight className="h-3 w-3 ml-0.5" />
+                </Button>
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-3 py-1 flex-wrap">
+      <div className="flex items-center gap-2">
+        {/* Active partners — independent (non-overlapping) avatars */}
+        {activePartners.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            {activePartners.map((pc) => renderPartnerPopover(pc, { overlap: false }))}
+          </div>
+        )}
 
         {actionCount > 0 && (
           <Badge variant="default" className="text-[10px] px-1.5 h-5 bg-primary">
@@ -448,6 +464,31 @@ export const PartnerCheckInsCard = () => {
           </Badge>
         )}
       </div>
+
+      {/* Inactive partners — collapsible fan */}
+      {inactivePartners.length > 0 && (
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setShowInactive((v) => !v)}
+            className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+            aria-expanded={showInactive}
+          >
+            <ChevronDown
+              className={cn(
+                "h-3 w-3 transition-transform",
+                showInactive ? "rotate-0" : "-rotate-90"
+              )}
+            />
+            Not checking in ({inactivePartners.length})
+          </button>
+          {showInactive && (
+            <div className="flex -space-x-1.5">
+              {inactivePartners.map((pc) => renderPartnerPopover(pc, { overlap: true, dim: true }))}
+            </div>
+          )}
+        </div>
+      )}
 
       <button
         onClick={() => navigate('/friends?tab=partners')}
