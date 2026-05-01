@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { parseLocalDate } from "@/utils/dateUtils";
 
 export type UploadKind = "activity" | "sleep";
 
@@ -35,22 +36,30 @@ function detectKind(fileName: string): UploadKind | null {
   return null;
 }
 
-/** ISO week (Mon-Sun) range label for a given date string. */
+/**
+ * Parse either a "YYYY-MM-DD" plain date (interpreted in the user's local timezone)
+ * or a full ISO datetime (which already carries its own offset).
+ * This keeps toast labels aligned with what the dashboard renders.
+ */
+function toLocalDate(dateStr: string): Date {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return parseLocalDate(dateStr);
+  return new Date(dateStr);
+}
+
+/** ISO week (Mon-Sun) range label for a given date string, in local time. */
 function weekRangeLabel(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = toLocalDate(dateStr);
   if (isNaN(d.getTime())) return "";
   const day = d.getDay();
   const diffToMon = (day + 6) % 7;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - diffToMon);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  const monday = new Date(d.getFullYear(), d.getMonth(), d.getDate() - diffToMon);
+  const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
   const fmt = (x: Date) => x.toLocaleDateString(undefined, { day: "numeric", month: "short" });
   return `week of ${fmt(monday)} – ${fmt(sunday)}`;
 }
 
 function friendlyDate(dateStr: string): string {
-  const d = new Date(dateStr);
+  const d = toLocalDate(dateStr);
   if (isNaN(d.getTime())) return dateStr;
   return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
 }
