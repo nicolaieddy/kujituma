@@ -35,6 +35,46 @@ function detectKind(fileName: string): UploadKind | null {
   return null;
 }
 
+/** ISO week (Mon-Sun) range label for a given date string. */
+function weekRangeLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const day = d.getDay();
+  const diffToMon = (day + 6) % 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - diffToMon);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (x: Date) => x.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return `week of ${fmt(monday)} – ${fmt(sunday)}`;
+}
+
+function friendlyDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
+function describeActivitySummary(s: any): string {
+  if (!s) return "";
+  const dateStr = s.start_date ? friendlyDate(s.start_date) : "";
+  const week = s.start_date ? weekRangeLabel(s.start_date) : "";
+  const parts = [s.activity_type, dateStr && `on ${dateStr}`, week && `(${week})`].filter(Boolean);
+  return parts.join(" ");
+}
+
+function describeSleepSummary(s: any): string {
+  if (!s) return "";
+  const dates: string[] = s.dates || [];
+  if (dates.length === 0) return `${s.entries_imported ?? 0} night(s) imported`;
+  if (dates.length === 1) {
+    return `night of ${friendlyDate(dates[0])} (${weekRangeLabel(dates[0])})`;
+  }
+  const first = dates[0];
+  const last = dates[dates.length - 1];
+  return `${dates.length} nights · ${friendlyDate(first)} → ${friendlyDate(last)}`;
+}
+
 export function useFitFileUpload() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
