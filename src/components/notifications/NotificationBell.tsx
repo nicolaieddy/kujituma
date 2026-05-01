@@ -150,8 +150,13 @@ export const NotificationBell = () => {
           )}
           
           {notifications.length === 0 && !hasOverdue && !hasDueToday ? (
-            <div className="p-4 text-center text-muted-foreground">
-              No notifications yet
+            <div className="p-3">
+              <EmptyState
+                size="sm"
+                illustration={<NotificationsEmpty />}
+                title="You're all caught up"
+                description="New activity from partners and reminders will show up here."
+              />
             </div>
           ) : (
             <div className="space-y-1">
