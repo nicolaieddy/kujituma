@@ -46,21 +46,17 @@ export const PartnersListSection = ({
         </CardHeader>
         <CardContent>
           {partners.length === 0 ? (
-            <div className="text-center py-12 space-y-4">
-              <div className="relative inline-block">
-                <Handshake className="h-16 w-16 mx-auto text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-foreground font-medium mb-2">No accountability partners yet</p>
-                <p className="text-muted-foreground text-sm max-w-sm mx-auto">
-                  Invite a trusted friend or executive assistant to help keep you on track with your goals.
-                </p>
-              </div>
-              <Button onClick={() => setInviteModalOpen(true)} className="mt-4">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Invite Your First Partner
-              </Button>
-            </div>
+            <EmptyState
+              illustration={<PeopleEmpty />}
+              title="No accountability partners yet"
+              description="Invite a trusted friend or executive assistant to help keep you on track with your goals."
+              actions={
+                <Button onClick={() => setInviteModalOpen(true)}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Invite your first partner
+                </Button>
+              }
+            />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {partners.map((partner) => (

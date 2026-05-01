@@ -162,15 +162,11 @@ const CheckInHistory = () => {
       </div>
 
       {checkIns.length === 0 ? (
-        <Card>
-          <CardContent className="p-6 text-center">
-            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-            <p className="text-muted-foreground">No check-ins recorded yet.</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Record your first check-in to start tracking your accountability conversations.
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          illustration={<HabitsEmpty />}
+          title="No check-ins recorded yet"
+          description="Record your first check-in to start tracking your accountability conversations."
+        />
       ) : (
         <div className="space-y-4">
           {checkIns.map((checkIn) => {

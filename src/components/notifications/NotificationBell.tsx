@@ -13,6 +13,8 @@ import { Bell, Users, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { EmptyState } from '@/components/ui/empty-state';
+import { NotificationsEmpty } from '@/components/illustrations';
 
 export const NotificationBell = () => {
   const { notifications, unreadCount, markAllAsRead, markAsRead } = useNotifications();

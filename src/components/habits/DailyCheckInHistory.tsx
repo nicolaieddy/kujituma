@@ -191,9 +191,12 @@ export const DailyCheckInHistory = () => {
           )}
 
           {(!checkIns || checkIns.length === 0) && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No check-ins yet. Start your first daily check-in to track your progress!
-            </p>
+            <EmptyState
+              size="sm"
+              illustration={<HabitsEmpty />}
+              title="No check-ins yet"
+              description="Start your first daily check-in to track your progress."
+            />
           )}
         </div>
       </SheetContent>
