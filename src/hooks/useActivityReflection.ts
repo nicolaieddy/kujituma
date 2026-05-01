@@ -25,6 +25,8 @@ export function useActivityReflection() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
       queryClient.invalidateQueries({ queryKey: ["training-plan"] });
+      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
       queryClient.invalidateQueries({ queryKey: ["activity-reflections-week"] });
       toast.success("Reflection saved");
     },
