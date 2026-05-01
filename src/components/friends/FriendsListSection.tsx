@@ -3,6 +3,8 @@ import { Friend } from "@/services/friendsService";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { AccountabilityPartner } from "@/services/accountabilityService";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PeopleEmpty } from "@/components/illustrations";
 
 interface FriendsListSectionProps {
   friends: Friend[];

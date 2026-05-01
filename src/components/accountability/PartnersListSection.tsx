@@ -5,6 +5,8 @@ import { PartnerCard } from './PartnerCard';
 import { InvitePartnerModal } from './InvitePartnerModal';
 import { UserPlus, Handshake } from 'lucide-react';
 import { AccountabilityPartner } from '@/services/accountabilityService';
+import { EmptyState } from '@/components/ui/empty-state';
+import { PeopleEmpty } from '@/components/illustrations';
 
 interface PartnersListSectionProps {
   partners: AccountabilityPartner[];

@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { ArrowLeft, MessageSquare, Calendar, Clock } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
+import { EmptyState } from '@/components/ui/empty-state';
+import { HabitsEmpty } from '@/components/illustrations';
 
 const REACTIONS = ['👍', '❤️', '🔥', '👏', '💪'];
 

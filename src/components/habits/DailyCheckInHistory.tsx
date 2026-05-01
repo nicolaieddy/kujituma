@@ -13,6 +13,8 @@ import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { CheckInHeatmap } from "@/components/rituals/CheckInHeatmap";
+import { EmptyState } from "@/components/ui/empty-state";
+import { HabitsEmpty } from "@/components/illustrations";
 import { JournalingStreaksCard } from "@/components/habits/JournalingStreaksCard";
 import { MonthlyDigestCard } from "@/components/habits/MonthlyDigestCard";
 import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle } from "lucide-react";
