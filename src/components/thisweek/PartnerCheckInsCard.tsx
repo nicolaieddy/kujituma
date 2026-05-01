@@ -9,7 +9,7 @@ import { accountabilityService, AccountabilityPartner, CheckInRecord } from '@/s
 import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { ChevronRight, Send, Loader2, MessageSquare, Check } from 'lucide-react';
+import { ChevronRight, Send, Loader2, MessageSquare, Check, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDuePartnerCheckIns } from '@/hooks/useDuePartnerCheckIns';
 import { formatDistanceToNow } from 'date-fns';
