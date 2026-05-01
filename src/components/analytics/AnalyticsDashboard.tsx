@@ -1,10 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip, BarChart, Bar, Cell } from 'recharts';
-import { Target, Flame, CheckCircle2, TrendingUp, Calendar, Trophy } from 'lucide-react';
+import { Target, Flame, CheckCircle2, TrendingUp, Calendar, Trophy, ArrowRight } from 'lucide-react';
 import { useAnalyticsSummary } from '@/hooks/useAnalyticsSummary';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
+import { EmptyState } from '@/components/ui/empty-state';
+import { AnalyticsEmpty } from '@/components/illustrations/AnalyticsEmpty';
 
 export const AnalyticsDashboard = () => {
   const { data: rawData, isLoading } = useAnalyticsSummary();
