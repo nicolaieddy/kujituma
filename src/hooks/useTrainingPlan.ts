@@ -402,9 +402,28 @@ export function useTrainingPlan(weekStart: string) {
       .map(l => l.activity_id);
 
     if (junctionIds.length > 0) {
-      return junctionIds
+      const linked = junctionIds
         .map(id => matchedActivities.find((a: any) => a.id === id))
         .filter(Boolean);
+
+      // Append duplicate-source siblings (Strava↔.FIT) for the same physical session
+      // that were enriched into matchedActivities but aren't in the junction table.
+      const linkedIds = new Set(linked.map((a: any) => a.id));
+      const startDates = new Set(linked.map((a: any) => a.start_date));
+      const siblings = matchedActivities.filter((a: any) =>
+        !linkedIds.has(a.id) &&
+        !a.__fallbackWorkoutId &&
+        startDates.has(a.start_date) &&
+        linked.some((l: any) =>
+          l.start_date === a.start_date &&
+          l.source !== a.source &&
+          (!l.distance_meters || !a.distance_meters ||
+            (a.distance_meters / l.distance_meters >= 0.75 &&
+             a.distance_meters / l.distance_meters <= 1.33))
+        )
+      );
+
+      return [...linked, ...siblings];
     }
 
     // Legacy fallback: single activity
