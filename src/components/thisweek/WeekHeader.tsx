@@ -23,7 +23,7 @@ interface WeekHeaderProps {
   completedCount: number;
   totalCount: number;
   movedCount?: number;
-  onNavigateWeek?: (direction: 'previous' | 'next') => void;
+  onNavigateWeek?: (direction: 'previous' | 'next' | 'current') => void;
   isCached?: boolean;
   lastSync?: Date | null;
   isRefetching?: boolean;
