@@ -188,9 +188,20 @@ export const AnalyticsDashboard = () => {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                No data yet. Start adding objectives!
-              </div>
+              <EmptyState
+                compact
+                illustration={<AnalyticsEmpty />}
+                title="Nothing to chart yet"
+                description="Add objectives this week and check them off — your trends will appear here within a few days."
+                actions={
+                  <Button asChild size="sm">
+                    <Link to="/">
+                      Go to This Week
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                }
+              />
             )}
           </CardContent>
         </Card>
@@ -243,9 +254,20 @@ export const AnalyticsDashboard = () => {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-[200px] flex items-center justify-center text-muted-foreground text-sm">
-                No categorized goals yet
-              </div>
+              <EmptyState
+                compact
+                illustration={<AnalyticsEmpty />}
+                title="No categorized goals yet"
+                description="Assign categories to your goals to see how your focus splits across life areas."
+                actions={
+                  <Button asChild size="sm" variant="outline">
+                    <Link to="/goals">
+                      Open Goals
+                      <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </Button>
+                }
+              />
             )}
           </CardContent>
         </Card>
