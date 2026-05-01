@@ -220,7 +220,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
 
 
   // Navigation
-  const handleNavigateWeek = useCallback((direction: 'previous' | 'next') => {
+  const handleNavigateWeek = useCallback((direction: 'previous' | 'next' | 'current') => {
     if (onNavigateWeek) {
       onNavigateWeek(direction);
     }
