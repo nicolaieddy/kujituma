@@ -37,6 +37,7 @@ interface OrganizedGoalsViewProps {
   isLoading?: boolean;
   habitStreaks?: Record<string, number>; // Map of goal ID to current streak
   duolingoStreak?: number; // Duolingo streak for language learning goals
+  onCreateGoal?: () => void;
 }
 
 const initialFilters: GoalFilters = {
