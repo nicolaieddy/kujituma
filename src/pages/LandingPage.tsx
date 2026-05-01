@@ -1,5 +1,4 @@
 import { LandingHero } from "@/components/landing/LandingHero";
-import { LandingFeatures } from "@/components/landing/LandingFeatures";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +41,6 @@ const LandingPage = () => {
       {/* Main Content */}
       <main className="flex-1">
         <LandingHero />
-        <LandingFeatures />
       </main>
 
       {/* Footer */}
