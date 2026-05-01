@@ -45,14 +45,14 @@ export function useFitFileUpload() {
   const invalidateQueries = useCallback(async (kinds: Set<UploadKind>) => {
     const tasks: Promise<unknown>[] = [];
     if (kinds.has("activity")) {
-      tasks.push(queryClient.invalidateQueries({ queryKey: ["synced-activities"], refetchType: "active" }));
-      tasks.push(queryClient.invalidateQueries({ queryKey: ["training-plan"], refetchType: "active" }));
-      tasks.push(queryClient.invalidateQueries({ queryKey: ["training-matched-activities"], refetchType: "active" }));
-      tasks.push(queryClient.invalidateQueries({ queryKey: ["training-workout-activities"], refetchType: "active" }));
-      tasks.push(queryClient.invalidateQueries({ queryKey: ["activity-laps"], refetchType: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["synced-activities"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["training-plan"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["training-matched-activities"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["training-workout-activities"], type: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["activity-laps"], type: "active" }));
     }
     if (kinds.has("sleep")) {
-      tasks.push(queryClient.invalidateQueries({ queryKey: ["sleep-entries"], refetchType: "active" }));
+      tasks.push(queryClient.refetchQueries({ queryKey: ["sleep-entries"], type: "active" }));
     }
     await Promise.all(tasks);
   }, [queryClient]);
