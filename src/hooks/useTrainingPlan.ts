@@ -185,6 +185,45 @@ export function useTrainingPlan(weekStart: string) {
         }
       }
 
+      // Sibling enrichment: a single physical session can produce two synced_activities rows
+      // (one from Strava, one from .FIT). The junction table sometimes only links one of them,
+      // which causes badges/source merging to drop the other. Backfill siblings here so the
+      // UI always reflects all data sources for a session.
+      const startDates = Array.from(new Set(
+        results.map((a) => a.start_date).filter(Boolean)
+      ));
+      if (startDates.length > 0 && user) {
+        const { data: siblings } = await supabase
+          .from("synced_activities")
+          .select("*")
+          .eq("user_id", user.id)
+          .in("start_date", startDates);
+
+        if (siblings && siblings.length > 0) {
+          const existingIds = new Set(results.map((a) => a.id));
+          for (const linked of [...results]) {
+            const matches = siblings.filter((s: any) =>
+              s.id !== linked.id &&
+              s.start_date === linked.start_date &&
+              s.source !== linked.source &&
+              // Distance similarity within 25% (when both have distance)
+              (!s.distance_meters || !linked.distance_meters ||
+                (s.distance_meters / linked.distance_meters >= 0.75 &&
+                 s.distance_meters / linked.distance_meters <= 1.33))
+            );
+            for (const sib of matches) {
+              if (existingIds.has(sib.id)) continue;
+              existingIds.add(sib.id);
+              // Inherit fallback workout id so it groups correctly
+              results.push(linked.__fallbackWorkoutId
+                ? { ...sib, __fallbackWorkoutId: linked.__fallbackWorkoutId }
+                : sib
+              );
+            }
+          }
+        }
+      }
+
       const seen = new Set<string>();
       return results.filter((a) => {
         const key = `${a.id}:${a.__fallbackWorkoutId || ""}`;
