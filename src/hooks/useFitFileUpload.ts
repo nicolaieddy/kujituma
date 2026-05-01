@@ -42,16 +42,19 @@ export function useFitFileUpload() {
   const [progress, setProgress] = useState<string | null>(null);
   const [fileStatuses, setFileStatuses] = useState<FileUploadStatus[]>([]);
 
-  const invalidateQueries = useCallback((kinds: Set<UploadKind>) => {
+  const invalidateQueries = useCallback(async (kinds: Set<UploadKind>) => {
+    const tasks: Promise<unknown>[] = [];
     if (kinds.has("activity")) {
-      queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
-      queryClient.invalidateQueries({ queryKey: ["training-plan"] });
-      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
-      queryClient.invalidateQueries({ queryKey: ["activity-laps"] });
+      tasks.push(queryClient.invalidateQueries({ queryKey: ["synced-activities"], refetchType: "active" }));
+      tasks.push(queryClient.invalidateQueries({ queryKey: ["training-plan"], refetchType: "active" }));
+      tasks.push(queryClient.invalidateQueries({ queryKey: ["training-matched-activities"], refetchType: "active" }));
+      tasks.push(queryClient.invalidateQueries({ queryKey: ["training-workout-activities"], refetchType: "active" }));
+      tasks.push(queryClient.invalidateQueries({ queryKey: ["activity-laps"], refetchType: "active" }));
     }
     if (kinds.has("sleep")) {
-      queryClient.invalidateQueries({ queryKey: ["sleep-entries"] });
+      tasks.push(queryClient.invalidateQueries({ queryKey: ["sleep-entries"], refetchType: "active" }));
     }
+    await Promise.all(tasks);
   }, [queryClient]);
 
   const updateFileStatus = (index: number, update: Partial<FileUploadStatus>) => {
