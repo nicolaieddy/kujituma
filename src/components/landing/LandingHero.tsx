@@ -20,7 +20,7 @@ export const LandingHero = () => {
       {/* Hero content */}
       <div className="relative z-10 text-center px-6 max-w-2xl mx-auto">
         <p className="text-xs md:text-sm tracking-[0.4em] uppercase text-foreground/80 mb-6">
-          Weekly Planning · Personal
+          Weekly Planning · Personal Growth
         </p>
         <h1 className="text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight text-foreground font-heading">
           Kujituma
