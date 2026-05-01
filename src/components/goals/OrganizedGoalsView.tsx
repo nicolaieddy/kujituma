@@ -66,7 +66,8 @@ export const OrganizedGoalsView = ({
   onReorder,
   isLoading = false,
   habitStreaks = {},
-  duolingoStreak
+  duolingoStreak,
+  onCreateGoal,
 }: OrganizedGoalsViewProps) => {
   const isMobile = useIsMobile();
   const currentYear = new Date().getFullYear();
