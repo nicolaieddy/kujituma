@@ -16,6 +16,8 @@ import { format, addDays } from "date-fns";
 import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
 import { useWeekSleepEntries } from "@/hooks/useWeekSleepEntries";
 import { SleepSummaryRow } from "@/components/thisweek/SleepSummaryRow";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TrainingEmpty } from "@/components/illustrations/TrainingEmpty";
 
 interface TrainingPlanCardProps {
   weekStart: string;
@@ -235,21 +237,25 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
           <CollapsibleContent>
             <CardContent className="space-y-5 pt-0">
               {totalCount === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
-                  <p className="text-sm font-medium text-foreground">No training plan for this week yet.</p>
-                  {!isReadOnly && (
-                    <div className="mt-4 flex flex-wrap justify-center gap-2">
-                      <Button variant="outline" onClick={() => copyFromPreviousWeek()} loading={isCopying}>
-                        <Copy className="h-4 w-4" />
-                        Copy last week
-                      </Button>
-                      <Button onClick={openCreateDialog}>
-                        <Plus className="h-4 w-4" />
-                        Add first workout
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                <EmptyState
+                  illustration={<TrainingEmpty />}
+                  title="Plan your training week"
+                  description="Add your first workout, or copy last week's plan to get rolling."
+                  actions={
+                    !isReadOnly ? (
+                      <>
+                        <Button onClick={openCreateDialog}>
+                          <Plus className="h-4 w-4" />
+                          Add first workout
+                        </Button>
+                        <Button variant="outline" onClick={() => copyFromPreviousWeek()} loading={isCopying}>
+                          <Copy className="h-4 w-4" />
+                          Copy last week
+                        </Button>
+                      </>
+                    ) : undefined
+                  }
+                />
               ) : (
                 byDay.map(({ label, dayIndex, workouts: dayWorkouts }) => {
                   const dayDate = format(addDays(parseLocalDate(weekStart), dayIndex), "yyyy-MM-dd");

@@ -7,13 +7,16 @@ import { CollapsibleGoalSection } from "./CollapsibleGoalSection";
 import { GoalYearGroup } from "./GoalYearGroup";
 import { CarryOverBanner } from "./CarryOverBanner";
 import { GoalSearchFilter, GoalFilters } from "./GoalSearchFilter";
-import { Clock, Play, Archive, Trophy, SearchX } from "lucide-react";
+import { Clock, Play, Archive, Trophy, SearchX, Plus, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, PointerSensor, TouchSensor, useSensor, useSensors, closestCenter, DragOverEvent } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 import { useGoalObjectiveCounts } from "@/hooks/useGoalObjectiveCounts";
+import { EmptyState } from "@/components/ui/empty-state";
+import { GoalsEmpty } from "@/components/illustrations/GoalsEmpty";
 
 interface OrganizedGoalsViewProps {
   activeGoals: Goal[];
