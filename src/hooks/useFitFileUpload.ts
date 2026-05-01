@@ -194,8 +194,8 @@ export function useFitFileUpload() {
         );
         if (!overwriteResult.success) throw new Error(overwriteResult.error);
         await invalidateQueries(new Set([overwriteResult.kind]));
-        toast.success("Activity replaced successfully", {
-          description: `${overwriteResult.summary.activity_type} — ${overwriteResult.summary.laps_count} laps`,
+        toast.success("Activity replaced", {
+          description: describeActivitySummary(overwriteResult.summary),
         });
         return overwriteResult.summary;
       }
@@ -203,8 +203,11 @@ export function useFitFileUpload() {
       if (!result.success) throw new Error(result.error);
 
       await invalidateQueries(new Set([result.kind]));
-      toast.success("Activity imported successfully", {
-        description: `${result.summary.activity_type} — ${result.summary.laps_count} laps recorded`,
+      const desc = result.kind === "sleep"
+        ? describeSleepSummary(result.summary)
+        : describeActivitySummary(result.summary);
+      toast.success(result.kind === "sleep" ? "Sleep imported" : "Activity imported", {
+        description: desc,
       });
       return result.summary;
     } catch (err: any) {
