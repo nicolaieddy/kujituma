@@ -13,6 +13,8 @@ import { useAllDailyCheckIns } from "@/hooks/useAllDailyCheckIns";
 import { useDailyCheckIn } from "@/hooks/useDailyCheckIn";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
 import { CheckInHeatmap } from "@/components/rituals/CheckInHeatmap";
+import { EmptyState } from "@/components/ui/empty-state";
+import { HabitsEmpty } from "@/components/illustrations";
 import { JournalingStreaksCard } from "@/components/habits/JournalingStreaksCard";
 import { MonthlyDigestCard } from "@/components/habits/MonthlyDigestCard";
 import { Sun, Zap, Target, AlertCircle, TrendingUp, Plus, CheckCircle } from "lucide-react";
@@ -191,9 +193,12 @@ export const DailyCheckInHistory = () => {
           )}
 
           {(!checkIns || checkIns.length === 0) && (
-            <p className="text-sm text-muted-foreground text-center py-4">
-              No check-ins yet. Start your first daily check-in to track your progress!
-            </p>
+            <EmptyState
+              size="sm"
+              illustration={<HabitsEmpty />}
+              title="No check-ins yet"
+              description="Start your first daily check-in to track your progress."
+            />
           )}
         </div>
       </SheetContent>
