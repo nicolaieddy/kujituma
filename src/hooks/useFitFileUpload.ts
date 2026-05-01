@@ -35,6 +35,46 @@ function detectKind(fileName: string): UploadKind | null {
   return null;
 }
 
+/** ISO week (Mon-Sun) range label for a given date string. */
+function weekRangeLabel(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return "";
+  const day = d.getDay();
+  const diffToMon = (day + 6) % 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - diffToMon);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const fmt = (x: Date) => x.toLocaleDateString(undefined, { day: "numeric", month: "short" });
+  return `week of ${fmt(monday)} – ${fmt(sunday)}`;
+}
+
+function friendlyDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+}
+
+function describeActivitySummary(s: any): string {
+  if (!s) return "";
+  const dateStr = s.start_date ? friendlyDate(s.start_date) : "";
+  const week = s.start_date ? weekRangeLabel(s.start_date) : "";
+  const parts = [s.activity_type, dateStr && `on ${dateStr}`, week && `(${week})`].filter(Boolean);
+  return parts.join(" ");
+}
+
+function describeSleepSummary(s: any): string {
+  if (!s) return "";
+  const dates: string[] = s.dates || [];
+  if (dates.length === 0) return `${s.entries_imported ?? 0} night(s) imported`;
+  if (dates.length === 1) {
+    return `night of ${friendlyDate(dates[0])} (${weekRangeLabel(dates[0])})`;
+  }
+  const first = dates[0];
+  const last = dates[dates.length - 1];
+  return `${dates.length} nights · ${friendlyDate(first)} → ${friendlyDate(last)}`;
+}
+
 export function useFitFileUpload() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -154,8 +194,8 @@ export function useFitFileUpload() {
         );
         if (!overwriteResult.success) throw new Error(overwriteResult.error);
         await invalidateQueries(new Set([overwriteResult.kind]));
-        toast.success("Activity replaced successfully", {
-          description: `${overwriteResult.summary.activity_type} — ${overwriteResult.summary.laps_count} laps`,
+        toast.success("Activity replaced", {
+          description: describeActivitySummary(overwriteResult.summary),
         });
         return overwriteResult.summary;
       }
@@ -163,8 +203,11 @@ export function useFitFileUpload() {
       if (!result.success) throw new Error(result.error);
 
       await invalidateQueries(new Set([result.kind]));
-      toast.success("Activity imported successfully", {
-        description: `${result.summary.activity_type} — ${result.summary.laps_count} laps recorded`,
+      const desc = result.kind === "sleep"
+        ? describeSleepSummary(result.summary)
+        : describeActivitySummary(result.summary);
+      toast.success(result.kind === "sleep" ? "Sleep imported" : "Activity imported", {
+        description: desc,
       });
       return result.summary;
     } catch (err: any) {
@@ -227,10 +270,27 @@ export function useFitFileUpload() {
     const dupes = results.filter(r => r.duplicate).length;
     const failed = results.filter(r => !r.success && !r.duplicate).length;
 
+    // Build a per-file detail line so the user sees exactly where each file landed
+    const successDetails = results
+      .filter(r => r.success)
+      .map(r => {
+        const desc = r.kind === "sleep"
+          ? describeSleepSummary(r.summary)
+          : describeActivitySummary(r.summary);
+        return `• ${r.fileName} — ${desc}`;
+      })
+      .join("\n");
+
     if (succeeded > 0 && failed === 0 && dupes === 0) {
-      toast.success(`${succeeded} file${succeeded > 1 ? "s" : ""} imported`);
+      toast.success(`${succeeded} file${succeeded > 1 ? "s" : ""} imported`, {
+        description: successDetails || undefined,
+        duration: 8000,
+      });
     } else if (dupes > 0) {
-      toast.info(`${succeeded} imported, ${dupes} duplicate${dupes > 1 ? "s" : ""} found — confirm below`);
+      toast.info(`${succeeded} imported, ${dupes} duplicate${dupes > 1 ? "s" : ""} found — confirm below`, {
+        description: successDetails || undefined,
+        duration: 8000,
+      });
     }
 
     setIsUploading(false);
