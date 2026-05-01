@@ -1,6 +1,6 @@
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Calendar, ChevronLeft, ChevronRight, ClipboardList, Sun, CalendarDays, CheckCircle } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, ClipboardList, Sun, CalendarDays, CheckCircle, CalendarCheck } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { useQuarterlyReviewTrigger } from "@/contexts/QuarterlyReviewContext";
 import { useRitualsTrigger } from "@/contexts/RitualsContext";
