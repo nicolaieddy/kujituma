@@ -39,6 +39,7 @@ export const PartnerCheckInsCard = () => {
   const [replyText, setReplyText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [openPopover, setOpenPopover] = useState<string | null>(null);
+  const [showInactive, setShowInactive] = useState(false);
   const { dueCheckIns } = useDuePartnerCheckIns();
   
   // Stabilize duePartnerIds with a string key to avoid re-render loops
