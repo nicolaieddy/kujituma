@@ -1,57 +1,56 @@
-# Polished empty states for Training, Goals & Analytics
+# Fix: Missing Strava badge on workouts that have both Strava + .FIT data
 
-Replace the three plain "No … yet" blocks with a reusable, on-brand empty-state component that pairs a light SVG illustration with a one-line headline, a short helper sentence, and a primary call-to-action button.
+## What's actually wrong
 
-## What you'll see
+Both the Fartlek (Mon 28 Apr) and Easy Aerobic (Wed 30 Apr) sessions have a Strava activity AND a .FIT upload in `synced_activities`. But the badges only render correctly for Easy Aerobic.
 
-**Training** (This Week → Training Plan, when no workouts):
-- Illustration: minimalist running track / pulse-line motif
-- Headline: "Plan your training week"
-- Helper: "Add your first workout, or copy last week's plan to get rolling."
-- CTAs: `Add first workout` (primary) · `Copy last week` (ghost)
+Confirmed via DB query:
 
-**Goals** (Goals page, when user has none):
-- Illustration: light flag-on-summit motif
-- Headline: "Set your first goal"
-- Helper: "Goals turn intentions into weekly objectives. Start with one that matters this quarter."
-- CTA: `Create a goal` (primary, opens existing create dialog)
+| Workout | Strava row | .FIT row | Linked in `training_workout_activities` |
+|---|---|---|---|
+| Easy Aerobic 60-80min | yes | yes | **both** linked → shows Strava + .FIT |
+| Fartlek 10×2min | yes | yes | **only .FIT** linked → shows .FIT only |
 
-**Goals — filtered no-results** (existing search-empty block):
-- Same component, search-icon variant, no CTA except `Clear filters`.
+`TrainingWorkoutCard` derives badges from rows in `training_workout_activities`. If only one of the two duplicate rows is linked, only that one's badge shows — even though `mergeActivitiesIntoSessions` was specifically built to merge them.
 
-**Analytics** (two charts: Weekly Progress, Goals by Category, when empty):
-- Illustration: gentle sparkline/bar wisps
-- Headline: "Nothing to chart yet"
-- Helper: "Add objectives and check them off — your trends will appear here within a week."
-- CTA: `Go to This Week` (link to `/`)
+## Root cause
 
-## Design language
+Two related issues in `supabase/functions/strava-sync/index.ts` → `autoMatchTrainingPlan`:
 
-- **Light & minimal**: SVGs use only `currentColor` + one accent (`hsl(var(--primary))` at 60–80% opacity), thin 1.5px strokes, generous negative space, ~140×100px.
-- **Container**: existing dashed-border card style (`rounded-2xl border border-dashed border-border bg-muted/20`), centered, ~py-10.
-- **Typography**: Plus Jakarta semibold headline (text-base), muted helper text (text-sm), tight 2-line max.
-- **Motion**: subtle `animate-fade-in` on mount; CTA gets `hover-scale` already in the design system.
-- **Dark-mode safe**: all colors via tokens, no hex.
+1. The function only links *one* activity per planned workout in step 1 (the first match wins, then `usedActivityIds.add(...)`). Subsequent same-day, same-type, same-time activities (the duplicate from the other source) are evaluated as multi-session candidates in step 2.
+2. The multi-session check requires the *previously linked* activity to exist in the junction table and uses end-time + 2h proximity. If the order in which activities are evaluated puts the .FIT row first, the Strava row should still link (gap ≈ 0), but if the workout was originally matched via the legacy `matched_strava_activity_id` field before the junction table existed, the junction-table link for the Strava row was never backfilled.
 
-## Technical details
+The Easy Aerobic session worked because both rows ended up in the junction table; the Fartlek didn't.
 
-1. **New shared component** `src/components/ui/empty-state.tsx`
-   - Props: `illustration: ReactNode`, `title: string`, `description: string`, `actions?: ReactNode`, `className?`.
-   - Renders the dashed-card container + centered stack.
+## Fix — two parts
 
-2. **New illustrations directory** `src/components/illustrations/`
-   - `TrainingEmpty.tsx`, `GoalsEmpty.tsx`, `AnalyticsEmpty.tsx` — pure inline SVG components (no external assets, no network).
-   - Each accepts `className` so size/color can be overridden.
+### 1. Make the UI resilient (display-time merge)
 
-3. **Wire-ups** (replace existing blocks only — no behavior change):
-   - `src/components/thisweek/TrainingPlanCard.tsx` lines ~237–252
-   - `src/components/goals/OrganizedGoalsView.tsx` lines ~290–296 (filtered) and ~554–560 (no goals) — reuse existing "create goal" handler already in scope; if not in scope, add a prop or trigger the existing top-bar `New goal` button via a callback already available on the page.
-   - `src/components/analytics/AnalyticsDashboard.tsx` lines ~186–190 and ~241–245.
+In `src/components/thisweek/TrainingWorkoutCard.tsx`, before computing badges, merge the linked `activities` with their duplicate counterparts from `synced_activities` for the same physical session.
 
-4. **No new dependencies, no DB changes, no edge functions.** Pure presentational refactor.
+Concretely: pass the full week's `syncedActivities` list (already loaded by `useSyncedActivities`) into the card, and for each linked activity, look up any same-date / same-`start_date` / similar-distance row from the other source and treat it as part of the session. Reuse `isSamePhysicalSession` from `trainingPlanUtils.ts`.
 
-## Out of scope
+This guarantees the badges always reflect reality even if the junction table is incomplete.
 
-- No animated Lottie files (keeps bundle light, matches "minimal" brief).
-- No copy changes elsewhere on these pages.
-- No changes to the populated states.
+### 2. Backfill the junction table in `strava-sync`
+
+In `autoMatchTrainingPlan`, after step 1 (planned-workout matching), add a pass that:
+
+- For every workout that now has a linked activity, look for *other* `synced_activities` rows on the same date with the same/near-identical `start_date` (±5 min) and similar distance/duration, and upsert them into `training_workout_activities` with the next `session_order`.
+- This catches the Strava+.FIT duplicate pairing regardless of which one was matched first.
+
+Also run this once as a one-off backfill (either via a temporary migration or by triggering a manual sync) to repair existing rows like the Fartlek.
+
+## Files to change
+
+- `src/components/thisweek/TrainingWorkoutCard.tsx` — merge duplicate same-session activities before deriving `sources`.
+- `src/components/thisweek/trainingPlanUtils.ts` — export a helper `findDuplicateSessionActivities(linked, allSynced)` reusing `isSamePhysicalSession`.
+- `supabase/functions/strava-sync/index.ts` — add post-match pass to link duplicate-source activities into `training_workout_activities`.
+
+## Verification
+
+After deploy + a manual Strava sync:
+
+- Re-query: `SELECT activity_id, source FROM training_workout_activities twa JOIN synced_activities sa ON sa.id=twa.activity_id WHERE workout_id='26c01264-d902-49fe-aeee-dbb283709b89'` should return **two** rows (strava + fit_upload).
+- The Fartlek card on This Week should show both Strava and .FIT badges.
+- Easy Aerobic should remain unchanged (already correct).

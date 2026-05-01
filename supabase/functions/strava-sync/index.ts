@@ -311,6 +311,67 @@ async function autoMatchTrainingPlan(
         console.error(`Failed to create workout for activity ${activity.strava_activity_id}:`, insertErr);
       }
     }
+
+    // Step 4: Backfill duplicate-source siblings into junction table.
+    // For each workout already linked to at least one activity, find any other
+    // synced_activities row at the same start_date with a different source
+    // (Strava + .FIT for the same physical session) and link it too.
+    const allWorkoutsWithLinks = (allPlanWorkouts || []).filter((w: any) =>
+      (w.workout_type || "").toLowerCase() !== "rest"
+    );
+    for (const workout of allWorkoutsWithLinks) {
+      const { data: existingLinks } = await supabase
+        .from("training_workout_activities")
+        .select("activity_id, session_order")
+        .eq("workout_id", workout.id)
+        .order("session_order", { ascending: true });
+
+      if (!existingLinks || existingLinks.length === 0) continue;
+
+      const linkedIds = new Set(existingLinks.map((l: any) => l.activity_id));
+      const { data: linkedActivities } = await supabase
+        .from("synced_activities")
+        .select("id, start_date, source, distance_meters")
+        .in("id", existingLinks.map((l: any) => l.activity_id));
+
+      if (!linkedActivities || linkedActivities.length === 0) continue;
+
+      let nextOrder = (existingLinks[existingLinks.length - 1].session_order ?? 0) + 1;
+
+      for (const linked of linkedActivities) {
+        const { data: siblings } = await supabase
+          .from("synced_activities")
+          .select("id, source, distance_meters")
+          .eq("user_id", userId)
+          .eq("start_date", linked.start_date)
+          .neq("id", linked.id);
+
+        if (!siblings) continue;
+
+        for (const sib of siblings) {
+          if (linkedIds.has(sib.id)) continue;
+          if (sib.source === linked.source) continue;
+          // Distance similarity guard
+          if (sib.distance_meters && linked.distance_meters) {
+            const ratio = sib.distance_meters / linked.distance_meters;
+            if (ratio < 0.75 || ratio > 1.33) continue;
+          }
+
+          const { error: linkErr } = await supabase
+            .from("training_workout_activities")
+            .upsert(
+              { workout_id: workout.id, activity_id: sib.id, session_order: nextOrder },
+              { onConflict: "workout_id,activity_id" }
+            );
+          if (!linkErr) {
+            console.log(`Backfilled sibling activity ${sib.id} (${sib.source}) into workout ${workout.id}`);
+            linkedIds.add(sib.id);
+            nextOrder++;
+            matched++;
+          }
+        }
+      }
+    }
   }
 
   return matched;
