@@ -79,6 +79,24 @@ export const WeekHeader = ({
                 >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
+                {!isCurrentWeek && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onNavigateWeek('current')}
+                        className="px-2 gap-1.5"
+                      >
+                        <CalendarCheck className="h-4 w-4" />
+                        <span className="hidden sm:inline">This Week</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Jump to current week</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             )}
             <div>
