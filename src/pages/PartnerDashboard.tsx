@@ -25,6 +25,7 @@ import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability
 import { accountabilityService } from '@/services/accountabilityService';
 import { usePartnerDashboardData } from '@/hooks/usePartnerDashboardData';
 import { useLatestCheckIn } from '@/hooks/useLatestCheckIn';
+import { usePartnershipUnread } from '@/hooks/usePartnershipUnread';
 import { usePartnerObjectiveFeedback } from '@/hooks/useObjectiveFeedback';
 import { useObjectiveCommentCounts } from '@/hooks/useObjectiveComments';
 import { toast } from 'sonner';
