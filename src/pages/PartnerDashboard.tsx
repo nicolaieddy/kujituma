@@ -92,6 +92,7 @@ const PartnerDashboard = () => {
   const objectiveIds = useMemo(() => weeklyObjectives.map(o => o.id), [weeklyObjectives]);
   const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
   const { counts: commentCounts, unreadCounts } = useObjectiveCommentCounts(objectiveIds);
+  const { data: latestCheckIn } = useLatestCheckIn(partnershipDetails?.id);
 
   const isCurrentWeek = isSameWeek(selectedWeekStart, new Date(), { weekStartsOn: 1 });
 
