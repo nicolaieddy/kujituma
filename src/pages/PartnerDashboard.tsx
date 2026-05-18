@@ -94,6 +94,14 @@ const PartnerDashboard = () => {
   const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
   const { counts: commentCounts, unreadCounts } = useObjectiveCommentCounts(objectiveIds);
   const { data: latestCheckIn } = useLatestCheckIn(partnershipDetails?.id);
+  const { unreadCount: unreadCheckIns, markAsRead: markCheckInsRead } = usePartnershipUnread(partnershipDetails?.id);
+
+  // Mark as read whenever the user has the check-in section expanded
+  useEffect(() => {
+    if (checkInsOpen && unreadCheckIns > 0) {
+      markCheckInsRead();
+    }
+  }, [checkInsOpen, unreadCheckIns, markCheckInsRead]);
 
   const isCurrentWeek = isSameWeek(selectedWeekStart, new Date(), { weekStartsOn: 1 });
 
