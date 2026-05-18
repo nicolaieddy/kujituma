@@ -98,6 +98,7 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
             const status = getCheckInStatus(partner);
             const statusConfig = getStatusConfig(status);
             const StatusIcon = statusConfig.icon;
+            const unread = unreadMap[partner.partnership_id] || 0;
             const initials = partner.full_name
               .split(' ')
               .map(n => n[0])
