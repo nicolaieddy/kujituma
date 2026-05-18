@@ -145,6 +145,18 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
                       <p>{statusConfig.tooltip}</p>
                     </TooltipContent>
                   </Tooltip>
+                  {unread > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-destructive text-destructive-foreground border-2 border-background flex items-center justify-center text-[10px] font-semibold leading-none">
+                          {unread > 9 ? '9+' : unread}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{unread} new check-in{unread !== 1 ? 's' : ''}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
                 <span className={cn(
                   "text-xs truncate max-w-[64px]",
