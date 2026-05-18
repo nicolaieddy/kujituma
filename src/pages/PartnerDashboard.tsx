@@ -442,6 +442,11 @@ const PartnerDashboard = () => {
                       <CardTitle className="text-base sm:text-lg flex items-center gap-2 shrink-0">
                         <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                         Check-in History
+                        {unreadCheckIns > 0 && (
+                          <Badge className="bg-destructive text-destructive-foreground hover:bg-destructive h-5 min-w-5 px-1.5 text-[10px] font-semibold rounded-full">
+                            {unreadCheckIns > 9 ? '9+' : unreadCheckIns} new
+                          </Badge>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-2 shrink-0">
                         <Button
