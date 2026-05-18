@@ -98,6 +98,43 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   const optimisticIdsRef = useRef(optimisticIds);
   optimisticIdsRef.current = optimisticIds;
 
+  // Refs to each rendered check-in for auto-scroll
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const setItemRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
+    if (el) itemRefs.current.set(id, el);
+    else itemRefs.current.delete(id);
+  }, []);
+
+  const scrollToCheckIn = useCallback((id: string) => {
+    // Try a few times in case the element hasn't rendered yet after a refresh
+    let attempts = 0;
+    const tryScroll = () => {
+      const el = itemRefs.current.get(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      if (attempts++ < 10) setTimeout(tryScroll, 80);
+    };
+    tryScroll();
+  }, []);
+
+  const scrollToLatest = useCallback(() => {
+    let attempts = 0;
+    const tryScroll = () => {
+      const firstId = itemRefs.current.keys().next().value as string | undefined;
+      if (firstId) {
+        const el = itemRefs.current.get(firstId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+      if (attempts++ < 10) setTimeout(tryScroll, 80);
+    };
+    tryScroll();
+  }, []);
+
   const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
     // Keep optimistic check-ins that haven't been confirmed yet
