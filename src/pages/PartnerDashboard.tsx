@@ -429,12 +429,12 @@ const PartnerDashboard = () => {
               <Card className="border-border">
                 <CollapsibleTrigger asChild>
                   <CardHeader className="cursor-pointer hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <CardTitle className="text-base sm:text-lg flex items-center gap-2 shrink-0">
                         <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                         Check-in History
                       </CardTitle>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
@@ -449,6 +449,30 @@ const PartnerDashboard = () => {
                         <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${checkInsOpen ? 'rotate-180' : ''}`} />
                       </div>
                     </div>
+                    {!checkInsOpen && latestCheckIn && (latestCheckIn.message || latestCheckIn.initiator_profile) && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                        <Avatar className="h-5 w-5 shrink-0">
+                          <AvatarImage src={latestCheckIn.initiator_profile?.avatar_url || undefined} />
+                          <AvatarFallback className="text-[10px] bg-primary/10 text-primary">
+                            {(latestCheckIn.initiated_by === user.id
+                              ? (currentUserProfile?.full_name || 'You')
+                              : (latestCheckIn.initiator_profile?.full_name || partnerProfile.full_name)
+                            ).split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium text-foreground/80 shrink-0">
+                          {latestCheckIn.initiated_by === user.id
+                            ? 'You'
+                            : (latestCheckIn.initiator_profile?.full_name?.split(' ')[0] || partnerProfile.full_name.split(' ')[0])}:
+                        </span>
+                        <span className="truncate italic">
+                          {latestCheckIn.message?.trim() || 'checked in'}
+                        </span>
+                        <span className="shrink-0 opacity-70">
+                          · {formatDistanceToNow(new Date(latestCheckIn.created_at), { addSuffix: true })}
+                        </span>
+                      </div>
+                    )}
                   </CardHeader>
                 </CollapsibleTrigger>
                 {/* Quick message — always visible, above the collapsible feed */}
