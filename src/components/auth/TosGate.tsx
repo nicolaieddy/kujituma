@@ -10,7 +10,7 @@ interface TosGateProps {
 
 export const TosGate = ({ children }: TosGateProps) => {
   const { user, loading: authLoading } = useAuth();
-  const { hasAcceptedCurrentTos, loading: tosLoading, acceptTos, latestAcceptance, refetch } = useTosAcceptance();
+  const { status, loading: tosLoading, acceptTos, latestAcceptance, refetch } = useTosAcceptance();
   const [isProcessingSignup, setIsProcessingSignup] = useState(false);
   const hasCheckedSignupFlag = useRef(false);
 
