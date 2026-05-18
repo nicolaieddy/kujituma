@@ -193,7 +193,9 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     addOptimisticCheckIn,
     confirmOptimisticCheckIn,
     removeOptimisticCheckIn,
-  }), [fetchCheckIns, addOptimisticCheckIn, confirmOptimisticCheckIn, removeOptimisticCheckIn]);
+    scrollToLatest,
+    scrollToCheckIn,
+  }), [fetchCheckIns, addOptimisticCheckIn, confirmOptimisticCheckIn, removeOptimisticCheckIn, scrollToLatest, scrollToCheckIn]);
 
   useEffect(() => {
     setLoading(true);
