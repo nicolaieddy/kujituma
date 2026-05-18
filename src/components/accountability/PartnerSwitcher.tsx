@@ -30,6 +30,8 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
   
   // Use the consolidated hook - shares cache with other accountability components
   const { partners, isLoading, refetch } = useAccountabilityData();
+  const partnershipIds = partners.map(p => p.partnership_id);
+  const unreadMap = useAllPartnershipsUnread(partnershipIds);
 
   const handleRefresh = useCallback(async () => {
     await refetch();
