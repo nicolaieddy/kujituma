@@ -43,6 +43,8 @@ export interface CheckInsFeedRef {
   addOptimisticCheckIn: (checkIn: OptimisticCheckIn) => string;
   confirmOptimisticCheckIn: (tempId: string) => void;
   removeOptimisticCheckIn: (tempId: string) => void;
+  scrollToLatest: () => void;
+  scrollToCheckIn: (id: string) => void;
 }
 
 interface CheckInsFeedProps {
