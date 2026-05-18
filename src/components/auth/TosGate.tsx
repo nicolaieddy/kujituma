@@ -89,9 +89,9 @@ export const TosGate = ({ children }: TosGateProps) => {
     );
   }
 
-  // Show ToS modal only if user hasn't accepted current version
-  // AND this is not a new signup (where ToS was accepted on auth page)
-  if (hasAcceptedCurrentTos === false) {
+  // Only show modal when we have a confirmed server response that acceptance is needed.
+  // status === 'unknown' (network/offline failure) → do NOT gate.
+  if (status === 'needs_acceptance') {
     // Double-check: if signup flag still exists, don't show modal
     const stillProcessingSignup = sessionStorage.getItem('is_new_signup');
     if (stillProcessingSignup) {
