@@ -43,6 +43,8 @@ export interface CheckInsFeedRef {
   addOptimisticCheckIn: (checkIn: OptimisticCheckIn) => string;
   confirmOptimisticCheckIn: (tempId: string) => void;
   removeOptimisticCheckIn: (tempId: string) => void;
+  scrollToLatest: () => void;
+  scrollToCheckIn: (id: string) => void;
 }
 
 interface CheckInsFeedProps {
@@ -95,6 +97,43 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
   // Use ref to access optimisticIds without re-creating the callback
   const optimisticIdsRef = useRef(optimisticIds);
   optimisticIdsRef.current = optimisticIds;
+
+  // Refs to each rendered check-in for auto-scroll
+  const itemRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const setItemRef = useCallback((id: string) => (el: HTMLDivElement | null) => {
+    if (el) itemRefs.current.set(id, el);
+    else itemRefs.current.delete(id);
+  }, []);
+
+  const scrollToCheckIn = useCallback((id: string) => {
+    // Try a few times in case the element hasn't rendered yet after a refresh
+    let attempts = 0;
+    const tryScroll = () => {
+      const el = itemRefs.current.get(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+      if (attempts++ < 10) setTimeout(tryScroll, 80);
+    };
+    tryScroll();
+  }, []);
+
+  const scrollToLatest = useCallback(() => {
+    let attempts = 0;
+    const tryScroll = () => {
+      const firstId = itemRefs.current.keys().next().value as string | undefined;
+      if (firstId) {
+        const el = itemRefs.current.get(firstId);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
+        }
+      }
+      if (attempts++ < 10) setTimeout(tryScroll, 80);
+    };
+    tryScroll();
+  }, []);
 
   const fetchCheckIns = useCallback(async () => {
     const data = await accountabilityService.getCheckInHistory(partnershipId);
@@ -154,7 +193,9 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
     addOptimisticCheckIn,
     confirmOptimisticCheckIn,
     removeOptimisticCheckIn,
-  }), [fetchCheckIns, addOptimisticCheckIn, confirmOptimisticCheckIn, removeOptimisticCheckIn]);
+    scrollToLatest,
+    scrollToCheckIn,
+  }), [fetchCheckIns, addOptimisticCheckIn, confirmOptimisticCheckIn, removeOptimisticCheckIn, scrollToLatest, scrollToCheckIn]);
 
   useEffect(() => {
     setLoading(true);
@@ -258,6 +299,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
         return next;
       });
       await fetchCheckIns();
+      scrollToCheckIn(parentCheckInId);
       queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
       toast.success('Reply sent!');
     } catch (error) {
@@ -535,7 +577,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
               );
 
               return (
-                <div key={checkIn.id} className={cn("relative pl-10", isOptimistic && "opacity-70")}>
+                <div key={checkIn.id} ref={setItemRef(checkIn.id)} className={cn("relative pl-10 scroll-mt-20", isOptimistic && "opacity-70")}>
                   {/* Timeline dot */}
                   <div className={cn(
                     "absolute left-2.5 w-3 h-3 rounded-full border-2 border-background",
