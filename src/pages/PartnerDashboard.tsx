@@ -158,7 +158,11 @@ const PartnerDashboard = () => {
       week_start: format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
       initiator_profile: currentUserProfile,
     });
-    
+
+    // Ensure the feed is open and scroll to the new check-in
+    setCheckInsOpen(true);
+    setTimeout(() => checkInsFeedRef.current?.scrollToLatest(), 50);
+
     try {
       const result = await accountabilityService.recordCheckIn(partnershipDetails.id, message);
       
@@ -171,7 +175,9 @@ const PartnerDashboard = () => {
         checkInsFeedRef.current?.refresh(),
         partnerSwitcherRef.current?.refresh(),
         refetch()
-      ]).catch(console.error);
+      ]).then(() => {
+        setTimeout(() => checkInsFeedRef.current?.scrollToLatest(), 50);
+      }).catch(console.error);
       toast.success('Check-in recorded!');
       queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
     } catch (err) {
