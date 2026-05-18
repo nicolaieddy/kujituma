@@ -299,6 +299,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
         return next;
       });
       await fetchCheckIns();
+      scrollToCheckIn(parentCheckInId);
       queryClient.invalidateQueries({ queryKey: ['due-partner-check-ins'] });
       toast.success('Reply sent!');
     } catch (error) {
