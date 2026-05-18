@@ -576,7 +576,7 @@ export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({
               );
 
               return (
-                <div key={checkIn.id} className={cn("relative pl-10", isOptimistic && "opacity-70")}>
+                <div key={checkIn.id} ref={setItemRef(checkIn.id)} className={cn("relative pl-10 scroll-mt-20", isOptimistic && "opacity-70")}>
                   {/* Timeline dot */}
                   <div className={cn(
                     "absolute left-2.5 w-3 h-3 rounded-full border-2 border-background",
