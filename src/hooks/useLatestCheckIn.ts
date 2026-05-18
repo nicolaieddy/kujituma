@@ -6,7 +6,7 @@ export interface LatestCheckIn {
   id: string;
   message: string | null;
   created_at: string;
-  initiator_id: string;
+  initiated_by: string;
   initiator_profile: {
     full_name: string | null;
     avatar_url: string | null;
@@ -20,9 +20,9 @@ export const useLatestCheckIn = (partnershipId: string | undefined) => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('accountability_check_ins')
-        .select('id, message, created_at, initiator_id, initiator_profile:profiles!accountability_check_ins_initiator_id_fkey(full_name, avatar_url)')
+        .select('id, message, created_at, initiated_by, initiator_profile:profiles!accountability_check_ins_initiated_by_fkey(full_name, avatar_url)')
         .eq('partnership_id', partnershipId!)
-        .is('parent_check_in_id', null)
+        .is('reply_to_id', null)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
