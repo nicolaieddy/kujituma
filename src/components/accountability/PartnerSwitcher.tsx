@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAccountabilityData } from '@/hooks/useAccountabilityData';
+import { useAllPartnershipsUnread } from '@/hooks/usePartnershipUnread';
 import { AccountabilityPartner } from '@/services/accountabilityService';
 import { Check, AlertCircle, Ban } from 'lucide-react';
 import { startOfWeek, isAfter, parseISO } from 'date-fns';
