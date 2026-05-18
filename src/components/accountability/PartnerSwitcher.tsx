@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import { useAccountabilityData } from '@/hooks/useAccountabilityData';
+import { useAllPartnershipsUnread } from '@/hooks/usePartnershipUnread';
 import { AccountabilityPartner } from '@/services/accountabilityService';
 import { Check, AlertCircle, Ban } from 'lucide-react';
 import { startOfWeek, isAfter, parseISO } from 'date-fns';
@@ -29,6 +30,8 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
   
   // Use the consolidated hook - shares cache with other accountability components
   const { partners, isLoading, refetch } = useAccountabilityData();
+  const partnershipIds = partners.map(p => p.partnership_id);
+  const unreadMap = useAllPartnershipsUnread(partnershipIds);
 
   const handleRefresh = useCallback(async () => {
     await refetch();
@@ -95,6 +98,7 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
             const status = getCheckInStatus(partner);
             const statusConfig = getStatusConfig(status);
             const StatusIcon = statusConfig.icon;
+            const unread = unreadMap[partner.partnership_id] || 0;
             const initials = partner.full_name
               .split(' ')
               .map(n => n[0])
@@ -141,6 +145,18 @@ export const PartnerSwitcher = forwardRef<PartnerSwitcherRef, PartnerSwitcherPro
                       <p>{statusConfig.tooltip}</p>
                     </TooltipContent>
                   </Tooltip>
+                  {unread > 0 && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="absolute -top-1 -right-1 h-5 min-w-[20px] px-1 rounded-full bg-destructive text-destructive-foreground border-2 border-background flex items-center justify-center text-[10px] font-semibold leading-none">
+                          {unread > 9 ? '9+' : unread}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom">
+                        <p>{unread} new check-in{unread !== 1 ? 's' : ''}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
                 </div>
                 <span className={cn(
                   "text-xs truncate max-w-[64px]",

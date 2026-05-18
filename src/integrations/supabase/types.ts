@@ -1585,6 +1585,32 @@ export type Database = {
           },
         ]
       }
+      partnership_check_in_reads: {
+        Row: {
+          last_seen_at: string
+          partnership_id: string
+          user_id: string
+        }
+        Insert: {
+          last_seen_at?: string
+          partnership_id: string
+          user_id: string
+        }
+        Update: {
+          last_seen_at?: string
+          partnership_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partnership_check_in_reads_partnership_id_fkey"
+            columns: ["partnership_id"]
+            isOneToOne: false
+            referencedRelation: "accountability_partnerships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partnership_visibility_history: {
         Row: {
           changed_by: string

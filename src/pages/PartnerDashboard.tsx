@@ -25,6 +25,7 @@ import { PartnerSwitcher, PartnerSwitcherRef } from '@/components/accountability
 import { accountabilityService } from '@/services/accountabilityService';
 import { usePartnerDashboardData } from '@/hooks/usePartnerDashboardData';
 import { useLatestCheckIn } from '@/hooks/useLatestCheckIn';
+import { usePartnershipUnread } from '@/hooks/usePartnershipUnread';
 import { usePartnerObjectiveFeedback } from '@/hooks/useObjectiveFeedback';
 import { useObjectiveCommentCounts } from '@/hooks/useObjectiveComments';
 import { toast } from 'sonner';
@@ -93,6 +94,14 @@ const PartnerDashboard = () => {
   const { feedback, submitFeedback, removeFeedback, isSubmitting, getFeedbackForObjective } = usePartnerObjectiveFeedback(objectiveIds);
   const { counts: commentCounts, unreadCounts } = useObjectiveCommentCounts(objectiveIds);
   const { data: latestCheckIn } = useLatestCheckIn(partnershipDetails?.id);
+  const { unreadCount: unreadCheckIns, markAsRead: markCheckInsRead } = usePartnershipUnread(partnershipDetails?.id);
+
+  // Mark as read whenever the user has the check-in section expanded
+  useEffect(() => {
+    if (checkInsOpen && unreadCheckIns > 0) {
+      markCheckInsRead();
+    }
+  }, [checkInsOpen, unreadCheckIns, markCheckInsRead]);
 
   const isCurrentWeek = isSameWeek(selectedWeekStart, new Date(), { weekStartsOn: 1 });
 
@@ -433,6 +442,11 @@ const PartnerDashboard = () => {
                       <CardTitle className="text-base sm:text-lg flex items-center gap-2 shrink-0">
                         <MessageSquare className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                         Check-in History
+                        {unreadCheckIns > 0 && (
+                          <Badge className="bg-destructive text-destructive-foreground hover:bg-destructive h-5 min-w-5 px-1.5 text-[10px] font-semibold rounded-full">
+                            {unreadCheckIns > 9 ? '9+' : unreadCheckIns} new
+                          </Badge>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-2 shrink-0">
                         <Button
