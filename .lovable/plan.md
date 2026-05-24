@@ -1,84 +1,106 @@
-## The bug
 
-The "Welcome to Kujituma / Accept Terms" modal pops up even though you've already accepted. The DB confirms it — your user has 3 separate `tos_acceptances` rows for version `1.0.0`, all created from this same bug re-firing on previous sessions.
+# Garmin Health API Auto-Sync
 
-## Root cause
+Stream Garmin activities, sleep, and wellness data directly into Kujituma — no more manual `.fit` / CSV uploads. Uses Garmin's official Health API with OAuth 2.0 (PKCE) and Ping webhooks.
 
-`src/hooks/useTosAcceptance.ts` fails closed on errors:
+## Prerequisite (you, not me)
 
-```ts
-if (error) {
-  setHasAcceptedCurrentTos(false);   // ❌ treats network error as "not accepted"
-  ...
-}
-} catch (error) {
-  setHasAcceptedCurrentTos(false);   // ❌ same problem
-}
-```
+Before any of this is useful, you need to **apply to the Garmin Connect Developer Program → Health API** at https://developer.garmin.com/gc-developer-program/health-api/. Approval typically takes 1–4 weeks. Garmin will provide:
 
-When the `tos_acceptances` SELECT fails (flaky Wi-Fi, dropped request, expired token mid-refresh, Supabase 5xx, offline), the hook reports `hasAcceptedCurrentTos = false`. `TosGate` then renders the modal. If you accept again, it just writes another duplicate row — the underlying fetch is never retried.
+- **Consumer Key** (Client ID)
+- **Consumer Secret** (Client Secret)
+- A confirmation that webhooks (Ping/Push notifications) are enabled
 
-Secondary issues:
-- No retry on transient failures.
-- No offline awareness — the gate happily shows the modal with no network.
-- Every modal accept inserts a new row (no dedupe).
+We can build everything while you wait — the integration just won't activate until you paste those credentials in and configure the webhook URLs in Garmin's developer portal.
 
-## Existing flow
+## What you'll get when it's live
+
+- A **Connect Garmin** button in Profile → Integrations (next to Strava). One-time OAuth.
+- New activities appear in Training within ~1–5 minutes of finishing a workout, with full Garmin-native metrics (HRV, stride length, ground contact, body battery, etc. — richer than Strava).
+- New sleep sessions auto-populate each morning — no more Garmin Connect CSV downloads.
+- Optional: daily wellness (resting HR, body battery, stress) for future analytics.
+- Manual `.fit` / sleep CSV upload stays as a fallback.
+
+## Architecture
 
 ```text
-App mount
-  └─ AuthContext: getSession() → user
-       └─ TosGate
-            └─ useTosAcceptance.checkTosAcceptance()
-                 └─ SELECT tos_acceptances (latest)
-                      ├─ success + version matches → render app
-                      ├─ success + no row / old version → show modal
-                      └─ ERROR / network fail ──► hasAccepted=false ──► SHOW MODAL  ❌
-                                                                            │
-                                                                            └─ Accept → INSERT duplicate row
+   Garmin watch
+       │ (sync)
+       ▼
+   Garmin Connect
+       │ Ping webhook
+       ▼
+ ┌────────────────────────────┐
+ │ garmin-webhook (edge fn)   │  ◄── public, signature-verified
+ │  • receives Ping summaries │
+ │  • fetches detail via API  │
+ │  • normalizes + inserts    │
+ └────────┬───────────────────┘
+          │
+          ▼
+   synced_activities / sleep_entries / wellness_entries
+          ▲
+          │ OAuth tokens
+ ┌────────────────────────────┐
+ │ garmin-auth (edge fn)      │  ◄── OAuth start / callback / refresh
+ └────────────────────────────┘
+          ▲
+          │
+   Frontend Connect button
 ```
 
-## Proposed flow
+## Build steps
 
-```text
-App mount
-  └─ AuthContext: getSession() → user
-       └─ TosGate (waits for auth + tos resolution)
-            └─ useTosAcceptance.checkTosAcceptance()
-                 ├─ navigator.onLine === false → status="unknown", DO NOT gate
-                 └─ SELECT tos_acceptances (latest)
-                      ├─ success + version matches → status="accepted" → render app
-                      ├─ success + no row              → status="missing"  → show modal (new user only)
-                      ├─ success + older version       → status="outdated" → show modal
-                      └─ network/5xx error
-                            └─ retry up to 3x w/ backoff
-                                 ├─ eventually succeeds → handle as above
-                                 └─ still failing       → status="unknown" → DO NOT gate ✅
-                                                            (log + optionally toast)
-       └─ Online again (window 'online' event) → refetch
-```
+### 1. Database
+New tables / columns via migration:
+- `garmin_connections` — `user_id`, `garmin_user_id`, `access_token`, `refresh_token`, `token_expires_at`, `scopes`, `connected_at`, `last_sync_at`. Tokens encrypted at rest, RLS so only owner reads.
+- `garmin_webhook_events` — raw Ping payload audit log (`event_type`, `payload`, `processed_at`, `error`) for debugging and replay.
+- `sleep_entries` — add `source` column (`'garmin_csv' | 'garmin_api'`) and `garmin_summary_id` (unique with user_id) for dedup.
+- `synced_activities` — add `garmin_activity_id` (unique with user_id) and extend `source` enum to include `'garmin_api'`. Reuse all existing display logic.
+- Optional `wellness_entries` table for daily resting HR / body battery / stress (gated behind a flag — we can ship without).
 
-Key rule: **never show the ToS modal unless we have a confirmed "no acceptance" or "outdated version" response from the server.** Errors and offline are not consent signals.
+### 2. Secrets
+Add via secrets tool once you have Garmin credentials:
+- `GARMIN_CLIENT_ID`
+- `GARMIN_CLIENT_SECRET`
+- `GARMIN_WEBHOOK_SECRET` (we generate; paste into Garmin portal)
 
-## Changes
+### 3. Edge functions
+- **`garmin-auth`** — three sub-routes:
+  - `GET /start` → returns Garmin authorize URL with PKCE challenge.
+  - `GET /callback` → exchanges code for tokens, stores in `garmin_connections`, triggers initial 30-day backfill.
+  - `POST /refresh` → internal, called by webhook handler when access token expired.
+  - `POST /disconnect` → revoke + delete row.
+- **`garmin-webhook`** — `verify_jwt = false`, public. Verifies Garmin's HMAC signature, writes raw event to `garmin_webhook_events`, then for each summary:
+  - **Activity ping** → fetch activity detail + FIT, normalize, upsert into `synced_activities` (dedup on `garmin_activity_id`, merge with same-session Strava per existing memory).
+  - **Sleep ping** → fetch sleep summary, upsert into `sleep_entries`.
+  - **Wellness ping** (optional) → upsert daily snapshot.
+  - Invalidates relevant TanStack keys via a small notification table the client polls, OR relies on existing realtime subscriptions if present.
+- **`garmin-backfill`** — one-off, called after first connect; pulls last 30 days of activities + sleep using the `/backfill` endpoint per Garmin spec.
 
-1. **`src/hooks/useTosAcceptance.ts`**
-   - Replace boolean `hasAcceptedCurrentTos: boolean | null` semantics with a three-state status: `'accepted' | 'needs_acceptance' | 'unknown'` (keep the existing boolean export for backwards compat, derived from status).
-   - On Supabase error or thrown exception → set status `'unknown'` (NOT `needs_acceptance`).
-   - Add retry-with-backoff (3 attempts, 500ms → 1s → 2s) for transient errors.
-   - Skip the fetch when `navigator.onLine === false`; mark status `'unknown'`.
-   - Add `window` `'online'` listener to auto-refetch when connectivity returns.
-   - In `acceptTos`, do a "latest row" check before insert to avoid duplicate rows for the same version (defensive — main fix is not showing the modal in the first place).
+### 4. Frontend
+- New `useGarminConnection` hook mirroring `useStravaConnection`.
+- New `GarminConnectionCard` component in `src/components/garmin/` matching Strava card styling — shown in `IntegrationsSection.tsx`.
+- Callback page `src/pages/GarminCallback.tsx` (parallel to `StravaCallback.tsx`).
+- Update `FitFileUploadCard` copy: "Manual upload (optional fallback — Garmin auto-syncs in the background)".
+- Update `McpSection.tsx` tool list per memory rule (new `getGarminConnectionStatus` tool if we expose one).
 
-2. **`src/components/auth/TosGate.tsx`**
-   - Only render `<TosAcceptanceModal>` when status is explicitly `'needs_acceptance'`. For `'unknown'`, render `{children}` (app stays usable; user is not nagged).
-   - Keep existing new-signup race-condition handling as-is.
+### 5. Garmin developer portal config (you, after approval)
+I'll provide exact URLs to paste:
+- OAuth redirect URI: `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/garmin-auth/callback`
+- Activity Ping URL: `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/garmin-webhook?type=activity`
+- Sleep Ping URL: `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/garmin-webhook?type=sleep`
 
-3. **(Optional cleanup, not required)** A one-off SQL cleanup to dedupe historical `tos_acceptances` rows per `(user_id, tos_version)` — happy to do this in a follow-up if you want; not needed to fix the bug.
+### 6. Testing
+- Garmin provides a sandbox + test-data endpoint we'll use in `supabase--curl_edge_functions` to validate the webhook handler before real watch data flows.
 
-## Files touched
+## Phasing
 
-- `src/hooks/useTosAcceptance.ts` (logic rewrite)
-- `src/components/auth/TosGate.tsx` (gate only on `needs_acceptance`)
+I'd suggest shipping in two passes:
 
-No DB migration required for the fix itself.
+1. **Pass 1 (build now, dormant until creds arrive)**: schema, edge functions, connect UI, sleep + activity ingestion, backfill. Verified with Garmin's sandbox endpoint.
+2. **Pass 2 (after first week of real data)**: wellness/HRV/body-battery dashboard widgets — easier to design once we see real payloads.
+
+## Open question for you
+
+Do you want **wellness data** (resting HR, body battery, stress, daily HRV) ingested in Pass 1, or activities + sleep only? Wellness adds one more table and webhook handler but unlocks richer analytics later. Tell me before I start building and I'll scope accordingly.
