@@ -1,11 +1,13 @@
 import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
 import { DuolingoConnectionCard } from "@/components/duolingo/DuolingoConnectionCard";
+import { GarminConnectionCard } from "@/components/garmin/GarminConnectionCard";
 import { ActivityMappingCard } from "@/components/strava/ActivityMappingCard";
 import { FitFileUploadCard } from "@/components/training/FitFileUploadCard";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Zap } from "lucide-react";
+
 
 export function IntegrationsSection() {
   const { isConnected: isStravaConnected } = useStravaConnection();
@@ -26,8 +28,10 @@ export function IntegrationsSection() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <StravaConnectionCard />
+        <GarminConnectionCard />
         <DuolingoConnectionCard />
       </div>
+
 
       <FitFileUploadCard />
 

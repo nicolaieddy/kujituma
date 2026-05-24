@@ -20,3 +20,7 @@ verify_jwt = false
 
 [functions.parse-fit-file]
 verify_jwt = false
+
+[functions.garmin-webhook]
+verify_jwt = false
+

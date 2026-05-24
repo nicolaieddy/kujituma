@@ -60,6 +60,8 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const StravaCallback = lazy(() => import("./pages/StravaCallback"));
+const GarminCallback = lazy(() => import("./pages/GarminCallback"));
+
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -245,6 +247,8 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/strava-callback" element={<StravaCallback />} />
+            <Route path="/garmin-callback" element={<GarminCallback />} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>

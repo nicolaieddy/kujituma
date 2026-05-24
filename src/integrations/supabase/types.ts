@@ -906,6 +906,117 @@ export type Database = {
         }
         Relationships: []
       }
+      garmin_connections: {
+        Row: {
+          access_token: string
+          connected_at: string
+          created_at: string
+          garmin_user_id: string
+          id: string
+          last_error: string | null
+          last_sync_at: string | null
+          refresh_token: string
+          refresh_token_expires_at: string | null
+          scopes: string | null
+          token_expires_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          connected_at?: string
+          created_at?: string
+          garmin_user_id: string
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          refresh_token: string
+          refresh_token_expires_at?: string | null
+          scopes?: string | null
+          token_expires_at: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          connected_at?: string
+          created_at?: string
+          garmin_user_id?: string
+          id?: string
+          last_error?: string | null
+          last_sync_at?: string | null
+          refresh_token?: string
+          refresh_token_expires_at?: string | null
+          scopes?: string | null
+          token_expires_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      garmin_oauth_states: {
+        Row: {
+          code_verifier: string
+          created_at: string
+          expires_at: string
+          redirect_uri: string
+          state: string
+          user_id: string
+        }
+        Insert: {
+          code_verifier: string
+          created_at?: string
+          expires_at?: string
+          redirect_uri: string
+          state: string
+          user_id: string
+        }
+        Update: {
+          code_verifier?: string
+          created_at?: string
+          expires_at?: string
+          redirect_uri?: string
+          state?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      garmin_webhook_events: {
+        Row: {
+          created_at: string
+          error: string | null
+          event_type: string
+          garmin_user_id: string | null
+          id: string
+          payload: Json
+          processed_at: string | null
+          signature_valid: boolean | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          event_type: string
+          garmin_user_id?: string | null
+          id?: string
+          payload: Json
+          processed_at?: string | null
+          signature_valid?: boolean | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          event_type?: string
+          garmin_user_id?: string | null
+          id?: string
+          payload?: Json
+          processed_at?: string | null
+          signature_valid?: boolean | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       goal_comments: {
         Row: {
           created_at: string
@@ -2019,6 +2130,7 @@ export type Database = {
           body_battery: number | null
           created_at: string
           duration_seconds: number | null
+          garmin_summary_id: string | null
           hrv_status: string | null
           id: string
           pulse_ox: number | null
@@ -2041,6 +2153,7 @@ export type Database = {
           body_battery?: number | null
           created_at?: string
           duration_seconds?: number | null
+          garmin_summary_id?: string | null
           hrv_status?: string | null
           id?: string
           pulse_ox?: number | null
@@ -2063,6 +2176,7 @@ export type Database = {
           body_battery?: number | null
           created_at?: string
           duration_seconds?: number | null
+          garmin_summary_id?: string | null
           hrv_status?: string | null
           id?: string
           pulse_ox?: number | null
@@ -2156,6 +2270,8 @@ export type Database = {
           elapsed_time_seconds: number | null
           fit_file_path: string | null
           ftp: number | null
+          garmin_activity_id: string | null
+          garmin_summary_id: string | null
           habit_completion_created: boolean | null
           id: string
           matched_goal_id: string | null
@@ -2211,6 +2327,8 @@ export type Database = {
           elapsed_time_seconds?: number | null
           fit_file_path?: string | null
           ftp?: number | null
+          garmin_activity_id?: string | null
+          garmin_summary_id?: string | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
@@ -2266,6 +2384,8 @@ export type Database = {
           elapsed_time_seconds?: number | null
           fit_file_path?: string | null
           ftp?: number | null
+          garmin_activity_id?: string | null
+          garmin_summary_id?: string | null
           habit_completion_created?: boolean | null
           id?: string
           matched_goal_id?: string | null
