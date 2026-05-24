@@ -1,22 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 
 interface GarminConnection {
-  garmin_user_id: string;
+  garmin_user_id: string | null;
   connected_at: string;
   last_sync_at: string | null;
-  scopes: string | null;
+  last_login_at: string | null;
   last_error: string | null;
 }
 
 export function useGarminConnection() {
   const { user, session } = useAuth();
+  const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const [connection, setConnection] = useState<GarminConnection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const checkStatus = useCallback(async () => {
     if (!user || !session) {
@@ -44,28 +48,64 @@ export function useGarminConnection() {
     checkStatus();
   }, [checkStatus]);
 
-  const initiateConnect = useCallback(async () => {
-    if (!session) {
-      toast.error("Please log in to connect Garmin");
-      return;
-    }
-    try {
-      const redirectUri = `${window.location.origin}/garmin-callback`;
-      const res = await fetch(
-        `${SUPABASE_URL}/functions/v1/garmin-auth?action=authorize&redirect_uri=${encodeURIComponent(redirectUri)}`,
-        { headers: { Authorization: `Bearer ${session.access_token}` } },
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to get authorization URL");
+  const connect = useCallback(
+    async (email: string, password: string) => {
+      if (!session) {
+        toast.error("Please log in to connect Garmin");
+        return false;
       }
-      const { url } = await res.json();
-      window.location.href = url;
+      setIsSubmitting(true);
+      try {
+        const res = await fetch(
+          `${SUPABASE_URL}/functions/v1/garmin-auth?action=connect`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ email, password }),
+          },
+        );
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.error || "Failed to connect");
+        toast.success("Garmin connected — pulling your data now");
+        await checkStatus();
+        queryClient.invalidateQueries({ queryKey: ["synced_activities"] });
+        queryClient.invalidateQueries({ queryKey: ["sleep_entries"] });
+        return true;
+      } catch (err) {
+        toast.error((err as Error).message);
+        return false;
+      } finally {
+        setIsSubmitting(false);
+      }
+    },
+    [session, checkStatus, queryClient],
+  );
+
+  const syncNow = useCallback(async () => {
+    if (!session) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/functions/v1/garmin-auth?action=sync-now`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        },
+      );
+      if (!res.ok) throw new Error("Sync failed");
+      toast.success("Garmin sync complete");
+      await checkStatus();
+      queryClient.invalidateQueries({ queryKey: ["synced_activities"] });
+      queryClient.invalidateQueries({ queryKey: ["sleep_entries"] });
     } catch (err) {
-      console.error("Failed to initiate Garmin connection:", err);
-      toast.error((err as Error).message || "Failed to connect Garmin");
+      toast.error((err as Error).message);
+    } finally {
+      setIsSyncing(false);
     }
-  }, [session]);
+  }, [session, checkStatus, queryClient]);
 
   const disconnect = useCallback(async () => {
     if (!session) return;
@@ -82,8 +122,7 @@ export function useGarminConnection() {
       setConnection(null);
       toast.success("Garmin disconnected");
     } catch (err) {
-      console.error(err);
-      toast.error("Failed to disconnect Garmin");
+      toast.error((err as Error).message);
     }
   }, [session]);
 
@@ -91,7 +130,10 @@ export function useGarminConnection() {
     isConnected,
     connection,
     isLoading,
-    initiateConnect,
+    isSubmitting,
+    isSyncing,
+    connect,
+    syncNow,
     disconnect,
     refreshStatus: checkStatus,
   };
