@@ -60,6 +60,8 @@ const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService"));
 const Onboarding = lazy(() => import("./pages/Onboarding"));
 const StravaCallback = lazy(() => import("./pages/StravaCallback"));
+const GarminCallback = lazy(() => import("./pages/GarminCallback"));
+
 
 const LoadingSpinner = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
