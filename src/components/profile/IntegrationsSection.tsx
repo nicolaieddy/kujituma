@@ -28,8 +28,10 @@ export function IntegrationsSection() {
 
       <div className="grid gap-6 md:grid-cols-2">
         <StravaConnectionCard />
+        <GarminConnectionCard />
         <DuolingoConnectionCard />
       </div>
+
 
       <FitFileUploadCard />
 
