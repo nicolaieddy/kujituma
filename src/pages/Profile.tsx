@@ -8,6 +8,7 @@ import { IntegrationsSection } from "@/components/profile/IntegrationsSection";
 import { NotificationPreferences } from "@/components/profile/NotificationPreferences";
 import { McpSection } from "@/components/profile/McpSection";
 import { WorkoutPreferencesSection } from "@/components/profile/WorkoutPreferencesSection";
+import { ValuesSection } from "@/components/values/ValuesSection";
 
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -35,6 +36,7 @@ import {
   Users,
   ArrowRight,
   Handshake,
+  Heart,
   Loader2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -90,9 +92,9 @@ const Profile = () => {
   const viewerContext = pageData?.viewer_context;
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"profile" | "integrations" | "workouts" | "notifications" | "mcp">(() => {
+  const [activeTab, setActiveTab] = useState<"profile" | "values" | "integrations" | "workouts" | "notifications" | "mcp">(() => {
     const p = getSearchParams().get("tab");
-    if (p === "integrations" || p === "workouts" || p === "notifications" || p === "mcp") return p;
+    if (p === "values" || p === "integrations" || p === "workouts" || p === "notifications" || p === "mcp") return p;
     return "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
@@ -131,7 +133,7 @@ const Profile = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleTabChange = useCallback((tab: "profile" | "integrations" | "workouts" | "notifications" | "mcp") => {
+  const handleTabChange = useCallback((tab: "profile" | "values" | "integrations" | "workouts" | "notifications" | "mcp") => {
     setActiveTab(tab);
     setSearchParam("tab", tab);
   }, []);
@@ -467,6 +469,18 @@ const Profile = () => {
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleTabChange("values")}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activeTab === "values"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Heart className="h-4 w-4" />
+                  Values
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleTabChange("integrations")}
                   className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
                     activeTab === "integrations"
@@ -525,6 +539,11 @@ const Profile = () => {
 
             {/* Tab content (simple conditional, no Radix) */}
             {activeTab === "profile" && renderProfileView()}
+            {activeTab === "values" && profile && (
+              <div className="max-w-4xl mx-auto">
+                <ValuesSection isOwnProfile={true} userId={profile.id} />
+              </div>
+            )}
             {activeTab === "integrations" && (
               <div className="max-w-4xl mx-auto">
                 <IntegrationsSection />
@@ -552,7 +571,14 @@ const Profile = () => {
         )}
 
         {/* Viewing someone else's profile */}
-        {profile && !isOwnProfile && renderProfileView()}
+        {profile && !isOwnProfile && (
+          <>
+            {renderProfileView()}
+            <div className="max-w-4xl mx-auto mt-8">
+              <ValuesSection isOwnProfile={false} userId={profile.id} />
+            </div>
+          </>
+        )}
     </div>
   );
 };

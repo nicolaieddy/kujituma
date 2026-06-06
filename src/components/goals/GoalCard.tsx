@@ -23,6 +23,7 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { MarkdownContent } from "@/components/ui/markdown-content";
 import { startOfWeek, addWeeks, startOfMonth, endOfMonth, isBefore, format, getMonth } from "date-fns";
+import { ValuesScorePill } from "@/components/values/ValuesScorePill";
 
 const getNextScheduledDate = (goal: Goal): string | null => {
   // No longer needed - habits don't have auto-scheduled dates like old recurring goals
@@ -282,6 +283,7 @@ export const GoalCard = ({
                     </DropdownMenuContent>
                   </DropdownMenu>
                 )}
+                <ValuesScorePill goalId={goal.id} />
                 {/* Show Habit badge only for goals with habit_items */}
                 {goal.habit_items && goal.habit_items.length > 0 && (
                   <Tooltip>
