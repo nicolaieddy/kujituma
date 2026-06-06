@@ -298,6 +298,8 @@ export function McpSection() {
               { name: "set_activity_reflection", desc: "Save a workout reflection note" },
               { name: "get_sleep_entry", desc: "Sleep data for a specific date" },
               { name: "get_sleep_entries", desc: "Sleep data over a date range" },
+              { name: "list_values", desc: "List personal values" },
+              { name: "get_goal_values_alignment", desc: "Values alignment score for a goal" },
             ].map((tool) => (
               <div
                 key={tool.name}

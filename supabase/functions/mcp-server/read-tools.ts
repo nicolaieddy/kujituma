@@ -407,4 +407,60 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       };
     },
   });
+
+  mcp.tool("list_values", {
+    description: "List the user's personal values (label, statement, feeling, visibility). These are the core values goals are aligned with.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        include_archived: { type: "boolean", description: "Include archived values. Defaults to false." },
+      },
+    },
+    handler: async ({ include_archived }: { include_archived?: boolean }) => {
+      let query = supabase
+        .from("user_values")
+        .select("id, label, statement, feeling, visibility, order_index, is_archived")
+        .eq("user_id", userId)
+        .order("order_index", { ascending: true });
+      if (!include_archived) query = query.eq("is_archived", false);
+      const { data, error } = await query;
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      if (!data || data.length === 0) return { content: [{ type: "text" as const, text: "No values defined yet." }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcp.tool("get_goal_values_alignment", {
+    description: "Get the values-alignment score (0-100%) for a goal, plus the linked values with their weights (1-5) and source (ai or user).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        goal_id: { type: "string", description: "Goal UUID" },
+      },
+      required: ["goal_id"],
+    },
+    handler: async ({ goal_id }: { goal_id: string }) => {
+      const [alignRes, linksRes] = await Promise.all([
+        supabase
+          .from("goal_values_alignment")
+          .select("score")
+          .eq("goal_id", goal_id)
+          .maybeSingle(),
+        supabase
+          .from("goal_value_links")
+          .select("value_id, weight, source, ai_confidence, user_values(label, statement)")
+          .eq("goal_id", goal_id),
+      ]);
+      if (alignRes.error) return { content: [{ type: "text" as const, text: `Error: ${alignRes.error.message}` }] };
+      if (linksRes.error) return { content: [{ type: "text" as const, text: `Error: ${linksRes.error.message}` }] };
+      const score = (alignRes.data as any)?.score ?? 0;
+      return {
+        content: [{
+          type: "text" as const,
+          text: `Values alignment: ${score}%\n\nLinked values:\n${JSON.stringify(linksRes.data, null, 2)}`,
+        }],
+      };
+    },
+  });
 }
+
