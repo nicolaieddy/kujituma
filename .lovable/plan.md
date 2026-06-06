@@ -1,106 +1,102 @@
 
-# Garmin Health API Auto-Sync
+## Personal Values + Goal Alignment
 
-Stream Garmin activities, sleep, and wellness data directly into Kujituma — no more manual `.fit` / CSV uploads. Uses Garmin's official Health API with OAuth 2.0 (PKCE) and Ping webhooks.
+Add a first-class **Values** concept that lives on the profile, links to goals, and produces an "alignment score" per goal — auto-suggested from goal title/description by AI, then manually editable.
 
-## Prerequisite (you, not me)
+Built on your philosophy: *goals that get done are the ones deeply tied to your values*. So values aren't decorative — they're surfaced at creation, on every card, and in analytics.
 
-Before any of this is useful, you need to **apply to the Garmin Connect Developer Program → Health API** at https://developer.garmin.com/gc-developer-program/health-api/. Approval typically takes 1–4 weeks. Garmin will provide:
+---
 
-- **Consumer Key** (Client ID)
-- **Consumer Secret** (Client Secret)
-- A confirmation that webhooks (Ping/Push notifications) are enabled
+### 1. Data model
 
-We can build everything while you wait — the integration just won't activate until you paste those credentials in and configure the webhook URLs in Garmin's developer portal.
+**`user_values`** (new table)
+- `label` (short, e.g. "Integrity")
+- `statement` (the "I feel… when…" line)
+- `feeling` (optional emotion word: "At ease", "Proud" — extracted from the statement; nice-to-have, not required)
+- `visibility` ∈ `private` | `public` (default `private`, per-value)
+- `order_index`, `is_archived`
 
-## What you'll get when it's live
+**`goal_value_links`** (new join table)
+- `goal_id`, `value_id`
+- `weight` smallint 1–5 (how strongly this goal serves this value)
+- `source` ∈ `ai` | `user` (so we can show "AI suggested" vs "you set")
+- `ai_confidence` numeric 0–1 (when AI-generated)
+- unique (goal_id, value_id)
 
-- A **Connect Garmin** button in Profile → Integrations (next to Strava). One-time OAuth.
-- New activities appear in Training within ~1–5 minutes of finishing a workout, with full Garmin-native metrics (HRV, stride length, ground contact, body battery, etc. — richer than Strava).
-- New sleep sessions auto-populate each morning — no more Garmin Connect CSV downloads.
-- Optional: daily wellness (resting HR, body battery, stress) for future analytics.
-- Manual `.fit` / sleep CSV upload stays as a fallback.
+Both tables: RLS scoped to `user_id`. `user_values` gets a public-read policy gated by `visibility = 'public'` so other users can see only the ones the owner opened up.
 
-## Architecture
+### 2. Values score per goal
 
-```text
-   Garmin watch
-       │ (sync)
-       ▼
-   Garmin Connect
-       │ Ping webhook
-       ▼
- ┌────────────────────────────┐
- │ garmin-webhook (edge fn)   │  ◄── public, signature-verified
- │  • receives Ping summaries │
- │  • fetches detail via API  │
- │  • normalizes + inserts    │
- └────────┬───────────────────┘
-          │
-          ▼
-   synced_activities / sleep_entries / wellness_entries
-          ▲
-          │ OAuth tokens
- ┌────────────────────────────┐
- │ garmin-auth (edge fn)      │  ◄── OAuth start / callback / refresh
- └────────────────────────────┘
-          ▲
-          │
-   Frontend Connect button
-```
+`values_score = round( (sum(weight) / (5 × number_of_user_values)) × 100 )` — a 0–100% number.
 
-## Build steps
+Why this formula: rewards both **breadth** (touching multiple values) and **depth** (high weight). A goal tagged to 1 value at weight 5 with 9 total values = 11%. A goal tagged to 4 values at avg weight 4 = 36%. Tunable; we can also show a simpler "★ 4.2 avg weight" if % feels noisy.
 
-### 1. Database
-New tables / columns via migration:
-- `garmin_connections` — `user_id`, `garmin_user_id`, `access_token`, `refresh_token`, `token_expires_at`, `scopes`, `connected_at`, `last_sync_at`. Tokens encrypted at rest, RLS so only owner reads.
-- `garmin_webhook_events` — raw Ping payload audit log (`event_type`, `payload`, `processed_at`, `error`) for debugging and replay.
-- `sleep_entries` — add `source` column (`'garmin_csv' | 'garmin_api'`) and `garmin_summary_id` (unique with user_id) for dedup.
-- `synced_activities` — add `garmin_activity_id` (unique with user_id) and extend `source` enum to include `'garmin_api'`. Reuse all existing display logic.
-- Optional `wellness_entries` table for daily resting HR / body battery / stress (gated behind a flag — we can ship without).
+Computed in a SQL view `goal_values_alignment` so cards/analytics read it cheaply.
 
-### 2. Secrets
-Add via secrets tool once you have Garmin credentials:
-- `GARMIN_CLIENT_ID`
-- `GARMIN_CLIENT_SECRET`
-- `GARMIN_WEBHOOK_SECRET` (we generate; paste into Garmin portal)
+### 3. AI auto-suggestion
 
-### 3. Edge functions
-- **`garmin-auth`** — three sub-routes:
-  - `GET /start` → returns Garmin authorize URL with PKCE challenge.
-  - `GET /callback` → exchanges code for tokens, stores in `garmin_connections`, triggers initial 30-day backfill.
-  - `POST /refresh` → internal, called by webhook handler when access token expired.
-  - `POST /disconnect` → revoke + delete row.
-- **`garmin-webhook`** — `verify_jwt = false`, public. Verifies Garmin's HMAC signature, writes raw event to `garmin_webhook_events`, then for each summary:
-  - **Activity ping** → fetch activity detail + FIT, normalize, upsert into `synced_activities` (dedup on `garmin_activity_id`, merge with same-session Strava per existing memory).
-  - **Sleep ping** → fetch sleep summary, upsert into `sleep_entries`.
-  - **Wellness ping** (optional) → upsert daily snapshot.
-  - Invalidates relevant TanStack keys via a small notification table the client polls, OR relies on existing realtime subscriptions if present.
-- **`garmin-backfill`** — one-off, called after first connect; pulls last 30 days of activities + sleep using the `/backfill` endpoint per Garmin spec.
+New edge function `suggest-goal-values`:
+- Input: `goal_id` (reads title + description) + user's active values
+- Calls Lovable AI Gateway (google/gemini-2.5-flash) with a strict JSON schema: `[{value_id, weight 1-5, reason}]`
+- Writes results to `goal_value_links` with `source='ai'`
 
-### 4. Frontend
-- New `useGarminConnection` hook mirroring `useStravaConnection`.
-- New `GarminConnectionCard` component in `src/components/garmin/` matching Strava card styling — shown in `IntegrationsSection.tsx`.
-- Callback page `src/pages/GarminCallback.tsx` (parallel to `StravaCallback.tsx`).
-- Update `FitFileUploadCard` copy: "Manual upload (optional fallback — Garmin auto-syncs in the background)".
-- Update `McpSection.tsx` tool list per memory rule (new `getGarminConnectionStatus` tool if we expose one).
+Trigger points:
+- **Goal create**: after save, fire-and-forget call; results appear within ~2s with a subtle "AI suggested" badge.
+- **Goal edit** (title/description changed): re-suggest only for links still marked `source='ai'`; user-edited links are preserved.
+- **Manual "Re-suggest" button** in the values editor inside the goal detail modal.
 
-### 5. Garmin developer portal config (you, after approval)
-I'll provide exact URLs to paste:
-- OAuth redirect URI: `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/garmin-auth/callback`
-- Activity Ping URL: `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/garmin-webhook?type=activity`
-- Sleep Ping URL: `https://yyidkpmrqvgvzbjvtnjy.supabase.co/functions/v1/garmin-webhook?type=sleep`
+### 4. UI surfaces
 
-### 6. Testing
-- Garmin provides a sandbox + test-data endpoint we'll use in `supabase--curl_edge_functions` to validate the webhook handler before real watch data flows.
+**Profile → new "Values" section** (above or beside Goals)
+- List of values as cards: label (bold), statement (muted), eye-icon visibility toggle per value
+- "Add value" → form with label + statement; bulk "Import from text" to paste your screenshot list and auto-split lines
+- Reorder via drag handle
+- Public profile (`ProfilePublicView`) shows only values where `visibility='public'`; section hidden entirely if none are public
 
-## Phasing
+**Goal form (create + edit)** — nudge
+- After title/description are filled, show "Which values does this serve?" with the user's values as chips. Each chip has a weight stepper (1–5). If user skips, AI fills it in after save.
+- If user has **zero values defined**, show a one-time inline prompt: "Define your values first — goals tied to values get done." with a link to Profile → Values.
 
-I'd suggest shipping in two passes:
+**Goal card** (`GoalCard.tsx`)
+- Small pill: ★ icon + `{score}%` with tooltip listing top 3 linked values. Color shifts: <30% muted, 30–60% accent, 60%+ primary.
 
-1. **Pass 1 (build now, dormant until creds arrive)**: schema, edge functions, connect UI, sleep + activity ingestion, backfill. Verified with Garmin's sandbox endpoint.
-2. **Pass 2 (after first week of real data)**: wellness/HRV/body-battery dashboard widgets — easier to design once we see real payloads.
+**Goal detail modal**
+- New "Values alignment" section: progress bar with the score, list of linked values with weight sliders, AI-suggested ones flagged with a sparkle icon and "Accept / Edit / Remove" actions. "Re-suggest with AI" button.
 
-## Open question for you
+**Analytics dashboard** (`AnalyticsDashboard.tsx`)
+- New "Values alignment" card:
+  - Radar chart: one axis per value, plotted by sum of weights across active goals → shows which values you actually invest in vs neglect.
+  - "Average values score across active goals" headline number with 30-day trend.
+  - "Lowest-alignment active goals" list — gentle nudge to either re-tag or reconsider keeping them.
 
-Do you want **wellness data** (resting HR, body battery, stress, daily HRV) ingested in Pass 1, or activities + sleep only? Wellness adds one more table and webhook handler but unlocks richer analytics later. Tell me before I start building and I'll scope accordingly.
+**Goal creation nudge already covered above.**
+
+### 5. MCP exposure
+
+Add read tools to `mcp-server`:
+- `list_values` — returns user's values (label + statement)
+- `get_goal_values_alignment` — returns score + linked values for a given goal
+
+Useful when you ask an AI assistant "why isn't this goal moving?" — it can see the alignment.
+
+Per project memory rule, also update `src/components/profile/McpSection.tsx` tools list.
+
+### 6. Cache invalidation
+
+Mutations on values or goal-value links invalidate: `['values']`, `['goals']`, `['goalsAlignment']`, `['analytics']`, `['weeklyDashboard']`, and the affected `['goal', id]`.
+
+---
+
+### Out of scope (call out for your sign-off)
+
+- **No** values score in the weekly "This Week" view yet — you didn't pick it. Can add later as a weekly "values coverage" stat.
+- **No** AI auto-extraction of "feeling" word from statements — left as optional manual field; we can add a one-shot parser if you want.
+- **No** historical trend on individual values yet — the trend line is on the aggregate score only.
+
+### Technical notes
+
+- AI call uses the existing Lovable AI Gateway integration (no new key).
+- `goal_values_alignment` view: `LEFT JOIN` so goals with zero links show `score=0`.
+- Auto-suggest debounced 1s on goal edit to avoid burning credits while typing.
+- Per-value `visibility` enum chosen over a profile-level toggle so you can keep "Shameful when…" private but make "At peace when I am one with nature" public.
+- Migration order: create tables + GRANTs + RLS + policies, then view, then edge function deploys automatically.
