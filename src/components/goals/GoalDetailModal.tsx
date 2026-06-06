@@ -10,6 +10,7 @@ import { GoalDetailObjectivesSection } from "./GoalDetailObjectivesSection";
 import { GoalDetailTrainingSection } from "./GoalDetailTrainingSection";
 import { IntegrationsPromptCard } from "./IntegrationsPromptCard";
 import { LanguageLearningIntegration } from "./LanguageLearningIntegration";
+import { GoalValuesEditor } from "@/components/values/GoalValuesEditor";
 import { Edit, CheckCircle, Play, Clock, Trash2 } from "lucide-react";
 
 interface GoalDetailModalProps {
@@ -111,6 +112,8 @@ export const GoalDetailModal = ({
               goal={goal} 
               onEdit={onEdit} 
             />
+
+            <GoalValuesEditor goalId={goal.id} />
             
             <GoalDetailObjectivesSection
               goalId={goal.id}

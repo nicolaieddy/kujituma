@@ -284,7 +284,6 @@ export const GoalCard = ({
                   </DropdownMenu>
                 )}
                 <ValuesScorePill goalId={goal.id} />
-              </div>
                 {/* Show Habit badge only for goals with habit_items */}
                 {goal.habit_items && goal.habit_items.length > 0 && (
                   <Tooltip>
