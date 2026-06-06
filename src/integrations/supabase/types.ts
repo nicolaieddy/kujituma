@@ -443,6 +443,13 @@ export type Database = {
             foreignKeyName: "activity_mappings_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "activity_mappings_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
             referencedRelation: "goals"
             referencedColumns: ["id"]
           },
@@ -557,6 +564,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "carry_over_logs_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
           {
             foreignKeyName: "carry_over_logs_goal_id_fkey"
             columns: ["goal_id"]
@@ -817,6 +831,13 @@ export type Database = {
             foreignKeyName: "dismissed_carryover_objectives_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "dismissed_carryover_objectives_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
             referencedRelation: "goals"
             referencedColumns: ["id"]
           },
@@ -981,6 +1002,13 @@ export type Database = {
             foreignKeyName: "goal_comments_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "goal_comments_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
             referencedRelation: "goals"
             referencedColumns: ["id"]
           },
@@ -1006,6 +1034,13 @@ export type Database = {
           id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "goal_follows_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
           {
             foreignKeyName: "goal_follows_goal_id_fkey"
             columns: ["goal_id"]
@@ -1041,6 +1076,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "goal_status_history_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
           {
             foreignKeyName: "goal_status_history_goal_id_fkey"
             columns: ["goal_id"]
@@ -1163,7 +1205,75 @@ export type Database = {
             foreignKeyName: "goal_updates_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "goal_updates_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
             referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      goal_value_links: {
+        Row: {
+          ai_confidence: number | null
+          ai_reason: string | null
+          created_at: string
+          goal_id: string
+          id: string
+          source: Database["public"]["Enums"]["goal_value_link_source"]
+          updated_at: string
+          user_id: string
+          value_id: string
+          weight: number
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_reason?: string | null
+          created_at?: string
+          goal_id: string
+          id?: string
+          source?: Database["public"]["Enums"]["goal_value_link_source"]
+          updated_at?: string
+          user_id: string
+          value_id: string
+          weight?: number
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_reason?: string | null
+          created_at?: string
+          goal_id?: string
+          id?: string
+          source?: Database["public"]["Enums"]["goal_value_link_source"]
+          updated_at?: string
+          user_id?: string
+          value_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goal_value_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "goal_value_links_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "goal_value_links_value_id_fkey"
+            columns: ["value_id"]
+            isOneToOne: false
+            referencedRelation: "user_values"
             referencedColumns: ["id"]
           },
         ]
@@ -1280,6 +1390,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "habit_completions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
           {
             foreignKeyName: "habit_completions_goal_id_fkey"
             columns: ["goal_id"]
@@ -2358,6 +2475,13 @@ export type Database = {
             foreignKeyName: "synced_activities_matched_goal_id_fkey"
             columns: ["matched_goal_id"]
             isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "synced_activities_matched_goal_id_fkey"
+            columns: ["matched_goal_id"]
+            isOneToOne: false
             referencedRelation: "goals"
             referencedColumns: ["id"]
           },
@@ -2456,6 +2580,13 @@ export type Database = {
             foreignKeyName: "training_plan_workouts_goal_id_fkey"
             columns: ["goal_id"]
             isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "training_plan_workouts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
             referencedRelation: "goals"
             referencedColumns: ["id"]
           },
@@ -2527,6 +2658,13 @@ export type Database = {
           workout_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "training_workout_goals_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
           {
             foreignKeyName: "training_workout_goals_goal_id_fkey"
             columns: ["goal_id"]
@@ -2690,6 +2828,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_values: {
+        Row: {
+          created_at: string
+          feeling: string | null
+          id: string
+          is_archived: boolean
+          label: string
+          order_index: number
+          statement: string
+          updated_at: string
+          user_id: string
+          visibility: Database["public"]["Enums"]["value_visibility"]
+        }
+        Insert: {
+          created_at?: string
+          feeling?: string | null
+          id?: string
+          is_archived?: boolean
+          label: string
+          order_index?: number
+          statement?: string
+          updated_at?: string
+          user_id: string
+          visibility?: Database["public"]["Enums"]["value_visibility"]
+        }
+        Update: {
+          created_at?: string
+          feeling?: string | null
+          id?: string
+          is_archived?: boolean
+          label?: string
+          order_index?: number
+          statement?: string
+          updated_at?: string
+          user_id?: string
+          visibility?: Database["public"]["Enums"]["value_visibility"]
+        }
+        Relationships: []
+      }
       weekly_objectives: {
         Row: {
           created_at: string
@@ -2731,6 +2908,13 @@ export type Database = {
           week_start?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "weekly_objectives_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
           {
             foreignKeyName: "weekly_objectives_goal_id_fkey"
             columns: ["goal_id"]
@@ -2868,7 +3052,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      goal_values_alignment: {
+        Row: {
+          goal_id: string | null
+          linked_count: number | null
+          score: number | null
+          total_values: number | null
+          user_id: string | null
+          weight_sum: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       are_friends: {
@@ -3110,6 +3312,8 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
+      goal_value_link_source: "ai" | "user"
+      value_visibility: "private" | "public"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3238,6 +3442,8 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "moderator", "user"],
+      goal_value_link_source: ["ai", "user"],
+      value_visibility: ["private", "public"],
     },
   },
 } as const
