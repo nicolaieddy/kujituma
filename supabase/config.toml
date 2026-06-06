@@ -25,3 +25,7 @@ verify_jwt = false
 verify_jwt = false
 
 
+
+[functions.suggest-goal-values]
+verify_jwt = true
+

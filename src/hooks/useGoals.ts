@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { offlineDataService } from "@/services/offlineDataService";
 import { offlineSyncService } from "@/services/offlineSyncService";
+import { ValuesService } from "@/services/valuesService";
 
 export const useGoals = () => {
   const { user } = useAuth();
@@ -103,6 +104,14 @@ export const useGoals = () => {
         title: "Success",
         description: "Goal created successfully!",
       });
+      // Fire-and-forget AI values suggestion
+      ValuesService.suggestForGoal(newGoal.id)
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['goalsAlignment', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['goalValueLinks', user?.id] });
+          queryClient.invalidateQueries({ queryKey: ['goalValueLinks', 'byGoal', newGoal.id] });
+        })
+        .catch((err) => console.warn('AI values suggest failed:', err));
     },
     onError: (error, _, context) => {
       // Rollback on error
@@ -149,13 +158,24 @@ export const useGoals = () => {
 
       return { previousGoals };
     },
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       // Don't invalidate here - the realtime subscription will handle it
       // This prevents double-refetching
       toast({
         title: "Success",
         description: "Goal updated successfully!",
       });
+      // If title or description changed, re-suggest AI values (preserves user-pinned links)
+      const changedTitleOrDesc = vars?.data && (vars.data.title !== undefined || vars.data.description !== undefined);
+      if (changedTitleOrDesc && vars?.id) {
+        ValuesService.suggestForGoal(vars.id)
+          .then(() => {
+            queryClient.invalidateQueries({ queryKey: ['goalsAlignment', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['goalValueLinks', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['goalValueLinks', 'byGoal', vars.id] });
+          })
+          .catch((err) => console.warn('AI values re-suggest failed:', err));
+      }
     },
     onError: (error, _, context) => {
       // Rollback on error
