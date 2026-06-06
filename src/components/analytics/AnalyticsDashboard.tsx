@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { EmptyState } from '@/components/ui/empty-state';
 import { AnalyticsEmpty } from '@/components/illustrations/AnalyticsEmpty';
+import { ValuesAlignmentCard } from '@/components/values/ValuesAlignmentCard';
 
 export const AnalyticsDashboard = () => {
   const { data: rawData, isLoading } = useAnalyticsSummary();
