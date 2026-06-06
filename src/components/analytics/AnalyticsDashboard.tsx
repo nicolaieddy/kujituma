@@ -307,6 +307,8 @@ export const AnalyticsDashboard = () => {
           </CardContent>
         </Card>
       )}
+
+      <ValuesAlignmentCard />
     </div>
   );
 };
