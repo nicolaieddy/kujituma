@@ -22,6 +22,7 @@ const navItems: NavItem[] = [
   { path: '/goals', label: 'Goals', icon: Target, section: 'goals' },
   { path: '/friends', label: 'Friends', icon: UserPlus, section: 'friends' },
   { path: '/analytics', label: 'Analytics', icon: BarChart3, section: 'analytics' },
+  { path: '/training', label: 'Training', icon: Dumbbell, section: 'training', requiresModule: 'training_plan' },
   { path: '/sleep', label: 'Sleep', icon: Moon, section: 'sleep', requiresModule: 'sleep' },
   { path: '/health', label: 'Health', icon: Stethoscope, section: 'health', requiresModule: 'health_metrics' },
   { path: '/modules', label: 'Modules', icon: Blocks, section: 'modules' },
