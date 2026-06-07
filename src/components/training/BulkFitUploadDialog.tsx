@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Upload, Loader2, CheckCircle2, XCircle, AlertTriangle, FileArchive, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { useFitFileUpload, type FileUploadStatus } from "@/hooks/useFitFileUpload";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/components/thisweek/trainingPlanUtils";
@@ -31,11 +32,22 @@ function StatusIcon({ status }: { status: FileUploadStatus["status"] }) {
 function statusLabel(s: FileUploadStatus["status"]): string {
   switch (s) {
     case "queued": return "Queued";
-    case "uploading": return "Uploading...";
-    case "parsing": return "Parsing...";
+    case "uploading": return "Uploading…";
+    case "parsing": return "Parsing…";
     case "duplicate": return "Duplicate found";
     case "done": return "Done";
     case "error": return "Failed";
+  }
+}
+
+function statusPercent(s: FileUploadStatus["status"]): number {
+  switch (s) {
+    case "queued": return 0;
+    case "uploading": return 35;
+    case "parsing": return 75;
+    case "duplicate": return 75;
+    case "done": return 100;
+    case "error": return 100;
   }
 }
 
@@ -181,6 +193,23 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
             </>
           )}
 
+          {hasResults && (() => {
+            const total = fileStatuses.length;
+            const completed = fileStatuses.filter(s => s.status === "done" || s.status === "error").length;
+            const overall = Math.round(
+              fileStatuses.reduce((sum, s) => sum + statusPercent(s.status), 0) / Math.max(total, 1)
+            );
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{isUploading ? `Processing ${Math.min(completed + 1, total)} of ${total}` : `${completed} of ${total} complete`}</span>
+                  <span className="tabular-nums font-medium text-foreground">{overall}%</span>
+                </div>
+                <Progress value={overall} className="h-1.5" />
+              </div>
+            );
+          })()}
+
           {hasResults && (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {fileStatuses.map((fs, i) => (
@@ -206,6 +235,10 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
                       {statusLabel(fs.status)}
                     </span>
                   </div>
+
+                  {(fs.status === "uploading" || fs.status === "parsing") && (
+                    <Progress value={statusPercent(fs.status)} className="h-1" />
+                  )}
 
                   {fs.status === "done" && fs.summary && fs.kind === "activity" && (
                     <p className="text-xs text-muted-foreground pl-5">

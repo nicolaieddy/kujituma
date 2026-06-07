@@ -113,8 +113,10 @@ export function useFitFileUpload() {
   const uploadAndParse = async (
     file: File,
     workoutId?: string,
-    overwriteActivityId?: string
+    overwriteActivityId?: string,
+    onPhase?: (phase: "uploading" | "parsing") => void
   ): Promise<FitUploadResult> => {
+    onPhase?.("uploading");
     const kind = detectKind(file.name);
     if (!user) return { fileName: file.name, success: false, kind: kind ?? "activity", error: "Not logged in" };
 
@@ -134,6 +136,8 @@ export function useFitFileUpload() {
     if (uploadError) {
       return { fileName: file.name, success: false, kind, error: uploadError.message };
     }
+
+    onPhase?.("parsing");
 
     const body: Record<string, any> = {
       file_path: filePath,
@@ -258,7 +262,9 @@ export function useFitFileUpload() {
       setProgress(`Processing ${i + 1} of ${validFiles.length}`);
       updateFileStatus(i, { status: "uploading" });
 
-      const result = await uploadAndParse(file);
+      const result = await uploadAndParse(file, undefined, undefined, (phase) => {
+        updateFileStatus(i, { status: phase });
+      });
 
       if (result.duplicate) {
         updateFileStatus(i, { status: "duplicate", duplicate: result.duplicate });
@@ -316,7 +322,9 @@ export function useFitFileUpload() {
   ) => {
     updateFileStatus(fileIndex, { status: "uploading" });
 
-    const result = await uploadAndParse(file, undefined, existingActivityId);
+    const result = await uploadAndParse(file, undefined, existingActivityId, (phase) => {
+      updateFileStatus(fileIndex, { status: phase });
+    });
 
     if (result.success) {
       updateFileStatus(fileIndex, { status: "done", summary: result.summary, duplicate: undefined });
