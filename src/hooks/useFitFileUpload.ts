@@ -113,8 +113,10 @@ export function useFitFileUpload() {
   const uploadAndParse = async (
     file: File,
     workoutId?: string,
-    overwriteActivityId?: string
+    overwriteActivityId?: string,
+    onPhase?: (phase: "uploading" | "parsing") => void
   ): Promise<FitUploadResult> => {
+    onPhase?.("uploading");
     const kind = detectKind(file.name);
     if (!user) return { fileName: file.name, success: false, kind: kind ?? "activity", error: "Not logged in" };
 
