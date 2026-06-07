@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { ChevronDown, ChevronRight, Copy, Plus, Upload, Link2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Upload, Link2, Sparkles } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
 import { useGoals } from "@/hooks/useGoals";
 import { TrainingWorkoutDialog } from "@/components/thisweek/TrainingWorkoutDialog";
@@ -14,6 +14,8 @@ import { DAY_LABELS, getDisplayWorkouts } from "@/components/thisweek/trainingPl
 import { parseLocalDate } from "@/utils/dateUtils";
 import { format, addDays } from "date-fns";
 import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
+import { ImportCoachPlanDialog } from "@/components/training/ImportCoachPlanDialog";
+import { CoachPlanSourceDialog } from "@/components/training/CoachPlanSourceDialog";
 import { useWeekSleepEntries } from "@/hooks/useWeekSleepEntries";
 import { SleepSummaryRow } from "@/components/thisweek/SleepSummaryRow";
 import { ModuleGate } from "@/modules/ModuleGate";
@@ -30,6 +32,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
   const [isOpen, setIsOpen] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [sourceImportId, setSourceImportId] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<TrainingPlanWorkout | null>(null);
   const [bulkLinkOpen, setBulkLinkOpen] = useState(false);
   const [bulkSelectedGoals, setBulkSelectedGoals] = useState<string[]>([]);
