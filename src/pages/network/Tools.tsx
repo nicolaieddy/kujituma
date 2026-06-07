@@ -4,11 +4,10 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import MessageTemplateSettings from "@/components/network/MessageTemplateSettings";
-import ApiTokenManager from "@/components/ApiTokenManager";
 
-const APP_URL = "https://networkosxyz.com";
+const APP_URL = typeof window !== "undefined" ? window.location.origin : "";
 
-const bookmarkletCode = `javascript:void(window.open('${APP_URL}/quick-add?url='+encodeURIComponent(location.href),'NetworkOS'))`;
+const bookmarkletCode = `javascript:void(window.open('${APP_URL}/network/quick-add?url='+encodeURIComponent(location.href),'NetworkOS'))`;
 
 interface ToolSectionProps {
   icon: React.ReactNode;
