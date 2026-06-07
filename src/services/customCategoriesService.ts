@@ -19,11 +19,19 @@ export class CustomCategoriesService {
 
   static async createCustomCategory(data: CreateCustomCategoryData): Promise<CustomGoalCategory> {
     const userId = authStore.requireUserId();
-    
+
+    const trimmed = data.name.trim();
+    const isPredefined = PREDEFINED_CATEGORIES.some(
+      (n) => n.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (isPredefined) {
+      throw new Error(`"${trimmed}" is already a built-in category. Pick it from the list instead.`);
+    }
+
     const { data: category, error } = await supabase
       .from('custom_goal_categories')
       .insert({
-        name: data.name,
+        name: trimmed,
         user_id: userId
       })
       .select()
