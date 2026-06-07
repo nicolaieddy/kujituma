@@ -183,9 +183,44 @@ Deno.serve(async (req) => {
     const durationSeconds = session.total_timer_time ? Math.round(session.total_timer_time) : null;
     const ftp = extractFtp(fitData);
 
-    // Derive local activity date using reliable Intl.DateTimeFormat parts extraction
-    const activityDate = getLocalDate(startDate, userTimezone);
-    console.log(`Activity date (local): ${activityDate} (UTC: ${startDate.split("T")[0]})`);
+    // Determine timezone where activity took place:
+    // 1. GPS from session start position or first record with lat/lng → IANA via tz-lookup
+    // 2. Matching Strava activity at same start_date → inherit its timezone
+    // 3. Profile timezone fallback
+    let activityTz: string | null = null;
+    const sessLat = toDegrees(session.start_position_lat);
+    const sessLng = toDegrees(session.start_position_long);
+    let lookupLat: number | null = sessLat;
+    let lookupLng: number | null = sessLng;
+    if (lookupLat == null || lookupLng == null) {
+      for (const rec of fitData.records || []) {
+        const lat = toDegrees(rec.position_lat);
+        const lng = toDegrees(rec.position_long);
+        if (lat != null && lng != null) { lookupLat = lat; lookupLng = lng; break; }
+      }
+    }
+    if (lookupLat != null && lookupLng != null) {
+      try {
+        activityTz = tzlookup(lookupLat, lookupLng);
+      } catch (e) {
+        console.warn(`tz-lookup failed for ${lookupLat},${lookupLng}: ${e.message}`);
+      }
+    }
+    if (!activityTz) {
+      const { data: stravaMatch } = await adminClient
+        .from("synced_activities")
+        .select("timezone")
+        .eq("user_id", user.id)
+        .eq("source", "strava")
+        .eq("start_date", startDate)
+        .not("timezone", "is", null)
+        .maybeSingle();
+      if (stravaMatch?.timezone) activityTz = stravaMatch.timezone;
+    }
+    if (!activityTz) activityTz = profileTimezone!;
+
+    const activityDate = getLocalDate(startDate, activityTz);
+    console.log(`Activity tz: ${activityTz}, date (local): ${activityDate} (UTC: ${startDate.split("T")[0]})`);
 
     // Duplicate detection: check for existing activity with same date + type + similar duration
     if (!overwrite_activity_id) {
