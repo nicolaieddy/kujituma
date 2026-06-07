@@ -1,10 +1,10 @@
 import type { LucideIcon } from "lucide-react";
 
-export type ModuleId = "training_plan";
+export type ModuleId = "training_plan" | "sleep";
 
 export type ModuleTier = "free" | "pro";
 export type ModuleStatus = "available" | "beta" | "coming_soon";
-export type ModuleCategory = "fitness" | "productivity" | "wellbeing" | "social";
+export type ModuleCategory = "fitness" | "productivity" | "wellbeing" | "social" | "health";
 
 export interface ModuleNavItem {
   path: string;
@@ -28,6 +28,7 @@ export interface ModuleDefinition {
     profileSections?: string[];
     integrations?: string[];
     mcpToolPrefixes?: string[];
+    pages?: string[];
   };
   /** DB tables this module reads/writes — surfaced in the uninstall dialog. */
   dataTables: string[];

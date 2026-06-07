@@ -51,6 +51,7 @@ const ProfileLite = lazy(() => import("./pages/ProfileLite"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
 const Modules = lazy(() => import("./pages/Modules"));
+const Sleep = lazy(() => import("./pages/Sleep"));
 import LandingPage from "./pages/LandingPage";
 const Install = lazy(() => import("./pages/Install"));
 // Rituals content is now integrated into Analytics page
@@ -233,6 +234,14 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
             <Route path="/friends" element={<Friends />} />
             <Route path="/analytics" element={<Analytics />} />
             <Route path="/modules" element={<Modules />} />
+            <Route
+              path="/sleep"
+              element={
+                <RequireModule id="sleep">
+                  <Sleep />
+                </RequireModule>
+              }
+            />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<ProfileEntry />} />
