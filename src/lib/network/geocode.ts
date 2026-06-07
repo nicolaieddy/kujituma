@@ -12,7 +12,7 @@ export async function geocodeAndUpdate(contactId: string, location: string) {
     if (error || !data?.latitude || !data?.longitude) return;
 
     await supabase
-      .from("contacts")
+      .from("network_contacts")
       .update({ latitude: data.latitude, longitude: data.longitude } as any)
       .eq("id", contactId);
   } catch {
