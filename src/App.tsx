@@ -50,6 +50,7 @@ const ProfileEntry = lazy(() => import("./pages/ProfileEntry"));
 const ProfileLite = lazy(() => import("./pages/ProfileLite"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Friends = lazy(() => import("./pages/Friends"));
+const Modules = lazy(() => import("./pages/Modules"));
 import LandingPage from "./pages/LandingPage";
 const Install = lazy(() => import("./pages/Install"));
 // Rituals content is now integrated into Analytics page
