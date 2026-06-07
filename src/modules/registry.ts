@@ -4,11 +4,6 @@ import type { ModuleDefinition, ModuleId } from "./types";
  * Single source of truth for optional modules.
  * Core features (Goals, Habits, Daily Check-in, Weekly Planning, Analytics, Profile)
  * are NOT modules — they're always available.
- *
- * To add a new module:
- *   1. Add an entry here.
- *   2. Wrap any UI it contributes with <ModuleGate id="...">.
- *   3. Add a `has_module(user.id, '...')` check in any edge function it relies on.
  */
 export const MODULE_REGISTRY: ModuleDefinition[] = [
   {
@@ -57,6 +52,28 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
       mcpToolPrefixes: ["sleep_"],
     },
     dataTables: ["sleep_entries"],
+  },
+  {
+    id: "health_metrics",
+    name: "Health Metrics",
+    tagline: "Weight, body comp, labs, and supplements — overlaid with training and mood.",
+    description:
+      "Log body measurements, blood-panel results, and your supplement stack. Overlay weekly training load (km from Strava/Garmin) and average daily mood onto your weight or body-fat trend to see how everything moves together.",
+    coverEmoji: "🩺",
+    category: "health",
+    tier: "free",
+    status: "available",
+    surfaces: {
+      pages: ["Dedicated Health page (/health)"],
+      mcpToolPrefixes: ["health_", "lab_", "supplement_"],
+    },
+    dataTables: [
+      "body_measurements",
+      "lab_results",
+      "lab_result_values",
+      "supplements",
+      "supplement_logs",
+    ],
   },
 ];
 
