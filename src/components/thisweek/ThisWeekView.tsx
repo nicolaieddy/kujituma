@@ -408,13 +408,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       )}
 
 
-      {/* Training Plan — editable for current and future weeks (Training Plan module) */}
-      <ModuleGate id="training_plan">
-        <TrainingPlanCard
-          weekStart={currentWeekStart}
-          isReadOnly={!isCurrentWeek && !isFutureWeek}
-        />
-      </ModuleGate>
+      {/* Training Plan moved to its own /training tab (Training Plan module). */}
 
       {/* Carry-Over Activity Log */}
       <CarryOverActivityLog />

@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Target, UserPlus, BarChart3, Shield, Blocks, Moon, Stethoscope } from "lucide-react";
+import { Target, UserPlus, BarChart3, Shield, Blocks, Moon, Stethoscope, Dumbbell } from "lucide-react";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useInstalledModules } from "@/hooks/useInstalledModules";
 import type { ModuleId } from "@/modules/types";
@@ -22,6 +22,7 @@ const navItems: NavItem[] = [
   { path: '/goals', label: 'Goals', icon: Target, section: 'goals' },
   { path: '/friends', label: 'Friends', icon: UserPlus, section: 'friends' },
   { path: '/analytics', label: 'Analytics', icon: BarChart3, section: 'analytics' },
+  { path: '/training', label: 'Training', icon: Dumbbell, section: 'training', requiresModule: 'training_plan' },
   { path: '/sleep', label: 'Sleep', icon: Moon, section: 'sleep', requiresModule: 'sleep' },
   { path: '/health', label: 'Health', icon: Stethoscope, section: 'health', requiresModule: 'health_metrics' },
   { path: '/modules', label: 'Modules', icon: Blocks, section: 'modules' },
@@ -42,6 +43,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     if (path.startsWith('/analytics')) return 'analytics';
     if (path.startsWith('/sleep')) return 'sleep';
     if (path.startsWith('/health')) return 'health';
+    if (path.startsWith('/training')) return 'training';
     if (path.startsWith('/modules')) return 'modules';
     if (path.startsWith('/profile')) return 'profile';
     return 'goals';
