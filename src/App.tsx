@@ -11,6 +11,7 @@ import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { RoutableErrorBoundary } from "@/components/errors/RoutableErrorBoundary";
 import { TosGate } from "@/components/auth/TosGate";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { RequireModule } from "@/modules/ModuleGate";
 
 import { useUserActivity } from "@/hooks/useUserActivity";
 import { useSessionTracking } from "@/hooks/useSessionTracking";
