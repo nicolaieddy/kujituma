@@ -17,7 +17,8 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     tier: "free",
     status: "available",
     surfaces: {
-      thisWeekCards: ["Training Plan card on This Week"],
+      pages: ["/training"],
+      navItems: ["Training"],
       profileSections: ["Workouts preferences tab", "Strava / Garmin / .FIT integrations"],
       integrations: ["Strava", "Garmin", ".FIT files"],
       mcpToolPrefixes: ["training_", "workout_", "activity_"],
