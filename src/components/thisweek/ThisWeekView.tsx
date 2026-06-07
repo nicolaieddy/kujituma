@@ -13,6 +13,7 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
+import { ModuleGate } from "@/modules/ModuleGate";
 import { CloseWeekDialog } from "@/components/thisweek/CloseWeekDialog";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
 import { PartnerCheckInsCard } from "@/components/thisweek/PartnerCheckInsCard";
@@ -407,11 +408,13 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       )}
 
 
-      {/* Training Plan — editable for current and future weeks */}
-      <TrainingPlanCard
-        weekStart={currentWeekStart}
-        isReadOnly={!isCurrentWeek && !isFutureWeek}
-      />
+      {/* Training Plan — editable for current and future weeks (Training Plan module) */}
+      <ModuleGate id="training_plan">
+        <TrainingPlanCard
+          weekStart={currentWeekStart}
+          isReadOnly={!isCurrentWeek && !isFutureWeek}
+        />
+      </ModuleGate>
 
       {/* Carry-Over Activity Log */}
       <CarryOverActivityLog />

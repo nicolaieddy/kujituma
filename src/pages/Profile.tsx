@@ -9,6 +9,7 @@ import { NotificationPreferences } from "@/components/profile/NotificationPrefer
 import { McpSection } from "@/components/profile/McpSection";
 import { WorkoutPreferencesSection } from "@/components/profile/WorkoutPreferencesSection";
 import { ValuesSection } from "@/components/values/ValuesSection";
+import { useIsModuleInstalled } from "@/hooks/useInstalledModules";
 
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
@@ -98,6 +99,7 @@ const Profile = () => {
     return "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
+  const isTrainingInstalled = useIsModuleInstalled("training_plan");
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [sendingPartnerRequest, setSendingPartnerRequest] = useState(false);
 
@@ -491,18 +493,20 @@ const Profile = () => {
                   <Zap className="h-4 w-4" />
                   Integrations
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleTabChange("workouts")}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                    activeTab === "workouts"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Dumbbell className="h-4 w-4" />
-                  Workouts
-                </button>
+                {isTrainingInstalled && (
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("workouts")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+                      activeTab === "workouts"
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    <Dumbbell className="h-4 w-4" />
+                    Workouts
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => handleTabChange("notifications")}
@@ -549,7 +553,7 @@ const Profile = () => {
                 <IntegrationsSection />
               </div>
             )}
-            {activeTab === "workouts" && (
+            {activeTab === "workouts" && isTrainingInstalled && (
               <div className="max-w-4xl mx-auto">
                 <WorkoutPreferencesSection />
               </div>

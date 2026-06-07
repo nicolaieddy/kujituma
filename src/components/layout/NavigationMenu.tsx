@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Target, UserPlus, BarChart3, Shield } from "lucide-react";
+import { Target, UserPlus, BarChart3, Shield, Blocks } from "lucide-react";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 
 interface NavigationMenuProps {
@@ -11,6 +11,7 @@ const navItems = [
   { path: '/goals', label: 'Goals', icon: Target, section: 'goals' },
   { path: '/friends', label: 'Friends', icon: UserPlus, section: 'friends' },
   { path: '/analytics', label: 'Analytics', icon: BarChart3, section: 'analytics' },
+  { path: '/modules', label: 'Modules', icon: Blocks, section: 'modules' },
 ];
 
 export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenuProps) => {
@@ -25,6 +26,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     
     if (path.startsWith('/friends') || path.startsWith('/partner')) return 'friends';
     if (path.startsWith('/analytics')) return 'analytics';
+    if (path.startsWith('/modules')) return 'modules';
     if (path.startsWith('/profile')) return 'profile';
     return 'goals';
   };
