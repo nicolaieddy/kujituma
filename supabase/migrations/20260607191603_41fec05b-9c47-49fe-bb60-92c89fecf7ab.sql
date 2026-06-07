@@ -1,0 +1,1 @@
+ALTER TABLE public.network_contacts ADD COLUMN IF NOT EXISTS labels text[] NOT NULL DEFAULT ARRAY[]::text[];

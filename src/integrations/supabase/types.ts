@@ -1724,6 +1724,7 @@ export type Database = {
           influence_type: string
           instagram_url: string | null
           is_inner_circle: boolean
+          labels: string[]
           last_interaction_date: string | null
           latitude: number | null
           linkedin_url: string | null
@@ -1754,6 +1755,7 @@ export type Database = {
           influence_type?: string
           instagram_url?: string | null
           is_inner_circle?: boolean
+          labels?: string[]
           last_interaction_date?: string | null
           latitude?: number | null
           linkedin_url?: string | null
@@ -1784,6 +1786,7 @@ export type Database = {
           influence_type?: string
           instagram_url?: string | null
           is_inner_circle?: boolean
+          labels?: string[]
           last_interaction_date?: string | null
           latitude?: number | null
           linkedin_url?: string | null
