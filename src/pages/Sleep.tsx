@@ -52,13 +52,22 @@ export default function Sleep() {
           <Moon className="h-6 w-6 text-primary" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Sleep</h1>
         </div>
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-          <TabsList>
-            <TabsTrigger value="7">Last 7 days</TabsTrigger>
-            <TabsTrigger value="30">Last 30 days</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1.5" />
+            Import sleep CSV
+          </Button>
+          <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+            <TabsList>
+              <TabsTrigger value="7">Last 7 days</TabsTrigger>
+              <TabsTrigger value="30">Last 30 days</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </header>
+
+      <BulkFitUploadDialog open={importOpen} onOpenChange={setImportOpen} />
+
 
       {/* Stat tiles */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
