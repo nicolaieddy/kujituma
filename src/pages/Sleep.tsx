@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
-import { Moon, Flame, Clock, Bed, Sunrise, TrendingUp } from "lucide-react";
+import { Moon, Flame, Clock, Bed, Sunrise, TrendingUp, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   useSleepEntriesRange,
   bedtimeToMinutes,
@@ -12,6 +13,7 @@ import {
 } from "@/hooks/useSleepEntriesRange";
 import { SleepScoreTrend } from "@/components/sleep/SleepScoreTrend";
 import { BedtimeConsistency } from "@/components/sleep/BedtimeConsistency";
+import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
 import { parseLocalDate } from "@/utils/dateUtils";
 
 type RangeKey = "7" | "30";
