@@ -144,17 +144,16 @@ Deno.serve(async (req) => {
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Determine timezone: prefer request body, fall back to profile, then UTC
-    let userTimezone = requestTimezone || null;
-    if (!userTimezone) {
+    // Profile timezone is the last-resort fallback only.
+    let profileTimezone = requestTimezone || null;
+    if (!profileTimezone) {
       const { data: userProfile } = await adminClient
         .from("profiles")
         .select("timezone")
         .eq("id", user.id)
         .single();
-      userTimezone = userProfile?.timezone || "UTC";
+      profileTimezone = userProfile?.timezone || "UTC";
     }
-    console.log(`User timezone: ${userTimezone}`);
 
     const { data: fileData, error: downloadError } = await adminClient.storage
       .from("fit-files")
