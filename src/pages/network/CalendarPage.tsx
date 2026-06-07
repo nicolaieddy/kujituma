@@ -1,12 +1,12 @@
 import { useMemo, useState, useCallback } from "react";
-import { useContacts, useInteractions, useAllContactEvents } from "@/hooks/useData";
+import { useContacts, useInteractions, useAllContactEvents } from "@/hooks/network/useNetworkData";
 import { Button } from "@/components/ui/button";
-import SendMessageDialog from "@/components/SendMessageDialog";
-import AgendaView from "@/components/calendar/AgendaView";
-import CalendarSidebar from "@/components/calendar/CalendarSidebar";
-import EventFilterPills from "@/components/calendar/EventFilterPills";
-import CalendarGrid from "@/components/calendar/CalendarGrid";
-import { CalEvent, EVENT_STYLES } from "@/components/calendar/types";
+import SendMessageDialog from "@/components/network/SendMessageDialog";
+import AgendaView from "@/components/network/calendar/AgendaView";
+import CalendarSidebar from "@/components/network/calendar/CalendarSidebar";
+import EventFilterPills from "@/components/network/calendar/EventFilterPills";
+import CalendarGrid from "@/components/network/calendar/CalendarGrid";
+import { CalEvent, EVENT_STYLES } from "@/components/network/calendar/types";
 import {
   ChevronLeft,
   ChevronRight,

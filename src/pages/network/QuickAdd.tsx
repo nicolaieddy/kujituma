@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import ContactForm from "@/components/ContactForm";
+import ContactForm from "@/components/network/ContactForm";
 import { Loader2, Sparkles } from "lucide-react";
 
 function detectSocialField(url: string): { field: string; value: string } | null {
@@ -26,7 +26,7 @@ const QuickAdd = () => {
 
   const handleOpenChange = (val: boolean) => {
     setOpen(val);
-    if (!val) navigate("/contacts");
+    if (!val) navigate("/network/contacts");
   };
 
   return (

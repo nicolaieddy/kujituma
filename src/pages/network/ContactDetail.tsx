@@ -1,16 +1,16 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useContact, useContacts, useInteractions, useDeleteContact, useUpdateContact, useDeleteInteraction, useUpdateInteraction, useContactEvents, useCreateContactEvent, useDeleteContactEvent, useContactKeyFacts, useCreateContactKeyFact, useDeleteContactKeyFact, useContactResources, useCreateContactResource, useDeleteContactResource, Interaction } from "@/hooks/useData";
-import { RelationshipBadge, InfluenceScore, TypeBadge } from "@/components/ContactBadges";
-import InteractionForm from "@/components/InteractionForm";
-import BirthdayInput from "@/components/BirthdayInput";
+import { useContact, useContacts, useInteractions, useDeleteContact, useUpdateContact, useDeleteInteraction, useUpdateInteraction, useContactEvents, useCreateContactEvent, useDeleteContactEvent, useContactKeyFacts, useCreateContactKeyFact, useDeleteContactKeyFact, useContactResources, useCreateContactResource, useDeleteContactResource, Interaction } from "@/hooks/network/useNetworkData";
+import { RelationshipBadge, InfluenceScore, TypeBadge } from "@/components/network/ContactBadges";
+import InteractionForm from "@/components/network/InteractionForm";
+import BirthdayInput from "@/components/network/BirthdayInput";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ComboboxField, MultiComboboxField } from "@/components/ComboboxField";
-import { LocationPicker } from "@/components/LocationPicker";
+import { ComboboxField, MultiComboboxField } from "@/components/network/ComboboxField";
+import { LocationPicker } from "@/components/network/LocationPicker";
 import { ArrowLeft, Trash2, MessageCircle, Linkedin, Mail, CalendarPlus, Save, Plus, X, Star, Lightbulb, Instagram, Twitter, Check, Heart, Sparkles, Loader2, ExternalLink, ArrowUpRight, ArrowDownLeft, Minus, Scale, Compass, Pencil, Link, Globe } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { buildProfileSearchUrl } from "@/lib/socialSearch";
@@ -376,7 +376,7 @@ const ContactDetail = () => {
     try {
       await deleteContact.mutateAsync(contact.id);
       toast.success("Contact deleted");
-      navigate("/contacts");
+      navigate("/network/contacts");
     } catch (err: any) {
       toast.error(err.message);
     }
@@ -752,7 +752,7 @@ const ContactDetail = () => {
                 onChange={(v) => set("living_location", v)}
                 onCoordinates={(lat, lng) => {
                   if (contact) {
-                    supabase.from("contacts").update({ latitude: lat, longitude: lng } as any).eq("id", contact.id);
+                    supabase.from("network_contacts").update({ latitude: lat, longitude: lng } as any).eq("id", contact.id);
                   }
                 }}
               />

@@ -13,7 +13,7 @@ const isTyping = (e: KeyboardEvent) => {
   return false;
 };
 
-const routes = ["/dashboard", "/contacts", "/calendar", "/tools"];
+const routes = ["/network", "/network/contacts", "/network/calendar", "/network/tools"];
 
 export const useKeyboardShortcuts = ({ onNewContact, onShowHelp }: UseKeyboardShortcutsOptions) => {
   const navigate = useNavigate();

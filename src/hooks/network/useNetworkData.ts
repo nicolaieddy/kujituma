@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export interface Contact {
   id: string;
@@ -55,7 +55,7 @@ export const useContacts = () => {
     queryKey: ["contacts"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contacts")
+        .from("network_contacts")
         .select("*")
         .order("full_name");
       if (error) throw error;
@@ -71,7 +71,7 @@ export const useContact = (id: string) => {
     queryKey: ["contacts", id],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contacts")
+        .from("network_contacts")
         .select("*")
         .eq("id", id)
         .single();
@@ -87,7 +87,7 @@ export const useInteractions = (contactId?: string) => {
   return useQuery({
     queryKey: ["interactions", contactId],
     queryFn: async () => {
-      let query = supabase.from("interactions").select("*").order("date", { ascending: false });
+      let query = supabase.from("network_interactions").select("*").order("date", { ascending: false });
       if (contactId) query = query.eq("contact_id", contactId);
       const { data, error } = await query;
       if (error) throw error;
@@ -103,7 +103,7 @@ export const useCreateContact = () => {
   return useMutation({
     mutationFn: async (contact: Omit<ContactInsert, "user_id">) => {
       const { data, error } = await supabase
-        .from("contacts")
+        .from("network_contacts")
         .insert({ ...contact, user_id: user!.id })
         .select()
         .single();
@@ -119,7 +119,7 @@ export const useUpdateContact = () => {
   return useMutation({
     mutationFn: async ({ id, ...updates }: Partial<Contact> & { id: string }) => {
       const { data, error } = await supabase
-        .from("contacts")
+        .from("network_contacts")
         .update(updates)
         .eq("id", id)
         .select()
@@ -138,7 +138,7 @@ export const useDeleteContact = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("contacts").delete().eq("id", id);
+      const { error } = await supabase.from("network_contacts").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["contacts"] }),
@@ -151,14 +151,14 @@ export const useCreateInteraction = () => {
   return useMutation({
     mutationFn: async (interaction: Omit<InteractionInsert, "user_id">) => {
       const { data, error } = await supabase
-        .from("interactions")
+        .from("network_interactions")
         .insert({ ...interaction, user_id: user!.id })
         .select()
         .single();
       if (error) throw error;
       // Update last_interaction_date on the contact
       await supabase
-        .from("contacts")
+        .from("network_contacts")
         .update({ last_interaction_date: interaction.date })
         .eq("id", interaction.contact_id);
       return data;
@@ -176,7 +176,7 @@ export const useUpdateInteraction = () => {
   return useMutation({
     mutationFn: async ({ id, contactId, ...updates }: { id: string; contactId: string; date?: string; type?: string; summary?: string | null; direction?: string | null; follow_up_date?: string | null }) => {
       const { data, error } = await supabase
-        .from("interactions")
+        .from("network_interactions")
         .update(updates)
         .eq("id", id)
         .select()
@@ -196,7 +196,7 @@ export const useDeleteInteraction = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, contactId }: { id: string; contactId: string }) => {
-      const { error } = await supabase.from("interactions").delete().eq("id", id);
+      const { error } = await supabase.from("network_interactions").delete().eq("id", id);
       if (error) throw error;
       return contactId;
     },
@@ -226,7 +226,7 @@ export const useContactEvents = (contactId: string) => {
     queryKey: ["contact_events", contactId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contact_events")
+        .from("network_contact_events")
         .select("*")
         .eq("contact_id", contactId)
         .order("event_date");
@@ -243,7 +243,7 @@ export const useAllContactEvents = () => {
     queryKey: ["contact_events"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contact_events")
+        .from("network_contact_events")
         .select("*")
         .order("event_date");
       if (error) throw error;
@@ -259,7 +259,7 @@ export const useCreateContactEvent = () => {
   return useMutation({
     mutationFn: async (event: Omit<ContactEvent, "id" | "user_id" | "created_at">) => {
       const { data, error } = await supabase
-        .from("contact_events")
+        .from("network_contact_events")
         .insert({ ...event, user_id: user!.id })
         .select()
         .single();
@@ -277,7 +277,7 @@ export const useDeleteContactEvent = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, contactId }: { id: string; contactId: string }) => {
-      const { error } = await supabase.from("contact_events").delete().eq("id", id);
+      const { error } = await supabase.from("network_contact_events").delete().eq("id", id);
       if (error) throw error;
       return contactId;
     },
@@ -304,7 +304,7 @@ export const useContactKeyFacts = (contactId: string) => {
     queryKey: ["contact_key_facts", contactId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contact_key_facts")
+        .from("network_contact_key_facts")
         .select("*")
         .eq("contact_id", contactId)
         .order("created_at");
@@ -321,7 +321,7 @@ export const useCreateContactKeyFact = () => {
   return useMutation({
     mutationFn: async (fact: Omit<ContactKeyFact, "id" | "user_id" | "created_at">) => {
       const { data, error } = await supabase
-        .from("contact_key_facts")
+        .from("network_contact_key_facts")
         .insert({ ...fact, user_id: user!.id })
         .select()
         .single();
@@ -338,7 +338,7 @@ export const useDeleteContactKeyFact = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, contactId }: { id: string; contactId: string }) => {
-      const { error } = await supabase.from("contact_key_facts").delete().eq("id", id);
+      const { error } = await supabase.from("network_contact_key_facts").delete().eq("id", id);
       if (error) throw error;
       return contactId;
     },
@@ -366,7 +366,7 @@ export const useContactResources = (contactId: string) => {
     queryKey: ["contact_resources", contactId],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("contact_resources")
+        .from("network_contact_resources")
         .select("*")
         .eq("contact_id", contactId)
         .order("created_at");
@@ -383,7 +383,7 @@ export const useCreateContactResource = () => {
   return useMutation({
     mutationFn: async (resource: Omit<ContactResource, "id" | "user_id" | "created_at">) => {
       const { data, error } = await supabase
-        .from("contact_resources")
+        .from("network_contact_resources")
         .insert({ ...resource, user_id: user!.id })
         .select()
         .single();
@@ -400,7 +400,7 @@ export const useDeleteContactResource = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, contactId }: { id: string; contactId: string }) => {
-      const { error } = await supabase.from("contact_resources").delete().eq("id", id);
+      const { error } = await supabase.from("network_contact_resources").delete().eq("id", id);
       if (error) throw error;
       return contactId;
     },

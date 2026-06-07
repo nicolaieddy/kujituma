@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useContacts, useInteractions } from "@/hooks/useData";
+import { useContacts, useInteractions } from "@/hooks/network/useNetworkData";
 import {
   CommandDialog,
   CommandEmpty,
@@ -61,7 +61,7 @@ const GlobalSearch = ({ hideTrigger = false }: { hideTrigger?: boolean }) => {
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Contacts">
             {contacts.map((c) => (
-              <CommandItem key={c.id} onSelect={() => select(`/contacts/${c.id}`)} value={`${c.full_name} ${c.influence_type} ${c.country || ""} ${c.sector || ""}`}>
+              <CommandItem key={c.id} onSelect={() => select(`/network/contacts/${c.id}`)} value={`${c.full_name} ${c.influence_type} ${c.country || ""} ${c.sector || ""}`}>
                 <Users className="mr-2 h-4 w-4 text-muted-foreground" />
                 <div className="flex flex-col">
                   <span className="text-sm">{c.full_name}</span>
@@ -73,7 +73,7 @@ const GlobalSearch = ({ hideTrigger = false }: { hideTrigger?: boolean }) => {
           {recentInteractions.length > 0 && (
             <CommandGroup heading="Recent Interactions">
               {recentInteractions.map((i) => (
-                <CommandItem key={i.id} onSelect={() => select(`/contacts/${i.contact_id}`)} value={`${i.contactName} ${i.type} ${i.summary || ""}`}>
+                <CommandItem key={i.id} onSelect={() => select(`/network/contacts/${i.contact_id}`)} value={`${i.contactName} ${i.type} ${i.summary || ""}`}>
                   <MessageCircle className="mr-2 h-4 w-4 text-muted-foreground" />
                   <div className="flex flex-col">
                     <span className="text-sm">{i.contactName} — {i.type}</span>

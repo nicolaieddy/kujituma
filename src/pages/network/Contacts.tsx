@@ -1,15 +1,15 @@
 import { useState, useMemo } from "react";
-import { useContacts } from "@/hooks/useData";
+import { useContacts } from "@/hooks/network/useNetworkData";
 import { Link } from "react-router-dom";
-import { RelationshipBadge, InfluenceScore, TypeBadge } from "@/components/ContactBadges";
-import ContactForm from "@/components/ContactForm";
-import BulkLinkedInImport from "@/components/BulkLinkedInImport";
-import ContactsMap from "@/components/ContactsMap";
+import { RelationshipBadge, InfluenceScore, TypeBadge } from "@/components/network/ContactBadges";
+import ContactForm from "@/components/network/ContactForm";
+import BulkLinkedInImport from "@/components/network/BulkLinkedInImport";
+import ContactsMap from "@/components/network/ContactsMap";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { MultiComboboxField } from "@/components/ComboboxField";
+import { MultiComboboxField } from "@/components/network/ComboboxField";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Search, Link2, List, Globe, MessageCircle, Linkedin, CalendarPlus, ArrowUpDown, Heart, ChevronDown } from "lucide-react";
 import { differenceInDays, parseISO } from "date-fns";
@@ -243,7 +243,7 @@ const Contacts = () => {
               return (
                 <div key={c.id} className="group relative">
                   <Link
-                    to={`/contacts/${c.id}`}
+                    to={`/network/contacts/${c.id}`}
                     className="flex items-center justify-between rounded-lg border border-border bg-card p-3 card-hover"
                   >
                     <div className="flex items-center gap-3">

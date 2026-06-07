@@ -40,7 +40,7 @@ const EventChip = ({ event }: { event: CalEvent }) => {
 
   return (
     <Link
-      to={`/contacts/${event.contactId}`}
+      to={`/network/contacts/${event.contactId}`}
       onClick={(e) => e.stopPropagation()}
       className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all hover:shadow-sm truncate ${
         event.messageSent

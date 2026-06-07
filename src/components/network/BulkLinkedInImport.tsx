@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { useCreateContact } from "@/hooks/useData";
+import { useCreateContact } from "@/hooks/network/useNetworkData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";

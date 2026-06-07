@@ -7,9 +7,9 @@ import {
   ZoomableGroup,
 } from "react-simple-maps";
 import { useNavigate } from "react-router-dom";
-import type { Contact } from "@/hooks/useData";
+import type { Contact } from "@/hooks/network/useNetworkData";
 import { countryCoordinates } from "@/lib/countryCoordinates";
-import { strengthMapColors } from "@/components/ContactBadges";
+import { strengthMapColors } from "@/components/network/ContactBadges";
 import {
   Popover,
   PopoverContent,
@@ -319,7 +319,7 @@ const AvatarMarker = ({
           </Marker>
         </PopoverTrigger>
         <PopoverContent className="w-60 p-3" side="top">
-          <Link to={`/contacts/${contact.id}`} className="flex items-center gap-3 group">
+          <Link to={`/network/contacts/${contact.id}`} className="flex items-center gap-3 group">
             <Avatar className="h-10 w-10 border-2" style={{ borderColor: color }}>
               {contact.photo_url && <AvatarImage src={contact.photo_url} alt={contact.full_name} />}
               <AvatarFallback className="text-xs font-semibold" style={{ color }}>
@@ -419,7 +419,7 @@ const AvatarMarker = ({
             return (
               <Link
                 key={c.id}
-                to={`/contacts/${c.id}`}
+                to={`/network/contacts/${c.id}`}
                 className="flex items-center gap-2.5 rounded-lg p-2 text-sm hover:bg-accent transition-colors"
               >
                 <Avatar className="h-8 w-8 border-2 flex-shrink-0" style={{ borderColor: cColor }}>

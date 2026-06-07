@@ -3,7 +3,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
-import { useMessageTemplates, useUpsertMessageTemplate } from "@/hooks/useMessageTemplates";
+import { useMessageTemplates, useUpsertMessageTemplate } from "@/hooks/network/useMessageTemplates";
 import { DEFAULT_TEMPLATES, EVENT_TYPE_LABELS } from "@/lib/messageTemplates";
 
 const MessageTemplateSettings = () => {

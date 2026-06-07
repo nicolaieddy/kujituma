@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { MessageSquare, Copy, Check, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
-import { useMessageTemplates } from "@/hooks/useMessageTemplates";
-import { useCreateInteraction } from "@/hooks/useData";
+import { useMessageTemplates } from "@/hooks/network/useMessageTemplates";
+import { useCreateInteraction } from "@/hooks/network/useNetworkData";
 import { DEFAULT_TEMPLATES, fillTemplate, buildWhatsAppUrl } from "@/lib/messageTemplates";
 import { format } from "date-fns";
 

@@ -54,7 +54,7 @@ const CalendarSidebar = ({ selectedDay, selectedDayEvents, periodEvents, periodL
                   const Icon = ICON_MAP[style.icon];
                   return (
                     <div key={i} className={`flex items-start gap-3 rounded-xl border-l-[3px] p-3 transition-all hover:bg-accent/40 ${e.messageSent ? "border-l-[hsl(var(--success))] bg-[hsl(var(--success))]/8" : `${style.border} bg-muted/30`} ${e.isOverdue ? "ring-1 ring-destructive/30" : ""}`}>
-                      <Link to={`/contacts/${e.contactId}`} className="flex items-start gap-2.5 flex-1 min-w-0">
+                      <Link to={`/network/contacts/${e.contactId}`} className="flex items-start gap-2.5 flex-1 min-w-0">
                         <Icon className={`mt-0.5 h-4 w-4 flex-shrink-0 ${e.messageSent ? "text-[hsl(var(--success))]" : style.sidebarIcon}`} />
                         <div className="min-w-0">
                           <div className="flex items-center gap-1.5">
@@ -122,7 +122,7 @@ const CalendarSidebar = ({ selectedDay, selectedDayEvents, periodEvents, periodL
                           const Icon = ICON_MAP[style.icon];
                           return (
                             <div key={j} className={`flex items-center gap-2 rounded-lg p-2 text-xs transition-colors hover:bg-accent/40 ${e.messageSent ? "bg-[hsl(var(--success))]/8" : ""} ${e.isOverdue ? "text-destructive" : ""}`}>
-                              <Link to={`/contacts/${e.contactId}`} className="flex items-center gap-2 flex-1 min-w-0">
+                              <Link to={`/network/contacts/${e.contactId}`} className="flex items-center gap-2 flex-1 min-w-0">
                                 {e.messageSent ? (
                                   <CheckCircle2 className="h-3.5 w-3.5 flex-shrink-0 text-[hsl(var(--success))]" />
                                 ) : (

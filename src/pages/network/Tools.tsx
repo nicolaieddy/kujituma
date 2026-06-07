@@ -3,7 +3,7 @@ import { Bookmark, GripHorizontal, Copy, Check, MessageSquare, Bot, ChevronDown 
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import MessageTemplateSettings from "@/components/MessageTemplateSettings";
+import MessageTemplateSettings from "@/components/network/MessageTemplateSettings";
 import ApiTokenManager from "@/components/ApiTokenManager";
 
 const APP_URL = "https://networkosxyz.com";

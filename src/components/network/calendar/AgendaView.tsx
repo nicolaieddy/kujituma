@@ -41,7 +41,7 @@ const AgendaView = ({ groupedEvents, onSendMessage }: AgendaViewProps) => {
                   key={i}
                   className={`flex items-center gap-4 rounded-2xl border border-border p-4 transition-all hover:shadow-md border-l-[3px] ${e.messageSent ? "border-l-[hsl(var(--success))] bg-[hsl(var(--success))]/5" : `${style.border} bg-card`} ${e.isOverdue ? "ring-1 ring-destructive/30" : ""}`}
                 >
-                  <Link to={`/contacts/${e.contactId}`} className="flex items-center gap-4 flex-1 min-w-0">
+                  <Link to={`/network/contacts/${e.contactId}`} className="flex items-center gap-4 flex-1 min-w-0">
                     <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${e.messageSent ? "bg-[hsl(var(--success))]/15" : style.badge}`}>
                       {e.messageSent ? <CheckCircle2 className="h-4 w-4 text-[hsl(var(--success))]" /> : <Icon className="h-4 w-4" />}
                     </div>

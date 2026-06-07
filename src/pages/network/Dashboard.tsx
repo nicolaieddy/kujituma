@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { useContacts, useInteractions, Contact, Interaction } from "@/hooks/useData";
+import { useContacts, useInteractions, Contact, Interaction } from "@/hooks/network/useNetworkData";
 import { Link } from "react-router-dom";
-import InteractionForm from "@/components/InteractionForm";
-import SendMessageDialog from "@/components/SendMessageDialog";
+import InteractionForm from "@/components/network/InteractionForm";
+import SendMessageDialog from "@/components/network/SendMessageDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -241,7 +241,7 @@ const Dashboard = () => {
             {dailyActions.map(({ contact: c, reason, reasonIcon, borderColor }) => (
               <Card key={c.id} className={`border-l-4 ${borderColor} overflow-hidden`}>
                 <CardContent className="flex items-center gap-4 p-4">
-                  <Link to={`/contacts/${c.id}`}>
+                  <Link to={`/network/contacts/${c.id}`}>
                     <Avatar className="h-11 w-11 shrink-0">
                       <AvatarImage src={c.photo_url || undefined} alt={c.full_name} />
                       <AvatarFallback className="bg-secondary text-secondary-foreground text-sm font-semibold">
@@ -250,7 +250,7 @@ const Dashboard = () => {
                     </Avatar>
                   </Link>
                   <div className="min-w-0 flex-1">
-                    <Link to={`/contacts/${c.id}`} className="hover:underline">
+                    <Link to={`/network/contacts/${c.id}`} className="hover:underline">
                       <p className="text-sm font-semibold truncate">{c.full_name}</p>
                     </Link>
                     <div className="flex items-center gap-1.5 mt-0.5">
@@ -312,7 +312,7 @@ const Dashboard = () => {
               return (
                 <Link
                   key={i.id}
-                  to={`/contacts/${contact.id}`}
+                  to={`/network/contacts/${contact.id}`}
                   className="flex items-center gap-3 rounded-lg border bg-card p-3 card-hover"
                 >
                   <Avatar className="h-8 w-8 shrink-0">
