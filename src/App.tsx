@@ -244,6 +244,14 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
                 </RequireModule>
               }
             />
+            <Route
+              path="/health"
+              element={
+                <RequireModule id="health_metrics">
+                  <Health />
+                </RequireModule>
+              }
+            />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<ProfileEntry />} />
