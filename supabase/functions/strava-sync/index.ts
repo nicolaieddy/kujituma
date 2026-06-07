@@ -505,8 +505,9 @@ serve(async (req) => {
       const shouldMatch = mapping && meetsMinDuration;
 
       const enrichedFields = buildEnrichedFields(activity);
-      // Derive local date using reliable Intl.DateTimeFormat parts extraction
-      const activityLocalDate = getLocalDate(activity.start_date, userTimezone);
+      // Prefer the activity's own timezone (from Strava); fall back to profile tz.
+      const activityTz = parseStravaTz(activity.timezone) || userTimezone;
+      const activityLocalDate = getLocalDate(activity.start_date, activityTz);
       const weekMonday = getMondayOfDate(activityLocalDate + "T12:00:00");
       affectedWeeks.add(weekMonday);
 
@@ -514,16 +515,19 @@ serve(async (req) => {
         // Update enriched fields and backfill activity_date on existing synced activities
         const needsEnrichment = !existingSync.average_speed && activity.average_speed;
         const needsDateFix = !existingSync.activity_date || existingSync.activity_date !== activityLocalDate;
+        const needsTzFix = !existingSync.timezone || existingSync.timezone !== activityTz;
         
-        if (needsEnrichment || needsDateFix) {
+        if (needsEnrichment || needsDateFix || needsTzFix) {
           await supabase
             .from("synced_activities")
             .update({
               ...enrichedFields,
               activity_date: activityLocalDate,
+              timezone: activityTz,
             })
             .eq("id", existingSync.id);
         }
+
 
         if (!existingSync.matched_habit_item_id && shouldMatch) {
           console.log(`Re-matching activity ${activity.id} (${activity.type}) to habit ${mapping.habit_item_id}`);
