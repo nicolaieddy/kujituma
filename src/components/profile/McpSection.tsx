@@ -301,6 +301,21 @@ export function McpSection() {
               { name: "get_sleep_entries", desc: "Sleep data over a date range" },
               { name: "list_values", desc: "List personal values" },
               { name: "get_goal_values_alignment", desc: "Values alignment score for a goal" },
+              { name: "network_search_contacts", desc: "Search network contacts" },
+              { name: "network_get_contact", desc: "Full contact details + interactions" },
+              { name: "network_log_interaction", desc: "Log a meeting / call / message" },
+              { name: "network_list_upcoming_events", desc: "Birthdays, follow-ups, events" },
+              { name: "network_suggest_followups", desc: "Prioritized follow-up suggestions" },
+              { name: "network_daily_brief", desc: "Daily relationship briefing" },
+              { name: "network_create_contact", desc: "Create a new network contact" },
+              { name: "network_update_contact", desc: "Update contact fields" },
+              { name: "network_manage_key_facts", desc: "Add/remove/list key facts" },
+              { name: "network_manage_events", desc: "Add/remove/list important dates" },
+              { name: "network_manage_resources", desc: "Add/remove/list contact links" },
+              { name: "network_bulk_update_labels", desc: "Add/remove labels in bulk" },
+              { name: "network_bulk_log_interactions", desc: "Log one interaction across many contacts" },
+              { name: "network_enrich_contact", desc: "Propose enrichment from social profiles" },
+              { name: "network_apply_enrichment", desc: "Apply confirmed enrichment fields" },
             ].map((tool) => (
               <div
                 key={tool.name}
