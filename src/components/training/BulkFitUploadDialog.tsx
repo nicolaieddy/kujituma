@@ -1,4 +1,5 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Upload, Loader2, CheckCircle2, XCircle, AlertTriangle, FileArchive, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -82,6 +83,32 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
 
   const hasResults = fileStatuses.length > 0;
   const hasDuplicates = fileStatuses.some(s => s.status === "duplicate");
+
+  // Auto-close on successful completion (no pending actions, no errors)
+  useEffect(() => {
+    if (!open || isUploading || !hasResults || hasDuplicates) return;
+    const allResolved = fileStatuses.every(s => s.status === "done" || s.status === "error");
+    const hasErrors = fileStatuses.some(s => s.status === "error");
+    if (!allResolved || hasErrors) return;
+
+    const doneCount = fileStatuses.filter(s => s.status === "done").length;
+    const activityCount = fileStatuses.filter(s => s.status === "done" && s.kind === "activity").length;
+    const sleepNights = fileStatuses
+      .filter(s => s.status === "done" && s.kind === "sleep")
+      .reduce((sum, s) => sum + (s.summary?.entries_imported ?? 0), 0);
+
+    const parts: string[] = [];
+    if (activityCount) parts.push(`${activityCount} activit${activityCount === 1 ? "y" : "ies"}`);
+    if (sleepNights) parts.push(`${sleepNights} sleep night${sleepNights === 1 ? "" : "s"}`);
+    toast.success("Upload complete", {
+      description: parts.length ? `Imported ${parts.join(" · ")}` : `${doneCount} file${doneCount === 1 ? "" : "s"} imported`,
+    });
+
+    setSelectedFiles([]);
+    clearStatuses();
+    onOpenChange(false);
+  }, [open, isUploading, hasResults, hasDuplicates, fileStatuses, clearStatuses, onOpenChange]);
+
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
