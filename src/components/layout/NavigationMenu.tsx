@@ -26,6 +26,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     
     if (path.startsWith('/friends') || path.startsWith('/partner')) return 'friends';
     if (path.startsWith('/analytics')) return 'analytics';
+    if (path.startsWith('/modules')) return 'modules';
     if (path.startsWith('/profile')) return 'profile';
     return 'goals';
   };
