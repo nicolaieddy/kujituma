@@ -224,6 +224,10 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                     <Upload className="h-4 w-4" />
                     Upload activity / sleep
                   </Button>
+                  <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+                    <Sparkles className="h-4 w-4" />
+                    Import from coach
+                  </Button>
                   {totalCount === 0 && (
                     <Button variant="outline" size="sm" onClick={() => copyFromPreviousWeek()} loading={isCopying}>
                       <Copy className="h-4 w-4" />
