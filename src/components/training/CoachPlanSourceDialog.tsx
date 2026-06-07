@@ -30,18 +30,19 @@ export function CoachPlanSourceDialog({ open, onOpenChange, importId }: CoachPla
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("training_plan_imports")
         .select("source_type, source_text, source_file_path, source_file_name, source_mime, created_at, workout_count")
         .eq("id", importId)
         .maybeSingle();
       if (cancelled) return;
       if (error || !data) { setRow(null); setLoading(false); return; }
-      setRow(data as ImportRow);
-      if (data.source_file_path) {
+      const r = data as ImportRow;
+      setRow(r);
+      if (r.source_file_path) {
         const { data: signed } = await supabase.storage
           .from("coach-plans")
-          .createSignedUrl(data.source_file_path, 60 * 60);
+          .createSignedUrl(r.source_file_path, 60 * 60);
         if (!cancelled) setSignedUrl(signed?.signedUrl ?? null);
       } else {
         setSignedUrl(null);
