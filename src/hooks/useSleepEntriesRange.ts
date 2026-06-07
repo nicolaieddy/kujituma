@@ -44,7 +44,7 @@ export function isInBand(bedtimeMin: number | null): boolean {
 
 export function formatMinutes(min: number | null): string | null {
   if (min == null) return null;
-  let m = min % (24 * 60);
+  let m = Math.round(min) % (24 * 60);
   if (m < 0) m += 24 * 60;
   let hour = Math.floor(m / 60);
   const minute = String(m % 60).padStart(2, "0");
