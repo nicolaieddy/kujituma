@@ -2347,6 +2347,7 @@ export type Database = {
           sub_sport: string | null
           suffer_score: number | null
           synced_at: string | null
+          timezone: string | null
           total_ascent: number | null
           total_descent: number | null
           total_elevation_gain: number | null
@@ -2404,6 +2405,7 @@ export type Database = {
           sub_sport?: string | null
           suffer_score?: number | null
           synced_at?: string | null
+          timezone?: string | null
           total_ascent?: number | null
           total_descent?: number | null
           total_elevation_gain?: number | null
@@ -2461,6 +2463,7 @@ export type Database = {
           sub_sport?: string | null
           suffer_score?: number | null
           synced_at?: string | null
+          timezone?: string | null
           total_ascent?: number | null
           total_descent?: number | null
           total_elevation_gain?: number | null

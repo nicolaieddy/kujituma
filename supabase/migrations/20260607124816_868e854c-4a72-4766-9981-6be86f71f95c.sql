@@ -1,0 +1,1 @@
+ALTER TABLE public.synced_activities ADD COLUMN IF NOT EXISTS timezone TEXT;
