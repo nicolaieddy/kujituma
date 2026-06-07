@@ -288,6 +288,7 @@ Deno.serve(async (req) => {
       activity_name: session.sport ? `${activityType} (FIT Upload)` : "FIT Upload",
       start_date: startDate,
       activity_date: activityDate,
+      timezone: activityTz,
       fit_file_path: file_path,
       habit_completion_created: false,
       synced_at: new Date().toISOString(),
