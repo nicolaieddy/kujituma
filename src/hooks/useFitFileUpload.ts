@@ -262,7 +262,9 @@ export function useFitFileUpload() {
       setProgress(`Processing ${i + 1} of ${validFiles.length}`);
       updateFileStatus(i, { status: "uploading" });
 
-      const result = await uploadAndParse(file);
+      const result = await uploadAndParse(file, undefined, undefined, (phase) => {
+        updateFileStatus(i, { status: phase });
+      });
 
       if (result.duplicate) {
         updateFileStatus(i, { status: "duplicate", duplicate: result.duplicate });
