@@ -305,6 +305,8 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                             onDelete={sourceWorkout ? () => deleteWorkout(sourceWorkout.id) : undefined}
                             onDeleteActivity={(id) => deleteActivity(id)}
                             isDeletingActivity={isDeletingActivity}
+                            sourceImportId={(sourceWorkout as any)?.source_import_id ?? (workout as any).source_import_id ?? null}
+                            onViewSource={(id) => setSourceImportId(id)}
                           />
                         );
                       })}
@@ -332,7 +334,18 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
             open={bulkUploadOpen}
             onOpenChange={setBulkUploadOpen}
           />
+          <ImportCoachPlanDialog
+            open={importOpen}
+            onOpenChange={setImportOpen}
+            weekStart={weekStart}
+          />
         </>
+      )}
+      <CoachPlanSourceDialog
+        open={!!sourceImportId}
+        onOpenChange={(o) => { if (!o) setSourceImportId(null); }}
+        importId={sourceImportId}
+      />
       )}
     </>
   );
