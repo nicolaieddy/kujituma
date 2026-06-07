@@ -99,6 +99,7 @@ const Profile = () => {
     return "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
+  const isTrainingInstalled = useIsModuleInstalled("training_plan");
   const [showUnfriendDialog, setShowUnfriendDialog] = useState(false);
   const [sendingPartnerRequest, setSendingPartnerRequest] = useState(false);
 
