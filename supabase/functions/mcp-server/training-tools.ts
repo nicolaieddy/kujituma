@@ -622,4 +622,155 @@ export function registerTrainingWriteTools(mcp: McpServer, supabase: Supabase, u
       return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
     },
   });
+
+  mcp.tool("auto_link_orphan_activities", {
+    description: "Find synced_activities not yet linked to any training plan slot and link them to the best-fit plan slot within a date+type tolerance. Safe to re-run.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        weeks: { type: "number", description: "Lookback window in weeks. Default 8." },
+        day_tolerance: { type: "number", description: "Allowed day-of-week drift between activity and plan slot. Default 1." },
+        dry_run: { type: "boolean", description: "If true, only report proposed links without writing. Default false." },
+      },
+    },
+    handler: async ({ weeks, day_tolerance, dry_run }: { weeks?: number; day_tolerance?: number; dry_run?: boolean }) => {
+      const numWeeks = weeks ?? 8;
+      const dayTol = day_tolerance ?? 1;
+      const now = new Date();
+      const monday = getMondayOfWeek(now);
+      const earliest = new Date(monday + "T00:00:00");
+      earliest.setDate(earliest.getDate() - (numWeeks - 1) * 7);
+      const startStr = toDateStr(earliest);
+      const endStr = getWeekEnd(monday);
+
+      const { data: workouts, error: wErr } = await supabase
+        .from("training_plan_workouts")
+        .select("id, week_start, day_of_week, workout_type, title, matched_activity_id, matched_strava_activity_id, target_distance_meters")
+        .eq("user_id", userId)
+        .gte("week_start", startStr)
+        .lte("week_start", endStr);
+      if (wErr) return { content: [{ type: "text" as const, text: `Error: ${wErr.message}` }] };
+
+      const { data: activities, error: aErr } = await supabase
+        .from("synced_activities")
+        .select("id, strava_activity_id, activity_type, sport_type, activity_date, start_date, distance_meters, activity_name")
+        .eq("user_id", userId)
+        .gte("start_date", `${startStr}T00:00:00`)
+        .lte("start_date", `${endStr}T23:59:59`);
+      if (aErr) return { content: [{ type: "text" as const, text: `Error: ${aErr.message}` }] };
+
+      const activityIds = (activities || []).map((a: any) => a.id).filter(Boolean);
+      const { data: junctionLinks } = activityIds.length
+        ? await supabase
+            .from("training_workout_activities")
+            .select("workout_id, activity_id")
+            .in("activity_id", activityIds)
+        : { data: [] as any[] };
+
+      const linkedActivityIds = new Set<string>((junctionLinks || []).map((l: any) => l.activity_id));
+      const usedByWorkout = new Map<string, Set<string>>();
+      for (const l of (junctionLinks || [])) {
+        if (!usedByWorkout.has(l.workout_id)) usedByWorkout.set(l.workout_id, new Set());
+        usedByWorkout.get(l.workout_id)!.add(l.activity_id);
+      }
+      for (const w of (workouts || [])) {
+        if (w.matched_strava_activity_id) {
+          const a = (activities || []).find((x: any) => x.strava_activity_id === w.matched_strava_activity_id);
+          if (a) linkedActivityIds.add(a.id);
+        }
+        if (w.matched_activity_id) linkedActivityIds.add(w.matched_activity_id);
+      }
+
+      const orphans = (activities || []).filter((a: any) => !linkedActivityIds.has(a.id));
+
+      const plansByWeek = new Map<string, any[]>();
+      for (const w of (workouts || [])) {
+        if (!plansByWeek.has(w.week_start)) plansByWeek.set(w.week_start, []);
+        plansByWeek.get(w.week_start)!.push(w);
+      }
+
+      const proposed: any[] = [];
+      const skipped: any[] = [];
+
+      for (const a of orphans) {
+        const actDate = a.activity_date || (a.start_date || "").split("T")[0];
+        if (!actDate) { skipped.push({ activity_id: a.id, reason: "no date" }); continue; }
+        const wkStart = getMondayOfWeek(new Date(actDate + "T12:00:00"));
+        const actDow = localDow(actDate);
+        const actFam = typeFamily(a.activity_type || a.sport_type);
+        if (actFam === "other") { skipped.push({ activity_id: a.id, reason: "unknown type", type: a.activity_type }); continue; }
+
+        const candidates = (plansByWeek.get(wkStart) || []).filter((w: any) => {
+          if ((w.workout_type || "").toLowerCase() === "rest") return false;
+          const planFam = typeFamily(w.workout_type);
+          if (planFam !== actFam && planFam !== "other") return false;
+          if (Math.abs(w.day_of_week - actDow) > dayTol) return false;
+          return true;
+        });
+
+        candidates.sort((x: any, y: any) => {
+          const xd = Math.abs(x.day_of_week - actDow);
+          const yd = Math.abs(y.day_of_week - actDow);
+          if (xd !== yd) return xd - yd;
+          const xUsed = usedByWorkout.get(x.id)?.size || 0;
+          const yUsed = usedByWorkout.get(y.id)?.size || 0;
+          if (xUsed !== yUsed) return xUsed - yUsed;
+          const xDist = Math.abs((x.target_distance_meters || 0) - (a.distance_meters || 0));
+          const yDist = Math.abs((y.target_distance_meters || 0) - (a.distance_meters || 0));
+          return xDist - yDist;
+        });
+
+        const pick = candidates[0];
+        if (!pick) { skipped.push({ activity_id: a.id, date: actDate, type: a.activity_type, reason: "no candidate" }); continue; }
+
+        proposed.push({
+          workout_id: pick.id,
+          workout_title: pick.title,
+          plan_day: pick.day_of_week,
+          activity_id: a.id,
+          activity_name: a.activity_name,
+          activity_date: actDate,
+          activity_dow: actDow,
+          drift_days: pick.day_of_week - actDow,
+          type: a.activity_type,
+          distance_km: a.distance_meters ? +(a.distance_meters / 1000).toFixed(2) : null,
+        });
+
+        if (!usedByWorkout.has(pick.id)) usedByWorkout.set(pick.id, new Set());
+        usedByWorkout.get(pick.id)!.add(a.id);
+      }
+
+      if (dry_run) {
+        return { content: [{ type: "text" as const, text: `DRY RUN — would link ${proposed.length} orphan activities; skipped ${skipped.length}.\n\n${JSON.stringify({ proposed, skipped }, null, 2)}` }] };
+      }
+
+      let linked = 0;
+      const linkedRows: any[] = [];
+      for (const p of proposed) {
+        const { error: jErr } = await supabase
+          .from("training_workout_activities")
+          .upsert({ workout_id: p.workout_id, activity_id: p.activity_id, session_order: 0 }, { onConflict: "workout_id,activity_id" });
+        if (jErr) { skipped.push({ ...p, reason: `junction error: ${jErr.message}` }); continue; }
+
+        const w = (workouts || []).find((x: any) => x.id === p.workout_id);
+        if (w && !w.matched_activity_id && !w.matched_strava_activity_id) {
+          const a = (activities || []).find((x: any) => x.id === p.activity_id);
+          await supabase
+            .from("training_plan_workouts")
+            .update(a?.strava_activity_id ? { matched_strava_activity_id: a.strava_activity_id } : { matched_activity_id: p.activity_id })
+            .eq("id", p.workout_id)
+            .eq("user_id", userId);
+        }
+        linked++;
+        linkedRows.push(p);
+      }
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `✅ Linked ${linked} orphan activities to plan slots (skipped ${skipped.length}).\n\n${JSON.stringify({ linked: linkedRows, skipped }, null, 2)}`,
+        }],
+      };
+    },
+  });
 }
