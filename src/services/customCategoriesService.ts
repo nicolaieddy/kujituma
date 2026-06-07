@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { CustomGoalCategory, CreateCustomCategoryData } from "@/types/customCategories";
+import { CustomGoalCategory, CreateCustomCategoryData, PREDEFINED_CATEGORIES } from "@/types/customCategories";
 import { authStore } from "@/stores/authStore";
 
 export class CustomCategoriesService {
