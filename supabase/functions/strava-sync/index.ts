@@ -19,6 +19,7 @@ interface StravaActivity {
   sport_type: string;
   start_date: string;
   start_date_local: string;
+  timezone?: string;
   elapsed_time: number;
   moving_time: number;
   distance: number;
@@ -32,6 +33,14 @@ interface StravaActivity {
   average_cadence?: number;
   description?: string;
   workout_type?: number;
+}
+
+/** Strava returns timezone like "(GMT-08:00) America/Los_Angeles" — extract IANA name. */
+function parseStravaTz(tz?: string | null): string | null {
+  if (!tz) return null;
+  const m = tz.match(/\)\s*(.+)$/);
+  const iana = (m ? m[1] : tz).trim();
+  return /^[A-Za-z_]+\/[A-Za-z_\/\-]+$/.test(iana) ? iana : null;
 }
 
 async function refreshTokenIfNeeded(
