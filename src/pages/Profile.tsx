@@ -553,7 +553,7 @@ const Profile = () => {
                 <IntegrationsSection />
               </div>
             )}
-            {activeTab === "workouts" && (
+            {activeTab === "workouts" && isTrainingInstalled && (
               <div className="max-w-4xl mx-auto">
                 <WorkoutPreferencesSection />
               </div>
