@@ -2684,6 +2684,42 @@ export type Database = {
           },
         ]
       }
+      user_modules: {
+        Row: {
+          created_at: string
+          id: string
+          installed_at: string
+          module_id: string
+          settings: Json
+          status: string
+          uninstalled_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          installed_at?: string
+          module_id: string
+          settings?: Json
+          status?: string
+          uninstalled_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          installed_at?: string
+          module_id?: string
+          settings?: Json
+          status?: string
+          uninstalled_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -3231,6 +3267,10 @@ export type Database = {
       get_weekly_dashboard_data: {
         Args: { p_last_week_start: string; p_week_start: string }
         Returns: Json
+      }
+      has_module: {
+        Args: { _module_id: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
