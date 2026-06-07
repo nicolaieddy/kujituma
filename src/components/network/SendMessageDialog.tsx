@@ -6,7 +6,7 @@ import { MessageSquare, Copy, Check, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { useMessageTemplates } from "@/hooks/network/useMessageTemplates";
 import { useCreateInteraction } from "@/hooks/network/useNetworkData";
-import { DEFAULT_TEMPLATES, fillTemplate, buildWhatsAppUrl } from "@/lib/messageTemplates";
+import { DEFAULT_TEMPLATES, fillTemplate, buildWhatsAppUrl } from "@/lib/network/messageTemplates";
 import { format } from "date-fns";
 
 interface SendMessageDialogProps {

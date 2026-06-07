@@ -8,7 +8,7 @@ import {
 } from "react-simple-maps";
 import { useNavigate } from "react-router-dom";
 import type { Contact } from "@/hooks/network/useNetworkData";
-import { countryCoordinates } from "@/lib/countryCoordinates";
+import { countryCoordinates } from "@/lib/network/countryCoordinates";
 import { strengthMapColors } from "@/components/network/ContactBadges";
 import {
   Popover,
@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { Link } from "react-router-dom";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { geocodeAndUpdate } from "@/lib/geocode";
+import { geocodeAndUpdate } from "@/lib/network/geocode";
 import { Globe, Plus, Minus } from "lucide-react";
 
 const GEO_URL = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";

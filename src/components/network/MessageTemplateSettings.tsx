@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Save, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useMessageTemplates, useUpsertMessageTemplate } from "@/hooks/network/useMessageTemplates";
-import { DEFAULT_TEMPLATES, EVENT_TYPE_LABELS } from "@/lib/messageTemplates";
+import { DEFAULT_TEMPLATES, EVENT_TYPE_LABELS } from "@/lib/network/messageTemplates";
 
 const MessageTemplateSettings = () => {
   const { data: templates = [] } = useMessageTemplates();

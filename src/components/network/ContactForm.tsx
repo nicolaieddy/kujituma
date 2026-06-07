@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { geocodeAndUpdate } from "@/lib/geocode";
+import { geocodeAndUpdate } from "@/lib/network/geocode";
 import { Loader2, Sparkles, ChevronDown, ChevronUp, AlertTriangle, Heart, ExternalLink, Compass } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -16,8 +16,8 @@ import { ComboboxField, MultiComboboxField } from "@/components/network/Combobox
 import BirthdayInput from "@/components/network/BirthdayInput";
 import { LocationPicker } from "@/components/network/LocationPicker";
 import { Switch } from "@/components/ui/switch";
-import { COUNTRIES, REGIONS } from "@/lib/constants";
-import { buildProfileSearchUrl } from "@/lib/socialSearch";
+import { COUNTRIES, REGIONS } from "@/lib/network/constants";
+import { buildProfileSearchUrl } from "@/lib/network/socialSearch";
 
 const influenceTypes = ["Regulator", "Lawyer", "Politician", "Founder", "Investor", "Operator", "Media", "Banker", "Family", "Friend", "Spouse", "Best Friend", "Other"];
 const relationshipStrengths = ["Cold", "Warm", "Strong", "Trusted"];

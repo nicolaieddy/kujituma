@@ -13,12 +13,12 @@ import { ComboboxField, MultiComboboxField } from "@/components/network/Combobox
 import { LocationPicker } from "@/components/network/LocationPicker";
 import { ArrowLeft, Trash2, MessageCircle, Linkedin, Mail, CalendarPlus, Save, Plus, X, Star, Lightbulb, Instagram, Twitter, Check, Heart, Sparkles, Loader2, ExternalLink, ArrowUpRight, ArrowDownLeft, Minus, Scale, Compass, Pencil, Link, Globe } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import { buildProfileSearchUrl } from "@/lib/socialSearch";
+import { buildProfileSearchUrl } from "@/lib/network/socialSearch";
 import { Switch } from "@/components/ui/switch";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
-import { COUNTRIES, REGIONS } from "@/lib/constants";
-import { geocodeAndUpdate } from "@/lib/geocode";
+import { COUNTRIES, REGIONS } from "@/lib/network/constants";
+import { geocodeAndUpdate } from "@/lib/network/geocode";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import {
