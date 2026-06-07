@@ -82,9 +82,9 @@ const Tools = () => {
             <p className="text-sm font-semibold">Generate an API token</p>
           </div>
           <p className="text-xs text-muted-foreground">
-            This token lets Claude access your network data securely. You can revoke it anytime.
+            Network data is exposed through Kujituma's shared MCP server. Generate or copy your
+            token from <a href="/profile" className="text-primary underline underline-offset-2 hover:text-primary/80">Profile → MCP</a>.
           </p>
-          <ApiTokenManager />
         </div>
 
         {/* Step 2: Connect to Claude */}
