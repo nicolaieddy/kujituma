@@ -1602,6 +1602,278 @@ export type Database = {
           },
         ]
       }
+      network_contact_events: {
+        Row: {
+          contact_id: string
+          created_at: string
+          event_date: string
+          id: string
+          is_recurring: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          event_date: string
+          id?: string
+          is_recurring?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          event_date?: string
+          id?: string
+          is_recurring?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_contact_events_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "network_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_contact_key_facts: {
+        Row: {
+          contact_id: string
+          created_at: string
+          fact: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          fact: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          fact?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_contact_key_facts_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "network_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_contact_resources: {
+        Row: {
+          contact_id: string
+          created_at: string
+          id: string
+          label: string
+          type: string
+          url: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          id?: string
+          label: string
+          type: string
+          url: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          id?: string
+          label?: string
+          type?: string
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_contact_resources_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "network_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_contacts: {
+        Row: {
+          birthday: string | null
+          country: string | null
+          created_at: string
+          email: string | null
+          first_met_month: number | null
+          first_met_year: number | null
+          full_name: string
+          id: string
+          influence_score: number | null
+          influence_type: string
+          instagram_url: string | null
+          is_inner_circle: boolean
+          last_interaction_date: string | null
+          latitude: number | null
+          linkedin_url: string | null
+          living_location: string | null
+          longitude: number | null
+          muted_from_brief: boolean
+          notes: string | null
+          photo_url: string | null
+          region: string | null
+          relationship_strength: string | null
+          sector: string | null
+          strategic_importance: number | null
+          twitter_url: string | null
+          updated_at: string
+          user_id: string
+          whatsapp_number: string | null
+        }
+        Insert: {
+          birthday?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          first_met_month?: number | null
+          first_met_year?: number | null
+          full_name: string
+          id?: string
+          influence_score?: number | null
+          influence_type?: string
+          instagram_url?: string | null
+          is_inner_circle?: boolean
+          last_interaction_date?: string | null
+          latitude?: number | null
+          linkedin_url?: string | null
+          living_location?: string | null
+          longitude?: number | null
+          muted_from_brief?: boolean
+          notes?: string | null
+          photo_url?: string | null
+          region?: string | null
+          relationship_strength?: string | null
+          sector?: string | null
+          strategic_importance?: number | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id: string
+          whatsapp_number?: string | null
+        }
+        Update: {
+          birthday?: string | null
+          country?: string | null
+          created_at?: string
+          email?: string | null
+          first_met_month?: number | null
+          first_met_year?: number | null
+          full_name?: string
+          id?: string
+          influence_score?: number | null
+          influence_type?: string
+          instagram_url?: string | null
+          is_inner_circle?: boolean
+          last_interaction_date?: string | null
+          latitude?: number | null
+          linkedin_url?: string | null
+          living_location?: string | null
+          longitude?: number | null
+          muted_from_brief?: boolean
+          notes?: string | null
+          photo_url?: string | null
+          region?: string | null
+          relationship_strength?: string | null
+          sector?: string | null
+          strategic_importance?: number | null
+          twitter_url?: string | null
+          updated_at?: string
+          user_id?: string
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      network_interactions: {
+        Row: {
+          contact_id: string
+          created_at: string
+          date: string
+          direction: string | null
+          follow_up_date: string | null
+          id: string
+          summary: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          contact_id: string
+          created_at?: string
+          date?: string
+          direction?: string | null
+          follow_up_date?: string | null
+          id?: string
+          summary?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          contact_id?: string
+          created_at?: string
+          date?: string
+          direction?: string | null
+          follow_up_date?: string | null
+          id?: string
+          summary?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "network_interactions_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "network_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      network_message_templates: {
+        Row: {
+          created_at: string
+          event_type: string
+          id: string
+          template: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          id?: string
+          template: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          id?: string
+          template?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       notification_preferences: {
         Row: {
           created_at: string
