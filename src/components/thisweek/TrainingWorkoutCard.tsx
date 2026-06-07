@@ -463,6 +463,17 @@ export function TrainingWorkoutCard({
               </Badge>
             ));
           })()}
+          {sourceImportId && onViewSource && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onViewSource(sourceImportId); }}
+              className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-1.5 py-0 h-5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+              title="View original coach plan"
+            >
+              <FileText className="h-2.5 w-2.5" />
+              Source
+            </button>
+          )}
         </div>
 
         {/* Inline stats */}
