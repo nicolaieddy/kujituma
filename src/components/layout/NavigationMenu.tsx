@@ -1,16 +1,28 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Target, UserPlus, BarChart3, Shield, Blocks } from "lucide-react";
+import { Target, UserPlus, BarChart3, Shield, Blocks, Moon } from "lucide-react";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
+import { useInstalledModules } from "@/hooks/useInstalledModules";
+import type { ModuleId } from "@/modules/types";
 
 interface NavigationMenuProps {
   onItemClick?: () => void;
   isMobile?: boolean;
 }
 
-const navItems = [
+interface NavItem {
+  path: string;
+  label: string;
+  icon: typeof Target;
+  section: string;
+  /** When set, only render if this module is installed. */
+  requiresModule?: ModuleId;
+}
+
+const navItems: NavItem[] = [
   { path: '/goals', label: 'Goals', icon: Target, section: 'goals' },
   { path: '/friends', label: 'Friends', icon: UserPlus, section: 'friends' },
   { path: '/analytics', label: 'Analytics', icon: BarChart3, section: 'analytics' },
+  { path: '/sleep', label: 'Sleep', icon: Moon, section: 'sleep', requiresModule: 'sleep' },
   { path: '/modules', label: 'Modules', icon: Blocks, section: 'modules' },
 ];
 
@@ -18,14 +30,16 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
   const navigate = useNavigate();
   const location = useLocation();
   const { isAdmin } = useAdminStatus();
+  const { data: installedModules } = useInstalledModules();
 
   const getCurrentSection = () => {
     const path = location.pathname;
     if (path.startsWith('/admin')) return 'admin';
     if (path.startsWith('/goals')) return 'goals';
-    
+
     if (path.startsWith('/friends') || path.startsWith('/partner')) return 'friends';
     if (path.startsWith('/analytics')) return 'analytics';
+    if (path.startsWith('/sleep')) return 'sleep';
     if (path.startsWith('/modules')) return 'modules';
     if (path.startsWith('/profile')) return 'profile';
     return 'goals';
@@ -38,10 +52,15 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     onItemClick?.();
   };
 
+  // Filter out items whose required module isn't installed
+  const visibleNavItems = navItems.filter(
+    (item) => !item.requiresModule || installedModules?.has(item.requiresModule),
+  );
+
   // Build nav items with optional admin
-  const allNavItems = isAdmin 
-    ? [...navItems, { path: '/admin', label: 'Admin', icon: Shield, section: 'admin' }]
-    : navItems;
+  const allNavItems = isAdmin
+    ? [...visibleNavItems, { path: '/admin', label: 'Admin', icon: Shield, section: 'admin' }]
+    : visibleNavItems;
 
   if (isMobile) {
     return (

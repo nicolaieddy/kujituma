@@ -16,6 +16,7 @@ import { format, addDays } from "date-fns";
 import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
 import { useWeekSleepEntries } from "@/hooks/useWeekSleepEntries";
 import { SleepSummaryRow } from "@/components/thisweek/SleepSummaryRow";
+import { ModuleGate } from "@/modules/ModuleGate";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TrainingEmpty } from "@/components/illustrations/TrainingEmpty";
 
@@ -271,7 +272,11 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                       </span>
                     </div>
 
-                    {sleep && <SleepSummaryRow entry={sleep} />}
+                    {sleep && (
+                      <ModuleGate id="sleep">
+                        <SleepSummaryRow entry={sleep} />
+                      </ModuleGate>
+                    )}
 
                     <div className="space-y-3">
                     {dayWorkouts.map((workout) => {

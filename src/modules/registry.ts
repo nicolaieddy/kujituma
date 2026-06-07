@@ -16,7 +16,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     name: "Training Plan",
     tagline: "Plan workouts, sync activities from Strava, Garmin, and .FIT files.",
     description:
-      "Build a weekly training schedule, auto-match completed workouts to planned sessions, and pull rich session data (HR, power, pace, sleep) from your devices. Includes per-activity reflections and goal-linked training metrics.",
+      "Build a weekly training schedule, auto-match completed workouts to planned sessions, and pull rich session data (HR, power, pace) from your devices. Includes per-activity reflections and goal-linked training metrics.",
     coverEmoji: "🏃",
     category: "fitness",
     tier: "free",
@@ -24,7 +24,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     surfaces: {
       thisWeekCards: ["Training Plan card on This Week"],
       profileSections: ["Workouts preferences tab", "Strava / Garmin / .FIT integrations"],
-      integrations: ["Strava", "Garmin", ".FIT files", "Sleep CSV"],
+      integrations: ["Strava", "Garmin", ".FIT files"],
       mcpToolPrefixes: ["training_", "workout_", "activity_"],
     },
     dataTables: [
@@ -35,11 +35,28 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
       "activity_laps",
       "activity_streams",
       "activity_mappings",
-      "sleep_entries",
       "strava_connections",
       "garmin_connections",
       "workout_preferences",
     ],
+  },
+  {
+    id: "sleep",
+    name: "Sleep",
+    tagline: "Track sleep score trends and build a bedtime consistency streak.",
+    description:
+      "A dedicated Sleep page with nightly score trends, duration averages, and a bedtime-consistency streak so you can see — at a glance — whether your evenings are working for you. Imports from Garmin sleep CSV today; Apple Health and Oura coming later.",
+    coverEmoji: "😴",
+    category: "health",
+    tier: "free",
+    status: "available",
+    surfaces: {
+      pages: ["Dedicated Sleep page (/sleep)"],
+      thisWeekCards: ["Nightly sleep summary inside the Training Plan card"],
+      profileSections: ["Sleep import (Garmin CSV)"],
+      mcpToolPrefixes: ["sleep_"],
+    },
+    dataTables: ["sleep_entries"],
   },
 ];
 
