@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
-import { Moon, Flame, Clock, Bed, Sunrise, TrendingUp } from "lucide-react";
+import { Moon, Flame, Clock, Bed, Sunrise, TrendingUp, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   useSleepEntriesRange,
   bedtimeToMinutes,
@@ -12,6 +13,7 @@ import {
 } from "@/hooks/useSleepEntriesRange";
 import { SleepScoreTrend } from "@/components/sleep/SleepScoreTrend";
 import { BedtimeConsistency } from "@/components/sleep/BedtimeConsistency";
+import { BulkFitUploadDialog } from "@/components/training/BulkFitUploadDialog";
 import { parseLocalDate } from "@/utils/dateUtils";
 
 type RangeKey = "7" | "30";
@@ -27,6 +29,7 @@ function formatDuration(seconds: number | null): string {
 
 export default function Sleep() {
   const [range, setRange] = useState<RangeKey>("7");
+  const [importOpen, setImportOpen] = useState(false);
   const days = range === "7" ? 7 : 30;
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
@@ -49,13 +52,22 @@ export default function Sleep() {
           <Moon className="h-6 w-6 text-primary" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Sleep</h1>
         </div>
-        <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
-          <TabsList>
-            <TabsTrigger value="7">Last 7 days</TabsTrigger>
-            <TabsTrigger value="30">Last 30 days</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
+            <Upload className="h-4 w-4 mr-1.5" />
+            Import sleep CSV
+          </Button>
+          <Tabs value={range} onValueChange={(v) => setRange(v as RangeKey)}>
+            <TabsList>
+              <TabsTrigger value="7">Last 7 days</TabsTrigger>
+              <TabsTrigger value="30">Last 30 days</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </header>
+
+      <BulkFitUploadDialog open={importOpen} onOpenChange={setImportOpen} />
+
 
       {/* Stat tiles */}
       <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
@@ -134,8 +146,7 @@ export default function Sleep() {
         <CardContent className="p-0">
           {last14.length === 0 ? (
             <div className="px-6 py-10 text-center text-sm text-muted-foreground">
-              No sleep entries yet. Import a Garmin sleep CSV from the Training Plan
-              card to get started.
+              No sleep entries yet. Use “Import sleep CSV” above to upload a Garmin export.
             </div>
           ) : (
             <ul className="divide-y divide-border">
