@@ -75,6 +75,38 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
       "supplement_logs",
     ],
   },
+  {
+    id: "network",
+    name: "Network",
+    tagline: "Track contacts, interactions, and follow-ups — a private relationship CRM.",
+    description:
+      "A focused CRM for your personal and professional network. Log contacts with influence, relationship strength, and strategic importance; record interactions (calls, meetings, dinners); set follow-ups; and surface upcoming birthdays and events. Originally NetworkOS, now integrated as a Kujituma module.",
+    coverEmoji: "🤝",
+    category: "relationships",
+    tier: "free",
+    status: "available",
+    surfaces: {
+      pages: [
+        "Dedicated Network page (/network)",
+        "Contacts list (/network/contacts)",
+        "Contact detail (/network/contacts/:id)",
+        "Calendar (/network/calendar)",
+        "Quick add (/network/quick-add)",
+        "Tools (/network/tools)",
+      ],
+      profileSections: ["Network message templates"],
+      integrations: ["LinkedIn enrichment", "Geocoding"],
+      mcpToolPrefixes: ["network_", "contact_", "interaction_"],
+    },
+    dataTables: [
+      "network_contacts",
+      "network_interactions",
+      "network_contact_events",
+      "network_contact_key_facts",
+      "network_contact_resources",
+      "network_message_templates",
+    ],
+  },
 ];
 
 export const getModule = (id: ModuleId): ModuleDefinition | undefined =>
