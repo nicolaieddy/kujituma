@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX } from "lucide-react";
+import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TrainingPlanDisplayWorkout, MergedSession } from "@/components/thisweek/trainingPlanUtils";
@@ -20,6 +20,8 @@ interface TrainingWorkoutCardProps {
   onDelete?: () => void;
   onDeleteActivity?: (activityId: string) => void;
   isDeletingActivity?: boolean;
+  sourceImportId?: string | null;
+  onViewSource?: (importId: string) => void;
 }
 
 function formatSpeed(metersPerSec: number | null): string {
@@ -321,6 +323,8 @@ export function TrainingWorkoutCard({
   onDelete,
   onDeleteActivity,
   isDeletingActivity,
+  sourceImportId = null,
+  onViewSource,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<string | null>(null);
