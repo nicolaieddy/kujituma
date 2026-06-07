@@ -25,6 +25,7 @@ const navItems: NavItem[] = [
   { path: '/training', label: 'Training', icon: Dumbbell, section: 'training', requiresModule: 'training_plan' },
   { path: '/sleep', label: 'Sleep', icon: Moon, section: 'sleep', requiresModule: 'sleep' },
   { path: '/health', label: 'Health', icon: Stethoscope, section: 'health', requiresModule: 'health_metrics' },
+  { path: '/network', label: 'Network', icon: Users, section: 'network', requiresModule: 'network' },
   { path: '/modules', label: 'Modules', icon: Blocks, section: 'modules' },
 ];
 
