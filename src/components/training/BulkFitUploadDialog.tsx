@@ -32,11 +32,22 @@ function StatusIcon({ status }: { status: FileUploadStatus["status"] }) {
 function statusLabel(s: FileUploadStatus["status"]): string {
   switch (s) {
     case "queued": return "Queued";
-    case "uploading": return "Uploading...";
-    case "parsing": return "Parsing...";
+    case "uploading": return "Uploading…";
+    case "parsing": return "Parsing…";
     case "duplicate": return "Duplicate found";
     case "done": return "Done";
     case "error": return "Failed";
+  }
+}
+
+function statusPercent(s: FileUploadStatus["status"]): number {
+  switch (s) {
+    case "queued": return 0;
+    case "uploading": return 35;
+    case "parsing": return 75;
+    case "duplicate": return 75;
+    case "done": return 100;
+    case "error": return 100;
   }
 }
 
