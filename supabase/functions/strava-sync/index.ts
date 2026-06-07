@@ -210,6 +210,42 @@ async function autoMatchTrainingPlan(
       }
     }
 
+    // Step 1b: Tolerant pass — same-week plan slot, ±1 day drift, same sport family.
+    const familyOf = (t: string) => {
+      const s = (t || "").toLowerCase();
+      if (/run|trail|treadmill/.test(s)) return "run";
+      if (/ride|bike|cycle|spin/.test(s)) return "ride";
+      if (/swim/.test(s)) return "swim";
+      if (/hike/.test(s)) return "hike";
+      if (/walk/.test(s)) return "walk";
+      if (/yoga|mobility|stretch|pilates/.test(s)) return "yoga";
+      if (/weight|strength|crossfit|gym|workout/.test(s)) return "strength";
+      return s;
+    };
+    const stillUnmatched = (allPlanWorkouts || []).filter((w: any) => !w.matched_strava_activity_id && (w.workout_type || "").toLowerCase() !== "rest");
+    for (const workout of stillUnmatched) {
+      const planFam = familyOf(workout.workout_type);
+      const match = activities.find((a: any) => {
+        if (usedActivityIds.has(a.strava_activity_id)) return false;
+        const actLocalDate = (a.activity_date || (a.start_date || "").replace(" ", "T").split("T")[0]);
+        const actDow = getDayOfWeek(actLocalDate);
+        if (Math.abs(actDow - workout.day_of_week) > 1) return false;
+        return familyOf(a.activity_type) === planFam;
+      });
+      if (match) {
+        await supabase
+          .from("training_plan_workouts")
+          .update({ matched_strava_activity_id: match.strava_activity_id })
+          .eq("id", workout.id);
+        await supabase
+          .from("training_workout_activities")
+          .upsert({ workout_id: workout.id, activity_id: match.id, session_order: 0 }, { onConflict: "workout_id,activity_id" });
+        usedActivityIds.add(match.strava_activity_id);
+        matched++;
+      }
+    }
+
+
     // Step 2: Check for multi-session grouping before creating unplanned workouts
     // For each unmatched activity, see if it belongs to an already-matched workout
     const remainingActivities: any[] = [];
