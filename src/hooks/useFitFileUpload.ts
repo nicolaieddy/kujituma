@@ -322,7 +322,9 @@ export function useFitFileUpload() {
   ) => {
     updateFileStatus(fileIndex, { status: "uploading" });
 
-    const result = await uploadAndParse(file, undefined, existingActivityId);
+    const result = await uploadAndParse(file, undefined, existingActivityId, (phase) => {
+      updateFileStatus(fileIndex, { status: phase });
+    });
 
     if (result.success) {
       updateFileStatus(fileIndex, { status: "done", summary: result.summary, duplicate: undefined });
