@@ -137,6 +137,8 @@ export function useFitFileUpload() {
       return { fileName: file.name, success: false, kind, error: uploadError.message };
     }
 
+    onPhase?.("parsing");
+
     const body: Record<string, any> = {
       file_path: filePath,
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
