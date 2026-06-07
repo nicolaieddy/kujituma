@@ -346,7 +346,6 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
         onOpenChange={(o) => { if (!o) setSourceImportId(null); }}
         importId={sourceImportId}
       />
-      )}
     </>
   );
 }
