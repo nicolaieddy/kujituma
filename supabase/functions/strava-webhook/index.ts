@@ -132,13 +132,22 @@ serve(async (req) => {
       const activity = await activityResponse.json();
       console.log(`Processing activity: ${activity.name} (${activity.sport_type || activity.type})`);
 
-      // Get user's timezone for correct local date
+      // Get user's timezone as fallback
       const { data: userProfile } = await adminClient
         .from("profiles")
         .select("timezone")
         .eq("id", connection.user_id)
         .single();
       const userTimezone = userProfile?.timezone || "UTC";
+
+      // Prefer the activity's own timezone (Strava returns "(GMT-08:00) America/Los_Angeles")
+      function parseStravaTz(tz?: string | null): string | null {
+        if (!tz) return null;
+        const m = tz.match(/\)\s*(.+)$/);
+        const iana = (m ? m[1] : tz).trim();
+        return /^[A-Za-z_]+\/[A-Za-z_\/\-]+$/.test(iana) ? iana : null;
+      }
+      const activityTz = parseStravaTz(activity.timezone) || userTimezone;
 
       // Derive local date
       function getLocalDateWh(utcIso: string, tz: string): string {
@@ -151,7 +160,7 @@ serve(async (req) => {
         const dd = parts.find(p => p.type === "day")!.value;
         return `${y}-${m}-${dd}`;
       }
-      const activityLocalDate = getLocalDateWh(activity.start_date, userTimezone);
+      const activityLocalDate = getLocalDateWh(activity.start_date, activityTz);
 
       // Get user's activity mappings
       const { data: mappings } = await adminClient
@@ -177,6 +186,7 @@ serve(async (req) => {
           activity_name: activity.name,
           start_date: activity.start_date,
           activity_date: activityLocalDate,
+          timezone: activityTz,
           duration_seconds: activity.moving_time,
           distance_meters: activity.distance,
           matched_habit_item_id: mapping && meetsMinDuration ? mapping.habit_item_id : null,

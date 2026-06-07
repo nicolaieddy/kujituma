@@ -19,6 +19,7 @@ interface StravaActivity {
   sport_type: string;
   start_date: string;
   start_date_local: string;
+  timezone?: string;
   elapsed_time: number;
   moving_time: number;
   distance: number;
@@ -32,6 +33,14 @@ interface StravaActivity {
   average_cadence?: number;
   description?: string;
   workout_type?: number;
+}
+
+/** Strava returns timezone like "(GMT-08:00) America/Los_Angeles" — extract IANA name. */
+function parseStravaTz(tz?: string | null): string | null {
+  if (!tz) return null;
+  const m = tz.match(/\)\s*(.+)$/);
+  const iana = (m ? m[1] : tz).trim();
+  return /^[A-Za-z_]+\/[A-Za-z_\/\-]+$/.test(iana) ? iana : null;
 }
 
 async function refreshTokenIfNeeded(
@@ -496,8 +505,9 @@ serve(async (req) => {
       const shouldMatch = mapping && meetsMinDuration;
 
       const enrichedFields = buildEnrichedFields(activity);
-      // Derive local date using reliable Intl.DateTimeFormat parts extraction
-      const activityLocalDate = getLocalDate(activity.start_date, userTimezone);
+      // Prefer the activity's own timezone (from Strava); fall back to profile tz.
+      const activityTz = parseStravaTz(activity.timezone) || userTimezone;
+      const activityLocalDate = getLocalDate(activity.start_date, activityTz);
       const weekMonday = getMondayOfDate(activityLocalDate + "T12:00:00");
       affectedWeeks.add(weekMonday);
 
@@ -505,16 +515,19 @@ serve(async (req) => {
         // Update enriched fields and backfill activity_date on existing synced activities
         const needsEnrichment = !existingSync.average_speed && activity.average_speed;
         const needsDateFix = !existingSync.activity_date || existingSync.activity_date !== activityLocalDate;
+        const needsTzFix = !existingSync.timezone || existingSync.timezone !== activityTz;
         
-        if (needsEnrichment || needsDateFix) {
+        if (needsEnrichment || needsDateFix || needsTzFix) {
           await supabase
             .from("synced_activities")
             .update({
               ...enrichedFields,
               activity_date: activityLocalDate,
+              timezone: activityTz,
             })
             .eq("id", existingSync.id);
         }
+
 
         if (!existingSync.matched_habit_item_id && shouldMatch) {
           console.log(`Re-matching activity ${activity.id} (${activity.type}) to habit ${mapping.habit_item_id}`);
@@ -588,6 +601,7 @@ serve(async (req) => {
         activity_name: activity.name,
         start_date: activity.start_date,
         activity_date: activityLocalDate,
+        timezone: activityTz,
         duration_seconds: activity.moving_time,
         distance_meters: activity.distance,
         matched_habit_item_id: shouldMatch ? mapping.habit_item_id : null,
