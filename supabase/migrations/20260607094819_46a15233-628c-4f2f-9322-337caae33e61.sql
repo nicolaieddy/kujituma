@@ -1,0 +1,1 @@
+DELETE FROM public.custom_goal_categories WHERE name IN ('Health & Fitness','Career & Business','Language Learning','Learning & Education','Financial','Relationships','Personal Development','Creative Projects','Travel & Adventure');
