@@ -28,7 +28,10 @@ interface GoalFormProps {
 
 export const GoalForm = ({ onSubmit, onCancel, isLoading, initialData }: GoalFormProps) => {
   const isMobile = useIsMobile();
-  const [customCategories, setCustomCategories] = useState<CustomGoalCategory[]>([]);
+  const [customCategories, setCustomCategoriesRaw] = useState<CustomGoalCategory[]>([]);
+  const predefinedNameSet = new Set(CATEGORY_CONFIGS.map(c => c.name.toLowerCase()));
+  const setCustomCategories = (cats: CustomGoalCategory[]) =>
+    setCustomCategoriesRaw(cats.filter(c => !predefinedNameSet.has(c.name.trim().toLowerCase())));
   const [showAddCategory, setShowAddCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
   const [formData, setFormData] = useState<CreateGoalData & { habit_items: HabitItem[] }>(() => {
