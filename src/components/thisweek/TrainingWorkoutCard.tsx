@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX } from "lucide-react";
+import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { TrainingPlanDisplayWorkout, MergedSession } from "@/components/thisweek/trainingPlanUtils";
@@ -20,6 +20,8 @@ interface TrainingWorkoutCardProps {
   onDelete?: () => void;
   onDeleteActivity?: (activityId: string) => void;
   isDeletingActivity?: boolean;
+  sourceImportId?: string | null;
+  onViewSource?: (importId: string) => void;
 }
 
 function formatSpeed(metersPerSec: number | null): string {
@@ -321,6 +323,8 @@ export function TrainingWorkoutCard({
   onDelete,
   onDeleteActivity,
   isDeletingActivity,
+  sourceImportId = null,
+  onViewSource,
 }: TrainingWorkoutCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [confirmDeleteActivity, setConfirmDeleteActivity] = useState<string | null>(null);
@@ -459,6 +463,17 @@ export function TrainingWorkoutCard({
               </Badge>
             ));
           })()}
+          {sourceImportId && onViewSource && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onViewSource(sourceImportId); }}
+              className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-1.5 py-0 h-5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+              title="View original coach plan"
+            >
+              <FileText className="h-2.5 w-2.5" />
+              Source
+            </button>
+          )}
         </div>
 
         {/* Inline stats */}
