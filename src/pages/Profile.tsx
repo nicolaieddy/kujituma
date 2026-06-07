@@ -9,6 +9,7 @@ import { NotificationPreferences } from "@/components/profile/NotificationPrefer
 import { McpSection } from "@/components/profile/McpSection";
 import { WorkoutPreferencesSection } from "@/components/profile/WorkoutPreferencesSection";
 import { ValuesSection } from "@/components/values/ValuesSection";
+import { useIsModuleInstalled } from "@/hooks/useInstalledModules";
 
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 import { ProfileSkeleton } from "@/components/skeletons/PageSkeletons";
