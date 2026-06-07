@@ -4,7 +4,6 @@ import { Plus, TrendingDown, TrendingUp, Activity, Smile } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 import { useBodyMeasurements } from "@/hooks/useBodyMeasurements";
 import { useTrainingLoadByWeek } from "@/hooks/useTrainingLoadByWeek";
 import { useMoodByDay } from "@/hooks/useMoodByDay";
