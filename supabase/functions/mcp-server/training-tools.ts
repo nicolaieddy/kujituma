@@ -127,6 +127,26 @@ function resolveActual(workout: any, stravaMap: Map<number, any>, directMap: Map
     || null;
 }
 
+// Map an activity type to a coarse family so we can match e.g. "VirtualRide" -> "ride".
+function typeFamily(t?: string | null): string {
+  const s = (t || "").toLowerCase();
+  if (/run|trail|treadmill/.test(s)) return "run";
+  if (/ride|bike|cycle|cycling|spin/.test(s)) return "ride";
+  if (/swim/.test(s)) return "swim";
+  if (/hike/.test(s)) return "hike";
+  if (/walk/.test(s)) return "walk";
+  if (/yoga|mobility|stretch|pilates/.test(s)) return "yoga";
+  if (/weight|strength|crossfit|gym|lift|core|workout/.test(s)) return "strength";
+  if (/row/.test(s)) return "row";
+  return s || "other";
+}
+
+function localDow(localDateStr: string): number {
+  const d = new Date(localDateStr + "T12:00:00");
+  const j = d.getDay();
+  return j === 0 ? 6 : j - 1;
+}
+
 export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("get_training_plan", {
     description: "Get planned workouts for a week with matched actual data (Strava-synced or .fit uploads). Returns all enriched fields (distance, pace, HR, elevation, etc.).",
