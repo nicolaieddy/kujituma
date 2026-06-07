@@ -237,16 +237,18 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       const { stravaMap, directMap } = await fetchActivitiesDual(supabase, userId, workouts || []);
 
       const weeklyData: Record<string, any> = {};
+      const matchedActivityIds = new Set<string>();
+      for (const w of mondays) {
+        weeklyData[w] = { planned: 0, completed: 0, total_planned_distance: 0, total_actual_distance: 0, workouts: [], unmatched_activities: [] };
+      }
       for (const w of (workouts || [])) {
-        if (!weeklyData[w.week_start]) {
-          weeklyData[w.week_start] = { planned: 0, completed: 0, total_planned_distance: 0, total_actual_distance: 0, workouts: [] };
-        }
-        const wd = weeklyData[w.week_start];
+        const wd = weeklyData[w.week_start] || (weeklyData[w.week_start] = { planned: 0, completed: 0, total_planned_distance: 0, total_actual_distance: 0, workouts: [], unmatched_activities: [] });
         wd.planned++;
         const actual = resolveActual(w, stravaMap, directMap);
         if (actual) {
           wd.completed++;
           wd.total_actual_distance += actual.distance_meters || 0;
+          if (actual.id) matchedActivityIds.add(actual.id);
         }
         wd.total_planned_distance += w.target_distance_meters || 0;
         wd.workouts.push({
@@ -262,10 +264,39 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         });
       }
 
+      // Pull every activity in the window so unmatched runs/rides still count toward weekly totals.
+      const sortedMondays = [...mondays].sort();
+      const rangeStart = sortedMondays[0];
+      const rangeEnd = getWeekEnd(sortedMondays[sortedMondays.length - 1]);
+      const { data: allActivities } = await supabase
+        .from("synced_activities")
+        .select("id, source, activity_type, sport_type, activity_name, start_date, distance_meters, duration_seconds, average_heartrate, average_power, strava_activity_id")
+        .eq("user_id", userId)
+        .gte("start_date", `${rangeStart}T00:00:00`)
+        .lte("start_date", `${rangeEnd}T23:59:59`);
+
+      for (const a of (allActivities || [])) {
+        if (matchedActivityIds.has(a.id as string)) continue;
+        const wkStart = getMondayOfWeek(new Date(a.start_date as string));
+        const wd = weeklyData[wkStart] || (weeklyData[wkStart] = { planned: 0, completed: 0, total_planned_distance: 0, total_actual_distance: 0, workouts: [], unmatched_activities: [] });
+        wd.total_actual_distance += (a.distance_meters as number) || 0;
+        wd.unmatched_activities.push({
+          activity_id: a.id,
+          type: a.activity_type || a.sport_type,
+          name: a.activity_name,
+          date: a.start_date,
+          distance_km: a.distance_meters ? +((a.distance_meters as number) / 1000).toFixed(2) : null,
+          duration_min: a.duration_seconds ? +((a.duration_seconds as number) / 60).toFixed(1) : null,
+          avg_hr: a.average_heartrate ? Math.round(a.average_heartrate as number) : null,
+          avg_power: a.average_power ? Math.round(a.average_power as number) : null,
+          source: a.source || (a.strava_activity_id ? "strava" : ".fit_upload"),
+        });
+      }
+
       return {
         content: [{
           type: "text" as const,
-          text: JSON.stringify(weeklyData, null, 2),
+          text: `Weekly totals include BOTH plan-matched workouts and unmatched activities (see unmatched_activities[] per week). total_actual_distance is the sum of all activities in that week.\n\n${JSON.stringify(weeklyData, null, 2)}`,
         }],
       };
     },
