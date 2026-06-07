@@ -29,6 +29,7 @@ function formatDuration(seconds: number | null): string {
 
 export default function Sleep() {
   const [range, setRange] = useState<RangeKey>("7");
+  const [importOpen, setImportOpen] = useState(false);
   const days = range === "7" ? 7 : 30;
 
   const today = useMemo(() => format(new Date(), "yyyy-MM-dd"), []);
