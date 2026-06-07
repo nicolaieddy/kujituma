@@ -13,6 +13,7 @@ import { ShareWeekCard } from "@/components/thisweek/ShareWeekCard";
 import { ThisWeekSkeleton } from "@/components/thisweek/ThisWeekSkeleton";
 
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
+import { ModuleGate } from "@/modules/ModuleGate";
 import { CloseWeekDialog } from "@/components/thisweek/CloseWeekDialog";
 import { WeekTransitionCard } from "@/components/thisweek/WeekTransitionCard";
 import { PartnerCheckInsCard } from "@/components/thisweek/PartnerCheckInsCard";
