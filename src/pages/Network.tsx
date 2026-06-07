@@ -1,44 +1,60 @@
-import { Users, Sparkles } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { Routes, Route, Navigate, NavLink } from "react-router-dom";
+import { LayoutDashboard, Users, Calendar, Plus, Wrench } from "lucide-react";
+import Dashboard from "./network/Dashboard";
+import Contacts from "./network/Contacts";
+import ContactDetail from "./network/ContactDetail";
+import CalendarPage from "./network/CalendarPage";
+import QuickAdd from "./network/QuickAdd";
+import Tools from "./network/Tools";
 
-/**
- * Network module — Phase 1 shell.
- * Tables (network_contacts, network_interactions, …) are live in Supabase.
- * Phase 2 will port the NetworkOS pages (Contacts, ContactDetail, Calendar,
- * QuickAdd, Tools) under /network/*.
- */
+const tabs = [
+  { to: "/network", label: "Dashboard", icon: LayoutDashboard, end: true },
+  { to: "/network/contacts", label: "Contacts", icon: Users, end: false },
+  { to: "/network/calendar", label: "Calendar", icon: Calendar, end: false },
+  { to: "/network/quick-add", label: "Quick Add", icon: Plus, end: false },
+  { to: "/network/tools", label: "Tools", icon: Wrench, end: false },
+];
+
+function NetworkSubNav() {
+  return (
+    <nav className="flex items-center gap-1 overflow-x-auto border-b border-border bg-background/60 backdrop-blur sticky top-0 z-10 px-2">
+      {tabs.map((t) => {
+        const Icon = t.icon;
+        return (
+          <NavLink
+            key={t.to}
+            to={t.to}
+            end={t.end}
+            className={({ isActive }) =>
+              `inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm transition-colors ${
+                isActive
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              }`
+            }
+          >
+            <Icon className="h-3.5 w-3.5" />
+            {t.label}
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+}
+
 export default function Network() {
   return (
-    <div className="container max-w-5xl mx-auto px-4 py-6 space-y-6">
-      <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Network</h1>
-          <Badge variant="secondary" className="ml-2">Phase 1</Badge>
-        </div>
-      </header>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Module installed
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Your Network database is ready. The full UI from NetworkOS — contacts,
-            interactions, calendar, quick-add, and tools — is being ported in the
-            next phase and will appear under <code>/network/*</code>.
-          </p>
-          <p>
-            Tables live: <code>network_contacts</code>, <code>network_interactions</code>,{" "}
-            <code>network_contact_events</code>, <code>network_contact_key_facts</code>,{" "}
-            <code>network_contact_resources</code>, <code>network_message_templates</code>.
-          </p>
-        </CardContent>
-      </Card>
+    <div className="container max-w-6xl mx-auto px-4 py-4 space-y-4">
+      <NetworkSubNav />
+      <Routes>
+        <Route index element={<Dashboard />} />
+        <Route path="contacts" element={<Contacts />} />
+        <Route path="contacts/:id" element={<ContactDetail />} />
+        <Route path="calendar" element={<CalendarPage />} />
+        <Route path="quick-add" element={<QuickAdd />} />
+        <Route path="tools" element={<Tools />} />
+        <Route path="*" element={<Navigate to="/network" replace />} />
+      </Routes>
     </div>
   );
 }
