@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 
-export type ModuleId = "training_plan" | "sleep" | "health_metrics";
+export type ModuleId = "training_plan" | "sleep" | "health_metrics" | "network";
 
 export type ModuleTier = "free" | "pro";
 export type ModuleStatus = "available" | "beta" | "coming_soon";
