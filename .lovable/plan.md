@@ -1,79 +1,78 @@
-# Health Metrics Module
+## Recommendation
 
-A new optional module for tracking body metrics, lab results, and supplements — plotted alongside training load and mood so you can see how the inputs and outputs of your routine move together.
+Yes, fold it in. Kujituma already has a clean module system (`src/modules/registry.ts`) that gates Training, Sleep, and Health Metrics behind a per-user toggle, with their own routes, nav tabs, profile sections, MCP tool prefixes, and data tables. NetworkOS slots into the same shape as a `network` module — one auth, one Supabase, one subscription, one MCP server, and your network data starts feeding the same weekly planning and check-in rituals.
 
-## Scope
+Risks are low and known:
+- Schema collisions (e.g. `profiles`, `user_roles`) — handled by namespacing NetworkOS tables.
+- Auth user IDs differ between the two Supabase projects — handled by a one-time export/import keyed to your single user.
+- Edge function names, secrets, and any OAuth redirect URIs need to move to Kujituma's Supabase project.
 
-- New module `health_metrics` in the registry, gated install via the Modules store.
-- New `/health` page with three tabs:
-  1. **Body** — weight, body fat %, lean mass, waist, resting HR (charts + entry).
-  2. **Labs** — periodic blood-panel rows (HDL, LDL, hsCRP, ferritin, vitamin D, A1c, etc.) shown as a sortable timeline of panels.
-  3. **Supplements** — current supplement stack with daily adherence checkboxes (similar to habits but lighter-weight).
-- A combined **"Overlay"** view on the Body tab that lets you toggle training load (weekly km / TSS-like estimate from `synced_activities`) and average mood/energy (from `daily_check_ins`) on top of the weight or body-fat trend.
+## Blocker before I can finalise the plan
 
-## Data model
+NetworkOS is not in this Lovable workspace yet — I checked all 23 accessible projects. Once you add it, I can read the schema, routes, edge functions, and integrations directly and replace the placeholders below with concrete steps.
 
-Four new tables, all RLS-locked to `auth.uid()`:
+How to add it: open the NetworkOS project → Settings → Workspace → move it into the same workspace as Kujituma. Then ping me and I'll do the read-only assessment.
 
-- `body_measurements` — measured_on (date), weight_kg, body_fat_pct, lean_mass_kg, waist_cm, resting_hr, notes, source (manual / garmin / withings).
-- `lab_results` — taken_on (date), panel_name, lab_provider, notes; with a child `lab_result_values` (marker_key, marker_label, value_numeric, unit, reference_low, reference_high, flag).
-- `supplements` — name, dose, unit, schedule (daily/weekdays/custom JSON), started_on, archived_at, notes.
-- `supplement_logs` — supplement_id, taken_on (date), taken (bool), notes.
+## What I'll inspect once I have access
 
-All four get `created_at`/`updated_at`, update trigger, GRANTs to `authenticated` + `service_role`, and per-user RLS.
+1. `supabase/migrations/*` — every table, RLS policy, trigger, function. Catalogue collisions with Kujituma's schema.
+2. `supabase/functions/*` — list edge functions, secrets they read, external APIs they call.
+3. `src/App.tsx` + `src/pages/*` — top-level routes to merge under a single `/network` parent.
+4. `src/integrations/*` and `package.json` — third-party SDKs that need installing here.
+5. Any OAuth flow (Google contacts, LinkedIn, etc.) — redirect URI changes required.
 
-For weight import down the road we'll reuse the Garmin pipeline (out of scope for v1 — manual entry only).
+## Proposed integration shape
 
-## UI
-
-- `/health` route gated by `RequireModule id="health_metrics"`.
-- Mobile-first stacked layout, capsule tabs matching existing app style.
-- Body tab:
-  - Big "Add measurement" button → sheet with weight/body-fat/lean-mass/waist/RHR/notes.
-  - Recharts line chart (weight by default; metric selector pill row).
-  - Overlay toggles: Training load (right Y axis, weekly km) and Mood (right Y axis, 1-5).
-  - Trailing stats: 7-day avg, 30-day avg, vs 30 days ago delta.
-- Labs tab:
-  - "Add panel" button → sheet to create a panel + add marker rows inline.
-  - Timeline list of panels (most recent first), each expandable to show all markers with green/red badge if outside reference range.
-  - Click a marker name → mini sparkline of that marker across all panels.
-- Supplements tab:
-  - List of active supplements with today's check box.
-  - "Add supplement" sheet.
-  - 14-day adherence grid per supplement (dot for each day).
-
-## Module registry entry
+Module registry entry (mirrors Training/Sleep):
 
 ```ts
 {
-  id: "health_metrics",
-  name: "Health Metrics",
-  tagline: "Weight, body comp, labs, and supplements — overlaid with training and mood.",
-  coverEmoji: "🩺",
-  category: "health",
+  id: "network",
+  name: "Network",
+  tagline: "Track relationships, touchpoints, and follow-ups.",
+  category: "relationships",
   tier: "free",
   status: "available",
   surfaces: {
-    pages: ["Dedicated Health page (/health)"],
-    mcpToolPrefixes: ["health_", "lab_", "supplement_"],
+    pages: ["Dedicated Network page (/network)"],
+    thisWeekCards: ["Relationships card already in weekly planning"],
+    profileSections: ["Network preferences"],
+    mcpToolPrefixes: ["network_", "contact_", "touchpoint_"],
   },
-  dataTables: ["body_measurements", "lab_results", "lab_result_values", "supplements", "supplement_logs"],
+  dataTables: [/* filled after schema review */],
 }
 ```
 
-## Files
+Layout:
 
-- New: `src/pages/Health.tsx`, `src/components/health/BodyTab.tsx`, `BodyMeasurementChart.tsx`, `AddBodyMeasurementSheet.tsx`, `LabsTab.tsx`, `AddLabPanelSheet.tsx`, `LabMarkerSparkline.tsx`, `SupplementsTab.tsx`, `AddSupplementSheet.tsx`.
-- New hooks: `useBodyMeasurements.ts`, `useLabPanels.ts`, `useSupplements.ts`, `useTrainingLoadByWeek.ts` (reads `synced_activities`), `useMoodByDay.ts` (reads `daily_check_ins`).
-- Edit: `src/modules/registry.ts` + `src/modules/types.ts` (add module id), `src/App.tsx` (route + RequireModule), `src/components/layout/NavigationMenu.tsx` (nav item gated).
+```text
+Kujituma
+├── Core (Goals, Habits, Daily Check-in, Weekly Planning, Analytics)
+├── Modules
+│   ├── Training Plan       /training
+│   ├── Sleep               /sleep
+│   ├── Health Metrics      /health
+│   └── Network (new)       /network   ← gated by module toggle
+└── Profile
+    └── Modules tab — Network appears here for opt-in
+```
 
-## Backfill
+## High-level migration steps (sequenced)
 
-No backfill — module starts opt-in; users install from `/modules` when they want it. No existing tables to detect against.
+1. **Schema port.** New migration in Kujituma's Supabase that recreates NetworkOS tables prefixed/namespaced where they collide (e.g. `network_contacts`, `network_touchpoints`). Includes GRANTs + RLS scoped to `auth.uid()`.
+2. **Data export/import.** Export your rows from NetworkOS (CSV per table), remap `user_id` to your Kujituma `auth.uid()`, import into the new tables.
+3. **Edge functions.** Copy each NetworkOS function into `supabase/functions/`, swap secret names if any clash, re-add secrets in Kujituma's Supabase project.
+4. **Frontend port.** Copy pages → `src/pages/network/`, components → `src/components/network/`, hooks → `src/hooks/network/`. Mount one parent route `/network` gated by `useModule("network")`.
+5. **Nav + registry.** Add the `network` module to `MODULE_REGISTRY` and the nav tab logic in `NavigationMenu.tsx` (same pattern as Training/Sleep).
+6. **MCP tools.** Expose network entities to the MCP server (`network_list_contacts`, `network_recent_touchpoints`, etc.) and update `src/components/profile/McpSection.tsx` per project rules.
+7. **Weekly planning hook-up.** Surface "people to follow up with this week" inside the existing Relationships section of Weekly Planning — this is the integration payoff.
+8. **Domain decision.** Three options later:
+   - Retire networkos.xyz, 301 → `kujituma.com/network`.
+   - Keep networkos.xyz as a marketing page linking to the same app.
+   - Run both as separate Lovable deploys off the same repo (more ops; skip unless needed).
 
-## Out of scope (future)
+## What I need from you next
 
-- Withings / Apple Health weight import.
-- Photo-based progress tracking.
-- AI commentary on lab trends.
-- Reminders for supplement logging (will reuse notifications later).
+- Add NetworkOS to this workspace.
+- Confirm the module id (`network` vs `networkos` vs `relationships`) and the user-visible name.
+- Confirm you're OK with a brief migration window where NetworkOS data is read-only during export → import (minutes, single user).
