@@ -232,6 +232,7 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
             <Route path="/goals" element={<Goals />} />
             <Route path="/friends" element={<Friends />} />
             <Route path="/analytics" element={<Analytics />} />
+            <Route path="/modules" element={<Modules />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<ProfileEntry />} />
