@@ -236,6 +236,10 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
                     </span>
                   </div>
 
+                  {(fs.status === "uploading" || fs.status === "parsing") && (
+                    <Progress value={statusPercent(fs.status)} className="h-1" />
+                  )}
+
                   {fs.status === "done" && fs.summary && fs.kind === "activity" && (
                     <p className="text-xs text-muted-foreground pl-5">
                       {fs.summary.activity_type} · {fs.summary.laps_count} laps
