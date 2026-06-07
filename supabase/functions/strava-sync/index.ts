@@ -601,6 +601,7 @@ serve(async (req) => {
         activity_name: activity.name,
         start_date: activity.start_date,
         activity_date: activityLocalDate,
+        timezone: activityTz,
         duration_seconds: activity.moving_time,
         distance_meters: activity.distance,
         matched_habit_item_id: shouldMatch ? mapping.habit_item_id : null,
