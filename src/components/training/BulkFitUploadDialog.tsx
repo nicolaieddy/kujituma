@@ -193,6 +193,23 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
             </>
           )}
 
+          {hasResults && (() => {
+            const total = fileStatuses.length;
+            const completed = fileStatuses.filter(s => s.status === "done" || s.status === "error").length;
+            const overall = Math.round(
+              fileStatuses.reduce((sum, s) => sum + statusPercent(s.status), 0) / Math.max(total, 1)
+            );
+            return (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{isUploading ? `Processing ${Math.min(completed + 1, total)} of ${total}` : `${completed} of ${total} complete`}</span>
+                  <span className="tabular-nums font-medium text-foreground">{overall}%</span>
+                </div>
+                <Progress value={overall} className="h-1.5" />
+              </div>
+            );
+          })()}
+
           {hasResults && (
             <div className="space-y-2 max-h-[360px] overflow-y-auto">
               {fileStatuses.map((fs, i) => (
