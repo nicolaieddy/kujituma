@@ -529,6 +529,51 @@ export type Database = {
         }
         Relationships: []
       }
+      body_measurements: {
+        Row: {
+          body_fat_pct: number | null
+          created_at: string
+          id: string
+          lean_mass_kg: number | null
+          measured_on: string
+          notes: string | null
+          resting_hr: number | null
+          source: string
+          updated_at: string
+          user_id: string
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          body_fat_pct?: number | null
+          created_at?: string
+          id?: string
+          lean_mass_kg?: number | null
+          measured_on: string
+          notes?: string | null
+          resting_hr?: number | null
+          source?: string
+          updated_at?: string
+          user_id: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          body_fat_pct?: number | null
+          created_at?: string
+          id?: string
+          lean_mass_kg?: number | null
+          measured_on?: string
+          notes?: string | null
+          resting_hr?: number | null
+          source?: string
+          updated_at?: string
+          user_id?: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       carry_over_logs: {
         Row: {
           created_at: string
@@ -1427,6 +1472,92 @@ export type Database = {
         }
         Relationships: []
       }
+      lab_result_values: {
+        Row: {
+          created_at: string
+          flag: string | null
+          id: string
+          lab_result_id: string
+          marker_key: string
+          marker_label: string
+          reference_high: number | null
+          reference_low: number | null
+          unit: string | null
+          updated_at: string
+          value_numeric: number | null
+          value_text: string | null
+        }
+        Insert: {
+          created_at?: string
+          flag?: string | null
+          id?: string
+          lab_result_id: string
+          marker_key: string
+          marker_label: string
+          reference_high?: number | null
+          reference_low?: number | null
+          unit?: string | null
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Update: {
+          created_at?: string
+          flag?: string | null
+          id?: string
+          lab_result_id?: string
+          marker_key?: string
+          marker_label?: string
+          reference_high?: number | null
+          reference_low?: number | null
+          unit?: string | null
+          updated_at?: string
+          value_numeric?: number | null
+          value_text?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lab_result_values_lab_result_id_fkey"
+            columns: ["lab_result_id"]
+            isOneToOne: false
+            referencedRelation: "lab_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lab_results: {
+        Row: {
+          created_at: string
+          id: string
+          lab_provider: string | null
+          notes: string | null
+          panel_name: string
+          taken_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lab_provider?: string | null
+          notes?: string | null
+          panel_name: string
+          taken_on: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lab_provider?: string | null
+          notes?: string | null
+          panel_name?: string
+          taken_on?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       mcp_api_tokens: {
         Row: {
           created_at: string
@@ -2294,6 +2425,92 @@ export type Database = {
           scope?: string | null
           strava_athlete_id?: number
           updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      supplement_logs: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          supplement_id: string
+          taken: boolean
+          taken_on: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          supplement_id: string
+          taken?: boolean
+          taken_on: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          supplement_id?: string
+          taken?: boolean
+          taken_on?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supplement_logs_supplement_id_fkey"
+            columns: ["supplement_id"]
+            isOneToOne: false
+            referencedRelation: "supplements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      supplements: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          dose: number | null
+          dose_unit: string | null
+          id: string
+          name: string
+          notes: string | null
+          schedule: string
+          schedule_config: Json
+          started_on: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          dose?: number | null
+          dose_unit?: string | null
+          id?: string
+          name: string
+          notes?: string | null
+          schedule?: string
+          schedule_config?: Json
+          started_on?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          dose?: number | null
+          dose_unit?: string | null
+          id?: string
+          name?: string
+          notes?: string | null
+          schedule?: string
+          schedule_config?: Json
+          started_on?: string | null
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
