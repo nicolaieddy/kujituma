@@ -268,6 +268,8 @@ Deno.serve(async (req) => {
     return json({
       import_id: importRow.id,
       created: created?.length ?? 0,
+      replaced: replacedCount,
+      auto_matched: autoMatched,
       workouts,
       mapping_report: mappingReport,
     }, 200);
