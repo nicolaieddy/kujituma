@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { autoMatchTrainingPlan } from "../_shared/auto-match-plan.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
