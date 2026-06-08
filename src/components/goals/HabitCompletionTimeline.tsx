@@ -326,4 +326,5 @@ export const HabitCompletionTimeline = memo(({ goal, objectives }: HabitCompleti
       </CardContent>
     </Card>
   );
-};
+});
+HabitCompletionTimeline.displayName = "HabitCompletionTimeline";

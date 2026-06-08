@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useImperativeHandle, forwardRef, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useImperativeHandle, forwardRef, useRef, memo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,7 @@ interface CheckInsFeedProps {
   onRecordCheckIn?: () => void;
 }
 
-export const CheckInsFeed = forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({ 
+export const CheckInsFeed = memo(forwardRef<CheckInsFeedRef, CheckInsFeedProps>(({ 
   partnershipId, 
   currentUserId,
   currentUserProfile,

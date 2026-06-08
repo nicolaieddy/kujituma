@@ -627,4 +627,5 @@ export const GoalCard = memo(({
       </AlertDialog>
     </>
   );
-};
+});
+GoalCard.displayName = "GoalCard";
