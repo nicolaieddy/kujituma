@@ -21,6 +21,7 @@ import { CitySelect } from "@/components/ui/city-select";
 import { Country } from "country-state-city";
 import { formatTimeAgo } from "@/utils/timeUtils";
 import { TimezoneField } from "./TimezoneField";
+import { ProfileEditPreview } from "./ProfileEditPreview";
 
 interface Profile {
   id: string;
@@ -475,152 +476,16 @@ export const ProfileEditForm = ({ profile, onUpdate, onCancel }: ProfileEditForm
 
   if (isPreviewMode) {
     return (
-      <div className="space-y-4">
-        <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Eye className="h-4 w-4" />
-            <span>Preview: How others see your profile</span>
-          </div>
-          
-          {/* Viewer Type Toggle */}
-          <div className="flex items-center gap-2 bg-accent rounded-lg p-1">
-            <Button
-              variant={previewViewerType === 'friend' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setPreviewViewerType('friend')}
-              className="gap-2"
-            >
-              <Users className="h-4 w-4" />
-              Friend View
-            </Button>
-            <Button
-              variant={previewViewerType === 'public' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setPreviewViewerType('public')}
-              className="gap-2"
-            >
-              <Globe className="h-4 w-4" />
-              Public View
-            </Button>
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsPreviewMode(false)}
-            >
-              <Edit3 className="h-4 w-4 mr-2" />
-              Back to Edit
-            </Button>
-            <Button
-              size="sm"
-              disabled={loading}
-              onClick={handleSubmit}
-              className="gradient-primary"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              {loading ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </div>
-        </div>
-
-        {/* Viewer type info banner */}
-        <div className="max-w-4xl mx-auto">
-          <div className={`rounded-lg px-4 py-2 text-sm flex items-center gap-2 ${
-            previewViewerType === 'friend' 
-              ? 'bg-primary/10 text-primary border border-primary/20' 
-              : 'bg-muted text-muted-foreground border border-border'
-          }`}>
-            {previewViewerType === 'friend' ? (
-              <>
-                <Users className="h-4 w-4" />
-                <span>Viewing as a <strong>friend</strong> - They can see your public goals and friend-only content</span>
-              </>
-            ) : (
-              <>
-                <Globe className="h-4 w-4" />
-                <span>Viewing as <strong>public visitor</strong> - They can only see your public goals</span>
-              </>
-            )}
-          </div>
-        </div>
-        
-        {/* Full profile preview using ProfilePublicView-like structure */}
-        <div className="max-w-4xl mx-auto space-y-8">
-          <Card className="glass-card shadow-elegant overflow-hidden">
-            {/* Cover Photo */}
-            <div 
-              className="h-32 sm:h-40 w-full bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 relative"
-              style={previewProfile.cover_photo_url ? {
-                backgroundImage: `url(${previewProfile.cover_photo_url})`,
-                backgroundSize: 'cover',
-                backgroundPosition: `center ${previewProfile.cover_photo_position ?? 50}%`
-              } : undefined}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
-            </div>
-            
-            {/* Profile Header */}
-            <div className="px-6 sm:px-8 pb-6 -mt-16 relative z-10">
-              <div className="flex flex-col sm:flex-row items-center gap-6">
-                <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
-                  <AvatarImage src={previewProfile.avatar_url} alt={previewProfile.full_name} />
-                  <AvatarFallback className="bg-primary text-primary-foreground text-3xl">
-                    <User className="h-12 w-12" />
-                  </AvatarFallback>
-                </Avatar>
-                
-                <div className="flex-1 text-center sm:text-left">
-                  <h1 className="text-3xl font-bold text-foreground mb-1 font-heading">{previewProfile.full_name}</h1>
-                  
-                  {/* Social links */}
-                  {Object.keys(socialLinks).length > 0 && (
-                    <div className="mt-3">
-                      <SocialLinksDisplay socialLinks={socialLinks} linkOrder={socialLinksOrder} size="sm" />
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Profile Stats */}
-              <div className="mt-6">
-                <ProfileStats userId={profile.id} />
-              </div>
-            </div>
-
-            <CardContent className="p-6 sm:p-8 pt-0">
-              {/* About Me Section */}
-              {previewProfile.about_me && (
-                <div className="mb-6">
-                  <h2 className="text-lg font-semibold text-foreground mb-2">About</h2>
-                  <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {previewProfile.about_me}
-                  </p>
-                </div>
-              )}
-
-              {/* Member Info */}
-              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center">
-                  <Calendar className="h-4 w-4 mr-2 text-primary" />
-                  <span>Joined {new Date(profile.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                </div>
-                
-                {profile.last_active_at && (
-                  <div className="flex items-center">
-                    <Clock className="h-4 w-4 mr-2 text-primary" />
-                    <span>Active {formatTimeAgo(new Date(profile.last_active_at).getTime())}</span>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Goals Section */}
-          <ProfileGoals userId={profile.id} isOwnProfile={false} viewerType={previewViewerType} />
-        </div>
-      </div>
+      <ProfileEditPreview
+        profile={previewProfile}
+        socialLinks={socialLinks}
+        socialLinksOrder={socialLinksOrder}
+        previewViewerType={previewViewerType}
+        loading={loading}
+        onChangeViewerType={setPreviewViewerType}
+        onBackToEdit={() => setIsPreviewMode(false)}
+        onSave={handleSubmit}
+      />
     );
   }
 
