@@ -161,12 +161,26 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="ghost" onClick={() => handleClose(false)} disabled={busy}>Cancel</Button>
-          <Button onClick={submit} disabled={busy}>
-            {busy && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-            {busy ? "Parsing…" : "Import"}
-          </Button>
+        <div className="flex items-start justify-between gap-3 pt-2 flex-wrap">
+          <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+            <Checkbox
+              checked={replace}
+              onCheckedChange={(v) => setReplace(v === true)}
+              disabled={busy}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium text-foreground">Replace existing workouts for this week</span>
+              <span className="block text-xs">Removes Strava auto-created and prior imports so the coach plan is the source of truth, then re-links any matching Strava activities.</span>
+            </span>
+          </label>
+          <div className="flex gap-2 ml-auto">
+            <Button variant="ghost" onClick={() => handleClose(false)} disabled={busy}>Cancel</Button>
+            <Button onClick={submit} disabled={busy}>
+              {busy && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              {busy ? "Parsing…" : "Import"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
