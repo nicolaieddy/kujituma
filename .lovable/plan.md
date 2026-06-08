@@ -1,78 +1,58 @@
-## Recommendation
+## Refactor plan — surgical, balanced
 
-Yes, fold it in. Kujituma already has a clean module system (`src/modules/registry.ts`) that gates Training, Sleep, and Health Metrics behind a per-user toggle, with their own routes, nav tabs, profile sections, MCP tool prefixes, and data tables. NetworkOS slots into the same shape as a `network` module — one auth, one Supabase, one subscription, one MCP server, and your network data starts feeding the same weekly planning and check-in rituals.
+After a sweep of the codebase, here are the 7 highest-impact, lowest-risk wins. Everything below preserves current behavior and visual design. Each item ships as its own focused change so you can stop after any step.
 
-Risks are low and known:
-- Schema collisions (e.g. `profiles`, `user_roles`) — handled by namespacing NetworkOS tables.
-- Auth user IDs differ between the two Supabase projects — handled by a one-time export/import keyed to your single user.
-- Edge function names, secrets, and any OAuth redirect URIs need to move to Kujituma's Supabase project.
+### What I found
+- **Zero `useMemo` / `useCallback` / `React.memo`** anywhere in the codebase (0 files). This is the single biggest perf lever — but blanket-adding it is an anti-pattern. I'll only apply it to genuinely hot/heavy components.
+- **A handful of giant files** dragging on readability: `ProfileEditForm` (1198 LOC), `network/ContactDetail` (1157), `DailyCheckInDialog` (1066), `CheckInsFeed` (991), `accountabilityService` (1035), `useAnalytics` (779).
+- **Query keys are stringly-typed and scattered** — same logical key spelled differently across hooks (`"synced_activities"` vs `"synced-activities"`, `"training-plan"` invalidated from 6+ places). This causes silent cache-miss bugs and slows mutation invalidation.
+- **`LandingPage` is eagerly imported** in `App.tsx` while every other route is lazy — adds ~30-50KB to the auth'd-user first paint they never see.
+- **QueryClient defaults** are reasonable (`staleTime: 5min`) but a few hot lists pass no `staleTime`, causing re-fetch on every mount.
 
-## Blocker before I can finalise the plan
+### The 7 changes
 
-NetworkOS is not in this Lovable workspace yet — I checked all 23 accessible projects. Once you add it, I can read the schema, routes, edge functions, and integrations directly and replace the placeholders below with concrete steps.
+**1. Centralized `queryKeys` factory** *(cleanliness + correctness)*
+   Create `src/lib/queryKeys.ts` exporting a typed factory (`qk.weeklyObjectives(userId, weekStart)`, `qk.training.plan()`, etc.). Migrate the ~15 most-invalidated keys. Catches typos at compile time, makes invalidation auditable. **No runtime change, just safer.**
 
-How to add it: open the NetworkOS project → Settings → Workspace → move it into the same workspace as Kujituma. Then ping me and I'll do the read-only assessment.
+**2. Lazy-load `LandingPage`** *(perf — first paint for logged-in users)*
+   Move to `React.lazy`, drop it from the initial bundle. ~30-50KB saved for the 95% of sessions that aren't first-visit-marketing.
 
-## What I'll inspect once I have access
+**3. Memoize 4 heavy list/feed components** *(perf — perceived snappiness)*
+   Wrap the row components inside these hot lists in `React.memo` + stabilize their props with `useCallback`:
+   - `CheckInsFeed` row item
+   - `OrganizedGoalsView` goal card
+   - `TrainingWorkoutCard` (rendered in a week grid)
+   - `HabitCompletionTimeline` day cell
+   These are the components currently re-rendering on every parent state tick.
 
-1. `supabase/migrations/*` — every table, RLS policy, trigger, function. Catalogue collisions with Kujituma's schema.
-2. `supabase/functions/*` — list edge functions, secrets they read, external APIs they call.
-3. `src/App.tsx` + `src/pages/*` — top-level routes to merge under a single `/network` parent.
-4. `src/integrations/*` and `package.json` — third-party SDKs that need installing here.
-5. Any OAuth flow (Google contacts, LinkedIn, etc.) — redirect URI changes required.
+**4. Split `ProfileEditForm` (1198 LOC) into sections** *(cleanliness)*
+   Extract `ProfileBasicsSection`, `ProfileAvatarSection`, `ProfileSocialLinksSection`, `ProfilePreferencesSection`. Pure structural split — same form, same submit, same validation. Improves render isolation as a bonus.
 
-## Proposed integration shape
+**5. Split `DailyCheckInDialog` (1066 LOC)** *(cleanliness)*
+   Extract `MoodEnergyStep`, `HabitsStep`, `JournalStep`, `ReviewStep`. Already step-based logically — just hasn't been physically split. Each step renders only when active.
 
-Module registry entry (mirrors Training/Sleep):
+**6. Slim `useAnalytics` (779 LOC)** *(cleanliness + perf)*
+   Currently one hook computes every analytics panel. Split into `useLifeBalanceData`, `useMoodEnergyTrends`, `useGoalCompletionStats`, `useHabitStreakLeaderboard`. Panels become independently cached, panels that aren't visible stop blocking the rest, and TanStack can dedupe properly.
 
-```ts
-{
-  id: "network",
-  name: "Network",
-  tagline: "Track relationships, touchpoints, and follow-ups.",
-  category: "relationships",
-  tier: "free",
-  status: "available",
-  surfaces: {
-    pages: ["Dedicated Network page (/network)"],
-    thisWeekCards: ["Relationships card already in weekly planning"],
-    profileSections: ["Network preferences"],
-    mcpToolPrefixes: ["network_", "contact_", "touchpoint_"],
-  },
-  dataTables: [/* filled after schema review */],
-}
-```
+**7. Audit & normalize mutation invalidations** *(correctness + perf)*
+   After step 1, sweep every `invalidateQueries` and ensure:
+   - It uses the typed factory.
+   - It invalidates the *minimum* matching prefix (currently several mutations invalidate broad `["training-plan"]` and a half-dozen siblings — kills cache more than needed).
+   - Mutations across the Training domain stop double-invalidating overlapping keys.
 
-Layout:
+### Explicitly NOT touching
+- `src/integrations/supabase/types.ts` (auto-generated)
+- `components/ui/*` (shadcn primitives)
+- Any RLS, edge functions, or DB schema
+- MCP server tools / public API surface
+- Visual design tokens, fonts, layout
 
-```text
-Kujituma
-├── Core (Goals, Habits, Daily Check-in, Weekly Planning, Analytics)
-├── Modules
-│   ├── Training Plan       /training
-│   ├── Sleep               /sleep
-│   ├── Health Metrics      /health
-│   └── Network (new)       /network   ← gated by module toggle
-└── Profile
-    └── Modules tab — Network appears here for opt-in
-```
+### Technical notes
+- All steps are additive or pure refactors — no API contract changes.
+- Each step is one commit-sized change; if something feels risky after step N, we stop.
+- I'll verify each step against the build and the preview before moving to the next.
 
-## High-level migration steps (sequenced)
+### Order of operations
+Steps 1 → 2 → 7 first (lowest risk, immediate wins), then 3 (perf), then 4 → 5 → 6 (file splits).
 
-1. **Schema port.** New migration in Kujituma's Supabase that recreates NetworkOS tables prefixed/namespaced where they collide (e.g. `network_contacts`, `network_touchpoints`). Includes GRANTs + RLS scoped to `auth.uid()`.
-2. **Data export/import.** Export your rows from NetworkOS (CSV per table), remap `user_id` to your Kujituma `auth.uid()`, import into the new tables.
-3. **Edge functions.** Copy each NetworkOS function into `supabase/functions/`, swap secret names if any clash, re-add secrets in Kujituma's Supabase project.
-4. **Frontend port.** Copy pages → `src/pages/network/`, components → `src/components/network/`, hooks → `src/hooks/network/`. Mount one parent route `/network` gated by `useModule("network")`.
-5. **Nav + registry.** Add the `network` module to `MODULE_REGISTRY` and the nav tab logic in `NavigationMenu.tsx` (same pattern as Training/Sleep).
-6. **MCP tools.** Expose network entities to the MCP server (`network_list_contacts`, `network_recent_touchpoints`, etc.) and update `src/components/profile/McpSection.tsx` per project rules.
-7. **Weekly planning hook-up.** Surface "people to follow up with this week" inside the existing Relationships section of Weekly Planning — this is the integration payoff.
-8. **Domain decision.** Three options later:
-   - Retire networkos.xyz, 301 → `kujituma.com/network`.
-   - Keep networkos.xyz as a marketing page linking to the same app.
-   - Run both as separate Lovable deploys off the same repo (more ops; skip unless needed).
-
-## What I need from you next
-
-- Add NetworkOS to this workspace.
-- Confirm the module id (`network` vs `networkos` vs `relationships`) and the user-visible name.
-- Confirm you're OK with a brief migration window where NetworkOS data is read-only during export → import (minutes, single user).
+Want me to proceed top-to-bottom, or cherry-pick a subset?
