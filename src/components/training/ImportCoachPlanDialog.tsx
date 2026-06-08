@@ -26,6 +26,7 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
   const [mode, setMode] = useState<Mode>("text");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [replace, setReplace] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const reset = () => { setText(""); setFile(null); };
