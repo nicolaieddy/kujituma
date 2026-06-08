@@ -986,6 +986,6 @@ export const CheckInsFeed = memo(forwardRef<CheckInsFeedRef, CheckInsFeedProps>(
       </AlertDialog>
     </div>
   );
-});
+}));
 
 CheckInsFeed.displayName = 'CheckInsFeed';
