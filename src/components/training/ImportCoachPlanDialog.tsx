@@ -4,6 +4,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { Loader2, FileText, Image as ImageIcon, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -24,6 +26,7 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
   const [mode, setMode] = useState<Mode>("text");
   const [text, setText] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [replace, setReplace] = useState(true);
   const [busy, setBusy] = useState(false);
 
   const reset = () => { setText(""); setFile(null); };
@@ -75,15 +78,26 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           file_path: filePath,
           file_name: fileName,
           mime_type: mimeType,
+          replace,
         },
       });
       if (error) throw error;
 
+      const replaced = data?.replaced ?? 0;
+      const matched = data?.auto_matched ?? 0;
+      const bits = [
+        `${data?.created ?? 0} workouts added`,
+        replaced > 0 ? `${replaced} replaced` : null,
+        matched > 0 ? `${matched} matched to activities` : null,
+      ].filter(Boolean);
       toast({
         title: "Plan imported",
-        description: `${data?.created ?? 0} workouts added for the week of ${weekStart}.`,
+        description: `${bits.join(" · ")} for ${weekStart}.`,
       });
       queryClient.invalidateQueries({ queryKey: ["training-plan", user.id, weekStart] });
+      queryClient.invalidateQueries({ queryKey: ["training-workout-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
       queryClient.invalidateQueries({ queryKey: ["training-plan-imports", user.id] });
       reset();
       onOpenChange(false);
@@ -147,12 +161,26 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           </TabsContent>
         </Tabs>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <Button variant="ghost" onClick={() => handleClose(false)} disabled={busy}>Cancel</Button>
-          <Button onClick={submit} disabled={busy}>
-            {busy && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-            {busy ? "Parsing…" : "Import"}
-          </Button>
+        <div className="flex items-start justify-between gap-3 pt-2 flex-wrap">
+          <label className="flex items-start gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+            <Checkbox
+              checked={replace}
+              onCheckedChange={(v) => setReplace(v === true)}
+              disabled={busy}
+              className="mt-0.5"
+            />
+            <span>
+              <span className="font-medium text-foreground">Replace existing workouts for this week</span>
+              <span className="block text-xs">Removes Strava auto-created and prior imports so the coach plan is the source of truth, then re-links any matching Strava activities.</span>
+            </span>
+          </label>
+          <div className="flex gap-2 ml-auto">
+            <Button variant="ghost" onClick={() => handleClose(false)} disabled={busy}>Cancel</Button>
+            <Button onClick={submit} disabled={busy}>
+              {busy && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              {busy ? "Parsing…" : "Import"}
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>
