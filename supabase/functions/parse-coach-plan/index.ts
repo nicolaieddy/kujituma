@@ -211,6 +211,25 @@ Deno.serve(async (req) => {
       return json({ error: impErr?.message || "Failed to save import" }, 500);
     }
 
+    // Replace existing workouts for the week so re-imports / overlap with
+    // Strava auto-created entries don't create duplicates (mirrors MCP set_training_plan).
+    let replacedCount = 0;
+    if (replace) {
+      const { data: existing } = await supabase
+        .from("training_plan_workouts")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("week_start", weekStart);
+      replacedCount = existing?.length ?? 0;
+      if (replacedCount > 0) {
+        await supabase
+          .from("training_plan_workouts")
+          .delete()
+          .eq("user_id", userId)
+          .eq("week_start", weekStart);
+      }
+    }
+
     const rows = workouts.map(w => ({
       user_id: userId,
       week_start: weekStart,
@@ -229,6 +248,21 @@ Deno.serve(async (req) => {
     if (goalIds.length > 0 && created && created.length > 0) {
       const links = created.flatMap(c => goalIds.map(gid => ({ workout_id: c.id, goal_id: gid })));
       await supabase.from("training_workout_goals").insert(links);
+    }
+
+    // Auto-match newly inserted workouts to existing synced Strava activities
+    // for this week. Same logic strava-sync runs after a pull. We skip
+    // createUnplanned so we don't re-introduce auto-created duplicates we just wiped.
+    let autoMatched = 0;
+    try {
+      autoMatched = await autoMatchTrainingPlan(
+        supabase,
+        userId,
+        new Set([weekStart]),
+        { createUnplanned: false },
+      );
+    } catch (e) {
+      console.error("auto-match after import failed:", e);
     }
 
     return json({
