@@ -609,4 +609,4 @@ export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
     )}
     </article>
   );
-}
+});
