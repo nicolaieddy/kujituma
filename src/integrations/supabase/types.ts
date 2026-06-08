@@ -3012,6 +3012,54 @@ export type Database = {
         }
         Relationships: []
       }
+      training_plan_imports: {
+        Row: {
+          created_at: string
+          field_mapping_report: Json
+          id: string
+          parsed_summary: Json
+          source_file_name: string | null
+          source_file_path: string | null
+          source_mime: string | null
+          source_text: string | null
+          source_type: string
+          updated_at: string
+          user_id: string
+          week_start: string
+          workout_count: number
+        }
+        Insert: {
+          created_at?: string
+          field_mapping_report?: Json
+          id?: string
+          parsed_summary?: Json
+          source_file_name?: string | null
+          source_file_path?: string | null
+          source_mime?: string | null
+          source_text?: string | null
+          source_type: string
+          updated_at?: string
+          user_id: string
+          week_start: string
+          workout_count?: number
+        }
+        Update: {
+          created_at?: string
+          field_mapping_report?: Json
+          id?: string
+          parsed_summary?: Json
+          source_file_name?: string | null
+          source_file_path?: string | null
+          source_mime?: string | null
+          source_text?: string | null
+          source_type?: string
+          updated_at?: string
+          user_id?: string
+          week_start?: string
+          workout_count?: number
+        }
+        Relationships: []
+      }
       training_plan_workouts: {
         Row: {
           created_at: string
@@ -3023,6 +3071,7 @@ export type Database = {
           matched_strava_activity_id: number | null
           notes: string | null
           order_index: number
+          source_import_id: string | null
           target_distance_meters: number | null
           target_duration_seconds: number | null
           target_pace_per_km: number | null
@@ -3042,6 +3091,7 @@ export type Database = {
           matched_strava_activity_id?: number | null
           notes?: string | null
           order_index?: number
+          source_import_id?: string | null
           target_distance_meters?: number | null
           target_duration_seconds?: number | null
           target_pace_per_km?: number | null
@@ -3061,6 +3111,7 @@ export type Database = {
           matched_strava_activity_id?: number | null
           notes?: string | null
           order_index?: number
+          source_import_id?: string | null
           target_distance_meters?: number | null
           target_duration_seconds?: number | null
           target_pace_per_km?: number | null
@@ -3090,6 +3141,13 @@ export type Database = {
             columns: ["matched_activity_id"]
             isOneToOne: false
             referencedRelation: "synced_activities"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_plan_workouts_source_import_id_fkey"
+            columns: ["source_import_id"]
+            isOneToOne: false
+            referencedRelation: "training_plan_imports"
             referencedColumns: ["id"]
           },
         ]

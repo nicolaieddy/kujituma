@@ -108,25 +108,84 @@ Deno.serve(async (req) => {
       return json({ error: "AI returned invalid JSON" }, 500);
     }
 
-    const workouts = (parsed.workouts ?? [])
-      .filter(w => w && typeof w.day_of_week === "number" && w.day_of_week >= 0 && w.day_of_week <= 6 && typeof w.title === "string")
-      .map((w, idx) => ({
-        day_of_week: Math.round(w.day_of_week),
-        workout_type: (w.workout_type || "Run").toString().slice(0, 40),
-        title: w.title.toString().slice(0, 200),
-        description: (w.description ?? "").toString().slice(0, 2000),
-        target_distance_meters: numOrNull(w.target_distance_meters),
-        target_duration_seconds: numOrNull(w.target_duration_seconds),
-        target_pace_per_km: numOrNull(w.target_pace_per_km),
-        notes: (w.notes ?? "").toString().slice(0, 1000),
-        order_index: idx,
-      }));
+    const rawWorkouts: ParsedWorkout[] = parsed.workouts ?? [];
 
-    if (workouts.length === 0) {
-      return json({ error: "Could not extract any workouts from that source." }, 422);
+    // ===== Field-mapping check =====
+    // Validate that AI-derived fields land in the correct columns/paths before persisting.
+    const mappingIssues: Array<{ index: number; field: string; reason: string }> = [];
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStart)) {
+      return json({ error: "week_start must be YYYY-MM-DD" }, 400);
     }
 
-    // Insert the import row
+    // Attachment path must live under the caller's user folder inside the coach-plans bucket.
+    if (sourceType !== "text" && filePath) {
+      const firstSegment = filePath.split("/")[0];
+      if (firstSegment !== userId) {
+        return json({
+          error: "Attachment path must be stored under your own user folder in the coach-plans bucket.",
+          expected_prefix: `${userId}/`,
+          received: filePath,
+        }, 400);
+      }
+    }
+
+    const workouts = rawWorkouts
+      .map((w, idx) => {
+        if (!w || typeof w.day_of_week !== "number" || w.day_of_week < 0 || w.day_of_week > 6) {
+          mappingIssues.push({ index: idx, field: "day_of_week", reason: "must be integer 0-6 (Mon-Sun)" });
+          return null;
+        }
+        if (typeof w.title !== "string" || !w.title.trim()) {
+          mappingIssues.push({ index: idx, field: "title", reason: "missing" });
+          return null;
+        }
+        for (const k of ["target_distance_meters","target_duration_seconds","target_pace_per_km"] as const) {
+          const v = (w as any)[k];
+          if (v != null && (typeof v !== "number" || !Number.isFinite(v) || v < 0)) {
+            mappingIssues.push({ index: idx, field: k, reason: "must be a non-negative number" });
+          }
+        }
+        return {
+          day_of_week: Math.round(w.day_of_week),
+          workout_type: (w.workout_type || "Run").toString().slice(0, 40),
+          title: w.title.toString().slice(0, 200),
+          description: (w.description ?? "").toString().slice(0, 2000),
+          target_distance_meters: numOrNull(w.target_distance_meters),
+          target_duration_seconds: numOrNull(w.target_duration_seconds),
+          target_pace_per_km: numOrNull(w.target_pace_per_km),
+          notes: (w.notes ?? "").toString().slice(0, 1000),
+          order_index: idx,
+        };
+      })
+      .filter((w): w is NonNullable<typeof w> => w !== null);
+
+    if (workouts.length === 0) {
+      return json({
+        error: "Could not extract any workouts from that source.",
+        mapping_issues: mappingIssues,
+      }, 422);
+    }
+
+    const mappingReport = {
+      checked_at: new Date().toISOString(),
+      week_start: weekStart,
+      attachment: sourceType === "text"
+        ? null
+        : { bucket: "coach-plans", path: filePath, file_name: fileName ?? null, mime: mimeType ?? null },
+      total_parsed: rawWorkouts.length,
+      total_mapped: workouts.length,
+      dropped: rawWorkouts.length - workouts.length,
+      issues: mappingIssues,
+      fields: {
+        notes_target_column: "training_plan_workouts.notes",
+        description_target_column: "training_plan_workouts.description",
+        date_basis: "week_start + day_of_week (0=Mon)",
+        attachment_target_bucket: "coach-plans",
+      },
+    };
+
+    // Insert the import row (with mapping report + source notes/attachment metadata)
     const { data: importRow, error: impErr } = await supabase
       .from("training_plan_imports")
       .insert({
@@ -138,6 +197,7 @@ Deno.serve(async (req) => {
         source_file_name: fileName ?? null,
         source_mime: mimeType ?? null,
         parsed_summary: { workouts },
+        field_mapping_report: mappingReport,
         workout_count: workouts.length,
       })
       .select("id")
@@ -147,7 +207,6 @@ Deno.serve(async (req) => {
       return json({ error: impErr?.message || "Failed to save import" }, 500);
     }
 
-    // Insert workouts
     const rows = workouts.map(w => ({
       user_id: userId,
       week_start: weekStart,
@@ -163,13 +222,17 @@ Deno.serve(async (req) => {
       return json({ error: wErr.message }, 500);
     }
 
-    // Optional: link to goals via junction
     if (goalIds.length > 0 && created && created.length > 0) {
       const links = created.flatMap(c => goalIds.map(gid => ({ workout_id: c.id, goal_id: gid })));
       await supabase.from("training_workout_goals").insert(links);
     }
 
-    return json({ import_id: importRow.id, created: created?.length ?? 0, workouts }, 200);
+    return json({
+      import_id: importRow.id,
+      created: created?.length ?? 0,
+      workouts,
+      mapping_report: mappingReport,
+    }, 200);
   } catch (e) {
     console.error("parse-coach-plan fatal:", e);
     return json({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
