@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, memo } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -74,7 +74,7 @@ const STATUS_CONFIG = {
   }
 };
 
-export const GoalCard = ({ 
+export const GoalCard = memo(({ 
   goal, 
   onEdit, 
   onDelete, 
@@ -627,4 +627,5 @@ export const GoalCard = ({
       </AlertDialog>
     </>
   );
-};
+});
+GoalCard.displayName = "GoalCard";

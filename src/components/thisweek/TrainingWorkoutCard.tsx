@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, memo } from "react";
 import { Pencil, Trash2, ChevronDown, Check, X, Clock, Activity, Heart, Gauge, Mountain, File, Target, FileX, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -313,7 +313,7 @@ function SessionSection({ session, sessionIndex, totalSessions, onDeleteActivity
 
 /* ── Main card ───────────────────────────────────────────────── */
 
-export function TrainingWorkoutCard({
+export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
   workout,
   matchedActivity,
   matchedActivities = [],
@@ -609,4 +609,4 @@ export function TrainingWorkoutCard({
     )}
     </article>
   );
-}
+});

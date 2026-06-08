@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, memo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
@@ -34,7 +34,7 @@ const getWeekNumber = (weekStart: string) => {
   return Math.ceil((pastDaysOfYear + startOfYear.getDay() + 1) / 7);
 };
 
-export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTimelineProps) => {
+export const HabitCompletionTimeline = memo(({ goal, objectives }: HabitCompletionTimelineProps) => {
   const hasHabits = goal.habit_items && goal.habit_items.length > 0;
   
   const timelineData = useMemo(() => {
@@ -326,4 +326,5 @@ export const HabitCompletionTimeline = ({ goal, objectives }: HabitCompletionTim
       </CardContent>
     </Card>
   );
-};
+});
+HabitCompletionTimeline.displayName = "HabitCompletionTimeline";
