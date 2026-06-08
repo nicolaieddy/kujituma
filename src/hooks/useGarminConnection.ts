@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
+import { qk } from "@/lib/queryKeys";
 
 const SUPABASE_URL = "https://yyidkpmrqvgvzbjvtnjy.supabase.co";
 
@@ -71,8 +72,8 @@ export function useGarminConnection() {
         if (!res.ok) throw new Error(json.error || "Failed to connect");
         toast.success("Garmin connected — pulling your data now");
         await checkStatus();
-        queryClient.invalidateQueries({ queryKey: ["synced_activities"] });
-        queryClient.invalidateQueries({ queryKey: ["sleep_entries"] });
+        queryClient.invalidateQueries({ queryKey: qk.training.syncedActivities() });
+        queryClient.invalidateQueries({ queryKey: qk.training.sleepEntries() });
         return true;
       } catch (err) {
         toast.error((err as Error).message);
@@ -98,8 +99,8 @@ export function useGarminConnection() {
       if (!res.ok) throw new Error("Sync failed");
       toast.success("Garmin sync complete");
       await checkStatus();
-      queryClient.invalidateQueries({ queryKey: ["synced_activities"] });
-      queryClient.invalidateQueries({ queryKey: ["sleep_entries"] });
+      queryClient.invalidateQueries({ queryKey: qk.training.syncedActivities() });
+      queryClient.invalidateQueries({ queryKey: qk.training.sleepEntries() });
     } catch (err) {
       toast.error((err as Error).message);
     } finally {
