@@ -42,6 +42,9 @@ Deno.serve(async (req) => {
     const fileName: string | undefined = body.file_name;
     const mimeType: string | undefined = body.mime_type;
     const goalIds: string[] = Array.isArray(body.goal_ids) ? body.goal_ids : [];
+    // Mirror MCP set_training_plan: default to replacing the week's workouts so
+    // re-imports and overlap with Strava auto-created entries don't create duplicates.
+    const replace: boolean = body.replace !== false;
 
     if (!weekStart) return json({ error: "week_start required" }, 400);
     if (!["text", "image", "document"].includes(sourceType)) {
