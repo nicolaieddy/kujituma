@@ -78,15 +78,26 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           file_path: filePath,
           file_name: fileName,
           mime_type: mimeType,
+          replace,
         },
       });
       if (error) throw error;
 
+      const replaced = data?.replaced ?? 0;
+      const matched = data?.auto_matched ?? 0;
+      const bits = [
+        `${data?.created ?? 0} workouts added`,
+        replaced > 0 ? `${replaced} replaced` : null,
+        matched > 0 ? `${matched} matched to activities` : null,
+      ].filter(Boolean);
       toast({
         title: "Plan imported",
-        description: `${data?.created ?? 0} workouts added for the week of ${weekStart}.`,
+        description: `${bits.join(" · ")} for ${weekStart}.`,
       });
       queryClient.invalidateQueries({ queryKey: ["training-plan", user.id, weekStart] });
+      queryClient.invalidateQueries({ queryKey: ["training-workout-goals"] });
+      queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["training-matched-activities"] });
       queryClient.invalidateQueries({ queryKey: ["training-plan-imports", user.id] });
       reset();
       onOpenChange(false);
