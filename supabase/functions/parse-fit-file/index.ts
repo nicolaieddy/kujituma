@@ -284,6 +284,23 @@ Deno.serve(async (req) => {
         });
 
         if (match) {
+          if (!logged) {
+            logged = true;
+            logger.addItem({
+              kind: "fit_file",
+              ref: file_path,
+              ok: true,
+              status: "duplicate",
+              message: `Duplicate of existing ${match.activity_type} on ${activityDate}`,
+              summary: {
+                existing_id: match.id,
+                activity_type: activityType,
+                date: activityDate,
+                duration_seconds: durationSeconds,
+              },
+            });
+            await logger.finalize("success");
+          }
           return new Response(JSON.stringify({
             duplicate: true,
             existing_activity: {
