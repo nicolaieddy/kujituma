@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import FitParser from "npm:fit-file-parser@2.1.0";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import tzlookup from "npm:tz-lookup@6.1.25";
+import { SyncRunLogger } from "../_shared/sync-logger.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -156,6 +158,21 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const logger = new SyncRunLogger(adminClient, user.id, "fit_upload", "upload");
+    let logged = false;
+    const failAndLog = async (message: string, fileName?: string) => {
+      if (!logged) {
+        logged = true;
+        logger.addItem({
+          kind: "fit_file",
+          ref: fileName ?? file_path ?? null,
+          ok: false,
+          status: "failed",
+          message,
+        });
+        await logger.finalize("failed", message);
+      }
+    };
 
     // Profile timezone is the last-resort fallback only.
     let profileTimezone = requestTimezone || null;
