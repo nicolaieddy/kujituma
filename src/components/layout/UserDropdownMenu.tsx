@@ -38,6 +38,14 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut }: UserDropdownMenuProps) 
           <Sparkles className="h-4 w-4 mr-2" />
           Rituals Dashboard
         </DropdownMenuItem>
+
+        <DropdownMenuItem 
+          onClick={() => navigate('/profile?tab=mcp')}
+          className="cursor-pointer"
+        >
+          <Terminal className="h-4 w-4 mr-2" />
+          MCP
+        </DropdownMenuItem>
         
         {isAdmin && (
           <>
