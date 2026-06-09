@@ -16,6 +16,7 @@ import GarminConnectPkg from "npm:garmin-connect@1.6.1";
 const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { decryptString } from "../_shared/garmin-crypto.ts";
 import { is429, paceDelay as sleep, withBackoff } from "../_shared/garmin-backoff.ts";
+import { SyncRunLogger } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
