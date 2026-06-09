@@ -15,6 +15,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import GarminConnectPkg from "npm:garmin-connect@1.6.1";
 const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { decryptString } from "../_shared/garmin-crypto.ts";
+import { is429, paceDelay as sleep, withBackoff } from "../_shared/garmin-backoff.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,13 +30,6 @@ function json(body: unknown, status = 200) {
 }
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
-const sleep = (ms: number) =>
-  new Promise((r) => setTimeout(r, ms + Math.floor(Math.random() * 400)));
-
-function is429(err: unknown): boolean {
-  const m = (err as Error)?.message ?? String(err);
-  return /429|too many|rate limit/i.test(m);
-}
 
 function mapActivityType(t: string | undefined): string {
   if (!t) return "other";
