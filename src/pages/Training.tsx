@@ -1,16 +1,23 @@
 import { useMemo, useState } from "react";
 import { addWeeks, format, startOfWeek } from "date-fns";
-import { Dumbbell, ChevronLeft, ChevronRight } from "lucide-react";
+import { Dumbbell, ChevronLeft, ChevronRight, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
+import { TrainingSetupPanel } from "@/components/training/TrainingSetupPanel";
 
 function toWeekKey(d: Date) {
   return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
+type TrainingView = "plan" | "setup";
+
 export default function Training() {
   const todayWeek = useMemo(() => toWeekKey(new Date()), []);
   const [weekStart, setWeekStart] = useState<string>(todayWeek);
+  const [view, setView] = useState<TrainingView>(() => {
+    if (typeof window === "undefined") return "plan";
+    return new URLSearchParams(window.location.search).get("view") === "setup" ? "setup" : "plan";
+  });
 
   const shiftWeek = (delta: number) => {
     const [y, m, d] = weekStart.split("-").map(Number);
@@ -33,25 +40,56 @@ export default function Training() {
           <Dumbbell className="h-6 w-6 text-primary" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Training Plan</h1>
         </div>
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" onClick={() => shiftWeek(-1)} aria-label="Previous week">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={isCurrent ? "secondary" : "ghost"}
-            size="sm"
-            onClick={() => setWeekStart(todayWeek)}
-            className="min-w-[180px] tabular-nums"
-          >
-            {label}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => shiftWeek(1)} aria-label="Next week">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
+
+        {view === "plan" ? (
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" onClick={() => shiftWeek(-1)} aria-label="Previous week">
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={isCurrent ? "secondary" : "ghost"}
+              size="sm"
+              onClick={() => setWeekStart(todayWeek)}
+              className="min-w-[180px] tabular-nums"
+            >
+              {label}
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => shiftWeek(1)} aria-label="Next week">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        ) : <div />}
       </header>
 
-      <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />
+      {/* View switcher */}
+      <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit">
+        <button
+          type="button"
+          onClick={() => setView("plan")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            view === "plan" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Dumbbell className="h-4 w-4" />
+          Plan
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("setup")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            view === "setup" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Settings className="h-4 w-4" />
+          Setup
+        </button>
+      </div>
+
+      {view === "plan" ? (
+        <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />
+      ) : (
+        <TrainingSetupPanel />
+      )}
     </div>
   );
 }
