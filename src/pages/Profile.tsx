@@ -540,11 +540,7 @@ const Profile = () => {
                 <IntegrationsSection />
               </div>
             )}
-            {activeTab === "workouts" && isTrainingInstalled && (
-              <div className="max-w-4xl mx-auto">
-                <WorkoutPreferencesSection />
-              </div>
-            )}
+            {/* Workouts settings moved to Training → Setup */}
             {activeTab === "notifications" && (
               <div className="max-w-4xl mx-auto">
                 <NotificationPreferences
