@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SyncRunLogger } from "../_shared/sync-logger.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -207,6 +209,21 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const logger = new SyncRunLogger(adminClient, user.id, "sleep_csv", "upload");
+    let logged = false;
+    const failAndLog = async (message: string) => {
+      if (!logged) {
+        logged = true;
+        logger.addItem({
+          kind: "sleep_csv",
+          ref: file_path,
+          ok: false,
+          status: "failed",
+          message,
+        });
+        await logger.finalize("failed", message);
+      }
+    };
     const { data: fileData, error: downloadError } = await adminClient.storage
       .from("fit-files")
       .download(file_path);
