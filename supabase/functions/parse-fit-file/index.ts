@@ -391,6 +391,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
+      await failAndLog(`Failed to save activity: ${insertError.message}`);
       return new Response(JSON.stringify({ error: `Failed to save activity: ${insertError.message}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -626,6 +627,21 @@ Deno.serve(async (req) => {
       has_power: activityRow.average_power != null,
       has_running_dynamics: activityRow.avg_stance_time != null,
     };
+
+    if (!logged) {
+      logged = true;
+      logger.addItem({
+        kind: "fit_file",
+        ref: file_path,
+        ok: true,
+        status: overwrite_activity_id ? "updated" : "created",
+        message: `Imported ${activityType} (${summary.laps_count} laps, ${summary.records_count} records)`,
+        summary,
+      });
+      logger.incCounter("activities_imported");
+      if (summary.laps_count) logger.incCounter("laps_imported", summary.laps_count);
+      await logger.finalize("success");
+    }
 
     return new Response(JSON.stringify({ success: true, summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
