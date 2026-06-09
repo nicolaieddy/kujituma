@@ -135,7 +135,7 @@ const Profile = () => {
 
   // ── Handlers ──────────────────────────────────────────────────────────────
 
-  const handleTabChange = useCallback((tab: "profile" | "values" | "integrations" | "workouts" | "notifications" | "mcp") => {
+  const handleTabChange = useCallback((tab: "profile" | "values" | "integrations" | "notifications" | "mcp") => {
     setActiveTab(tab);
     setSearchParam("tab", tab);
   }, []);
