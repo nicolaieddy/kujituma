@@ -357,12 +357,18 @@ async function syncUser(
       const { error } = await admin
         .from("garmin_wellness_daily")
         .upsert(row, { onConflict: "user_id,wellness_date" });
-      if (!error) result.wellness++;
-      else result.errors.push(`wellness ${dateStr}: ${error.message}`);
+      if (!error) {
+        result.wellness++;
+        logger.addItem({ kind: "wellness", ref: dateStr, ok: true, status: "created", message: `Wellness ${dateStr}: ${row.steps ?? "—"} steps`, summary: { steps: row.steps, resting_heart_rate: row.resting_heart_rate, hrv_last_night_avg: row.hrv_last_night_avg, stress_avg: row.stress_avg, body_battery_max: row.body_battery_max } });
+      } else {
+        result.errors.push(`wellness ${dateStr}: ${error.message}`);
+        logger.addItem({ kind: "wellness", ref: dateStr, ok: false, status: "failed", message: error.message });
+      }
       await sleep(900);
     } catch (e) {
-      if (is429(e)) { result.rate_limited = true; break; }
+      if (is429(e)) { result.rate_limited = true; logger.addItem({ kind: "wellness", ref: dateStr, ok: false, status: "rate_limited", message: "Rate-limited" }); break; }
       result.errors.push(`wellness ${dateStr}: ${(e as Error).message}`);
+      logger.addItem({ kind: "wellness", ref: dateStr, ok: false, status: "failed", message: (e as Error).message });
     }
   }
 
