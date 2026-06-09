@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import FitParser from "npm:fit-file-parser@2.1.0";
 import JSZip from "https://esm.sh/jszip@3.10.1";
 import tzlookup from "npm:tz-lookup@6.1.25";
+import { SyncRunLogger } from "../_shared/sync-logger.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -156,6 +158,21 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const logger = new SyncRunLogger(adminClient, user.id, "fit_upload", "upload");
+    let logged = false;
+    const failAndLog = async (message: string, fileName?: string) => {
+      if (!logged) {
+        logged = true;
+        logger.addItem({
+          kind: "fit_file",
+          ref: fileName ?? file_path ?? null,
+          ok: false,
+          status: "failed",
+          message,
+        });
+        await logger.finalize("failed", message);
+      }
+    };
 
     // Profile timezone is the last-resort fallback only.
     let profileTimezone = requestTimezone || null;
@@ -173,19 +190,31 @@ Deno.serve(async (req) => {
       .download(file_path);
 
     if (downloadError || !fileData) {
+      await failAndLog(`Failed to download file: ${downloadError?.message}`);
       return new Response(JSON.stringify({ error: `Failed to download file: ${downloadError?.message}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const rawBuffer = await fileData.arrayBuffer();
-    const buffer = await extractFitBuffer(rawBuffer, file_path);
-    const fitData = await parseFitBuffer(buffer);
+    let buffer: ArrayBuffer;
+    let fitData: any;
+    try {
+      buffer = await extractFitBuffer(rawBuffer, file_path);
+      fitData = await parseFitBuffer(buffer);
+    } catch (parseErr: any) {
+      const msg = `Parse error: ${parseErr?.message || parseErr}`;
+      await failAndLog(msg);
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log("FIT parsed — sessions:", fitData.sessions?.length, "laps:", fitData.laps?.length, "records:", fitData.records?.length);
 
     const session = fitData.sessions?.[0];
     if (!session) {
+      await failAndLog("No session data found in .fit file");
       return new Response(JSON.stringify({ error: "No session data found in .fit file" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -255,6 +284,23 @@ Deno.serve(async (req) => {
         });
 
         if (match) {
+          if (!logged) {
+            logged = true;
+            logger.addItem({
+              kind: "fit_file",
+              ref: file_path,
+              ok: true,
+              status: "duplicate",
+              message: `Duplicate of existing ${match.activity_type} on ${activityDate}`,
+              summary: {
+                existing_id: match.id,
+                activity_type: activityType,
+                date: activityDate,
+                duration_seconds: durationSeconds,
+              },
+            });
+            await logger.finalize("success");
+          }
           return new Response(JSON.stringify({
             duplicate: true,
             existing_activity: {
@@ -345,6 +391,7 @@ Deno.serve(async (req) => {
       .single();
 
     if (insertError) {
+      await failAndLog(`Failed to save activity: ${insertError.message}`);
       return new Response(JSON.stringify({ error: `Failed to save activity: ${insertError.message}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -580,6 +627,21 @@ Deno.serve(async (req) => {
       has_power: activityRow.average_power != null,
       has_running_dynamics: activityRow.avg_stance_time != null,
     };
+
+    if (!logged) {
+      logged = true;
+      logger.addItem({
+        kind: "fit_file",
+        ref: file_path,
+        ok: true,
+        status: overwrite_activity_id ? "updated" : "created",
+        message: `Imported ${activityType} (${summary.laps_count} laps, ${summary.records_count} records)`,
+        summary,
+      });
+      logger.incCounter("activities_imported");
+      if (summary.laps_count) logger.incCounter("laps_imported", summary.laps_count);
+      await logger.finalize("success");
+    }
 
     return new Response(JSON.stringify({ success: true, summary }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { useStravaConnection } from "@/hooks/useStravaConnection";
 import { Loader2, RefreshCw, Unlink, Zap, Clock, AlertCircle } from "lucide-react";
 import { formatDistanceToNow, differenceInDays } from "date-fns";
+import { SyncRunLogPanel } from "@/components/sync/SyncRunLogPanel";
 
 export function StravaConnectionCard() {
   const { 
@@ -119,6 +120,8 @@ export function StravaConnectionCard() {
                 Disconnect
               </Button>
             </div>
+
+            <SyncRunLogPanel provider="strava" title="Strava sync history" />
           </>
         ) : (
           <Button 

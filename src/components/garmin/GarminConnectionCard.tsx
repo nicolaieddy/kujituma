@@ -20,6 +20,7 @@ import {
   AlarmClock,
 } from "lucide-react";
 import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
+import { SyncRunLogPanel } from "@/components/sync/SyncRunLogPanel";
 
 // Garmin typically throttles for 2–6h after a 429. We use 2h as the floor.
 const COOLDOWN_MS = 2 * 60 * 60 * 1000;
@@ -209,6 +210,8 @@ export function GarminConnectionCard() {
                 Disconnect
               </Button>
             </div>
+
+            <SyncRunLogPanel provider="garmin" title="Garmin sync history" />
           </>
         ) : (
           <form onSubmit={onSubmit} className="space-y-3">

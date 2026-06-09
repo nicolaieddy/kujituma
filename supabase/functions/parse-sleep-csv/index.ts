@@ -1,4 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SyncRunLogger } from "../_shared/sync-logger.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -207,11 +209,27 @@ Deno.serve(async (req) => {
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const logger = new SyncRunLogger(adminClient, user.id, "sleep_csv", "upload");
+    let logged = false;
+    const failAndLog = async (message: string) => {
+      if (!logged) {
+        logged = true;
+        logger.addItem({
+          kind: "sleep_csv",
+          ref: file_path,
+          ok: false,
+          status: "failed",
+          message,
+        });
+        await logger.finalize("failed", message);
+      }
+    };
     const { data: fileData, error: downloadError } = await adminClient.storage
       .from("fit-files")
       .download(file_path);
     if (downloadError || !fileData) {
       console.error("parse-sleep-csv: download failed", downloadError);
+      await failAndLog(`Failed to download file: ${downloadError?.message}`);
       return new Response(JSON.stringify({ error: `Failed to download file: ${downloadError?.message}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -221,6 +239,7 @@ Deno.serve(async (req) => {
     const rows = parseCsv(text);
     console.log("parse-sleep-csv: rows =", rows.length, "first row =", rows[0]);
     if (rows.length < 2) {
+      await failAndLog("CSV is empty");
       return new Response(JSON.stringify({ error: "CSV is empty" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -238,9 +257,9 @@ Deno.serve(async (req) => {
     }
 
     if (!upserts || upserts.length === 0) {
-      return new Response(JSON.stringify({
-        error: "Unrecognized CSV format — supported: Garmin multi-day table OR single-night vertical export",
-      }), {
+      const msg = "Unrecognized CSV format — supported: Garmin multi-day table OR single-night vertical export";
+      await failAndLog(msg);
+      return new Response(JSON.stringify({ error: msg }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -254,9 +273,29 @@ Deno.serve(async (req) => {
 
     if (upsertError) {
       console.error("Upsert error:", upsertError);
+      await failAndLog(`Upsert failed: ${upsertError.message}`);
       return new Response(JSON.stringify({ error: `Upsert failed: ${upsertError.message}` }), {
         status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    if (!logged) {
+      logged = true;
+      logger.addItem({
+        kind: "sleep_csv",
+        ref: file_path,
+        ok: true,
+        status: "created",
+        message: `Imported ${upserts.length} night${upserts.length === 1 ? "" : "s"} (${formatUsed})`,
+        summary: {
+          format: formatUsed,
+          entries_imported: upserts.length,
+          first_date: datesImported[0],
+          last_date: datesImported[datesImported.length - 1],
+        },
+      });
+      logger.incCounter("nights_imported", upserts.length);
+      await logger.finalize("success");
     }
 
     return new Response(JSON.stringify({
