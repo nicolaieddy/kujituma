@@ -210,8 +210,10 @@ async function syncUser(
   for (let i = 0; i < sleepDays && !result.rate_limited; i++) {
     const dateStr = isoDate(new Date(Date.now() - i * 86400_000));
     try {
-      const s: any = await gc.getSleepData?.(dateStr);
-      if (!s?.dailySleepDTO?.sleepTimeSeconds) {
+      const s: any = await withBackoff(
+        () => gc.getSleepData?.(dateStr),
+        { label: `sleep ${dateStr}`, retries: 2, baseMs: 5000, maxMs: 20000 },
+      );
         await sleep(600);
         continue;
       }
