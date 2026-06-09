@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { useFitFileUpload, type FitUploadResult } from "@/hooks/useFitFileUpload";
 import { cn } from "@/lib/utils";
+import { SyncRunLogPanel } from "@/components/sync/SyncRunLogPanel";
 
 export function FitFileUploadCard() {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -96,6 +97,9 @@ export function FitFileUploadCard() {
         <p className="text-[12px] text-muted-foreground/60">
           Each file's date is read from the activity data and automatically matched to the corresponding training plan workout. Supports Garmin, Wahoo, Coros, Polar, and other ANT+/BLE devices. Max 20MB per file.
         </p>
+
+        <SyncRunLogPanel provider="fit_upload" title=".FIT upload history" />
+        <SyncRunLogPanel provider="sleep_csv" title="Sleep CSV import history" />
       </CardContent>
     </Card>
   );
