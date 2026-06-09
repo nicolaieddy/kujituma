@@ -5,7 +5,8 @@
 //   POST  ?action=disconnect                        → delete credentials
 //   POST  ?action=sync-now                          → trigger garmin-sync for current user
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { GarminConnect } from "npm:garmin-connect@1.6.1";
+import GarminConnectPkg from "npm:garmin-connect@1.6.1";
+const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { encryptString } from "../_shared/garmin-crypto.ts";
 
 const corsHeaders = {
