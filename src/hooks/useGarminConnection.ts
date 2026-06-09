@@ -77,6 +77,7 @@ export function useGarminConnection() {
         } else {
           toast.success("Garmin connected — pulling your data now");
         }
+        await checkStatus();
         queryClient.invalidateQueries({ queryKey: qk.training.syncedActivities() });
         queryClient.invalidateQueries({ queryKey: qk.training.sleepEntries() });
         return true;
