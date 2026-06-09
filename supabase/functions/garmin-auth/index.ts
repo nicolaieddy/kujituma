@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
             connected_at: new Date().toISOString(),
             last_login_at: new Date().toISOString(),
             last_error: rateLimited
-              ? "Garmin rate-limited the initial sync. Your credentials are saved — the next scheduled sync (within ~2h) will retry automatically."
+              ? "Garmin rate-limited the initial sync. Your credentials are saved — the next scheduled sync (within ~6h) will retry automatically."
               : null,
             session_tokens: null,
             sync_anchor: null,
