@@ -40,17 +40,14 @@ export function PhoneVerificationSection({ onVerified }: PhoneVerificationSectio
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("phone_number, phone_verified")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.phone_number) {
-          setCurrentPhone(data.phone_number);
-          setPhoneInput(data.phone_number);
-          setIsVerified(!!data.phone_verified);
-          if (data.phone_verified) setState("verified");
+    (supabase.rpc as any)("get_my_private_profile")
+      .then(({ data }: { data: any }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.phone_number) {
+          setCurrentPhone(row.phone_number);
+          setPhoneInput(row.phone_number);
+          setIsVerified(!!row.phone_verified);
+          if (row.phone_verified) setState("verified");
         }
         setLoadingProfile(false);
       });

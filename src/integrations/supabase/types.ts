@@ -3905,6 +3905,16 @@ export type Database = {
       get_filtered_profile: { Args: { profile_id: string }; Returns: Json }
       get_goals_objective_counts: { Args: never; Returns: Json }
       get_habit_stats_data: { Args: never; Returns: Json }
+      get_my_private_profile: {
+        Args: never
+        Returns: {
+          date_of_birth: string
+          email: string
+          google_id: string
+          phone_number: string
+          phone_verified: boolean
+        }[]
+      }
       get_partner_dashboard_data: {
         Args: { p_partner_id: string; p_week_start: string }
         Returns: Json
