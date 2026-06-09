@@ -3908,6 +3908,7 @@ export type Database = {
       get_my_private_profile: {
         Args: never
         Returns: {
+          ai_features_enabled: boolean
           date_of_birth: string
           email: string
           google_id: string
