@@ -114,7 +114,9 @@ Deno.serve(async (req) => {
             encrypted_password: encPwd,
             connected_at: new Date().toISOString(),
             last_login_at: new Date().toISOString(),
-            last_error: null,
+            last_error: rateLimited
+              ? "Garmin rate-limited the initial sync. Your credentials are saved — the next scheduled sync (within ~2h) will retry automatically."
+              : null,
             session_tokens: null,
             sync_anchor: null,
           },
@@ -122,17 +124,19 @@ Deno.serve(async (req) => {
         );
       if (upErr) throw upErr;
 
-      // Kick off initial sync (fire-and-forget)
-      fetch(`${supabaseUrl}/functions/v1/garmin-sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${serviceKey}`,
-        },
-        body: JSON.stringify({ user_id: userId, initial: true }),
-      }).catch((e) => console.error("initial sync trigger failed:", e));
+      // Kick off initial sync only if not rate-limited (avoid immediate re-429)
+      if (!rateLimited) {
+        fetch(`${supabaseUrl}/functions/v1/garmin-sync`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+          },
+          body: JSON.stringify({ user_id: userId, initial: true }),
+        }).catch((e) => console.error("initial sync trigger failed:", e));
+      }
 
-      return json({ success: true });
+      return json({ success: true, rateLimited });
     }
 
     if (action === "disconnect" && req.method === "POST") {
