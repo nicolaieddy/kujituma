@@ -135,11 +135,23 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let logger: SyncRunLogger | null = null;
+  let adminClient: any = null;
+
   try {
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       throw new Error("No authorization header provided");
     }
+
+    // Optional body: { trigger: "manual" | "scheduled" | "webhook" }
+    let trigger: "manual" | "scheduled" | "webhook" = "manual";
+    try {
+      if (req.headers.get("content-type")?.includes("application/json")) {
+        const body = await req.json();
+        if (body?.trigger) trigger = body.trigger;
+      }
+    } catch { /* ignore */ }
 
     const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       global: { headers: { Authorization: authHeader } },
@@ -150,7 +162,8 @@ serve(async (req) => {
       throw new Error("User not authenticated");
     }
 
-    const adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    adminClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
+    logger = new SyncRunLogger(adminClient, user.id, "strava", trigger);
 
     // Get user's Strava connection
     const { data: connection, error: connError } = await adminClient
