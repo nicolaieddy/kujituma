@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${serviceKey}`,
         },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: userId, trigger: "manual" }),
       });
       const result = await res.json().catch(() => ({}));
       return json({ success: res.ok, result }, res.ok ? 200 : 500);

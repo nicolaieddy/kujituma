@@ -16,6 +16,7 @@ import GarminConnectPkg from "npm:garmin-connect@1.6.1";
 const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { decryptString } from "../_shared/garmin-crypto.ts";
 import { is429, paceDelay as sleep, withBackoff } from "../_shared/garmin-backoff.ts";
+import { SyncRunLogger } from "../_shared/sync-logger.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,6 +54,7 @@ async function ingestFitFile(
   syncedActivityId: string,
   supabaseUrl: string,
   serviceKey: string,
+  logger?: SyncRunLogger,
 ) {
   // Use library helper if present, else direct download via Garmin's download-service endpoint
   let buffer: ArrayBuffer | null = null;
@@ -73,10 +75,15 @@ async function ingestFitFile(
     }, { label: `fit ${garminActivityId}`, retries: 2, baseMs: 6000, maxMs: 30000 });
   } catch (e) {
     if (is429(e)) throw e;
-    console.warn(`fit download failed for ${garminActivityId}:`, (e as Error).message);
+    const msg = (e as Error).message;
+    console.warn(`fit download failed for ${garminActivityId}:`, msg);
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: `Garmin download failed: ${msg}` });
     return false;
   }
-  if (!buffer || buffer.byteLength < 100) return false;
+  if (!buffer || buffer.byteLength < 100) {
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: "Empty .fit payload from Garmin" });
+    return false;
+  }
 
   const fileName = `garmin_${garminActivityId}.zip`;
   const path = `${userId}/garmin/${Date.now()}_${fileName}`;
@@ -86,6 +93,7 @@ async function ingestFitFile(
   });
   if (upErr) {
     console.warn(`fit upload failed for ${garminActivityId}:`, upErr.message);
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: `Storage upload failed: ${upErr.message}` });
     return false;
   }
 
@@ -102,8 +110,10 @@ async function ingestFitFile(
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     console.warn(`parse-fit-file failed for ${garminActivityId}:`, text.slice(0, 200));
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: `parse-fit-file failed: ${text.slice(0, 200) || res.statusText}` });
     return false;
   }
+  logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: true, status: "created", message: ".fit downloaded + parsed", summary: { bytes: buffer.byteLength, path } });
   return true;
 }
 
@@ -113,19 +123,29 @@ async function syncUser(
   initial: boolean,
   supabaseUrl: string,
   serviceKey: string,
+  trigger: "manual" | "scheduled" = "scheduled",
 ) {
   const userId = conn.user_id as string;
+  const logger = new SyncRunLogger(admin as any, userId, "garmin", trigger);
   const email = await decryptString(conn.encrypted_email);
   const password = await decryptString(conn.encrypted_password);
 
   const gc = new GarminConnect({ username: email, password });
   // Login is the call most commonly throttled — be patient with retries.
-  await withBackoff(() => gc.login(), {
-    label: `login ${userId}`,
-    retries: 3,
-    baseMs: 20000,
-    maxMs: 90000,
-  });
+  try {
+    await withBackoff(() => gc.login(), {
+      label: `login ${userId}`,
+      retries: 3,
+      baseMs: 20000,
+      maxMs: 90000,
+    });
+    logger.addItem({ kind: "auth", ref: "garmin-login", ok: true, status: "created", message: "Logged in to Garmin Connect" });
+  } catch (e) {
+    const msg = (e as Error).message;
+    logger.addItem({ kind: "auth", ref: "garmin-login", ok: false, status: is429(e) ? "rate_limited" : "failed", message: msg });
+    await logger.finalize(is429(e) ? "rate_limited" : "failed", msg);
+    throw e;
+  }
   await sleep(1500);
 
   const doBackfill = initial || !conn.backfill_completed;
@@ -154,6 +174,7 @@ async function syncUser(
   } catch (e) {
     if (is429(e)) result.rate_limited = true;
     result.errors.push(`activities: ${(e as Error).message}`);
+    logger.addItem({ kind: "activity", ref: "list", ok: false, status: is429(e) ? "rate_limited" : "failed", message: (e as Error).message });
   }
 
   const newAct = activities.filter((a) => {
@@ -188,24 +209,44 @@ async function syncUser(
       .maybeSingle();
     if (error) {
       result.errors.push(`act ${garminId}: ${error.message}`);
+      logger.addItem({ kind: "activity", ref: garminId, ok: false, status: "failed", message: error.message, summary: { name: row.activity_name, type: row.activity_type, start_date: startIso } });
       continue;
     }
     result.activities++;
+    logger.addItem({
+      kind: "activity",
+      ref: garminId,
+      ok: true,
+      status: upserted?.fit_file_path ? "updated" : "created",
+      message: `${row.activity_type} · ${row.activity_name ?? "Unnamed"}`,
+      summary: {
+        name: row.activity_name,
+        type: row.activity_type,
+        start_date: startIso,
+        duration_seconds: row.duration_seconds,
+        distance_meters: row.distance_meters,
+        average_heartrate: row.average_heartrate,
+      },
+    });
 
     // Pull .fit only if not already enriched (avoid clobbering manual uploads)
     if (upserted?.id && !upserted.fit_file_path) {
       try {
-        const ok = await ingestFitFile(admin, gc, userId, garminId, upserted.id, supabaseUrl, serviceKey);
+        const ok = await ingestFitFile(admin, gc, userId, garminId, upserted.id, supabaseUrl, serviceKey, logger);
         if (ok) result.fit_files++;
         await sleep(1500);
       } catch (e) {
         if (is429(e)) {
           result.rate_limited = true;
           result.errors.push(`fit ${garminId}: rate limited — will retry next run`);
+          logger.addItem({ kind: "fit_file", ref: garminId, ok: false, status: "rate_limited", message: "Rate-limited mid-download; will retry next run" });
           break;
         }
         result.errors.push(`fit ${garminId}: ${(e as Error).message}`);
+        logger.addItem({ kind: "fit_file", ref: garminId, ok: false, status: "failed", message: (e as Error).message });
       }
+    } else if (upserted?.fit_file_path) {
+      logger.addItem({ kind: "fit_file", ref: garminId, ok: true, status: "skipped", message: "Already enriched — skipped re-download" });
     }
   }
 
@@ -245,12 +286,20 @@ async function syncUser(
       const { error } = await admin
         .from("sleep_entries")
         .upsert(row, { onConflict: "user_id,garmin_summary_id" });
-      if (!error) result.sleep++;
+      if (!error) {
+        result.sleep++;
+        logger.addItem({ kind: "sleep", ref: dateStr, ok: true, status: "created", message: `Sleep ${dateStr}: ${Math.round((dto.sleepTimeSeconds ?? 0) / 60)}m, score ${row.score ?? "—"}`, summary: { score: row.score, duration_seconds: row.duration_seconds, resting_heart_rate: row.resting_heart_rate, body_battery: row.body_battery } });
+      } else {
+        logger.addItem({ kind: "sleep", ref: dateStr, ok: false, status: "failed", message: error.message });
+      }
       await sleep(700);
     } catch (e) {
-      if (is429(e)) { result.rate_limited = true; break; }
+      if (is429(e)) { result.rate_limited = true; logger.addItem({ kind: "sleep", ref: dateStr, ok: false, status: "rate_limited", message: "Rate-limited" }); break; }
       const m = (e as Error).message ?? "";
-      if (!m.includes("404")) result.errors.push(`sleep ${dateStr}: ${m}`);
+      if (!m.includes("404")) {
+        result.errors.push(`sleep ${dateStr}: ${m}`);
+        logger.addItem({ kind: "sleep", ref: dateStr, ok: false, status: "failed", message: m });
+      }
     }
   }
 
@@ -308,12 +357,18 @@ async function syncUser(
       const { error } = await admin
         .from("garmin_wellness_daily")
         .upsert(row, { onConflict: "user_id,wellness_date" });
-      if (!error) result.wellness++;
-      else result.errors.push(`wellness ${dateStr}: ${error.message}`);
+      if (!error) {
+        result.wellness++;
+        logger.addItem({ kind: "wellness", ref: dateStr, ok: true, status: "created", message: `Wellness ${dateStr}: ${row.steps ?? "—"} steps`, summary: { steps: row.steps, resting_heart_rate: row.resting_heart_rate, hrv_last_night_avg: row.hrv_last_night_avg, stress_avg: row.stress_avg, body_battery_max: row.body_battery_max } });
+      } else {
+        result.errors.push(`wellness ${dateStr}: ${error.message}`);
+        logger.addItem({ kind: "wellness", ref: dateStr, ok: false, status: "failed", message: error.message });
+      }
       await sleep(900);
     } catch (e) {
-      if (is429(e)) { result.rate_limited = true; break; }
+      if (is429(e)) { result.rate_limited = true; logger.addItem({ kind: "wellness", ref: dateStr, ok: false, status: "rate_limited", message: "Rate-limited" }); break; }
       result.errors.push(`wellness ${dateStr}: ${(e as Error).message}`);
+      logger.addItem({ kind: "wellness", ref: dateStr, ok: false, status: "failed", message: (e as Error).message });
     }
   }
 
@@ -369,7 +424,11 @@ async function syncUser(
             raw_row: w,
             synced_at: new Date().toISOString(),
           }, { onConflict: "user_id,measured_on" });
-        if (rawErr) { result.errors.push(`body raw ${dateStr}: ${rawErr.message}`); continue; }
+        if (rawErr) {
+          result.errors.push(`body raw ${dateStr}: ${rawErr.message}`);
+          logger.addItem({ kind: "body", ref: dateStr, ok: false, status: "failed", message: `body raw: ${rawErr.message}` });
+          continue;
+        }
 
         // Unified body_measurements (source = 'garmin')
         const { error: bmErr } = await admin
@@ -382,12 +441,18 @@ async function syncUser(
             lean_mass_kg: muscle,
             source: "garmin",
           }, { onConflict: "user_id,measured_on,source" });
-        if (bmErr) result.errors.push(`body_meas ${dateStr}: ${bmErr.message}`);
-        else result.weight++;
+        if (bmErr) {
+          result.errors.push(`body_meas ${dateStr}: ${bmErr.message}`);
+          logger.addItem({ kind: "body", ref: dateStr, ok: false, status: "failed", message: bmErr.message });
+        } else {
+          result.weight++;
+          logger.addItem({ kind: "body", ref: dateStr, ok: true, status: "created", message: `Weight ${dateStr}: ${weightKg?.toFixed?.(1) ?? "—"}kg`, summary: { weight_kg: weightKg, body_fat_pct: bf, muscle_mass_kg: muscle, bmi } });
+        }
       }
     } catch (e) {
       if (is429(e)) result.rate_limited = true;
       else result.errors.push(`weight: ${(e as Error).message}`);
+      logger.addItem({ kind: "body", ref: "range", ok: false, status: is429(e) ? "rate_limited" : "failed", message: (e as Error).message });
     }
   }
 
@@ -408,6 +473,16 @@ async function syncUser(
     })
     .eq("user_id", userId);
 
+  // Finalize the sync run log
+  logger.setCounter("activities", result.activities);
+  logger.setCounter("fit_files", result.fit_files);
+  logger.setCounter("sleep", result.sleep);
+  logger.setCounter("wellness", result.wellness);
+  logger.setCounter("weight", result.weight);
+  const runStatus: "success" | "partial" | "rate_limited" =
+    result.rate_limited ? "rate_limited" : (result.errors.length ? "partial" : "success");
+  await logger.finalize(runStatus, result.errors.length ? result.errors.slice(0, 5).join(" | ") : null);
+
   return result;
 }
 
@@ -421,6 +496,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const targetUserId: string | undefined = body.user_id;
   const initial: boolean = !!body.initial;
+  const trigger: "manual" | "scheduled" = body.trigger === "manual" ? "manual" : "scheduled";
 
   let q = admin.from("garmin_connections").select("*");
   if (targetUserId) q = q.eq("user_id", targetUserId);
@@ -431,7 +507,7 @@ Deno.serve(async (req) => {
   const results: Array<Record<string, unknown>> = [];
   for (const conn of conns) {
     try {
-      const r = await syncUser(admin, conn, initial, supabaseUrl, serviceKey);
+      const r = await syncUser(admin, conn, initial, supabaseUrl, serviceKey, trigger);
       results.push({ ...r, ok: true });
     } catch (err) {
       const msg = (err as Error).message ?? "Unknown error";

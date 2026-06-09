@@ -2946,6 +2946,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sync_run_logs: {
+        Row: {
+          counters: Json
+          created_at: string
+          duration_ms: number | null
+          error: string | null
+          finished_at: string | null
+          id: string
+          items: Json
+          provider: string
+          started_at: string
+          status: string
+          trigger: string
+          user_id: string
+        }
+        Insert: {
+          counters?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items?: Json
+          provider: string
+          started_at?: string
+          status: string
+          trigger?: string
+          user_id: string
+        }
+        Update: {
+          counters?: Json
+          created_at?: string
+          duration_ms?: number | null
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          items?: Json
+          provider?: string
+          started_at?: string
+          status?: string
+          trigger?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       synced_activities: {
         Row: {
           activity_date: string | null
@@ -4013,6 +4058,7 @@ export type Database = {
         Returns: boolean
       }
       normalize_to_monday: { Args: { d: string }; Returns: string }
+      purge_old_sync_run_logs: { Args: never; Returns: undefined }
       record_accountability_check_in: {
         Args: {
           p_message?: string
