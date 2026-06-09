@@ -6,7 +6,8 @@
 //   - user_id: sync only this user (otherwise sync all)
 //   - initial: pull 30 days of history (otherwise incremental from sync_anchor)
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { GarminConnect } from "npm:garmin-connect@1.6.1";
+import GarminConnectPkg from "npm:garmin-connect@1.6.1";
+const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { decryptString } from "../_shared/garmin-crypto.ts";
 
 const corsHeaders = {
