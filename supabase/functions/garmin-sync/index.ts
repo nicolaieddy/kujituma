@@ -255,11 +255,20 @@ async function syncUser(
   for (let i = 0; i < wellnessDays && !result.rate_limited; i++) {
     const dateStr = isoDate(new Date(Date.now() - i * 86400_000));
     try {
-      const stats: any = await gc.getDailyStats?.(dateStr).catch(() => null)
-        ?? await gc.getUserSummary?.(dateStr).catch(() => null);
-      const hr: any = await gc.getHeartRate?.(dateStr).catch(() => null);
-      const stress: any = await gc.getStress?.(dateStr).catch(() => null);
-      const hrv: any = await gc.getHrv?.(dateStr).catch(() => null);
+      const safeCall = async (fn: (() => Promise<any>) | undefined, label: string) => {
+        if (typeof fn !== "function") return null;
+        try {
+          return await withBackoff(fn, { label, retries: 1, baseMs: 4000, maxMs: 12000 });
+        } catch (e) {
+          if (is429(e)) throw e;
+          return null;
+        }
+      };
+      const stats: any = (await safeCall(() => gc.getDailyStats?.(dateStr), `stats ${dateStr}`))
+        ?? (await safeCall(() => gc.getUserSummary?.(dateStr), `summary ${dateStr}`));
+      const hr: any = await safeCall(() => gc.getHeartRate?.(dateStr), `hr ${dateStr}`);
+      const stress: any = await safeCall(() => gc.getStress?.(dateStr), `stress ${dateStr}`);
+      const hrv: any = await safeCall(() => gc.getHrv?.(dateStr), `hrv ${dateStr}`);
 
       const row: Record<string, any> = {
         user_id: userId,
