@@ -8,6 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import GarminConnectPkg from "npm:garmin-connect@1.6.1";
 const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { encryptString } from "../_shared/garmin-crypto.ts";
+import { withBackoff } from "../_shared/garmin-backoff.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
