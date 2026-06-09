@@ -190,19 +190,31 @@ Deno.serve(async (req) => {
       .download(file_path);
 
     if (downloadError || !fileData) {
+      await failAndLog(`Failed to download file: ${downloadError?.message}`);
       return new Response(JSON.stringify({ error: `Failed to download file: ${downloadError?.message}` }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
     const rawBuffer = await fileData.arrayBuffer();
-    const buffer = await extractFitBuffer(rawBuffer, file_path);
-    const fitData = await parseFitBuffer(buffer);
+    let buffer: ArrayBuffer;
+    let fitData: any;
+    try {
+      buffer = await extractFitBuffer(rawBuffer, file_path);
+      fitData = await parseFitBuffer(buffer);
+    } catch (parseErr: any) {
+      const msg = `Parse error: ${parseErr?.message || parseErr}`;
+      await failAndLog(msg);
+      return new Response(JSON.stringify({ error: msg }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     console.log("FIT parsed — sessions:", fitData.sessions?.length, "laps:", fitData.laps?.length, "records:", fitData.records?.length);
 
     const session = fitData.sessions?.[0];
     if (!session) {
+      await failAndLog("No session data found in .fit file");
       return new Response(JSON.stringify({ error: "No session data found in .fit file" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
