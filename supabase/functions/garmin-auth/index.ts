@@ -78,7 +78,12 @@ Deno.serve(async (req) => {
       const gc = new GarminConnect({ username: email, password });
       let rateLimited = false;
       try {
-        await gc.login();
+        await withBackoff(() => gc.login(), {
+          label: `connect-login ${userId}`,
+          retries: 3,
+          baseMs: 20000,
+          maxMs: 90000,
+        });
       } catch (err) {
         const msg = (err as Error)?.message ?? String(err);
         console.error("Garmin login failed:", err);
