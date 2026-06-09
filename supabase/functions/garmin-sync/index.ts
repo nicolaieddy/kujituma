@@ -123,19 +123,29 @@ async function syncUser(
   initial: boolean,
   supabaseUrl: string,
   serviceKey: string,
+  trigger: "manual" | "scheduled" = "scheduled",
 ) {
   const userId = conn.user_id as string;
+  const logger = new SyncRunLogger(admin as any, userId, "garmin", trigger);
   const email = await decryptString(conn.encrypted_email);
   const password = await decryptString(conn.encrypted_password);
 
   const gc = new GarminConnect({ username: email, password });
   // Login is the call most commonly throttled — be patient with retries.
-  await withBackoff(() => gc.login(), {
-    label: `login ${userId}`,
-    retries: 3,
-    baseMs: 20000,
-    maxMs: 90000,
-  });
+  try {
+    await withBackoff(() => gc.login(), {
+      label: `login ${userId}`,
+      retries: 3,
+      baseMs: 20000,
+      maxMs: 90000,
+    });
+    logger.addItem({ kind: "auth", ref: "garmin-login", ok: true, status: "created", message: "Logged in to Garmin Connect" });
+  } catch (e) {
+    const msg = (e as Error).message;
+    logger.addItem({ kind: "auth", ref: "garmin-login", ok: false, status: is429(e) ? "rate_limited" : "failed", message: msg });
+    await logger.finalize(is429(e) ? "rate_limited" : "failed", msg);
+    throw e;
+  }
   await sleep(1500);
 
   const doBackfill = initial || !conn.backfill_completed;
@@ -164,6 +174,7 @@ async function syncUser(
   } catch (e) {
     if (is429(e)) result.rate_limited = true;
     result.errors.push(`activities: ${(e as Error).message}`);
+    logger.addItem({ kind: "activity", ref: "list", ok: false, status: is429(e) ? "rate_limited" : "failed", message: (e as Error).message });
   }
 
   const newAct = activities.filter((a) => {
@@ -198,24 +209,44 @@ async function syncUser(
       .maybeSingle();
     if (error) {
       result.errors.push(`act ${garminId}: ${error.message}`);
+      logger.addItem({ kind: "activity", ref: garminId, ok: false, status: "failed", message: error.message, summary: { name: row.activity_name, type: row.activity_type, start_date: startIso } });
       continue;
     }
     result.activities++;
+    logger.addItem({
+      kind: "activity",
+      ref: garminId,
+      ok: true,
+      status: upserted?.fit_file_path ? "updated" : "created",
+      message: `${row.activity_type} · ${row.activity_name ?? "Unnamed"}`,
+      summary: {
+        name: row.activity_name,
+        type: row.activity_type,
+        start_date: startIso,
+        duration_seconds: row.duration_seconds,
+        distance_meters: row.distance_meters,
+        average_heartrate: row.average_heartrate,
+      },
+    });
 
     // Pull .fit only if not already enriched (avoid clobbering manual uploads)
     if (upserted?.id && !upserted.fit_file_path) {
       try {
-        const ok = await ingestFitFile(admin, gc, userId, garminId, upserted.id, supabaseUrl, serviceKey);
+        const ok = await ingestFitFile(admin, gc, userId, garminId, upserted.id, supabaseUrl, serviceKey, logger);
         if (ok) result.fit_files++;
         await sleep(1500);
       } catch (e) {
         if (is429(e)) {
           result.rate_limited = true;
           result.errors.push(`fit ${garminId}: rate limited — will retry next run`);
+          logger.addItem({ kind: "fit_file", ref: garminId, ok: false, status: "rate_limited", message: "Rate-limited mid-download; will retry next run" });
           break;
         }
         result.errors.push(`fit ${garminId}: ${(e as Error).message}`);
+        logger.addItem({ kind: "fit_file", ref: garminId, ok: false, status: "failed", message: (e as Error).message });
       }
+    } else if (upserted?.fit_file_path) {
+      logger.addItem({ kind: "fit_file", ref: garminId, ok: true, status: "skipped", message: "Already enriched — skipped re-download" });
     }
   }
 
