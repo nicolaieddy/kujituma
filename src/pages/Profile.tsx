@@ -493,20 +493,7 @@ const Profile = () => {
                   <Zap className="h-4 w-4" />
                   Integrations
                 </button>
-                {isTrainingInstalled && (
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange("workouts")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                      activeTab === "workouts"
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    <Dumbbell className="h-4 w-4" />
-                    Workouts
-                  </button>
-                )}
+                {/* Workouts moved to Training → Setup */}
                 <button
                   type="button"
                   onClick={() => handleTabChange("notifications")}
