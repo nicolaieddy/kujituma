@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Card,
   CardContent,
@@ -17,8 +17,18 @@ import {
   Clock,
   RefreshCw,
   ShieldAlert,
+  AlarmClock,
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
+
+// Garmin typically throttles for 2–6h after a 429. We use 2h as the floor.
+const COOLDOWN_MS = 2 * 60 * 60 * 1000;
+const COOLDOWN_KEY = "garmin:cooldownUntil";
+
+function detectRateLimit(msg?: string | null): boolean {
+  if (!msg) return false;
+  return /\b429\b|too many requests|rate limit/i.test(msg);
+}
 
 export function GarminConnectionCard() {
   const {
@@ -33,6 +43,71 @@ export function GarminConnectionCard() {
   } = useGarminConnection();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [now, setNow] = useState(() => Date.now());
+  const [localCooldown, setLocalCooldown] = useState<number | null>(() => {
+    const v = Number(localStorage.getItem(COOLDOWN_KEY) ?? 0);
+    return v > Date.now() ? v : null;
+  });
+
+  // Tick every 15s so the countdown stays fresh
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(Date.now()), 15000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  // Derive cooldown from server-side last_error + last_login_at
+  const serverCooldown = useMemo(() => {
+    if (!connection?.last_error || !detectRateLimit(connection.last_error)) {
+      return null;
+    }
+    const anchor = connection.last_login_at ?? connection.last_sync_at;
+    if (!anchor) return null;
+    const end = new Date(anchor).getTime() + COOLDOWN_MS;
+    return end > Date.now() ? end : null;
+  }, [connection?.last_error, connection?.last_login_at, connection?.last_sync_at]);
+
+  const cooldownUntil = Math.max(serverCooldown ?? 0, localCooldown ?? 0) || null;
+  const inCooldown = !!cooldownUntil && cooldownUntil > now;
+
+  // Persist new local cooldown if server signals one
+  useEffect(() => {
+    if (serverCooldown && serverCooldown > (localCooldown ?? 0)) {
+      localStorage.setItem(COOLDOWN_KEY, String(serverCooldown));
+      setLocalCooldown(serverCooldown);
+    }
+  }, [serverCooldown, localCooldown]);
+
+  // Clear stale cooldown
+  useEffect(() => {
+    if (localCooldown && localCooldown <= now) {
+      localStorage.removeItem(COOLDOWN_KEY);
+      setLocalCooldown(null);
+    }
+  }, [localCooldown, now]);
+
+  const handleSync = async () => {
+    if (inCooldown) return;
+    try {
+      await syncNow();
+    } finally {
+      // Re-check after sync — if server reports a fresh 429, the next render picks it up.
+      // As a safety net, optimistically set a local cooldown if the connection error contains 429.
+      // (Status will refresh via syncNow's checkStatus call.)
+    }
+  };
+
+  // Watch for fresh 429 surfacing post-sync — bump local cooldown
+  useEffect(() => {
+    if (detectRateLimit(connection?.last_error)) {
+      const end = Date.now() + COOLDOWN_MS;
+      const prev = Number(localStorage.getItem(COOLDOWN_KEY) ?? 0);
+      if (end > prev) {
+        localStorage.setItem(COOLDOWN_KEY, String(end));
+        setLocalCooldown(end);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connection?.last_error]);
 
   if (isLoading) {
     return (
@@ -90,25 +165,44 @@ export function GarminConnectionCard() {
               />
             </div>
 
-            {connection.last_error && (
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
-                {connection.last_error}
+            {inCooldown ? (
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300 flex gap-2">
+                <AlarmClock className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <div>
+                  <strong>Garmin rate-limited this account.</strong> Manual sync
+                  is paused to avoid extending the throttle. You can retry in{" "}
+                  <span className="font-medium">
+                    {formatDistanceToNowStrict(new Date(cooldownUntil!))}
+                  </span>
+                  . The scheduled 6h sync will also auto-retry.
+                </div>
               </div>
+            ) : (
+              connection.last_error && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-700 dark:text-amber-300">
+                  {connection.last_error}
+                </div>
+              )
             )}
 
             <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={syncNow}
-                disabled={isSyncing}
+                onClick={handleSync}
+                disabled={isSyncing || inCooldown}
+                title={
+                  inCooldown
+                    ? `Cooldown — retry in ${formatDistanceToNowStrict(new Date(cooldownUntil!))}`
+                    : undefined
+                }
               >
                 {isSyncing ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
                   <RefreshCw className="h-4 w-4 mr-2" />
                 )}
-                Sync now
+                {inCooldown ? "Cooldown" : "Sync now"}
               </Button>
               <Button variant="ghost" size="sm" onClick={disconnect}>
                 <Unlink className="h-4 w-4 mr-2" />
