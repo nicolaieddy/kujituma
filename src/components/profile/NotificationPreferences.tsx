@@ -104,13 +104,10 @@ export function NotificationPreferences({ onSwitchToProfileTab, onVerified }: No
   // Check if user has a verified phone number (once on mount)
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("phone_number, phone_verified")
-      .eq("id", user.id)
-      .single()
-      .then(({ data }) => {
-        setHasPhone(!!(data?.phone_number && data?.phone_verified));
+    (supabase.rpc as any)("get_my_private_profile")
+      .then(({ data }: { data: any }) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        setHasPhone(!!(row?.phone_number && row?.phone_verified));
       });
   }, [user]);
 
