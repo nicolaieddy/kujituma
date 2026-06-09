@@ -54,6 +54,7 @@ async function ingestFitFile(
   syncedActivityId: string,
   supabaseUrl: string,
   serviceKey: string,
+  logger?: SyncRunLogger,
 ) {
   // Use library helper if present, else direct download via Garmin's download-service endpoint
   let buffer: ArrayBuffer | null = null;
@@ -74,10 +75,15 @@ async function ingestFitFile(
     }, { label: `fit ${garminActivityId}`, retries: 2, baseMs: 6000, maxMs: 30000 });
   } catch (e) {
     if (is429(e)) throw e;
-    console.warn(`fit download failed for ${garminActivityId}:`, (e as Error).message);
+    const msg = (e as Error).message;
+    console.warn(`fit download failed for ${garminActivityId}:`, msg);
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: `Garmin download failed: ${msg}` });
     return false;
   }
-  if (!buffer || buffer.byteLength < 100) return false;
+  if (!buffer || buffer.byteLength < 100) {
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: "Empty .fit payload from Garmin" });
+    return false;
+  }
 
   const fileName = `garmin_${garminActivityId}.zip`;
   const path = `${userId}/garmin/${Date.now()}_${fileName}`;
@@ -87,6 +93,7 @@ async function ingestFitFile(
   });
   if (upErr) {
     console.warn(`fit upload failed for ${garminActivityId}:`, upErr.message);
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: `Storage upload failed: ${upErr.message}` });
     return false;
   }
 
@@ -103,8 +110,10 @@ async function ingestFitFile(
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     console.warn(`parse-fit-file failed for ${garminActivityId}:`, text.slice(0, 200));
+    logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: false, status: "failed", message: `parse-fit-file failed: ${text.slice(0, 200) || res.statusText}` });
     return false;
   }
+  logger?.addItem({ kind: "fit_file", ref: garminActivityId, ok: true, status: "created", message: ".fit downloaded + parsed", summary: { bytes: buffer.byteLength, path } });
   return true;
 }
 
