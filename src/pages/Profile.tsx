@@ -93,9 +93,9 @@ const Profile = () => {
   const viewerContext = pageData?.viewer_context;
 
   // ── Local UI state ────────────────────────────────────────────────────────
-  const [activeTab, setActiveTab] = useState<"profile" | "values" | "integrations" | "workouts" | "notifications" | "mcp">(() => {
+  const [activeTab, setActiveTab] = useState<"profile" | "values" | "integrations" | "notifications" | "mcp">(() => {
     const p = getSearchParams().get("tab");
-    if (p === "values" || p === "integrations" || p === "workouts" || p === "notifications" || p === "mcp") return p;
+    if (p === "values" || p === "integrations" || p === "notifications" || p === "mcp") return p;
     return "profile";
   });
   const [isEditing, setIsEditing] = useState(false);
