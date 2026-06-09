@@ -321,8 +321,12 @@ async function syncUser(
       // Library variants
       let weighIns: any[] = [];
       try {
-        const res: any = await gc.getDailyWeightInRange?.(startDate, endDate)
-          ?? await gc.getWeighIns?.(startDate, endDate);
+        const res: any = await withBackoff(
+          async () =>
+            (await gc.getDailyWeightInRange?.(startDate, endDate)) ??
+            (await gc.getWeighIns?.(startDate, endDate)),
+          { label: "weight-range", retries: 2, baseMs: 5000, maxMs: 20000 },
+        );
         weighIns = Array.isArray(res) ? res : (res?.dailyWeightSummaries ?? res?.weightList ?? []);
       } catch (e) {
         if (is429(e)) result.rate_limited = true;
