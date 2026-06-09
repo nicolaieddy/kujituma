@@ -214,6 +214,7 @@ async function syncUser(
         () => gc.getSleepData?.(dateStr),
         { label: `sleep ${dateStr}`, retries: 2, baseMs: 5000, maxMs: 20000 },
       );
+      if (!s?.dailySleepDTO?.sleepTimeSeconds) {
         await sleep(600);
         continue;
       }
