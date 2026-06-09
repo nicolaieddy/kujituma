@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bookmark, GripHorizontal, Copy, Check, MessageSquare, Bot, ChevronDown } from "lucide-react";
+import { Bookmark, GripHorizontal, Copy, Check, MessageSquare, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
