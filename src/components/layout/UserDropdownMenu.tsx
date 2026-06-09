@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User, ChevronDown, Sparkles } from "lucide-react";
+import { LogOut, Settings, User, ChevronDown, Sparkles, Terminal } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 
 interface UserDropdownMenuProps {
