@@ -115,8 +115,14 @@ async function syncUser(
   const password = await decryptString(conn.encrypted_password);
 
   const gc = new GarminConnect({ username: email, password });
-  await gc.login();
-  await sleep(800);
+  // Login is the call most commonly throttled — be patient with retries.
+  await withBackoff(() => gc.login(), {
+    label: `login ${userId}`,
+    retries: 3,
+    baseMs: 20000,
+    maxMs: 90000,
+  });
+  await sleep(1500);
 
   const doBackfill = initial || !conn.backfill_completed;
   const lookbackDays = doBackfill ? 30 : 14;
@@ -137,7 +143,10 @@ async function syncUser(
   // ── Activities + .fit per activity ─────────────────────────
   let activities: any[] = [];
   try {
-    activities = (await gc.getActivities(0, doBackfill ? 100 : 30)) ?? [];
+    activities = (await withBackoff(
+      () => gc.getActivities(0, doBackfill ? 100 : 30),
+      { label: "getActivities", retries: 2, baseMs: 6000, maxMs: 30000 },
+    )) ?? [];
   } catch (e) {
     if (is429(e)) result.rate_limited = true;
     result.errors.push(`activities: ${(e as Error).message}`);
