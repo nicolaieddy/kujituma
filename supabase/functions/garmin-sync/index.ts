@@ -184,7 +184,7 @@ async function syncUser(
     const { data: upserted, error } = await admin
       .from("synced_activities")
       .upsert(row, { onConflict: "user_id,garmin_activity_id" })
-      .select("id, has_streams")
+      .select("id, fit_file_path")
       .maybeSingle();
     if (error) {
       result.errors.push(`act ${garminId}: ${error.message}`);
@@ -193,7 +193,7 @@ async function syncUser(
     result.activities++;
 
     // Pull .fit only if not already enriched (avoid clobbering manual uploads)
-    if (upserted?.id && !upserted.has_streams) {
+    if (upserted?.id && !upserted.fit_file_path) {
       try {
         const ok = await ingestFitFile(admin, gc, userId, garminId, upserted.id, supabaseUrl, serviceKey);
         if (ok) result.fit_files++;
