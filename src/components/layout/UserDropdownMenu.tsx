@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, Settings, User, ChevronDown, Sparkles } from "lucide-react";
+import { LogOut, Settings, User, ChevronDown, Sparkles, Terminal } from "lucide-react";
 import { UserProfileAvatar } from "./UserProfileAvatar";
 
 interface UserDropdownMenuProps {
@@ -37,6 +37,14 @@ export const UserDropdownMenu = ({ isAdmin, onSignOut }: UserDropdownMenuProps) 
         >
           <Sparkles className="h-4 w-4 mr-2" />
           Rituals Dashboard
+        </DropdownMenuItem>
+
+        <DropdownMenuItem 
+          onClick={() => navigate('/profile?tab=mcp')}
+          className="cursor-pointer"
+        >
+          <Terminal className="h-4 w-4 mr-2" />
+          MCP
         </DropdownMenuItem>
         
         {isAdmin && (
