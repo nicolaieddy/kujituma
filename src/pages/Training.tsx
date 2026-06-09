@@ -14,7 +14,10 @@ type TrainingView = "plan" | "setup";
 export default function Training() {
   const todayWeek = useMemo(() => toWeekKey(new Date()), []);
   const [weekStart, setWeekStart] = useState<string>(todayWeek);
-  const [view, setView] = useState<TrainingView>("plan");
+  const [view, setView] = useState<TrainingView>(() => {
+    if (typeof window === "undefined") return "plan";
+    return new URLSearchParams(window.location.search).get("view") === "setup" ? "setup" : "plan";
+  });
 
   const shiftWeek = (delta: number) => {
     const [y, m, d] = weekStart.split("-").map(Number);
