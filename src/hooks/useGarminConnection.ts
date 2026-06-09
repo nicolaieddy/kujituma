@@ -70,7 +70,13 @@ export function useGarminConnection() {
         );
         const json = await res.json();
         if (!res.ok) throw new Error(json.error || "Failed to connect");
-        toast.success("Garmin connected — pulling your data now");
+        if (json.rateLimited) {
+          toast.success(
+            "Garmin connected. They rate-limited the first sync — auto-sync will retry within ~2h.",
+          );
+        } else {
+          toast.success("Garmin connected — pulling your data now");
+        }
         await checkStatus();
         queryClient.invalidateQueries({ queryKey: qk.training.syncedActivities() });
         queryClient.invalidateQueries({ queryKey: qk.training.sleepEntries() });
