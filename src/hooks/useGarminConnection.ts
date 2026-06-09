@@ -72,7 +72,7 @@ export function useGarminConnection() {
         if (!res.ok) throw new Error(json.error || "Failed to connect");
         if (json.rateLimited) {
           toast.success(
-            "Garmin connected. They rate-limited the first sync — auto-sync will retry within ~2h.",
+            "Garmin connected. They rate-limited the first sync — auto-sync will retry within ~6h.",
           );
         } else {
           toast.success("Garmin connected — pulling your data now");

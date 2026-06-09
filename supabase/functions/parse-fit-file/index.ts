@@ -125,21 +125,34 @@ Deno.serve(async (req) => {
       });
     }
 
-    const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: userError } = await userClient.auth.getUser();
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const { file_path, workout_id, overwrite_activity_id, timezone: requestTimezone } = await req.json();
+    const { file_path, workout_id, overwrite_activity_id, timezone: requestTimezone, user_id: bodyUserId } = await req.json();
     if (!file_path) {
       return new Response(JSON.stringify({ error: "file_path is required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Allow service-role callers (e.g. garmin-sync) to specify the target user_id directly.
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    let user: { id: string } | null = null;
+    if (token === SUPABASE_SERVICE_ROLE_KEY) {
+      if (!bodyUserId) {
+        return new Response(JSON.stringify({ error: "user_id required for service-role calls" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      user = { id: bodyUserId };
+    } else {
+      const userClient = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user: u }, error: userError } = await userClient.auth.getUser();
+      if (userError || !u) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      user = u;
     }
 
     const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

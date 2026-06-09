@@ -972,14 +972,79 @@ export type Database = {
         }
         Relationships: []
       }
+      garmin_body_composition: {
+        Row: {
+          bmi: number | null
+          body_fat_pct: number | null
+          body_water_pct: number | null
+          bone_mass_kg: number | null
+          created_at: string
+          id: string
+          measured_at: string | null
+          measured_on: string
+          metabolic_age: number | null
+          muscle_mass_kg: number | null
+          physique_rating: string | null
+          raw_row: Json | null
+          source_device: string | null
+          synced_at: string
+          updated_at: string
+          user_id: string
+          visceral_fat: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          bmi?: number | null
+          body_fat_pct?: number | null
+          body_water_pct?: number | null
+          bone_mass_kg?: number | null
+          created_at?: string
+          id?: string
+          measured_at?: string | null
+          measured_on: string
+          metabolic_age?: number | null
+          muscle_mass_kg?: number | null
+          physique_rating?: string | null
+          raw_row?: Json | null
+          source_device?: string | null
+          synced_at?: string
+          updated_at?: string
+          user_id: string
+          visceral_fat?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          bmi?: number | null
+          body_fat_pct?: number | null
+          body_water_pct?: number | null
+          bone_mass_kg?: number | null
+          created_at?: string
+          id?: string
+          measured_at?: string | null
+          measured_on?: string
+          metabolic_age?: number | null
+          muscle_mass_kg?: number | null
+          physique_rating?: string | null
+          raw_row?: Json | null
+          source_device?: string | null
+          synced_at?: string
+          updated_at?: string
+          user_id?: string
+          visceral_fat?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       garmin_connections: {
         Row: {
+          backfill_completed: boolean
           connected_at: string
           created_at: string
           encrypted_email: string
           encrypted_password: string
           garmin_user_id: string | null
           id: string
+          last_activity_anchor: string | null
           last_error: string | null
           last_login_at: string | null
           last_sync_at: string | null
@@ -989,12 +1054,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          backfill_completed?: boolean
           connected_at?: string
           created_at?: string
           encrypted_email: string
           encrypted_password: string
           garmin_user_id?: string | null
           id?: string
+          last_activity_anchor?: string | null
           last_error?: string | null
           last_login_at?: string | null
           last_sync_at?: string | null
@@ -1004,12 +1071,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          backfill_completed?: boolean
           connected_at?: string
           created_at?: string
           encrypted_email?: string
           encrypted_password?: string
           garmin_user_id?: string | null
           id?: string
+          last_activity_anchor?: string | null
           last_error?: string | null
           last_login_at?: string | null
           last_sync_at?: string | null
@@ -1017,6 +1086,93 @@ export type Database = {
           sync_anchor?: string | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      garmin_wellness_daily: {
+        Row: {
+          active_calories: number | null
+          body_battery_charged: number | null
+          body_battery_drained: number | null
+          body_battery_max: number | null
+          body_battery_min: number | null
+          created_at: string
+          floors_climbed: number | null
+          hrv_last_night_avg: number | null
+          hrv_status: string | null
+          hrv_weekly_avg: number | null
+          id: string
+          max_heart_rate: number | null
+          min_heart_rate: number | null
+          raw_row: Json | null
+          respiration_avg: number | null
+          resting_heart_rate: number | null
+          source: string
+          spo2_avg: number | null
+          steps: number | null
+          stress_avg: number | null
+          stress_max: number | null
+          synced_at: string
+          total_calories: number | null
+          updated_at: string
+          user_id: string
+          wellness_date: string
+        }
+        Insert: {
+          active_calories?: number | null
+          body_battery_charged?: number | null
+          body_battery_drained?: number | null
+          body_battery_max?: number | null
+          body_battery_min?: number | null
+          created_at?: string
+          floors_climbed?: number | null
+          hrv_last_night_avg?: number | null
+          hrv_status?: string | null
+          hrv_weekly_avg?: number | null
+          id?: string
+          max_heart_rate?: number | null
+          min_heart_rate?: number | null
+          raw_row?: Json | null
+          respiration_avg?: number | null
+          resting_heart_rate?: number | null
+          source?: string
+          spo2_avg?: number | null
+          steps?: number | null
+          stress_avg?: number | null
+          stress_max?: number | null
+          synced_at?: string
+          total_calories?: number | null
+          updated_at?: string
+          user_id: string
+          wellness_date: string
+        }
+        Update: {
+          active_calories?: number | null
+          body_battery_charged?: number | null
+          body_battery_drained?: number | null
+          body_battery_max?: number | null
+          body_battery_min?: number | null
+          created_at?: string
+          floors_climbed?: number | null
+          hrv_last_night_avg?: number | null
+          hrv_status?: string | null
+          hrv_weekly_avg?: number | null
+          id?: string
+          max_heart_rate?: number | null
+          min_heart_rate?: number | null
+          raw_row?: Json | null
+          respiration_avg?: number | null
+          resting_heart_rate?: number | null
+          source?: string
+          spo2_avg?: number | null
+          steps?: number | null
+          stress_avg?: number | null
+          stress_max?: number | null
+          synced_at?: string
+          total_calories?: number | null
+          updated_at?: string
+          user_id?: string
+          wellness_date?: string
         }
         Relationships: []
       }
