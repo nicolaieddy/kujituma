@@ -15,6 +15,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import GarminConnectPkg from "npm:garmin-connect@1.6.1";
 const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { decryptString } from "../_shared/garmin-crypto.ts";
+import { is429, paceDelay as sleep, withBackoff } from "../_shared/garmin-backoff.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -29,13 +30,6 @@ function json(body: unknown, status = 200) {
 }
 
 const isoDate = (d: Date) => d.toISOString().slice(0, 10);
-const sleep = (ms: number) =>
-  new Promise((r) => setTimeout(r, ms + Math.floor(Math.random() * 400)));
-
-function is429(err: unknown): boolean {
-  const m = (err as Error)?.message ?? String(err);
-  return /429|too many|rate limit/i.test(m);
-}
 
 function mapActivityType(t: string | undefined): string {
   if (!t) return "other";
@@ -63,16 +57,20 @@ async function ingestFitFile(
   // Use library helper if present, else direct download via Garmin's download-service endpoint
   let buffer: ArrayBuffer | null = null;
   try {
-    if (typeof gc.downloadOriginalActivityData === "function") {
-      const buf = await gc.downloadOriginalActivityData({ activityId: garminActivityId });
-      if (buf instanceof ArrayBuffer) buffer = buf;
-      else if (buf?.buffer) buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-    }
-    if (!buffer && gc.client?.get) {
-      const url = `https://connect.garmin.com/download-service/files/activity/${garminActivityId}`;
-      const resp = await gc.client.get(url, { responseType: "arraybuffer" });
-      buffer = resp?.data ?? resp;
-    }
+    buffer = await withBackoff(async () => {
+      let buf: any = null;
+      if (typeof gc.downloadOriginalActivityData === "function") {
+        buf = await gc.downloadOriginalActivityData({ activityId: garminActivityId });
+      }
+      if (!buf && gc.client?.get) {
+        const url = `https://connect.garmin.com/download-service/files/activity/${garminActivityId}`;
+        const resp = await gc.client.get(url, { responseType: "arraybuffer" });
+        buf = resp?.data ?? resp;
+      }
+      if (buf instanceof ArrayBuffer) return buf;
+      if (buf?.buffer) return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+      return null;
+    }, { label: `fit ${garminActivityId}`, retries: 2, baseMs: 6000, maxMs: 30000 });
   } catch (e) {
     if (is429(e)) throw e;
     console.warn(`fit download failed for ${garminActivityId}:`, (e as Error).message);
@@ -121,8 +119,14 @@ async function syncUser(
   const password = await decryptString(conn.encrypted_password);
 
   const gc = new GarminConnect({ username: email, password });
-  await gc.login();
-  await sleep(800);
+  // Login is the call most commonly throttled — be patient with retries.
+  await withBackoff(() => gc.login(), {
+    label: `login ${userId}`,
+    retries: 3,
+    baseMs: 20000,
+    maxMs: 90000,
+  });
+  await sleep(1500);
 
   const doBackfill = initial || !conn.backfill_completed;
   const lookbackDays = doBackfill ? 30 : 14;
@@ -143,7 +147,10 @@ async function syncUser(
   // ── Activities + .fit per activity ─────────────────────────
   let activities: any[] = [];
   try {
-    activities = (await gc.getActivities(0, doBackfill ? 100 : 30)) ?? [];
+    activities = (await withBackoff(
+      () => gc.getActivities(0, doBackfill ? 100 : 30),
+      { label: "getActivities", retries: 2, baseMs: 6000, maxMs: 30000 },
+    )) ?? [];
   } catch (e) {
     if (is429(e)) result.rate_limited = true;
     result.errors.push(`activities: ${(e as Error).message}`);
@@ -207,7 +214,10 @@ async function syncUser(
   for (let i = 0; i < sleepDays && !result.rate_limited; i++) {
     const dateStr = isoDate(new Date(Date.now() - i * 86400_000));
     try {
-      const s: any = await gc.getSleepData?.(dateStr);
+      const s: any = await withBackoff(
+        () => gc.getSleepData?.(dateStr),
+        { label: `sleep ${dateStr}`, retries: 2, baseMs: 5000, maxMs: 20000 },
+      );
       if (!s?.dailySleepDTO?.sleepTimeSeconds) {
         await sleep(600);
         continue;
@@ -249,11 +259,20 @@ async function syncUser(
   for (let i = 0; i < wellnessDays && !result.rate_limited; i++) {
     const dateStr = isoDate(new Date(Date.now() - i * 86400_000));
     try {
-      const stats: any = await gc.getDailyStats?.(dateStr).catch(() => null)
-        ?? await gc.getUserSummary?.(dateStr).catch(() => null);
-      const hr: any = await gc.getHeartRate?.(dateStr).catch(() => null);
-      const stress: any = await gc.getStress?.(dateStr).catch(() => null);
-      const hrv: any = await gc.getHrv?.(dateStr).catch(() => null);
+      const safeCall = async (fn: (() => Promise<any>) | undefined, label: string) => {
+        if (typeof fn !== "function") return null;
+        try {
+          return await withBackoff(fn, { label, retries: 1, baseMs: 4000, maxMs: 12000 });
+        } catch (e) {
+          if (is429(e)) throw e;
+          return null;
+        }
+      };
+      const stats: any = (await safeCall(() => gc.getDailyStats?.(dateStr), `stats ${dateStr}`))
+        ?? (await safeCall(() => gc.getUserSummary?.(dateStr), `summary ${dateStr}`));
+      const hr: any = await safeCall(() => gc.getHeartRate?.(dateStr), `hr ${dateStr}`);
+      const stress: any = await safeCall(() => gc.getStress?.(dateStr), `stress ${dateStr}`);
+      const hrv: any = await safeCall(() => gc.getHrv?.(dateStr), `hrv ${dateStr}`);
 
       const row: Record<string, any> = {
         user_id: userId,
@@ -306,8 +325,12 @@ async function syncUser(
       // Library variants
       let weighIns: any[] = [];
       try {
-        const res: any = await gc.getDailyWeightInRange?.(startDate, endDate)
-          ?? await gc.getWeighIns?.(startDate, endDate);
+        const res: any = await withBackoff(
+          async () =>
+            (await gc.getDailyWeightInRange?.(startDate, endDate)) ??
+            (await gc.getWeighIns?.(startDate, endDate)),
+          { label: "weight-range", retries: 2, baseMs: 5000, maxMs: 20000 },
+        );
         weighIns = Array.isArray(res) ? res : (res?.dailyWeightSummaries ?? res?.weightList ?? []);
       } catch (e) {
         if (is429(e)) result.rate_limited = true;

@@ -8,6 +8,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import GarminConnectPkg from "npm:garmin-connect@1.6.1";
 const { GarminConnect } = GarminConnectPkg as { GarminConnect: any };
 import { encryptString } from "../_shared/garmin-crypto.ts";
+import { withBackoff } from "../_shared/garmin-backoff.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -77,7 +78,12 @@ Deno.serve(async (req) => {
       const gc = new GarminConnect({ username: email, password });
       let rateLimited = false;
       try {
-        await gc.login();
+        await withBackoff(() => gc.login(), {
+          label: `connect-login ${userId}`,
+          retries: 3,
+          baseMs: 20000,
+          maxMs: 90000,
+        });
       } catch (err) {
         const msg = (err as Error)?.message ?? String(err);
         console.error("Garmin login failed:", err);
