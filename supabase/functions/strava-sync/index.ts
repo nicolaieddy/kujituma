@@ -373,10 +373,37 @@ serve(async (req) => {
 
       if (insertError) {
         console.error(`Failed to insert activity ${activity.id}:`, insertError);
+        logger?.addItem({
+          kind: "activity",
+          ref: String(activity.id),
+          ok: false,
+          status: "failed",
+          message: `Insert failed: ${insertError.message}`,
+          summary: { name: activity.name, type: activity.type, date: activityLocalDate },
+        });
+        logger?.incCounter("activity_failed");
         continue;
       }
 
       results.synced++;
+      logger?.incCounter("activities_synced");
+      logger?.addItem({
+        kind: "activity",
+        ref: String(activity.id),
+        ok: true,
+        status: "created",
+        message: `Synced ${activity.name}`,
+        summary: {
+          name: activity.name,
+          type: activity.sport_type || activity.type,
+          date: activityLocalDate,
+          distance_km: activity.distance ? +(activity.distance / 1000).toFixed(2) : null,
+          duration_min: Math.round((activity.moving_time || 0) / 60),
+          avg_hr: activity.average_heartrate ?? null,
+          elev_gain_m: activity.total_elevation_gain ?? null,
+          matched_habit: shouldMatch ? mapping?.habit_item_id : null,
+        },
+      });
 
       if (shouldMatch) {
         const completionDate = activityLocalDate;
@@ -402,6 +429,7 @@ serve(async (req) => {
 
           if (!completionError) {
             results.matched++;
+            logger?.incCounter("habits_matched");
             await supabase
               .from("synced_activities")
               .update({ habit_completion_created: true })
@@ -439,6 +467,19 @@ serve(async (req) => {
 
     console.log("Sync results:", results);
 
+    logger?.setCounter("activities_fetched", activities.length);
+    if (results.skipped > 0) logger?.incCounter("skipped", results.skipped);
+    if (results.rematched > 0) logger?.incCounter("rematched", results.rematched);
+    if (results.training_matched > 0) logger?.incCounter("training_matched", results.training_matched);
+
+    const finalStatus: RunStatus =
+      results.synced === 0 && activities.length === 0
+        ? "success"
+        : results.synced > 0
+          ? "success"
+          : "success";
+    await logger?.finalize(finalStatus);
+
     return new Response(JSON.stringify({ 
       success: true,
       activities: activities.length,
@@ -448,7 +489,10 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Strava sync error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    try {
+      await logger?.finalize("failed", (error as Error).message);
+    } catch { /* ignore */ }
+    return new Response(JSON.stringify({ error: (error as Error).message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
