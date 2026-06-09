@@ -286,12 +286,20 @@ async function syncUser(
       const { error } = await admin
         .from("sleep_entries")
         .upsert(row, { onConflict: "user_id,garmin_summary_id" });
-      if (!error) result.sleep++;
+      if (!error) {
+        result.sleep++;
+        logger.addItem({ kind: "sleep", ref: dateStr, ok: true, status: "created", message: `Sleep ${dateStr}: ${Math.round((dto.sleepTimeSeconds ?? 0) / 60)}m, score ${row.score ?? "—"}`, summary: { score: row.score, duration_seconds: row.duration_seconds, resting_heart_rate: row.resting_heart_rate, body_battery: row.body_battery } });
+      } else {
+        logger.addItem({ kind: "sleep", ref: dateStr, ok: false, status: "failed", message: error.message });
+      }
       await sleep(700);
     } catch (e) {
-      if (is429(e)) { result.rate_limited = true; break; }
+      if (is429(e)) { result.rate_limited = true; logger.addItem({ kind: "sleep", ref: dateStr, ok: false, status: "rate_limited", message: "Rate-limited" }); break; }
       const m = (e as Error).message ?? "";
-      if (!m.includes("404")) result.errors.push(`sleep ${dateStr}: ${m}`);
+      if (!m.includes("404")) {
+        result.errors.push(`sleep ${dateStr}: ${m}`);
+        logger.addItem({ kind: "sleep", ref: dateStr, ok: false, status: "failed", message: m });
+      }
     }
   }
 
