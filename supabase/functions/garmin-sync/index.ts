@@ -57,16 +57,20 @@ async function ingestFitFile(
   // Use library helper if present, else direct download via Garmin's download-service endpoint
   let buffer: ArrayBuffer | null = null;
   try {
-    if (typeof gc.downloadOriginalActivityData === "function") {
-      const buf = await gc.downloadOriginalActivityData({ activityId: garminActivityId });
-      if (buf instanceof ArrayBuffer) buffer = buf;
-      else if (buf?.buffer) buffer = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
-    }
-    if (!buffer && gc.client?.get) {
-      const url = `https://connect.garmin.com/download-service/files/activity/${garminActivityId}`;
-      const resp = await gc.client.get(url, { responseType: "arraybuffer" });
-      buffer = resp?.data ?? resp;
-    }
+    buffer = await withBackoff(async () => {
+      let buf: any = null;
+      if (typeof gc.downloadOriginalActivityData === "function") {
+        buf = await gc.downloadOriginalActivityData({ activityId: garminActivityId });
+      }
+      if (!buf && gc.client?.get) {
+        const url = `https://connect.garmin.com/download-service/files/activity/${garminActivityId}`;
+        const resp = await gc.client.get(url, { responseType: "arraybuffer" });
+        buf = resp?.data ?? resp;
+      }
+      if (buf instanceof ArrayBuffer) return buf;
+      if (buf?.buffer) return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
+      return null;
+    }, { label: `fit ${garminActivityId}`, retries: 2, baseMs: 6000, maxMs: 30000 });
   } catch (e) {
     if (is429(e)) throw e;
     console.warn(`fit download failed for ${garminActivityId}:`, (e as Error).message);
