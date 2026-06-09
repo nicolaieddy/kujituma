@@ -1,0 +1,1 @@
+ALTER TABLE public.synced_activities ADD CONSTRAINT synced_activities_user_garmin_activity_key UNIQUE (user_id, garmin_activity_id);
