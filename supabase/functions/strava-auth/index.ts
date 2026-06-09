@@ -133,60 +133,41 @@ serve(async (req) => {
       });
     }
 
-    // === DISCONNECT: Remove Strava connection ===
-    if (action === "disconnect") {
-      if (!authHeader) {
-        throw new Error("Authorization required");
-      }
-
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
+    // Helper: verify caller JWT, then use service-role for the actual table ops
+    // (strava_connections has SELECT/UPDATE/DELETE locked off from clients).
+    const verifyUser = async () => {
+      if (!authHeader) throw new Error("Authorization required");
+      const authClient = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
         global: { headers: { Authorization: authHeader } },
       });
+      const { data: { user }, error } = await authClient.auth.getUser();
+      if (error || !user) throw new Error("User not authenticated");
+      return user;
+    };
+    const admin = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!);
 
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error("User not authenticated");
-      }
-
-      const { error: deleteError } = await supabase
+    // === DISCONNECT ===
+    if (action === "disconnect") {
+      const user = await verifyUser();
+      const { error: deleteError } = await admin
         .from("strava_connections")
         .delete()
         .eq("user_id", user.id);
-
-      if (deleteError) {
-        throw new Error(`Failed to disconnect: ${deleteError.message}`);
-      }
-
+      if (deleteError) throw new Error(`Failed to disconnect: ${deleteError.message}`);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // === STATUS: Check connection status ===
+    // === STATUS ===
     if (action === "status") {
-      if (!authHeader) {
-        throw new Error("Authorization required");
-      }
-
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-        global: { headers: { Authorization: authHeader } },
-      });
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error("User not authenticated");
-      }
-
-      const { data: connection, error: fetchError } = await supabase
+      const user = await verifyUser();
+      const { data: connection, error: fetchError } = await admin
         .from("strava_connections")
         .select("strava_athlete_id, athlete_firstname, athlete_lastname, created_at, updated_at, last_synced_at, auto_sync_enabled")
         .eq("user_id", user.id)
-        .single();
-
-      if (fetchError && fetchError.code !== "PGRST116") {
-        throw new Error(`Failed to fetch status: ${fetchError.message}`);
-      }
-
+        .maybeSingle();
+      if (fetchError) throw new Error(`Failed to fetch status: ${fetchError.message}`);
       return new Response(JSON.stringify({
         connected: !!connection,
         connection: connection || null,
@@ -197,31 +178,14 @@ serve(async (req) => {
 
     // === TOGGLE AUTO-SYNC ===
     if (action === "toggle-auto-sync") {
-      if (!authHeader) {
-        throw new Error("Authorization required");
-      }
-
-      const supabase = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
-        global: { headers: { Authorization: authHeader } },
-      });
-
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) {
-        throw new Error("User not authenticated");
-      }
-
+      const user = await verifyUser();
       const body = await req.json();
       const enabled = body.enabled === true;
-
-      const { error: updateError } = await supabase
+      const { error: updateError } = await admin
         .from("strava_connections")
         .update({ auto_sync_enabled: enabled })
         .eq("user_id", user.id);
-
-      if (updateError) {
-        throw new Error(`Failed to update: ${updateError.message}`);
-      }
-
+      if (updateError) throw new Error(`Failed to update: ${updateError.message}`);
       return new Response(JSON.stringify({ success: true, auto_sync_enabled: enabled }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
