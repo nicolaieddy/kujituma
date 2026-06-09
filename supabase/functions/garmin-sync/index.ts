@@ -496,6 +496,7 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const targetUserId: string | undefined = body.user_id;
   const initial: boolean = !!body.initial;
+  const trigger: "manual" | "scheduled" = body.trigger === "manual" ? "manual" : "scheduled";
 
   let q = admin.from("garmin_connections").select("*");
   if (targetUserId) q = q.eq("user_id", targetUserId);
@@ -506,7 +507,7 @@ Deno.serve(async (req) => {
   const results: Array<Record<string, unknown>> = [];
   for (const conn of conns) {
     try {
-      const r = await syncUser(admin, conn, initial, supabaseUrl, serviceKey);
+      const r = await syncUser(admin, conn, initial, supabaseUrl, serviceKey, trigger);
       results.push({ ...r, ok: true });
     } catch (err) {
       const msg = (err as Error).message ?? "Unknown error";
