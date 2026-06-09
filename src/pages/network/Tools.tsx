@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Bookmark, GripHorizontal, Copy, Check, MessageSquare, Bot, ChevronDown } from "lucide-react";
+import { Bookmark, GripHorizontal, Copy, Check, MessageSquare, ChevronDown } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -64,75 +65,15 @@ const Tools = () => {
         <p className="text-sm text-muted-foreground">Utilities to speed up your workflow</p>
       </div>
 
-      {/* MCP Server for Claude */}
-      <ToolSection
-        icon={<Bot className="h-4 w-4 text-primary" />}
-        title="Claude Integration"
-        description="Connect your network to Claude via MCP"
-        defaultOpen
-      >
-        <p className="text-sm text-muted-foreground">
-          Use Claude to search contacts, log interactions, check upcoming events, and get follow-up suggestions — all through natural conversation. Works with <strong className="text-foreground">claude.ai</strong>, <strong className="text-foreground">Claude Desktop</strong>, and <strong className="text-foreground">Claude Mobile</strong>.
-        </p>
-
-        {/* Step 1: Generate Token */}
-        <div className="rounded-md border border-border bg-muted/50 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">1</span>
-            <p className="text-sm font-semibold">Generate an API token</p>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Network data is exposed through Kujituma's shared MCP server. Generate or copy your
-            token from <a href="/profile" className="text-primary underline underline-offset-2 hover:text-primary/80">Profile → MCP</a>.
-          </p>
-        </div>
-
-        {/* Step 2: Connect to Claude */}
-        <div className="rounded-md border border-border bg-muted/50 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold">2</span>
-            <p className="text-sm font-semibold">Add to Claude</p>
-          </div>
-          <ol className="text-sm text-muted-foreground list-decimal list-inside space-y-2">
-            <li>
-              Open{" "}
-              <a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener noreferrer" className="text-primary underline underline-offset-2 hover:text-primary/80">
-                claude.ai/settings/connectors
-              </a>{" "}
-              and click <strong className="text-foreground">"Add custom MCP server"</strong>.
-            </li>
-            <li>
-              Paste the <strong className="text-foreground">URL</strong> you copied above.
-            </li>
-            <li>Click <strong className="text-foreground">"Add"</strong>, then enable the connector in any chat via the <strong className="text-foreground">+</strong> button → <strong className="text-foreground">Connectors</strong>.</li>
-          </ol>
-          <p className="text-xs text-muted-foreground italic">
-            Available on Claude Pro, Max, Team, and Enterprise plans. Free plans support 1 custom connector.
-          </p>
-        </div>
-
-        {/* What you can do */}
-        <details className="text-xs text-muted-foreground">
-          <summary className="cursor-pointer font-medium hover:text-foreground transition-colors">What can you ask Claude?</summary>
-          <div className="mt-2 ml-1 space-y-1.5">
-            <p className="text-xs">Once connected, try prompts like:</p>
-            <ul className="list-disc list-inside space-y-0.5 italic">
-              <li>"Who should I follow up with this week?"</li>
-              <li>"Find all my contacts in Berlin"</li>
-              <li>"Log a call with Sarah — we discussed the Q3 launch"</li>
-              <li>"What birthdays are coming up?"</li>
-            </ul>
-            <p className="text-xs font-medium mt-2 not-italic">Available tools:</p>
-            <ul className="list-disc list-inside space-y-0.5 not-italic">
-              <li><strong>search_contacts</strong> — Find contacts by name, country, sector, etc.</li>
-              <li><strong>get_contact</strong> — Full details with interactions & key facts</li>
-              <li><strong>log_interaction</strong> — Log meetings, calls, messages</li>
-              <li><strong>list_upcoming_events</strong> — Birthdays, follow-ups, custom events</li>
-              <li><strong>suggest_followups</strong> — AI-prioritized follow-up suggestions</li>
-            </ul>
-          </div>
-        </details>
-      </ToolSection>
+      {/* Claude / MCP — managed centrally in Profile */}
+      <div className="rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">
+        Network data is exposed through Kujituma's shared MCP server (tools prefixed{" "}
+        <code className="text-foreground">network_*</code>). Manage your API token in{" "}
+        <Link to="/profile" className="text-primary underline underline-offset-2 hover:text-primary/80">
+          Profile → Claude Integration
+        </Link>
+        .
+      </div>
 
       {/* Quick Add Bookmarklet */}
       <ToolSection
