@@ -424,7 +424,11 @@ async function syncUser(
             raw_row: w,
             synced_at: new Date().toISOString(),
           }, { onConflict: "user_id,measured_on" });
-        if (rawErr) { result.errors.push(`body raw ${dateStr}: ${rawErr.message}`); continue; }
+        if (rawErr) {
+          result.errors.push(`body raw ${dateStr}: ${rawErr.message}`);
+          logger.addItem({ kind: "body", ref: dateStr, ok: false, status: "failed", message: `body raw: ${rawErr.message}` });
+          continue;
+        }
 
         // Unified body_measurements (source = 'garmin')
         const { error: bmErr } = await admin
@@ -437,12 +441,18 @@ async function syncUser(
             lean_mass_kg: muscle,
             source: "garmin",
           }, { onConflict: "user_id,measured_on,source" });
-        if (bmErr) result.errors.push(`body_meas ${dateStr}: ${bmErr.message}`);
-        else result.weight++;
+        if (bmErr) {
+          result.errors.push(`body_meas ${dateStr}: ${bmErr.message}`);
+          logger.addItem({ kind: "body", ref: dateStr, ok: false, status: "failed", message: bmErr.message });
+        } else {
+          result.weight++;
+          logger.addItem({ kind: "body", ref: dateStr, ok: true, status: "created", message: `Weight ${dateStr}: ${weightKg?.toFixed?.(1) ?? "—"}kg`, summary: { weight_kg: weightKg, body_fat_pct: bf, muscle_mass_kg: muscle, bmi } });
+        }
       }
     } catch (e) {
       if (is429(e)) result.rate_limited = true;
       else result.errors.push(`weight: ${(e as Error).message}`);
+      logger.addItem({ kind: "body", ref: "range", ok: false, status: is429(e) ? "rate_limited" : "failed", message: (e as Error).message });
     }
   }
 
@@ -462,6 +472,16 @@ async function syncUser(
         : (result.errors.length ? result.errors.slice(0, 3).join(" | ") : null),
     })
     .eq("user_id", userId);
+
+  // Finalize the sync run log
+  logger.setCounter("activities", result.activities);
+  logger.setCounter("fit_files", result.fit_files);
+  logger.setCounter("sleep", result.sleep);
+  logger.setCounter("wellness", result.wellness);
+  logger.setCounter("weight", result.weight);
+  const runStatus: "success" | "partial" | "rate_limited" =
+    result.rate_limited ? "rate_limited" : (result.errors.length ? "partial" : "success");
+  await logger.finalize(runStatus, result.errors.length ? result.errors.slice(0, 5).join(" | ") : null);
 
   return result;
 }
