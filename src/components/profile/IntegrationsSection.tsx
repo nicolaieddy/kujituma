@@ -1,24 +1,12 @@
-import { StravaConnectionCard } from "@/components/strava/StravaConnectionCard";
 import { DuolingoConnectionCard } from "@/components/duolingo/DuolingoConnectionCard";
-import { GarminConnectionCard } from "@/components/garmin/GarminConnectionCard";
-import { ActivityMappingCard } from "@/components/strava/ActivityMappingCard";
-import { FitFileUploadCard } from "@/components/training/FitFileUploadCard";
-import { useStravaConnection } from "@/hooks/useStravaConnection";
-import { useDuolingoConnection } from "@/hooks/useDuolingoConnection";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Zap, Blocks } from "lucide-react";
+import { Zap, Dumbbell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { ModuleGate } from "@/modules/ModuleGate";
 import { useIsModuleInstalled } from "@/hooks/useInstalledModules";
 
-
 export function IntegrationsSection() {
-  const { isConnected: isStravaConnected } = useStravaConnection();
-  const { isConnected: isDuolingoConnected } = useDuolingoConnection();
   const trainingInstalled = useIsModuleInstalled("training_plan");
-
-  const hasAnyConnection = (trainingInstalled && isStravaConnected) || isDuolingoConnected;
 
   return (
     <div className="space-y-6">
@@ -31,54 +19,38 @@ export function IntegrationsSection() {
         Connect external services to automatically track your habits and activities.
       </p>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <ModuleGate
-          id="training_plan"
-          fallback={
-            <Card className="border-dashed md:col-span-2">
-              <CardHeader>
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Blocks className="h-4 w-4" />
-                      Strava, Garmin & .FIT
-                    </CardTitle>
-                    <CardDescription>
-                      Install the Training Plan module to connect your fitness devices.
-                    </CardDescription>
-                  </div>
-                  <Button asChild size="sm" variant="outline">
-                    <Link to="/modules?highlight=training_plan">Browse modules</Link>
-                  </Button>
-                </div>
-              </CardHeader>
-            </Card>
-          }
-        >
-          <StravaConnectionCard />
-          <GarminConnectionCard />
-        </ModuleGate>
-        <DuolingoConnectionCard />
-      </div>
-
-      <ModuleGate id="training_plan">
-        <FitFileUploadCard />
-      </ModuleGate>
-
-      {hasAnyConnection && trainingInstalled && (
-        <ActivityMappingCard />
-      )}
-
-      {!hasAnyConnection && (
-        <Card className="border-dashed">
+      {trainingInstalled && (
+        <Card>
           <CardHeader>
-            <CardTitle className="text-base">More integrations coming soon</CardTitle>
-            <CardDescription>
-              We're working on adding support for Apple Health and more services.
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Dumbbell className="h-4 w-4 text-primary" />
+                  Strava, Garmin &amp; .FIT
+                </CardTitle>
+                <CardDescription>
+                  Fitness integrations live inside the Training module.
+                </CardDescription>
+              </div>
+              <Button asChild size="sm" variant="outline">
+                <Link to="/training?view=setup">Open Training Setup</Link>
+              </Button>
+            </div>
           </CardHeader>
         </Card>
       )}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <DuolingoConnectionCard />
+      </div>
+
+      <Card className="border-dashed">
+        <CardContent className="pt-6">
+          <p className="text-sm text-muted-foreground">
+            More integrations coming soon — Apple Health and others.
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
