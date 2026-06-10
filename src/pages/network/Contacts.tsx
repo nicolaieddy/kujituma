@@ -265,9 +265,10 @@ const Contacts = () => {
                         {c.full_name.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-sm font-medium flex items-center gap-1">
+                        <p className="text-sm font-medium flex items-center gap-1.5 flex-wrap">
                           {c.full_name}
                           {(c as any).is_inner_circle && <Heart className="h-3 w-3 fill-primary text-primary" />}
+                          {kujitumaMatches[c.id] && <KujitumaBadge match={kujitumaMatches[c.id]} />}
                         </p>
                         <p className="text-xs text-muted-foreground">
                           {c.influence_type}{c.country ? ` · ${c.country}` : ""}{c.sector ? ` · ${c.sector}` : ""}
