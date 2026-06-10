@@ -16,17 +16,15 @@ export const useAIFeatures = () => {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('ai_features_enabled')
-          .eq('id', user.id)
-          .single();
+        // Use SECURITY DEFINER RPC — direct SELECT on ai_features_enabled is revoked
+        const { data, error } = await supabase.rpc('get_my_private_profile');
 
         if (error) {
           console.error('Error fetching AI features status:', error);
           setAiEnabled(false);
         } else {
-          setAiEnabled(data?.ai_features_enabled ?? false);
+          const row = Array.isArray(data) ? data[0] : data;
+          setAiEnabled(row?.ai_features_enabled ?? false);
         }
       } catch (err) {
         console.error('Error fetching AI features status:', err);
