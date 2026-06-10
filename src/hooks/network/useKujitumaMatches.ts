@@ -59,27 +59,32 @@ export const useKujitumaMatches = () => {
       const queries: Promise<any>[] = [];
       if (emails.size > 0) {
         queries.push(
-          supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, email, linkedin_url, phone_number")
-            .in("email", Array.from(emails))
+          Promise.resolve(
+            supabase
+              .from("profiles")
+              .select("id, full_name, avatar_url, email, linkedin_url, phone_number")
+              .in("email", Array.from(emails))
+          )
         );
       }
       if (linkedins.size > 0) {
-        // can't normalize on DB side easily; fetch profiles with any linkedin_url and filter client-side
         queries.push(
-          supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, email, linkedin_url, phone_number")
-            .not("linkedin_url", "is", null)
+          Promise.resolve(
+            supabase
+              .from("profiles")
+              .select("id, full_name, avatar_url, email, linkedin_url, phone_number")
+              .not("linkedin_url", "is", null)
+          )
         );
       }
       if (phones.size > 0) {
         queries.push(
-          supabase
-            .from("profiles")
-            .select("id, full_name, avatar_url, email, linkedin_url, phone_number")
-            .not("phone_number", "is", null)
+          Promise.resolve(
+            supabase
+              .from("profiles")
+              .select("id, full_name, avatar_url, email, linkedin_url, phone_number")
+              .not("phone_number", "is", null)
+          )
         );
       }
 
