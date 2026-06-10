@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useContact, useContacts, useInteractions, useDeleteContact, useUpdateContact, useDeleteInteraction, useUpdateInteraction, useContactEvents, useCreateContactEvent, useDeleteContactEvent, useContactKeyFacts, useCreateContactKeyFact, useDeleteContactKeyFact, useContactResources, useCreateContactResource, useDeleteContactResource, Interaction } from "@/hooks/network/useNetworkData";
+import { useKujitumaMatches } from "@/hooks/network/useKujitumaMatches";
+import { KujitumaBadge } from "@/components/network/KujitumaBadge";
 import { RelationshipBadge, InfluenceScore, TypeBadge } from "@/components/network/ContactBadges";
 import InteractionForm from "@/components/network/InteractionForm";
 import BirthdayInput from "@/components/network/BirthdayInput";
@@ -420,7 +422,10 @@ const ContactDetail = () => {
             </PopoverContent>
           </Popover>
           <div>
-            <h1 className="text-2xl font-bold">{contact.full_name}</h1>
+            <h1 className="text-2xl font-bold flex items-center gap-2 flex-wrap">
+              {contact.full_name}
+              {kujitumaMatch && <KujitumaBadge match={kujitumaMatch} size="md" />}
+            </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <TypeBadge type={form.influence_type} />
               <RelationshipBadge strength={form.relationship_strength} />
