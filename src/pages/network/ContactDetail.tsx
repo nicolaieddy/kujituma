@@ -68,6 +68,8 @@ const ContactDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: contact, isLoading } = useContact(id!);
+  const { data: kujitumaMatches = {} } = useKujitumaMatches();
+  const kujitumaMatch = contact ? kujitumaMatches[contact.id] : undefined;
   const { data: allContacts = [] } = useContacts();
   const { data: interactions = [] } = useInteractions(id!);
   const deleteContact = useDeleteContact();
