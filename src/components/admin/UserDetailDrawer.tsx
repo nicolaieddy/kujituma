@@ -111,14 +111,13 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
 
   const fetchAIStatus = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("ai_features_enabled")
-        .eq("id", userId)
-        .single();
+      // Use SECURITY DEFINER RPC — direct PII column SELECT is revoked
+      const { data, error } = await (supabase as any).rpc("admin_get_user_ai_features", {
+        _user_id: userId,
+      });
 
-      if (!error && data) {
-        setAiEnabled(data.ai_features_enabled ?? false);
+      if (!error) {
+        setAiEnabled(!!data);
       }
     } catch (error) {
       console.error("Error fetching AI status:", error);
