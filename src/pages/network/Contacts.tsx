@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { useContacts } from "@/hooks/network/useNetworkData";
+import { useKujitumaMatches } from "@/hooks/network/useKujitumaMatches";
+import { KujitumaBadge } from "@/components/network/KujitumaBadge";
 import { Link } from "react-router-dom";
 import { RelationshipBadge, InfluenceScore, TypeBadge } from "@/components/network/ContactBadges";
 import ContactForm from "@/components/network/ContactForm";
@@ -22,6 +24,7 @@ type SortOption = "name" | "last_interaction" | "influence" | "recent";
 
 const Contacts = () => {
   const { data: contacts = [], isLoading } = useContacts();
+  const { data: kujitumaMatches = {} } = useKujitumaMatches();
   const [showForm, setShowForm] = useState(false);
   const [showBulkImport, setShowBulkImport] = useState(false);
   const [search, setSearch] = useState("");
