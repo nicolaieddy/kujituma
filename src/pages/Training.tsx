@@ -1,22 +1,26 @@
 import { useMemo, useState } from "react";
 import { addWeeks, format, startOfWeek } from "date-fns";
-import { Dumbbell, ChevronLeft, ChevronRight, Settings } from "lucide-react";
+import { Dumbbell, ChevronLeft, ChevronRight, Settings, Flag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
 import { TrainingSetupPanel } from "@/components/training/TrainingSetupPanel";
+import { TrainingEventsPanel } from "@/components/training/TrainingEventsPanel";
 
 function toWeekKey(d: Date) {
   return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
-type TrainingView = "plan" | "setup";
+type TrainingView = "plan" | "events" | "setup";
 
 export default function Training() {
   const todayWeek = useMemo(() => toWeekKey(new Date()), []);
   const [weekStart, setWeekStart] = useState<string>(todayWeek);
   const [view, setView] = useState<TrainingView>(() => {
     if (typeof window === "undefined") return "plan";
-    return new URLSearchParams(window.location.search).get("view") === "setup" ? "setup" : "plan";
+    const v = new URLSearchParams(window.location.search).get("view");
+    if (v === "setup") return "setup";
+    if (v === "events") return "events";
+    return "plan";
   });
 
   const shiftWeek = (delta: number) => {
@@ -63,33 +67,28 @@ export default function Training() {
 
       {/* View switcher */}
       <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit">
-        <button
-          type="button"
-          onClick={() => setView("plan")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            view === "plan" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Dumbbell className="h-4 w-4" />
-          Plan
-        </button>
-        <button
-          type="button"
-          onClick={() => setView("setup")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            view === "setup" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          <Settings className="h-4 w-4" />
-          Setup
-        </button>
+        {([
+          { id: "plan", label: "Plan", icon: Dumbbell },
+          { id: "events", label: "Events", icon: Flag },
+          { id: "setup", label: "Setup", icon: Settings },
+        ] as const).map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => setView(id)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              view === id ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
       </div>
 
-      {view === "plan" ? (
-        <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />
-      ) : (
-        <TrainingSetupPanel />
-      )}
+      {view === "plan" && <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />}
+      {view === "events" && <TrainingEventsPanel />}
+      {view === "setup" && <TrainingSetupPanel />}
     </div>
   );
 }
