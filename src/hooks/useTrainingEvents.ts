@@ -51,10 +51,11 @@ export function useUpsertTrainingEvent() {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("Not authenticated");
 
-      const payload = {
+      const payload: any = {
         ...input,
         user_id: userData.user.id,
       };
+      delete payload.id;
 
       if (input.id) {
         const { data, error } = await supabase
