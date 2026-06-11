@@ -452,6 +452,8 @@ export function TrainingEventsPanel() {
         </DialogContent>
       </Dialog>
 
+      <EventUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
+
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
