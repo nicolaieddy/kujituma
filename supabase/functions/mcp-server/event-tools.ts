@@ -126,4 +126,51 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
       return { content: [{ type: "text" as const, text: `🗑️ Event deleted` }] };
     },
   });
+
+  mcp.tool("list_event_attachments", {
+    description: "List files and notes attached to a training event (doctor's notes, .fit race files, photos, PDFs). Returns metadata only — file contents are not inlined.",
+    inputSchema: {
+      type: "object",
+      properties: { event_id: { type: "string" } },
+      required: ["event_id"],
+    },
+    handler: async ({ event_id }: { event_id: string }) => {
+      const { data, error } = await supabase
+        .from("training_event_attachments")
+        .select("id,kind,file_name,mime_type,size_bytes,description,synced_activity_id,created_at")
+        .eq("event_id", event_id)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] };
+    },
+  });
+
+  mcp.tool("create_event_note", {
+    description: "Attach a text note to a training event (e.g. doctor's diagnosis transcribed, race recap, treatment plan). For binary files like .fit or PDFs the user uploads through the UI.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        event_id: { type: "string" },
+        title: { type: "string", description: "Short label, e.g. 'Physio notes 12 May'" },
+        content: { type: "string", description: "Free-text note body" },
+      },
+      required: ["event_id", "title", "content"],
+    },
+    handler: async ({ event_id, title, content }: { event_id: string; title: string; content: string }) => {
+      const { data, error } = await supabase
+        .from("training_event_attachments")
+        .insert({
+          user_id: userId,
+          event_id,
+          kind: "note",
+          file_name: title,
+          description: content,
+        })
+        .select()
+        .single();
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+      return { content: [{ type: "text" as const, text: `📝 Note attached (id: ${data.id})` }] };
+    },
+  });
 }
