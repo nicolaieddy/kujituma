@@ -155,21 +155,49 @@ export function TrainingEventsPanel() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(["all", "injury_illness", "race", "other"] as const).map((t) => (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(["all", "injury_illness", "race", "other"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                filter === t
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t === "all" ? "All" : TYPE_META[t].label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center bg-muted rounded-lg p-1">
           <button
-            key={t}
-            onClick={() => setFilter(t)}
+            onClick={() => setViewMode("list")}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-              filter === t
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-border text-muted-foreground hover:text-foreground",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              viewMode === "list"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
+            title="List view"
           >
-            {t === "all" ? "All" : TYPE_META[t].label}
+            <List className="h-3.5 w-3.5" /> List
           </button>
-        ))}
+          <button
+            onClick={() => setViewMode("timeline")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              viewMode === "timeline"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            title="Timeline view"
+          >
+            <GitBranch className="h-3.5 w-3.5" /> Timeline
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
