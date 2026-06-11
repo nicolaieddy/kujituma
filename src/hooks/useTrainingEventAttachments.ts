@@ -14,6 +14,9 @@ export interface TrainingEventAttachment {
   size_bytes: number | null;
   synced_activity_id: string | null;
   description: string | null;
+  extraction_status: "pending" | "processing" | "done" | "failed" | "skipped";
+  extracted_at: string | null;
+  extraction_error: string | null;
   created_at: string;
 }
 
@@ -101,10 +104,23 @@ export function useUploadEventAttachment() {
           mime_type: file.type || null,
           size_bytes: file.size,
           synced_activity_id,
+          extraction_status: kind === "fit" ? "skipped" : "pending",
         })
         .select()
         .single();
       if (insErr) throw insErr;
+
+      // Kick off AI extraction in the background for documents/images
+      if (kind !== "fit") {
+        supabase.functions
+          .invoke("extract-event-attachment", { body: { attachment_id: row.id } })
+          .then(() => {
+            qc.invalidateQueries({ queryKey: ["training-event-attachments", eventId] });
+            qc.invalidateQueries({ queryKey: ["training-events"] });
+          })
+          .catch((e) => console.error("extract-event-attachment failed", e));
+      }
+
       return row as TrainingEventAttachment;
     },
     onSuccess: (_row, vars) => {
@@ -116,6 +132,25 @@ export function useUploadEventAttachment() {
     onError: (err: any) => {
       toast.error("Upload failed", { description: err.message });
     },
+  });
+}
+
+export function useReExtractAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (att: TrainingEventAttachment) => {
+      const { data, error } = await supabase.functions.invoke("extract-event-attachment", {
+        body: { attachment_id: att.id },
+      });
+      if (error) throw new Error(error.message);
+      return { att, data };
+    },
+    onSuccess: ({ att }) => {
+      qc.invalidateQueries({ queryKey: ["training-event-attachments", att.event_id] });
+      qc.invalidateQueries({ queryKey: ["training-events"] });
+      toast.success("Extracted");
+    },
+    onError: (err: any) => toast.error("Extraction failed", { description: err.message }),
   });
 }
 
