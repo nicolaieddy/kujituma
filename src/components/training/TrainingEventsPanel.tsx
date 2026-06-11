@@ -211,61 +211,69 @@ export function TrainingEventsPanel() {
           </Button>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((e) => {
-            const meta = TYPE_META[e.event_type];
-            const Icon = meta.icon;
-            const start = parseLocalDate(e.start_date);
-            const end = e.end_date ? parseLocalDate(e.end_date) : null;
-            const dateLabel = end
-              ? `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`
-              : format(start, "d MMM yyyy");
-            return (
-              <Card key={e.id} className="p-4 border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", meta.color)} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold truncate">{e.title}</h3>
-                        <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
-                        {e.race_priority && (
-                          <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
+        viewMode === "timeline" ? (
+          <TrainingEventsTimeline
+            events={filtered}
+            onEdit={openEdit}
+            onDelete={(id) => setConfirmDelete(id)}
+          />
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((e) => {
+              const meta = TYPE_META[e.event_type];
+              const Icon = meta.icon;
+              const start = parseLocalDate(e.start_date);
+              const end = e.end_date ? parseLocalDate(e.end_date) : null;
+              const dateLabel = end
+                ? `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`
+                : format(start, "d MMM yyyy");
+              return (
+                <Card key={e.id} className="p-4 border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", meta.color)} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold truncate">{e.title}</h3>
+                          <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
+                          {e.race_priority && (
+                            <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
+                          )}
+                          {e.severity && (
+                            <Badge variant="outline" className="text-[10px]">Severity {e.severity}/5</Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 tabular-nums">{dateLabel}</div>
+                        {e.description && (
+                          <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
                         )}
-                        {e.severity && (
-                          <Badge variant="outline" className="text-[10px]">Severity {e.severity}/5</Badge>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1 tabular-nums">{dateLabel}</div>
-                      {e.description && (
-                        <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-                        {e.body_part && <span>Body part: {e.body_part}</span>}
-                        {e.race_distance && <span>Distance: {e.race_distance}</span>}
-                        {e.race_result && <span>Result: {e.race_result}</span>}
-                        {e.location && <span>Location: {e.location}</span>}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
+                          {e.body_part && <span>Body part: {e.body_part}</span>}
+                          {e.race_distance && <span>Distance: {e.race_distance}</span>}
+                          {e.race_result && <span>Result: {e.race_result}</span>}
+                          {e.location && <span>Location: {e.location}</span>}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(e)} aria-label="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setConfirmDelete(e.id)}
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(e)} aria-label="Edit">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setConfirmDelete(e.id)}
-                      aria-label="Delete"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        )
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
