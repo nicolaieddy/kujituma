@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon, List, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ import {
 } from "@/hooks/useTrainingEvents";
 import { parseLocalDate, getLocalDateString } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
+import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
@@ -105,6 +106,7 @@ export function TrainingEventsPanel() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [filter, setFilter] = useState<TrainingEventType | "all">("all");
+  const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
 
   const filtered = useMemo(
     () => (filter === "all" ? events : events.filter((e) => e.event_type === filter)),
@@ -153,21 +155,49 @@ export function TrainingEventsPanel() {
         </Button>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {(["all", "injury_illness", "race", "other"] as const).map((t) => (
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          {(["all", "injury_illness", "race", "other"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setFilter(t)}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                filter === t
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t === "all" ? "All" : TYPE_META[t].label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center bg-muted rounded-lg p-1">
           <button
-            key={t}
-            onClick={() => setFilter(t)}
+            onClick={() => setViewMode("list")}
             className={cn(
-              "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
-              filter === t
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background border-border text-muted-foreground hover:text-foreground",
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              viewMode === "list"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             )}
+            title="List view"
           >
-            {t === "all" ? "All" : TYPE_META[t].label}
+            <List className="h-3.5 w-3.5" /> List
           </button>
-        ))}
+          <button
+            onClick={() => setViewMode("timeline")}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors",
+              viewMode === "timeline"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+            title="Timeline view"
+          >
+            <GitBranch className="h-3.5 w-3.5" /> Timeline
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -181,61 +211,69 @@ export function TrainingEventsPanel() {
           </Button>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((e) => {
-            const meta = TYPE_META[e.event_type];
-            const Icon = meta.icon;
-            const start = parseLocalDate(e.start_date);
-            const end = e.end_date ? parseLocalDate(e.end_date) : null;
-            const dateLabel = end
-              ? `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`
-              : format(start, "d MMM yyyy");
-            return (
-              <Card key={e.id} className="p-4 border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3 min-w-0 flex-1">
-                    <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", meta.color)} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold truncate">{e.title}</h3>
-                        <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
-                        {e.race_priority && (
-                          <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
+        viewMode === "timeline" ? (
+          <TrainingEventsTimeline
+            events={filtered}
+            onEdit={openEdit}
+            onDelete={(id) => setConfirmDelete(id)}
+          />
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((e) => {
+              const meta = TYPE_META[e.event_type];
+              const Icon = meta.icon;
+              const start = parseLocalDate(e.start_date);
+              const end = e.end_date ? parseLocalDate(e.end_date) : null;
+              const dateLabel = end
+                ? `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`
+                : format(start, "d MMM yyyy");
+              return (
+                <Card key={e.id} className="p-4 border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", meta.color)} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold truncate">{e.title}</h3>
+                          <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
+                          {e.race_priority && (
+                            <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
+                          )}
+                          {e.severity && (
+                            <Badge variant="outline" className="text-[10px]">Severity {e.severity}/5</Badge>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 tabular-nums">{dateLabel}</div>
+                        {e.description && (
+                          <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
                         )}
-                        {e.severity && (
-                          <Badge variant="outline" className="text-[10px]">Severity {e.severity}/5</Badge>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1 tabular-nums">{dateLabel}</div>
-                      {e.description && (
-                        <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-                        {e.body_part && <span>Body part: {e.body_part}</span>}
-                        {e.race_distance && <span>Distance: {e.race_distance}</span>}
-                        {e.race_result && <span>Result: {e.race_result}</span>}
-                        {e.location && <span>Location: {e.location}</span>}
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
+                          {e.body_part && <span>Body part: {e.body_part}</span>}
+                          {e.race_distance && <span>Distance: {e.race_distance}</span>}
+                          {e.race_result && <span>Result: {e.race_result}</span>}
+                          {e.location && <span>Location: {e.location}</span>}
+                        </div>
                       </div>
                     </div>
+                    <div className="flex gap-1 shrink-0">
+                      <Button size="icon" variant="ghost" onClick={() => openEdit(e)} aria-label="Edit">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() => setConfirmDelete(e.id)}
+                        aria-label="Delete"
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button size="icon" variant="ghost" onClick={() => openEdit(e)} aria-label="Edit">
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setConfirmDelete(e.id)}
-                      aria-label="Delete"
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
+                </Card>
+              );
+            })}
+          </div>
+        )
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
