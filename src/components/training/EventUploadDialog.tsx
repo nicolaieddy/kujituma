@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Upload, Loader2, X, FileText, ImageIcon, Activity, Sparkles, Plus, Trash2, Check } from "lucide-react";
+import { Upload, Loader2, X, FileText, ImageIcon, Activity, Sparkles, Plus, Trash2, Check, CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,29 @@ const MAX_PER_FILE = 25 * 1024 * 1024;
 
 type Stage = "pick" | "analyzing" | "confirm" | "committing";
 
+type FileStatus =
+  | "queued"
+  | "uploading"
+  | "uploaded"
+  | "analyzing"
+  | "moving"
+  | "parsing_fit"
+  | "saving"
+  | "done"
+  | "failed";
+
+interface FileProgress {
+  status: FileStatus;
+  message?: string;
+}
+
+interface PickedFile {
+  id: string;
+  file: File;
+}
+
 interface AnalyzedFile {
+  client_id?: string;
   file_path: string;
   file_name: string;
   mime_type?: string;
