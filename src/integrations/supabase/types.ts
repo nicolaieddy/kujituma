@@ -3330,6 +3330,9 @@ export type Database = {
           created_at: string
           description: string | null
           event_id: string
+          extracted_at: string | null
+          extraction_error: string | null
+          extraction_status: string
           file_name: string
           file_path: string | null
           id: string
@@ -3344,6 +3347,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           event_id: string
+          extracted_at?: string | null
+          extraction_error?: string | null
+          extraction_status?: string
           file_name: string
           file_path?: string | null
           id?: string
@@ -3358,6 +3364,9 @@ export type Database = {
           created_at?: string
           description?: string | null
           event_id?: string
+          extracted_at?: string | null
+          extraction_error?: string | null
+          extraction_status?: string
           file_name?: string
           file_path?: string | null
           id?: string
