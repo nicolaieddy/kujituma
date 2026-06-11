@@ -299,6 +299,8 @@ export function McpSection() {
               { name: "create_training_event", desc: "Log a key training event" },
               { name: "update_training_event", desc: "Edit a training event" },
               { name: "delete_training_event", desc: "Remove a training event" },
+              { name: "list_event_attachments", desc: "List files/notes attached to an event" },
+              { name: "create_event_note", desc: "Attach a text note to an event" },
               { name: "get_activity_reflection", desc: "Read a workout's reflection note" },
               { name: "set_activity_reflection", desc: "Save a workout reflection note" },
               { name: "get_sleep_entry", desc: "Sleep data for a specific date" },

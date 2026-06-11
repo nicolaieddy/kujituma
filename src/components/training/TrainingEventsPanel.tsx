@@ -42,6 +42,8 @@ import {
 import { parseLocalDate, getLocalDateString } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
 import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
+import { EventAttachmentsSection } from "./EventAttachmentsSection";
+import { Separator } from "@/components/ui/separator";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
@@ -124,7 +126,7 @@ export function TrainingEventsPanel() {
 
   const submit = async () => {
     if (!form.title.trim() || !form.start_date) return;
-    await upsert.mutateAsync({
+    const saved = await upsert.mutateAsync({
       id: form.id,
       event_type: form.event_type,
       title: form.title.trim(),
@@ -138,7 +140,12 @@ export function TrainingEventsPanel() {
       race_priority: form.race_priority || null,
       location: form.location.trim() || null,
     });
-    setDialogOpen(false);
+    // Keep dialog open with the new ID so the user can immediately attach files
+    if (!form.id && saved?.id) {
+      setForm({ ...form, id: saved.id });
+    } else {
+      setDialogOpen(false);
+    }
   };
 
   return (
@@ -415,6 +422,18 @@ export function TrainingEventsPanel() {
                 maxLength={2000}
               />
             </div>
+
+            {form.id && (
+              <>
+                <Separator />
+                <EventAttachmentsSection eventId={form.id} />
+              </>
+            )}
+            {!form.id && (
+              <p className="text-xs text-muted-foreground italic">
+                Save the event first, then attach .fit files, doctor's notes, or photos.
+              </p>
+            )}
           </div>
 
           <DialogFooter>
