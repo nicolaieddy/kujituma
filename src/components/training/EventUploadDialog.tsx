@@ -117,17 +117,22 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stage, setStage] = useState<Stage>("pick");
-  const [picked, setPicked] = useState<File[]>([]);
+  const [picked, setPicked] = useState<PickedFile[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [progress, setProgress] = useState<Record<string, FileProgress>>({});
+
+  const setFileProgress = (id: string, status: FileStatus, message?: string) =>
+    setProgress((prev) => ({ ...prev, [id]: { status, message } }));
 
   const reset = () => {
     setStage("pick");
     setPicked([]);
     setProposals([]);
+    setProgress({});
   };
 
   const handleClose = (next: boolean) => {
-    if (!next && (stage === "analyzing" || stage === "committing")) return; // block close mid-flight
+    if (!next && (stage === "analyzing" || stage === "committing")) return;
     if (!next) reset();
     onOpenChange(next);
   };
@@ -144,30 +149,47 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         toast.error(`${f.name} is too large (max 25MB)`);
         continue;
       }
-      next.push(f);
+      next.push({ id: crypto.randomUUID(), file: f });
     }
     setPicked(next);
   };
 
-  const removePicked = (i: number) => setPicked(picked.filter((_, idx) => idx !== i));
+  const removePicked = (id: string) => setPicked(picked.filter((p) => p.id !== id));
 
   const analyze = async () => {
     if (!user || picked.length === 0) return;
     setStage("analyzing");
+    // Seed progress
+    const initial: Record<string, FileProgress> = {};
+    picked.forEach((p) => (initial[p.id] = { status: "queued" }));
+    setProgress(initial);
+
     try {
       const batchId = crypto.randomUUID();
-      const uploaded: { file_path: string; file_name: string; mime_type: string; size_bytes: number }[] = [];
+      const uploaded: {
+        client_id: string;
+        file_path: string;
+        file_name: string;
+        mime_type: string;
+        size_bytes: number;
+      }[] = [];
 
-      // Upload to temp paths in parallel
       await Promise.all(
-        picked.map(async (file) => {
+        picked.map(async (pf) => {
+          const { id, file } = pf;
+          setFileProgress(id, "uploading");
           const safe = file.name.replace(/[^\w.\-]+/g, "_");
-          const path = `${user.id}/event-uploads/${batchId}/${safe}`;
+          const path = `${user.id}/event-uploads/${batchId}/${id}_${safe}`;
           const { error } = await supabase.storage
             .from(STORAGE_BUCKET)
             .upload(path, file, { contentType: file.type || undefined, upsert: true });
-          if (error) throw error;
+          if (error) {
+            setFileProgress(id, "failed", `Upload: ${error.message}`);
+            return;
+          }
+          setFileProgress(id, "uploaded");
           uploaded.push({
+            client_id: id,
             file_path: path,
             file_name: file.name,
             mime_type: file.type || "application/octet-stream",
@@ -176,32 +198,57 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         }),
       );
 
+      if (uploaded.length === 0) {
+        toast.error("No files could be uploaded");
+        setStage("pick");
+        return;
+      }
+
+      // Mark uploaded files as analyzing
+      uploaded.forEach((u) => setFileProgress(u.client_id, "analyzing"));
+
       const { data, error } = await supabase.functions.invoke("analyze-event-uploads", {
-        body: { files: uploaded },
+        body: { files: uploaded.map(({ client_id, ...rest }) => rest) },
       });
       if (error) throw new Error(error.message);
       if (!data?.proposals) throw new Error("No proposals returned");
 
+      // Match returned files back to client_ids by file_path (unique)
+      const byPath = new Map(uploaded.map((u) => [u.file_path, u.client_id]));
       const ps: Proposal[] = data.proposals.map((p: any) => ({
         ...p,
         selected_event_id: p.match?.event_id,
+        files: p.files.map((f: any) => ({ ...f, client_id: byPath.get(f.file_path) })),
       }));
+
+      // Update per-file status from results
+      for (const p of ps) {
+        for (const f of p.files) {
+          if (!f.client_id) continue;
+          if (f.error) {
+            setFileProgress(f.client_id, "failed", f.error);
+          } else {
+            setFileProgress(f.client_id, "done", f.summary || "Extracted");
+          }
+        }
+      }
+
       setProposals(ps);
       setStage("confirm");
     } catch (e: any) {
       console.error(e);
       toast.error("Couldn't analyze files", { description: e.message });
-      setStage("pick");
+      // Mark any still-analyzing as failed
+      setProgress((prev) => {
+        const next = { ...prev };
+        for (const k of Object.keys(next)) {
+          if (next[k].status === "analyzing" || next[k].status === "uploaded") {
+            next[k] = { status: "failed", message: e.message };
+          }
+        }
+        return next;
+      });
     }
-  };
-
-  const updateProposal = (id: string, patch: Partial<Proposal>) => {
-    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
-  };
-  const updateProposedEvent = (id: string, patch: Partial<Proposal["proposed_event"]>) => {
-    setProposals((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, proposed_event: { ...p.proposed_event, ...patch } } : p)),
-    );
   };
 
   const commit = async () => {
