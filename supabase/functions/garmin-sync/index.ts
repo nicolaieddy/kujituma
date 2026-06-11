@@ -131,14 +131,11 @@ async function syncUser(
   const password = await decryptString(conn.encrypted_password);
 
   const gc = new GarminConnect({ username: email, password });
-  // Login is the call most commonly throttled — be patient with retries.
+  // Login is the call most commonly throttled. CRITICAL: do NOT retry on 429 —
+  // each additional login attempt against a throttled account extends the lockout,
+  // which is exactly the loop we were stuck in. One try, then bail.
   try {
-    await withBackoff(() => gc.login(), {
-      label: `login ${userId}`,
-      retries: 3,
-      baseMs: 20000,
-      maxMs: 90000,
-    });
+    await gc.login();
     logger.addItem({ kind: "auth", ref: "garmin-login", ok: true, status: "created", message: "Logged in to Garmin Connect" });
   } catch (e) {
     const msg = (e as Error).message;
