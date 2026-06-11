@@ -110,6 +110,7 @@ export function TrainingEventsPanel() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [filter, setFilter] = useState<TrainingEventType | "all">("all");
   const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const filtered = useMemo(
     () => (filter === "all" ? events : events.filter((e) => e.event_type === filter)),
@@ -158,9 +159,14 @@ export function TrainingEventsPanel() {
             Log injuries, races, and milestones to enrich future training analysis.
           </p>
         </div>
-        <Button onClick={() => openNew()} className="gap-2">
-          <Plus className="h-4 w-4" /> Add event
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setUploadOpen(true)} className="gap-2">
+            <Upload className="h-4 w-4" /> Upload
+          </Button>
+          <Button onClick={() => openNew()} className="gap-2">
+            <Plus className="h-4 w-4" /> Add event
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
