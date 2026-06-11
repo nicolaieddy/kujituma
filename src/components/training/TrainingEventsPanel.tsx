@@ -126,7 +126,7 @@ export function TrainingEventsPanel() {
 
   const submit = async () => {
     if (!form.title.trim() || !form.start_date) return;
-    await upsert.mutateAsync({
+    const saved = await upsert.mutateAsync({
       id: form.id,
       event_type: form.event_type,
       title: form.title.trim(),
@@ -140,7 +140,12 @@ export function TrainingEventsPanel() {
       race_priority: form.race_priority || null,
       location: form.location.trim() || null,
     });
-    setDialogOpen(false);
+    // Keep dialog open with the new ID so the user can immediately attach files
+    if (!form.id && saved?.id) {
+      setForm({ ...form, id: saved.id });
+    } else {
+      setDialogOpen(false);
+    }
   };
 
   return (
