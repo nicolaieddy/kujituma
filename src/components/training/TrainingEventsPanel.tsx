@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon, List, GitBranch } from "lucide-react";
+import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon, List, GitBranch, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ import { parseLocalDate, getLocalDateString } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
 import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
+import { EventUploadDialog } from "./EventUploadDialog";
 import { Separator } from "@/components/ui/separator";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
