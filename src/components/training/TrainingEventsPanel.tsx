@@ -41,6 +41,7 @@ import {
 } from "@/hooks/useTrainingEvents";
 import { parseLocalDate, getLocalDateString } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
+import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
