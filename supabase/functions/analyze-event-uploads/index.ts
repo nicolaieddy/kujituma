@@ -3,6 +3,49 @@
 // Files stay at their temp path; the client moves them after the user confirms.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import FitParser from "npm:fit-file-parser@2.1.0";
+import JSZip from "https://esm.sh/jszip@3.10.1";
+import tzlookup from "npm:tz-lookup@6.1.25";
+
+function parseFitBuffer(buffer: ArrayBuffer): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const parser = new FitParser({ force: true, speedUnit: "m/s", lengthUnit: "m", elapsedRecordField: true });
+    parser.parse(buffer, (err: any, data: any) => err ? reject(err) : resolve(data));
+  });
+}
+async function extractFitBuffer(buffer: ArrayBuffer, fileName: string): Promise<ArrayBuffer> {
+  if (fileName.toLowerCase().endsWith(".zip")) {
+    const zip = new JSZip();
+    const contents = await zip.loadAsync(buffer);
+    const fit = Object.keys(contents.files).find(n => n.toLowerCase().endsWith(".fit"));
+    if (!fit) throw new Error("No .fit inside zip");
+    return await contents.files[fit].async("arraybuffer");
+  }
+  return buffer;
+}
+const toDeg = (sc: number | null | undefined): number | null =>
+  sc != null ? sc * (180 / 2147483648) : null;
+function inferSport(sport?: string): string {
+  const s = (sport || "").toLowerCase();
+  if (s.includes("run")) return "Run";
+  if (s.includes("cycling") || s.includes("biking") || s.includes("ride")) return "Ride";
+  if (s.includes("swim")) return "Swim";
+  if (s.includes("hik")) return "Hike";
+  if (s.includes("walk")) return "Walk";
+  return sport || "Workout";
+}
+function localDate(utcIso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(utcIso));
+  return `${parts.find(p=>p.type==="year")!.value}-${parts.find(p=>p.type==="month")!.value}-${parts.find(p=>p.type==="day")!.value}`;
+}
+function fmtDuration(sec: number): string {
+  const h = Math.floor(sec / 3600); const m = Math.floor((sec % 3600) / 60); const s = Math.round(sec % 60);
+  return h ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+}
+function fmtPace(secPerKm: number): string {
+  const m = Math.floor(secPerKm / 60); const s = Math.round(secPerKm % 60);
+  return `${m}:${s.toString().padStart(2, "0")}/km`;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
