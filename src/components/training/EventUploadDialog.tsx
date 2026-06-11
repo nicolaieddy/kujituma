@@ -251,9 +251,28 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
     }
   };
 
+  const updateProposal = (id: string, patch: Partial<Proposal>) => {
+    setProposals((prev) => prev.map((p) => (p.id === id ? { ...p, ...patch } : p)));
+  };
+  const updateProposedEvent = (id: string, patch: Partial<Proposal["proposed_event"]>) => {
+    setProposals((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, proposed_event: { ...p.proposed_event, ...patch } } : p)),
+    );
+  };
+
   const commit = async () => {
     if (!user) return;
     setStage("committing");
+
+    // Seed progress for all files in proposals
+    const initial: Record<string, FileProgress> = {};
+    for (const p of proposals) {
+      for (const f of p.files) {
+        if (f.client_id) initial[f.client_id] = { status: "queued" };
+      }
+    }
+    setProgress(initial);
+
     let created = 0;
     let attached = 0;
     let filesCommitted = 0;
@@ -291,67 +310,79 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
           created++;
         }
 
-        // 2. Move each file from temp to event-attachments path & insert attachment row
+        // 2. Move each file, parse if needed, insert row
         for (const f of p.files) {
-          if (f.error) continue;
-          const ts = Date.now();
-          const safe = f.file_name.replace(/[^\w.\-]+/g, "_");
-          const dest = `${user.id}/event-attachments/${eventId}/${ts}_${safe}`;
-          const { error: mvErr } = await supabase.storage
-            .from(STORAGE_BUCKET)
-            .move(f.file_path, dest);
-          if (mvErr) {
-            console.error("storage move failed", mvErr);
+          if (f.error) {
+            if (f.client_id) setFileProgress(f.client_id, "failed", f.error);
             continue;
           }
+          const cid = f.client_id;
+          try {
+            if (cid) setFileProgress(cid, "moving");
+            const ts = Date.now();
+            const safe = f.file_name.replace(/[^\w.\-]+/g, "_");
+            const dest = `${user.id}/event-attachments/${eventId}/${ts}_${safe}`;
+            const { error: mvErr } = await supabase.storage
+              .from(STORAGE_BUCKET)
+              .move(f.file_path, dest);
+            if (mvErr) throw new Error(`Move: ${mvErr.message}`);
 
-          let synced_activity_id: string | null = null;
-          if (f.kind === "fit") {
-            const { data: fitData } = await supabase.functions.invoke("parse-fit-file", {
-              body: {
-                file_path: dest,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              },
-            });
-            synced_activity_id =
-              fitData?.summary?.activity_id ?? fitData?.existing_activity?.id ?? null;
-          }
-
-          const { error: insErr } = await supabase.from("training_event_attachments").insert({
-            user_id: user.id,
-            event_id: eventId,
-            kind: f.kind,
-            file_path: dest,
-            file_name: f.file_name,
-            mime_type: f.mime_type ?? null,
-            size_bytes: f.size_bytes ?? null,
-            synced_activity_id,
-            description: f.description_md || null,
-            extraction_status: f.kind === "fit" ? "skipped" : f.description_md ? "done" : "pending",
-            extracted_at: f.description_md ? new Date().toISOString() : null,
-          });
-          if (insErr) {
-            console.error("attachment insert failed", insErr);
-            continue;
-          }
-          filesCommitted++;
-
-          // Append AI summary to the event description (only when attaching)
-          if (p.decision === "attach" && f.summary) {
-            const { data: ev } = await supabase
-              .from("training_events")
-              .select("description")
-              .eq("id", eventId)
-              .single();
-            const existing = (ev?.description ?? "").trim();
-            const stamp = `[AI · ${f.file_name}] ${f.summary}`;
-            if (!existing.includes(`[AI · ${f.file_name}]`)) {
-              const next = existing ? `${existing}\n\n${stamp}` : stamp;
-              await supabase
-                .from("training_events")
-                .update({ description: next.slice(0, 4000) })
-                .eq("id", eventId);
+            let synced_activity_id: string | null = null;
+            if (f.kind === "fit") {
+              if (cid) setFileProgress(cid, "parsing_fit");
+              const { data: fitData, error: fitErr } = await supabase.functions.invoke(
+                "parse-fit-file",
+                {
+                  body: {
+                    file_path: dest,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  },
+                },
+              );
+              if (fitErr) throw new Error(`Parse .fit: ${fitErr.message}`);
+              synced_activity_id =
+                fitData?.summary?.activity_id ?? fitData?.existing_activity?.id ?? null;
             }
+
+            if (cid) setFileProgress(cid, "saving");
+            const { error: insErr } = await supabase.from("training_event_attachments").insert({
+              user_id: user.id,
+              event_id: eventId,
+              kind: f.kind,
+              file_path: dest,
+              file_name: f.file_name,
+              mime_type: f.mime_type ?? null,
+              size_bytes: f.size_bytes ?? null,
+              synced_activity_id,
+              description: f.description_md || null,
+              extraction_status: f.kind === "fit" ? "skipped" : f.description_md ? "done" : "pending",
+              extracted_at: f.description_md ? new Date().toISOString() : null,
+            });
+            if (insErr) throw new Error(`Save: ${insErr.message}`);
+            filesCommitted++;
+
+            // Append AI summary to existing event description
+            if (p.decision === "attach" && f.summary) {
+              const { data: ev } = await supabase
+                .from("training_events")
+                .select("description")
+                .eq("id", eventId)
+                .single();
+              const existing = (ev?.description ?? "").trim();
+              const stamp = `[AI · ${f.file_name}] ${f.summary}`;
+              if (!existing.includes(`[AI · ${f.file_name}]`)) {
+                const next = existing ? `${existing}\n\n${stamp}` : stamp;
+                await supabase
+                  .from("training_events")
+                  .update({ description: next.slice(0, 4000) })
+                  .eq("id", eventId);
+              }
+            }
+
+            if (cid) setFileProgress(cid, "done", "Saved");
+          } catch (fileErr: any) {
+            console.error("file commit failed", fileErr);
+            if (cid) setFileProgress(cid, "failed", fileErr.message);
           }
         }
       }
@@ -361,14 +392,26 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
       qc.invalidateQueries({ queryKey: ["synced-activities"] });
       qc.invalidateQueries({ queryKey: ["training-plan"] });
 
-      toast.success(
-        `Saved ${filesCommitted} file${filesCommitted === 1 ? "" : "s"}`,
-        {
-          description: `${created} new event${created === 1 ? "" : "s"}, ${attached} attached to existing`,
-        },
-      );
-      reset();
-      onOpenChange(false);
+      const failedCount = Object.values(progress).filter((p) => p.status === "failed").length;
+      if (filesCommitted > 0) {
+        toast.success(
+          `Saved ${filesCommitted} file${filesCommitted === 1 ? "" : "s"}`,
+          {
+            description: `${created} new event${created === 1 ? "" : "s"}, ${attached} attached to existing${
+              failedCount ? ` · ${failedCount} failed` : ""
+            }`,
+          },
+        );
+      }
+
+      // Keep dialog open briefly if there were failures so user can see them
+      const anyFailed = Object.values(progress).some((p) => p.status === "failed");
+      if (!anyFailed && filesCommitted > 0) {
+        reset();
+        onOpenChange(false);
+      } else {
+        // Stay in committing stage showing the per-file results; user closes manually
+      }
     } catch (e: any) {
       console.error(e);
       toast.error("Save failed", { description: e.message });
