@@ -106,6 +106,7 @@ export function TrainingEventsPanel() {
   const [form, setForm] = useState<FormState>(emptyForm());
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [filter, setFilter] = useState<TrainingEventType | "all">("all");
+  const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
 
   const filtered = useMemo(
     () => (filter === "all" ? events : events.filter((e) => e.event_type === filter)),
