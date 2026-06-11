@@ -3325,6 +3325,63 @@ export type Database = {
         }
         Relationships: []
       }
+      training_events: {
+        Row: {
+          body_part: string | null
+          created_at: string
+          description: string | null
+          end_date: string | null
+          event_type: Database["public"]["Enums"]["training_event_type"]
+          id: string
+          location: string | null
+          metadata: Json
+          race_distance: string | null
+          race_priority: string | null
+          race_result: string | null
+          severity: number | null
+          start_date: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body_part?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          event_type: Database["public"]["Enums"]["training_event_type"]
+          id?: string
+          location?: string | null
+          metadata?: Json
+          race_distance?: string | null
+          race_priority?: string | null
+          race_result?: string | null
+          severity?: number | null
+          start_date: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body_part?: string | null
+          created_at?: string
+          description?: string | null
+          end_date?: string | null
+          event_type?: Database["public"]["Enums"]["training_event_type"]
+          id?: string
+          location?: string | null
+          metadata?: Json
+          race_distance?: string | null
+          race_priority?: string | null
+          race_result?: string | null
+          severity?: number | null
+          start_date?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       training_plan_imports: {
         Row: {
           created_at: string
@@ -4343,6 +4400,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       goal_value_link_source: "ai" | "user"
+      training_event_type: "injury_illness" | "race" | "other"
       value_visibility: "private" | "public"
     }
     CompositeTypes: {
@@ -4473,6 +4531,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       goal_value_link_source: ["ai", "user"],
+      training_event_type: ["injury_illness", "race", "other"],
       value_visibility: ["private", "public"],
     },
   },
