@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Upload, Loader2, X, FileText, ImageIcon, Activity, Sparkles, Plus, Trash2, Check } from "lucide-react";
+import { Upload, Loader2, X, FileText, ImageIcon, Activity, Sparkles, Plus, Trash2, Check, CheckCircle2, AlertCircle, CircleDashed } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import {
@@ -35,7 +35,29 @@ const MAX_PER_FILE = 25 * 1024 * 1024;
 
 type Stage = "pick" | "analyzing" | "confirm" | "committing";
 
+type FileStatus =
+  | "queued"
+  | "uploading"
+  | "uploaded"
+  | "analyzing"
+  | "moving"
+  | "parsing_fit"
+  | "saving"
+  | "done"
+  | "failed";
+
+interface FileProgress {
+  status: FileStatus;
+  message?: string;
+}
+
+interface PickedFile {
+  id: string;
+  file: File;
+}
+
 interface AnalyzedFile {
+  client_id?: string;
   file_path: string;
   file_name: string;
   mime_type?: string;
@@ -95,17 +117,22 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [stage, setStage] = useState<Stage>("pick");
-  const [picked, setPicked] = useState<File[]>([]);
+  const [picked, setPicked] = useState<PickedFile[]>([]);
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [progress, setProgress] = useState<Record<string, FileProgress>>({});
+
+  const setFileProgress = (id: string, status: FileStatus, message?: string) =>
+    setProgress((prev) => ({ ...prev, [id]: { status, message } }));
 
   const reset = () => {
     setStage("pick");
     setPicked([]);
     setProposals([]);
+    setProgress({});
   };
 
   const handleClose = (next: boolean) => {
-    if (!next && (stage === "analyzing" || stage === "committing")) return; // block close mid-flight
+    if (!next && (stage === "analyzing" || stage === "committing")) return;
     if (!next) reset();
     onOpenChange(next);
   };
@@ -122,30 +149,47 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         toast.error(`${f.name} is too large (max 25MB)`);
         continue;
       }
-      next.push(f);
+      next.push({ id: crypto.randomUUID(), file: f });
     }
     setPicked(next);
   };
 
-  const removePicked = (i: number) => setPicked(picked.filter((_, idx) => idx !== i));
+  const removePicked = (id: string) => setPicked(picked.filter((p) => p.id !== id));
 
   const analyze = async () => {
     if (!user || picked.length === 0) return;
     setStage("analyzing");
+    // Seed progress
+    const initial: Record<string, FileProgress> = {};
+    picked.forEach((p) => (initial[p.id] = { status: "queued" }));
+    setProgress(initial);
+
     try {
       const batchId = crypto.randomUUID();
-      const uploaded: { file_path: string; file_name: string; mime_type: string; size_bytes: number }[] = [];
+      const uploaded: {
+        client_id: string;
+        file_path: string;
+        file_name: string;
+        mime_type: string;
+        size_bytes: number;
+      }[] = [];
 
-      // Upload to temp paths in parallel
       await Promise.all(
-        picked.map(async (file) => {
+        picked.map(async (pf) => {
+          const { id, file } = pf;
+          setFileProgress(id, "uploading");
           const safe = file.name.replace(/[^\w.\-]+/g, "_");
-          const path = `${user.id}/event-uploads/${batchId}/${safe}`;
+          const path = `${user.id}/event-uploads/${batchId}/${id}_${safe}`;
           const { error } = await supabase.storage
             .from(STORAGE_BUCKET)
             .upload(path, file, { contentType: file.type || undefined, upsert: true });
-          if (error) throw error;
+          if (error) {
+            setFileProgress(id, "failed", `Upload: ${error.message}`);
+            return;
+          }
+          setFileProgress(id, "uploaded");
           uploaded.push({
+            client_id: id,
             file_path: path,
             file_name: file.name,
             mime_type: file.type || "application/octet-stream",
@@ -154,22 +198,56 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         }),
       );
 
+      if (uploaded.length === 0) {
+        toast.error("No files could be uploaded");
+        setStage("pick");
+        return;
+      }
+
+      // Mark uploaded files as analyzing
+      uploaded.forEach((u) => setFileProgress(u.client_id, "analyzing"));
+
       const { data, error } = await supabase.functions.invoke("analyze-event-uploads", {
-        body: { files: uploaded },
+        body: { files: uploaded.map(({ client_id, ...rest }) => rest) },
       });
       if (error) throw new Error(error.message);
       if (!data?.proposals) throw new Error("No proposals returned");
 
+      // Match returned files back to client_ids by file_path (unique)
+      const byPath = new Map(uploaded.map((u) => [u.file_path, u.client_id]));
       const ps: Proposal[] = data.proposals.map((p: any) => ({
         ...p,
         selected_event_id: p.match?.event_id,
+        files: p.files.map((f: any) => ({ ...f, client_id: byPath.get(f.file_path) })),
       }));
+
+      // Update per-file status from results
+      for (const p of ps) {
+        for (const f of p.files) {
+          if (!f.client_id) continue;
+          if (f.error) {
+            setFileProgress(f.client_id, "failed", f.error);
+          } else {
+            setFileProgress(f.client_id, "done", f.summary || "Extracted");
+          }
+        }
+      }
+
       setProposals(ps);
       setStage("confirm");
     } catch (e: any) {
       console.error(e);
       toast.error("Couldn't analyze files", { description: e.message });
-      setStage("pick");
+      // Mark any still-analyzing as failed
+      setProgress((prev) => {
+        const next = { ...prev };
+        for (const k of Object.keys(next)) {
+          if (next[k].status === "analyzing" || next[k].status === "uploaded") {
+            next[k] = { status: "failed", message: e.message };
+          }
+        }
+        return next;
+      });
     }
   };
 
@@ -185,6 +263,16 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
   const commit = async () => {
     if (!user) return;
     setStage("committing");
+
+    // Seed progress for all files in proposals
+    const initial: Record<string, FileProgress> = {};
+    for (const p of proposals) {
+      for (const f of p.files) {
+        if (f.client_id) initial[f.client_id] = { status: "queued" };
+      }
+    }
+    setProgress(initial);
+
     let created = 0;
     let attached = 0;
     let filesCommitted = 0;
@@ -222,67 +310,79 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
           created++;
         }
 
-        // 2. Move each file from temp to event-attachments path & insert attachment row
+        // 2. Move each file, parse if needed, insert row
         for (const f of p.files) {
-          if (f.error) continue;
-          const ts = Date.now();
-          const safe = f.file_name.replace(/[^\w.\-]+/g, "_");
-          const dest = `${user.id}/event-attachments/${eventId}/${ts}_${safe}`;
-          const { error: mvErr } = await supabase.storage
-            .from(STORAGE_BUCKET)
-            .move(f.file_path, dest);
-          if (mvErr) {
-            console.error("storage move failed", mvErr);
+          if (f.error) {
+            if (f.client_id) setFileProgress(f.client_id, "failed", f.error);
             continue;
           }
+          const cid = f.client_id;
+          try {
+            if (cid) setFileProgress(cid, "moving");
+            const ts = Date.now();
+            const safe = f.file_name.replace(/[^\w.\-]+/g, "_");
+            const dest = `${user.id}/event-attachments/${eventId}/${ts}_${safe}`;
+            const { error: mvErr } = await supabase.storage
+              .from(STORAGE_BUCKET)
+              .move(f.file_path, dest);
+            if (mvErr) throw new Error(`Move: ${mvErr.message}`);
 
-          let synced_activity_id: string | null = null;
-          if (f.kind === "fit") {
-            const { data: fitData } = await supabase.functions.invoke("parse-fit-file", {
-              body: {
-                file_path: dest,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-              },
-            });
-            synced_activity_id =
-              fitData?.summary?.activity_id ?? fitData?.existing_activity?.id ?? null;
-          }
-
-          const { error: insErr } = await supabase.from("training_event_attachments").insert({
-            user_id: user.id,
-            event_id: eventId,
-            kind: f.kind,
-            file_path: dest,
-            file_name: f.file_name,
-            mime_type: f.mime_type ?? null,
-            size_bytes: f.size_bytes ?? null,
-            synced_activity_id,
-            description: f.description_md || null,
-            extraction_status: f.kind === "fit" ? "skipped" : f.description_md ? "done" : "pending",
-            extracted_at: f.description_md ? new Date().toISOString() : null,
-          });
-          if (insErr) {
-            console.error("attachment insert failed", insErr);
-            continue;
-          }
-          filesCommitted++;
-
-          // Append AI summary to the event description (only when attaching)
-          if (p.decision === "attach" && f.summary) {
-            const { data: ev } = await supabase
-              .from("training_events")
-              .select("description")
-              .eq("id", eventId)
-              .single();
-            const existing = (ev?.description ?? "").trim();
-            const stamp = `[AI · ${f.file_name}] ${f.summary}`;
-            if (!existing.includes(`[AI · ${f.file_name}]`)) {
-              const next = existing ? `${existing}\n\n${stamp}` : stamp;
-              await supabase
-                .from("training_events")
-                .update({ description: next.slice(0, 4000) })
-                .eq("id", eventId);
+            let synced_activity_id: string | null = null;
+            if (f.kind === "fit") {
+              if (cid) setFileProgress(cid, "parsing_fit");
+              const { data: fitData, error: fitErr } = await supabase.functions.invoke(
+                "parse-fit-file",
+                {
+                  body: {
+                    file_path: dest,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                  },
+                },
+              );
+              if (fitErr) throw new Error(`Parse .fit: ${fitErr.message}`);
+              synced_activity_id =
+                fitData?.summary?.activity_id ?? fitData?.existing_activity?.id ?? null;
             }
+
+            if (cid) setFileProgress(cid, "saving");
+            const { error: insErr } = await supabase.from("training_event_attachments").insert({
+              user_id: user.id,
+              event_id: eventId,
+              kind: f.kind,
+              file_path: dest,
+              file_name: f.file_name,
+              mime_type: f.mime_type ?? null,
+              size_bytes: f.size_bytes ?? null,
+              synced_activity_id,
+              description: f.description_md || null,
+              extraction_status: f.kind === "fit" ? "skipped" : f.description_md ? "done" : "pending",
+              extracted_at: f.description_md ? new Date().toISOString() : null,
+            });
+            if (insErr) throw new Error(`Save: ${insErr.message}`);
+            filesCommitted++;
+
+            // Append AI summary to existing event description
+            if (p.decision === "attach" && f.summary) {
+              const { data: ev } = await supabase
+                .from("training_events")
+                .select("description")
+                .eq("id", eventId)
+                .single();
+              const existing = (ev?.description ?? "").trim();
+              const stamp = `[AI · ${f.file_name}] ${f.summary}`;
+              if (!existing.includes(`[AI · ${f.file_name}]`)) {
+                const next = existing ? `${existing}\n\n${stamp}` : stamp;
+                await supabase
+                  .from("training_events")
+                  .update({ description: next.slice(0, 4000) })
+                  .eq("id", eventId);
+              }
+            }
+
+            if (cid) setFileProgress(cid, "done", "Saved");
+          } catch (fileErr: any) {
+            console.error("file commit failed", fileErr);
+            if (cid) setFileProgress(cid, "failed", fileErr.message);
           }
         }
       }
@@ -292,14 +392,26 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
       qc.invalidateQueries({ queryKey: ["synced-activities"] });
       qc.invalidateQueries({ queryKey: ["training-plan"] });
 
-      toast.success(
-        `Saved ${filesCommitted} file${filesCommitted === 1 ? "" : "s"}`,
-        {
-          description: `${created} new event${created === 1 ? "" : "s"}, ${attached} attached to existing`,
-        },
-      );
-      reset();
-      onOpenChange(false);
+      const failedCount = Object.values(progress).filter((p) => p.status === "failed").length;
+      if (filesCommitted > 0) {
+        toast.success(
+          `Saved ${filesCommitted} file${filesCommitted === 1 ? "" : "s"}`,
+          {
+            description: `${created} new event${created === 1 ? "" : "s"}, ${attached} attached to existing${
+              failedCount ? ` · ${failedCount} failed` : ""
+            }`,
+          },
+        );
+      }
+
+      // Keep dialog open briefly if there were failures so user can see them
+      const anyFailed = Object.values(progress).some((p) => p.status === "failed");
+      if (!anyFailed && filesCommitted > 0) {
+        reset();
+        onOpenChange(false);
+      } else {
+        // Stay in committing stage showing the per-file results; user closes manually
+      }
     } catch (e: any) {
       console.error(e);
       toast.error("Save failed", { description: e.message });
@@ -352,14 +464,14 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
             />
             {picked.length > 0 && (
               <div className="space-y-2">
-                {picked.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/30">
-                    <FileIcon name={f.name} />
+                {picked.map((pf) => (
+                  <div key={pf.id} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/30">
+                    <FileIcon name={pf.file.name} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm truncate">{f.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{formatSize(f.size)}</div>
+                      <div className="text-sm truncate">{pf.file.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{formatSize(pf.file.size)}</div>
                     </div>
-                    <Button size="icon" variant="ghost" onClick={() => removePicked(i)} aria-label="Remove">
+                    <Button size="icon" variant="ghost" onClick={() => removePicked(pf.id)} aria-label="Remove">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -370,13 +482,16 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         )}
 
         {stage === "analyzing" && (
-          <div className="py-12 text-center space-y-3">
-            <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-            <div className="text-sm font-medium">Reading your files…</div>
-            <div className="text-xs text-muted-foreground">
-              Uploading and extracting structured data with AI.
-            </div>
-          </div>
+          <ProgressList
+            title="Reading your files…"
+            subtitle="Uploading and extracting structured data with AI."
+            items={picked.map((pf) => ({
+              id: pf.id,
+              name: pf.file.name,
+              size: pf.file.size,
+              progress: progress[pf.id],
+            }))}
+          />
         )}
 
         {stage === "confirm" && (
@@ -404,10 +519,20 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         )}
 
         {stage === "committing" && (
-          <div className="py-12 text-center space-y-3">
-            <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-            <div className="text-sm font-medium">Creating events and saving files…</div>
-          </div>
+          <ProgressList
+            title="Saving events and files…"
+            subtitle="Creating events, moving files, parsing .fit data."
+            items={proposals.flatMap((p) =>
+              p.files
+                .filter((f) => f.client_id)
+                .map((f) => ({
+                  id: f.client_id!,
+                  name: f.file_name,
+                  size: f.size_bytes,
+                  progress: progress[f.client_id!],
+                })),
+            )}
+          />
         )}
 
         <DialogFooter>
@@ -427,6 +552,10 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
               </Button>
             </>
           )}
+          {stage === "committing" &&
+            allCommitsSettled(progress, proposals) && (
+              <Button onClick={() => { reset(); onOpenChange(false); }}>Close</Button>
+            )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -657,4 +786,113 @@ function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+const STATUS_LABEL: Record<FileStatus, string> = {
+  queued: "Queued",
+  uploading: "Uploading…",
+  uploaded: "Uploaded",
+  analyzing: "Extracting with AI…",
+  moving: "Moving file…",
+  parsing_fit: "Parsing .fit data…",
+  saving: "Saving…",
+  done: "Done",
+  failed: "Failed",
+};
+
+function StatusIcon({ status }: { status: FileStatus }) {
+  if (status === "done") return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
+  if (status === "failed") return <AlertCircle className="h-4 w-4 text-destructive shrink-0" />;
+  if (status === "queued") return <CircleDashed className="h-4 w-4 text-muted-foreground shrink-0" />;
+  return <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />;
+}
+
+interface ProgressItem {
+  id: string;
+  name: string;
+  size?: number | null;
+  progress?: FileProgress;
+}
+
+function ProgressList({
+  title,
+  subtitle,
+  items,
+}: {
+  title: string;
+  subtitle: string;
+  items: ProgressItem[];
+}) {
+  const done = items.filter((i) => i.progress?.status === "done").length;
+  const failed = items.filter((i) => i.progress?.status === "failed").length;
+  const total = items.length;
+  const allSettled = total > 0 && items.every((i) => i.progress?.status === "done" || i.progress?.status === "failed");
+
+  return (
+    <div className="space-y-3 py-2">
+      <div className="space-y-1">
+        <div className="text-sm font-medium">
+          {allSettled ? (failed === 0 ? "All done" : `${done} of ${total} succeeded`) : title}
+        </div>
+        <div className="text-xs text-muted-foreground">{subtitle}</div>
+      </div>
+      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+        <div
+          className={cn(
+            "h-full transition-all duration-300",
+            failed > 0 && allSettled ? "bg-amber-500" : "bg-primary",
+          )}
+          style={{ width: `${total ? ((done + failed) / total) * 100 : 0}%` }}
+        />
+      </div>
+      <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+        {items.map((it) => {
+          const st = it.progress?.status ?? "queued";
+          const isFail = st === "failed";
+          return (
+            <div
+              key={it.id}
+              className={cn(
+                "flex items-start gap-2 p-2 rounded border text-sm",
+                isFail
+                  ? "border-destructive/30 bg-destructive/5"
+                  : st === "done"
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-border bg-muted/30",
+              )}
+            >
+              <StatusIcon status={st} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <FileIcon name={it.name} />
+                  <span className="text-sm truncate font-medium">{it.name}</span>
+                </div>
+                <div
+                  className={cn(
+                    "text-[11px] mt-0.5",
+                    isFail ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
+                  {STATUS_LABEL[st]}
+                  {it.progress?.message ? ` · ${it.progress.message}` : ""}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function allCommitsSettled(
+  progress: Record<string, FileProgress>,
+  proposals: Proposal[],
+): boolean {
+  const ids = proposals.flatMap((p) => p.files.map((f) => f.client_id).filter(Boolean) as string[]);
+  if (ids.length === 0) return true;
+  return ids.every((id) => {
+    const s = progress[id]?.status;
+    return s === "done" || s === "failed";
+  });
 }
