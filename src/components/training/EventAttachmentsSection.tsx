@@ -1,6 +1,21 @@
 import { useRef, useState } from "react";
 import { format } from "date-fns";
-import { Paperclip, Upload, Trash2, FileText, Image as ImageIcon, Activity, File as FileIcon, ExternalLink, Loader2 } from "lucide-react";
+import {
+  Paperclip,
+  Upload,
+  Trash2,
+  FileText,
+  Image as ImageIcon,
+  Activity,
+  File as FileIcon,
+  ExternalLink,
+  Loader2,
+  Sparkles,
+  ChevronDown,
+  ChevronRight,
+  AlertCircle,
+  RefreshCw,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +33,7 @@ import {
   useEventAttachments,
   useUploadEventAttachment,
   useDeleteEventAttachment,
+  useReExtractAttachment,
   getAttachmentSignedUrl,
   type TrainingEventAttachment,
 } from "@/hooks/useTrainingEventAttachments";
@@ -42,12 +58,21 @@ interface Props {
 }
 
 export function EventAttachmentsSection({ eventId }: Props) {
-  const { data: attachments = [], isLoading } = useEventAttachments(eventId);
   const upload = useUploadEventAttachment();
   const del = useDeleteEventAttachment();
+  const reExtract = useReExtractAttachment();
+
+  // Poll while any attachment is still processing
+  const { data: attachments = [], isLoading } = useEventAttachments(eventId);
+  const anyProcessing = attachments.some((a) => a.extraction_status === "processing" || a.extraction_status === "pending");
+  // Re-fetch via stale time trick — TanStack will refetch on window focus already; add a setInterval-based poll
+  // (kept inside the component via plain effect)
+  usePollWhile(anyProcessing, eventId);
+
   const fileInput = useRef<HTMLInputElement>(null);
   const [confirmDelete, setConfirmDelete] = useState<TrainingEventAttachment | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -96,8 +121,12 @@ export function EventAttachmentsSection({ eventId }: Props) {
         />
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        .FIT files of races are parsed into your activity history. PDFs, doctor's notes, and images are stored privately for reference.
+      <p className="text-xs text-muted-foreground flex items-start gap-1.5">
+        <Sparkles className="h-3 w-3 mt-0.5 shrink-0 text-primary" />
+        <span>
+          .FIT race files are parsed into your activity history. PDFs and images (doctor's notes, scans) are
+          automatically read by AI and summarized into this event.
+        </span>
       </p>
 
       {isLoading ? (
@@ -110,42 +139,91 @@ export function EventAttachmentsSection({ eventId }: Props) {
         <div className="space-y-1.5">
           {attachments.map((att) => {
             const Icon = KIND_META[att.kind].icon;
+            const isOpen = !!expanded[att.id];
+            const hasExtraction = att.kind !== "fit" && (att.extraction_status === "done" || att.extraction_status === "processing" || att.extraction_status === "failed");
             return (
               <div
                 key={att.id}
-                className="flex items-center gap-2 p-2 rounded-md border bg-surface-1 hover:bg-surface-2 transition-colors"
+                className="rounded-md border bg-surface-1 overflow-hidden"
               >
-                <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm truncate" title={att.file_name}>{att.file_name}</div>
-                  <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                    <Badge variant="outline" className="text-[10px] px-1 py-0">{KIND_META[att.kind].label}</Badge>
-                    {att.size_bytes && <span>{formatSize(att.size_bytes)}</span>}
-                    <span>{format(new Date(att.created_at), "d MMM")}</span>
-                    {att.synced_activity_id && <span className="text-primary">• linked to activity</span>}
+                <div className="flex items-center gap-2 p-2 hover:bg-surface-2 transition-colors">
+                  <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm truncate" title={att.file_name}>{att.file_name}</div>
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+                      <Badge variant="outline" className="text-[10px] px-1 py-0">{KIND_META[att.kind].label}</Badge>
+                      {att.size_bytes && <span>{formatSize(att.size_bytes)}</span>}
+                      <span>{format(new Date(att.created_at), "d MMM")}</span>
+                      {att.synced_activity_id && <span className="text-primary">• linked to activity</span>}
+                      <ExtractionBadge att={att} />
+                    </div>
                   </div>
-                </div>
-                {att.file_path && (
+                  {hasExtraction && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setExpanded((p) => ({ ...p, [att.id]: !p[att.id] }))}
+                      aria-label={isOpen ? "Collapse" : "Expand"}
+                    >
+                      {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+                    </Button>
+                  )}
+                  {att.file_path && (
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => openAttachment(att)}
+                      disabled={openingId === att.id}
+                      aria-label="Open"
+                    >
+                      {openingId === att.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                    </Button>
+                  )}
                   <Button
                     type="button"
                     size="icon"
                     variant="ghost"
-                    onClick={() => openAttachment(att)}
-                    disabled={openingId === att.id}
-                    aria-label="Open"
+                    onClick={() => setConfirmDelete(att)}
+                    aria-label="Delete"
                   >
-                    {openingId === att.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <ExternalLink className="h-4 w-4" />}
+                    <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
+                </div>
+
+                {isOpen && hasExtraction && (
+                  <div className="border-t bg-surface-2/50 p-3 space-y-2">
+                    {att.extraction_status === "processing" && (
+                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" /> AI is reading this file…
+                      </div>
+                    )}
+                    {att.extraction_status === "failed" && (
+                      <div className="text-xs text-destructive flex items-start gap-2">
+                        <AlertCircle className="h-3.5 w-3.5 mt-0.5" />
+                        <span>{att.extraction_error || "Extraction failed"}</span>
+                      </div>
+                    )}
+                    {att.description && (
+                      <div className="text-xs whitespace-pre-wrap leading-relaxed text-foreground/90">
+                        {att.description}
+                      </div>
+                    )}
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => reExtract.mutate(att)}
+                        disabled={reExtract.isPending || att.extraction_status === "processing"}
+                        className="gap-1.5 h-7 text-xs"
+                      >
+                        <RefreshCw className="h-3 w-3" /> Re-extract
+                      </Button>
+                    </div>
+                  </div>
                 )}
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  onClick={() => setConfirmDelete(att)}
-                  aria-label="Delete"
-                >
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
               </div>
             );
           })}
@@ -175,4 +253,45 @@ export function EventAttachmentsSection({ eventId }: Props) {
       </AlertDialog>
     </div>
   );
+}
+
+function ExtractionBadge({ att }: { att: TrainingEventAttachment }) {
+  if (att.kind === "fit" || att.kind === "note") return null;
+  switch (att.extraction_status) {
+    case "processing":
+    case "pending":
+      return (
+        <span className="inline-flex items-center gap-1 text-primary">
+          <Loader2 className="h-3 w-3 animate-spin" /> reading…
+        </span>
+      );
+    case "done":
+      return (
+        <span className="inline-flex items-center gap-1 text-primary">
+          <Sparkles className="h-3 w-3" /> AI summary
+        </span>
+      );
+    case "failed":
+      return (
+        <span className="inline-flex items-center gap-1 text-destructive">
+          <AlertCircle className="h-3 w-3" /> extraction failed
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
+// Tiny inline polling hook to avoid an extra file
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+function usePollWhile(active: boolean, eventId: string) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!active) return;
+    const i = setInterval(() => {
+      qc.invalidateQueries({ queryKey: ["training-event-attachments", eventId] });
+    }, 3000);
+    return () => clearInterval(i);
+  }, [active, eventId, qc]);
 }
