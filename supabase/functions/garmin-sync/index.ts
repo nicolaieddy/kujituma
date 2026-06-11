@@ -131,14 +131,11 @@ async function syncUser(
   const password = await decryptString(conn.encrypted_password);
 
   const gc = new GarminConnect({ username: email, password });
-  // Login is the call most commonly throttled — be patient with retries.
+  // Login is the call most commonly throttled. CRITICAL: do NOT retry on 429 —
+  // each additional login attempt against a throttled account extends the lockout,
+  // which is exactly the loop we were stuck in. One try, then bail.
   try {
-    await withBackoff(() => gc.login(), {
-      label: `login ${userId}`,
-      retries: 3,
-      baseMs: 20000,
-      maxMs: 90000,
-    });
+    await gc.login();
     logger.addItem({ kind: "auth", ref: "garmin-login", ok: true, status: "created", message: "Logged in to Garmin Connect" });
   } catch (e) {
     const msg = (e as Error).message;
@@ -504,8 +501,25 @@ Deno.serve(async (req) => {
   if (error) return json({ error: error.message }, 500);
   if (!conns?.length) return json({ message: "No connections to sync", results: [] });
 
+  // Cooldown gate: if the last run was rate-limited and we tried within the last 6h,
+  // skip this user entirely. Hitting login again during throttle just extends the ban.
+  const COOLDOWN_MS = 6 * 60 * 60 * 1000;
+  const isCoolingDown = (c: any) => {
+    if (trigger === "manual") return false; // manual override always tries
+    if (!c.last_error) return false;
+    if (!/\b429\b|too many requests|rate limit/i.test(c.last_error)) return false;
+    const anchor = c.last_login_at ?? c.last_sync_at;
+    if (!anchor) return false;
+    return Date.now() - new Date(anchor).getTime() < COOLDOWN_MS;
+  };
+
   const results: Array<Record<string, unknown>> = [];
   for (const conn of conns) {
+    if (isCoolingDown(conn)) {
+      console.log(`[garmin-sync] skipping ${conn.user_id} — still in 429 cooldown`);
+      results.push({ userId: conn.user_id, ok: false, skipped: "cooldown" });
+      continue;
+    }
     try {
       const r = await syncUser(admin, conn, initial, supabaseUrl, serviceKey, trigger);
       results.push({ ...r, ok: true });
@@ -514,7 +528,7 @@ Deno.serve(async (req) => {
       console.error(`sync failed for user ${conn.user_id}:`, msg);
       await admin
         .from("garmin_connections")
-        .update({ last_error: msg })
+        .update({ last_error: msg, last_login_at: new Date().toISOString() })
         .eq("user_id", conn.user_id);
       results.push({ userId: conn.user_id, ok: false, error: msg });
     }
