@@ -464,14 +464,14 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
             />
             {picked.length > 0 && (
               <div className="space-y-2">
-                {picked.map((f, i) => (
-                  <div key={i} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/30">
-                    <FileIcon name={f.name} />
+                {picked.map((pf) => (
+                  <div key={pf.id} className="flex items-center gap-2 p-2 rounded border border-border bg-muted/30">
+                    <FileIcon name={pf.file.name} />
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm truncate">{f.name}</div>
-                      <div className="text-[11px] text-muted-foreground">{formatSize(f.size)}</div>
+                      <div className="text-sm truncate">{pf.file.name}</div>
+                      <div className="text-[11px] text-muted-foreground">{formatSize(pf.file.size)}</div>
                     </div>
-                    <Button size="icon" variant="ghost" onClick={() => removePicked(i)} aria-label="Remove">
+                    <Button size="icon" variant="ghost" onClick={() => removePicked(pf.id)} aria-label="Remove">
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -482,13 +482,16 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         )}
 
         {stage === "analyzing" && (
-          <div className="py-12 text-center space-y-3">
-            <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-            <div className="text-sm font-medium">Reading your files…</div>
-            <div className="text-xs text-muted-foreground">
-              Uploading and extracting structured data with AI.
-            </div>
-          </div>
+          <ProgressList
+            title="Reading your files…"
+            subtitle="Uploading and extracting structured data with AI."
+            items={picked.map((pf) => ({
+              id: pf.id,
+              name: pf.file.name,
+              size: pf.file.size,
+              progress: progress[pf.id],
+            }))}
+          />
         )}
 
         {stage === "confirm" && (
