@@ -3325,6 +3325,66 @@ export type Database = {
         }
         Relationships: []
       }
+      training_event_attachments: {
+        Row: {
+          created_at: string
+          description: string | null
+          event_id: string
+          file_name: string
+          file_path: string | null
+          id: string
+          kind: string
+          mime_type: string | null
+          size_bytes: number | null
+          synced_activity_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          event_id: string
+          file_name: string
+          file_path?: string | null
+          id?: string
+          kind: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          synced_activity_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          event_id?: string
+          file_name?: string
+          file_path?: string | null
+          id?: string
+          kind?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          synced_activity_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_event_attachments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "training_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_event_attachments_synced_activity_id_fkey"
+            columns: ["synced_activity_id"]
+            isOneToOne: false
+            referencedRelation: "synced_activities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       training_events: {
         Row: {
           body_part: string | null
