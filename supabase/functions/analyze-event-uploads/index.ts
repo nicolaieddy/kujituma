@@ -3,6 +3,49 @@
 // Files stay at their temp path; the client moves them after the user confirms.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import FitParser from "npm:fit-file-parser@2.1.0";
+import JSZip from "https://esm.sh/jszip@3.10.1";
+import tzlookup from "npm:tz-lookup@6.1.25";
+
+function parseFitBuffer(buffer: ArrayBuffer): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const parser = new FitParser({ force: true, speedUnit: "m/s", lengthUnit: "m", elapsedRecordField: true });
+    parser.parse(buffer, (err: any, data: any) => err ? reject(err) : resolve(data));
+  });
+}
+async function extractFitBuffer(buffer: ArrayBuffer, fileName: string): Promise<ArrayBuffer> {
+  if (fileName.toLowerCase().endsWith(".zip")) {
+    const zip = new JSZip();
+    const contents = await zip.loadAsync(buffer);
+    const fit = Object.keys(contents.files).find(n => n.toLowerCase().endsWith(".fit"));
+    if (!fit) throw new Error("No .fit inside zip");
+    return await contents.files[fit].async("arraybuffer");
+  }
+  return buffer;
+}
+const toDeg = (sc: number | null | undefined): number | null =>
+  sc != null ? sc * (180 / 2147483648) : null;
+function inferSport(sport?: string): string {
+  const s = (sport || "").toLowerCase();
+  if (s.includes("run")) return "Run";
+  if (s.includes("cycling") || s.includes("biking") || s.includes("ride")) return "Ride";
+  if (s.includes("swim")) return "Swim";
+  if (s.includes("hik")) return "Hike";
+  if (s.includes("walk")) return "Walk";
+  return sport || "Workout";
+}
+function localDate(utcIso: string, tz: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date(utcIso));
+  return `${parts.find(p=>p.type==="year")!.value}-${parts.find(p=>p.type==="month")!.value}-${parts.find(p=>p.type==="day")!.value}`;
+}
+function fmtDuration(sec: number): string {
+  const h = Math.floor(sec / 3600); const m = Math.floor((sec % 3600) / 60); const s = Math.round(sec % 60);
+  return h ? `${h}h ${m}m ${s}s` : `${m}m ${s}s`;
+}
+function fmtPace(secPerKm: number): string {
+  const m = Math.floor(secPerKm / 60); const s = Math.round(secPerKm % 60);
+  return `${m}:${s.toString().padStart(2, "0")}/km`;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -159,16 +202,94 @@ async function extractOne(supabase: any, f: InputFile, apiKey: string) {
     const name = f.file_name.toLowerCase();
     if (name.endsWith(".fit") || name.endsWith(".zip")) {
       result.kind = "fit";
-      // Skip AI extraction for FIT; use filename + today as proposal
-      result.extraction = {
-        event_type: "race",
-        title: cleanTitle(f.file_name),
-        start_date: todayISO(),
-        description: "FIT activity file (will be parsed on save).",
-      };
-      result.description_md = "FIT activity file. Metrics will be parsed when attached.";
+      try {
+        const { data: blob, error: dlErr } = await supabase.storage.from("fit-files").download(f.file_path);
+        if (dlErr || !blob) throw new Error(dlErr?.message || "download failed");
+        const raw = await blob.arrayBuffer();
+        const buf = await extractFitBuffer(raw, f.file_name);
+        const fit = await parseFitBuffer(buf);
+        const session = fit.sessions?.[0];
+        if (!session) throw new Error("No session in .fit");
+
+        const sport = inferSport(session.sport);
+        const startIso = session.start_time ? new Date(session.start_time).toISOString() : new Date().toISOString();
+        const duration = session.total_timer_time ? Math.round(session.total_timer_time) : null;
+        const distanceM = session.total_distance ?? null;
+        const distanceKm = distanceM != null ? distanceM / 1000 : null;
+        const avgHr = session.avg_heart_rate ?? null;
+        const maxHr = session.max_heart_rate ?? null;
+        const elevGain = session.total_ascent ?? null;
+        const calories = session.total_calories ?? null;
+
+        // tz from GPS
+        let tz: string | null = null;
+        let lat = toDeg(session.start_position_lat);
+        let lng = toDeg(session.start_position_long);
+        if (lat == null || lng == null) {
+          for (const r of fit.records || []) {
+            const la = toDeg(r.position_lat), lo = toDeg(r.position_long);
+            if (la != null && lo != null) { lat = la; lng = lo; break; }
+          }
+        }
+        if (lat != null && lng != null) {
+          try { tz = tzlookup(lat, lng); } catch { /* ignore */ }
+        }
+        if (!tz) tz = "UTC";
+        const startDate = localDate(startIso, tz);
+
+        const paceLine = (distanceKm && duration && sport === "Run")
+          ? `Pace: ${fmtPace(duration / distanceKm)}` : null;
+        const speedLine = (distanceKm && duration && (sport === "Ride" || sport === "Bike"))
+          ? `Avg speed: ${(distanceKm / (duration / 3600)).toFixed(1)} km/h` : null;
+
+        const lines = [
+          `**${sport} activity** — ${startDate}`,
+          distanceKm != null ? `• Distance: ${distanceKm.toFixed(2)} km` : null,
+          duration != null ? `• Duration: ${fmtDuration(duration)}` : null,
+          paceLine ? `• ${paceLine}` : null,
+          speedLine ? `• ${speedLine}` : null,
+          elevGain != null ? `• Elevation gain: ${Math.round(elevGain)} m` : null,
+          avgHr != null ? `• Avg HR: ${avgHr} bpm${maxHr ? ` (max ${maxHr})` : ""}` : null,
+          calories != null ? `• Calories: ${calories}` : null,
+          (lat != null && lng != null) ? `• Location: ${lat.toFixed(4)}, ${lng.toFixed(4)} (${tz})` : null,
+        ].filter(Boolean);
+
+        const title = `${sport}${distanceKm != null ? ` ${distanceKm.toFixed(1)}km` : ""}${duration != null ? ` · ${fmtDuration(duration)}` : ""}`;
+        const description = lines.join("\n");
+
+        // Heuristic: long runs or "race" sport sub-type look like races; otherwise "other"
+        const isRaceish = (sport === "Run" && distanceKm != null && distanceKm >= 15) ||
+                         /race|marathon|10k|5k|half/i.test(f.file_name);
+
+        result.extraction = {
+          event_type: isRaceish ? "race" : "other",
+          title: title.slice(0, 200),
+          start_date: startDate,
+          end_date: null,
+          race_distance: distanceKm != null ? (
+            distanceKm >= 41 && distanceKm <= 43 ? "Marathon" :
+            distanceKm >= 20 && distanceKm <= 22 ? "Half marathon" :
+            `${distanceKm.toFixed(1)}K`
+          ) : null,
+          race_result: duration != null ? fmtDuration(duration) : null,
+          location: (lat != null && lng != null) ? `${lat.toFixed(3)}, ${lng.toFixed(3)}` : null,
+          summary: `${sport} on ${startDate}${distanceKm != null ? `, ${distanceKm.toFixed(2)} km` : ""}${duration != null ? ` in ${fmtDuration(duration)}` : ""}.`,
+          description,
+        };
+        result.description_md = description;
+      } catch (e) {
+        result.error = `FIT parse failed: ${(e as Error).message}`;
+        result.extraction = {
+          event_type: "other",
+          title: cleanTitle(f.file_name),
+          start_date: todayISO(),
+          description: "FIT file could not be parsed for preview.",
+        };
+        result.description_md = "FIT file (parse failed during preview).";
+      }
       return result;
     }
+
 
     if (f.size_bytes && f.size_bytes > MAX_FILE_BYTES) {
       result.error = "File too large for AI extraction (>15MB)";
