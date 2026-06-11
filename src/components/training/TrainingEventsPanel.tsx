@@ -42,6 +42,8 @@ import {
 import { parseLocalDate, getLocalDateString } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
 import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
+import { EventAttachmentsSection } from "./EventAttachmentsSection";
+import { Separator } from "@/components/ui/separator";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
@@ -415,6 +417,18 @@ export function TrainingEventsPanel() {
                 maxLength={2000}
               />
             </div>
+
+            {form.id && (
+              <>
+                <Separator />
+                <EventAttachmentsSection eventId={form.id} />
+              </>
+            )}
+            {!form.id && (
+              <p className="text-xs text-muted-foreground italic">
+                Save the event first, then attach .fit files, doctor's notes, or photos.
+              </p>
+            )}
           </div>
 
           <DialogFooter>
