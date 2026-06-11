@@ -38,7 +38,7 @@ export default function Training() {
       <header className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Dumbbell className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Training Plan</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Training</h1>
         </div>
 
         {view === "plan" ? (
