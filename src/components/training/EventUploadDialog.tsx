@@ -787,3 +787,112 @@ function formatSize(bytes: number): string {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
+
+const STATUS_LABEL: Record<FileStatus, string> = {
+  queued: "Queued",
+  uploading: "Uploading…",
+  uploaded: "Uploaded",
+  analyzing: "Extracting with AI…",
+  moving: "Moving file…",
+  parsing_fit: "Parsing .fit data…",
+  saving: "Saving…",
+  done: "Done",
+  failed: "Failed",
+};
+
+function StatusIcon({ status }: { status: FileStatus }) {
+  if (status === "done") return <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />;
+  if (status === "failed") return <AlertCircle className="h-4 w-4 text-destructive shrink-0" />;
+  if (status === "queued") return <CircleDashed className="h-4 w-4 text-muted-foreground shrink-0" />;
+  return <Loader2 className="h-4 w-4 text-primary animate-spin shrink-0" />;
+}
+
+interface ProgressItem {
+  id: string;
+  name: string;
+  size?: number | null;
+  progress?: FileProgress;
+}
+
+function ProgressList({
+  title,
+  subtitle,
+  items,
+}: {
+  title: string;
+  subtitle: string;
+  items: ProgressItem[];
+}) {
+  const done = items.filter((i) => i.progress?.status === "done").length;
+  const failed = items.filter((i) => i.progress?.status === "failed").length;
+  const total = items.length;
+  const allSettled = total > 0 && items.every((i) => i.progress?.status === "done" || i.progress?.status === "failed");
+
+  return (
+    <div className="space-y-3 py-2">
+      <div className="space-y-1">
+        <div className="text-sm font-medium">
+          {allSettled ? (failed === 0 ? "All done" : `${done} of ${total} succeeded`) : title}
+        </div>
+        <div className="text-xs text-muted-foreground">{subtitle}</div>
+      </div>
+      <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+        <div
+          className={cn(
+            "h-full transition-all duration-300",
+            failed > 0 && allSettled ? "bg-amber-500" : "bg-primary",
+          )}
+          style={{ width: `${total ? ((done + failed) / total) * 100 : 0}%` }}
+        />
+      </div>
+      <div className="space-y-1.5 max-h-[40vh] overflow-y-auto">
+        {items.map((it) => {
+          const st = it.progress?.status ?? "queued";
+          const isFail = st === "failed";
+          return (
+            <div
+              key={it.id}
+              className={cn(
+                "flex items-start gap-2 p-2 rounded border text-sm",
+                isFail
+                  ? "border-destructive/30 bg-destructive/5"
+                  : st === "done"
+                  ? "border-emerald-500/30 bg-emerald-500/5"
+                  : "border-border bg-muted/30",
+              )}
+            >
+              <StatusIcon status={st} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <FileIcon name={it.name} />
+                  <span className="text-sm truncate font-medium">{it.name}</span>
+                </div>
+                <div
+                  className={cn(
+                    "text-[11px] mt-0.5",
+                    isFail ? "text-destructive" : "text-muted-foreground",
+                  )}
+                >
+                  {STATUS_LABEL[st]}
+                  {it.progress?.message ? ` · ${it.progress.message}` : ""}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function allCommitsSettled(
+  progress: Record<string, FileProgress>,
+  proposals: Proposal[],
+): boolean {
+  const ids = proposals.flatMap((p) => p.files.map((f) => f.client_id).filter(Boolean) as string[]);
+  if (ids.length === 0) return true;
+  return ids.every((id) => {
+    const s = progress[id]?.status;
+    return s === "done" || s === "failed";
+  });
+}
