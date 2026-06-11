@@ -519,10 +519,20 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
         )}
 
         {stage === "committing" && (
-          <div className="py-12 text-center space-y-3">
-            <Loader2 className="h-8 w-8 mx-auto animate-spin text-primary" />
-            <div className="text-sm font-medium">Creating events and saving files…</div>
-          </div>
+          <ProgressList
+            title="Saving events and files…"
+            subtitle="Creating events, moving files, parsing .fit data."
+            items={proposals.flatMap((p) =>
+              p.files
+                .filter((f) => f.client_id)
+                .map((f) => ({
+                  id: f.client_id!,
+                  name: f.file_name,
+                  size: f.size_bytes,
+                  progress: progress[f.client_id!],
+                })),
+            )}
+          />
         )}
 
         <DialogFooter>
@@ -542,6 +552,10 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
               </Button>
             </>
           )}
+          {stage === "committing" &&
+            allCommitsSettled(progress, proposals) && (
+              <Button onClick={() => { reset(); onOpenChange(false); }}>Close</Button>
+            )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
