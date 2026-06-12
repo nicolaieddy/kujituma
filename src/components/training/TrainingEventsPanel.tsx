@@ -71,8 +71,10 @@ interface FormState {
   severity: string;
   body_part: string;
   race_distance: string;
+  race_distance_custom: string;
   race_result: string;
   race_priority: "" | "A" | "B" | "C";
+  official_time_input: string;
   location: string;
 }
 
