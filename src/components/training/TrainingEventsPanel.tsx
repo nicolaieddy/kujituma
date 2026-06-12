@@ -425,13 +425,28 @@ export function TrainingEventsPanel() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Distance / type</Label>
-                    <Input
-                      value={form.race_distance}
-                      onChange={(e) => setForm({ ...form, race_distance: e.target.value })}
-                      placeholder="e.g. 10K, Half marathon"
-                      maxLength={100}
-                    />
+                    <Label>Distance</Label>
+                    <Select
+                      value={form.race_distance || undefined}
+                      onValueChange={(v) => setForm({ ...form, race_distance: v })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select distance" /></SelectTrigger>
+                      <SelectContent>
+                        {STANDARD_DISTANCES.map((s) => (
+                          <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">Other (custom)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {form.race_distance === "__custom__" && (
+                      <Input
+                        className="mt-2"
+                        value={form.race_distance_custom}
+                        onChange={(e) => setForm({ ...form, race_distance_custom: e.target.value })}
+                        placeholder="e.g. 15K, Ultra 50K"
+                        maxLength={100}
+                      />
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label>Priority</Label>
@@ -448,16 +463,31 @@ export function TrainingEventsPanel() {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Result (optional)</Label>
-                  <Input
-                    value={form.race_result}
-                    onChange={(e) => setForm({ ...form, race_result: e.target.value })}
-                    placeholder="e.g. 42:18, 5th overall"
-                    maxLength={200}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Official time</Label>
+                    <Input
+                      value={form.official_time_input}
+                      onChange={(e) => setForm({ ...form, official_time_input: e.target.value })}
+                      placeholder="hh:mm:ss or mm:ss"
+                      inputMode="numeric"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Chip/gun time — used to rank PB, silver, bronze across same-distance races.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Result note (optional)</Label>
+                    <Input
+                      value={form.race_result}
+                      onChange={(e) => setForm({ ...form, race_result: e.target.value })}
+                      placeholder="e.g. 5th overall, AG winner"
+                      maxLength={200}
+                    />
+                  </div>
                 </div>
               </>
+            )}
             )}
 
             <div className="space-y-1.5">
