@@ -45,6 +45,15 @@ import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
 import { EventUploadDialog } from "./EventUploadDialog";
 import { Separator } from "@/components/ui/separator";
+import {
+  STANDARD_DISTANCES,
+  RACE_DISTANCE_LABELS,
+  isStandardRaceKey,
+  parseTimeToSeconds,
+  formatSecondsToTime,
+  computeMedals,
+  MEDAL_META,
+} from "@/lib/racing";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
