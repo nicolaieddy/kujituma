@@ -298,6 +298,7 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
             severity: e.severity ?? null,
             race_distance: e.race_distance || null,
             race_result: e.race_result || null,
+            official_time_seconds: e.official_time_seconds ?? null,
             race_priority: e.race_priority || null,
             location: e.location || null,
           };
