@@ -133,6 +133,8 @@ export function TrainingEventsPanel() {
     [events, filter],
   );
 
+  const medals = useMemo(() => computeMedals(events), [events]);
+
   const openNew = (type: TrainingEventType = "injury_illness") => {
     setForm(emptyForm(type));
     setDialogOpen(true);
