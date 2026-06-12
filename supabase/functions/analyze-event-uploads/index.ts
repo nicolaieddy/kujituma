@@ -257,8 +257,24 @@ async function extractOne(supabase: any, f: InputFile, apiKey: string) {
         const title = `${sport}${distanceKm != null ? ` ${distanceKm.toFixed(1)}km` : ""}${duration != null ? ` · ${fmtDuration(duration)}` : ""}`;
         const description = lines.join("\n");
 
-        // Heuristic: long runs or "race" sport sub-type look like races; otherwise "other"
-        const isRaceish = (sport === "Run" && distanceKm != null && distanceKm >= 15) ||
+        // Detect standard race distance (5k / 10k / half_marathon / marathon) within ±3%
+        const STD: { key: string; m: number }[] = [
+          { key: "5k", m: 5000 },
+          { key: "10k", m: 10000 },
+          { key: "half_marathon", m: 21097.5 },
+          { key: "marathon", m: 42195 },
+        ];
+        let stdKey: string | null = null;
+        if (distanceM != null) {
+          let best: { key: string; diff: number } | null = null;
+          for (const s of STD) {
+            const diff = Math.abs(distanceM - s.m) / s.m;
+            if (diff <= 0.03 && (!best || diff < best.diff)) best = { key: s.key, diff };
+          }
+          stdKey = best?.key ?? null;
+        }
+        const isRaceish = stdKey != null ||
+                         (sport === "Run" && distanceKm != null && distanceKm >= 15) ||
                          /race|marathon|10k|5k|half/i.test(f.file_name);
 
         result.extraction = {
@@ -266,12 +282,9 @@ async function extractOne(supabase: any, f: InputFile, apiKey: string) {
           title: title.slice(0, 200),
           start_date: startDate,
           end_date: null,
-          race_distance: distanceKm != null ? (
-            distanceKm >= 41 && distanceKm <= 43 ? "Marathon" :
-            distanceKm >= 20 && distanceKm <= 22 ? "Half marathon" :
-            `${distanceKm.toFixed(1)}K`
-          ) : null,
+          race_distance: stdKey ?? (distanceKm != null ? `${distanceKm.toFixed(1)}K` : null),
           race_result: duration != null ? fmtDuration(duration) : null,
+          official_time_seconds: duration ?? null,
           location: (lat != null && lng != null) ? `${lat.toFixed(3)}, ${lng.toFixed(3)}` : null,
           summary: `${sport} on ${startDate}${distanceKm != null ? `, ${distanceKm.toFixed(2)} km` : ""}${duration != null ? ` in ${fmtDuration(duration)}` : ""}.`,
           description,

@@ -90,6 +90,7 @@ interface Proposal {
     severity?: number | null;
     race_distance?: string | null;
     race_result?: string | null;
+    official_time_seconds?: number | null;
     race_priority?: "A" | "B" | "C" | null;
     location?: string | null;
     summary?: string;
@@ -297,6 +298,7 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
             severity: e.severity ?? null,
             race_distance: e.race_distance || null,
             race_result: e.race_result || null,
+            official_time_seconds: e.official_time_seconds ?? null,
             race_priority: e.race_priority || null,
             location: e.location || null,
           };

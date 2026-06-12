@@ -45,6 +45,15 @@ import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
 import { EventUploadDialog } from "./EventUploadDialog";
 import { Separator } from "@/components/ui/separator";
+import {
+  STANDARD_DISTANCES,
+  RACE_DISTANCE_LABELS,
+  isStandardRaceKey,
+  parseTimeToSeconds,
+  formatSecondsToTime,
+  computeMedals,
+  MEDAL_META,
+} from "@/lib/racing";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
@@ -62,8 +71,10 @@ interface FormState {
   severity: string;
   body_part: string;
   race_distance: string;
+  race_distance_custom: string;
   race_result: string;
   race_priority: "" | "A" | "B" | "C";
+  official_time_input: string;
   location: string;
 }
 
@@ -77,13 +88,16 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     severity: "",
     body_part: "",
     race_distance: "",
+    race_distance_custom: "",
     race_result: "",
     race_priority: "",
+    official_time_input: "",
     location: "",
   };
 }
 
 function eventToForm(e: TrainingEvent): FormState {
+  const isStd = isStandardRaceKey(e.race_distance ?? "");
   return {
     id: e.id,
     event_type: e.event_type,
@@ -93,9 +107,11 @@ function eventToForm(e: TrainingEvent): FormState {
     end_date: e.end_date ?? "",
     severity: e.severity ? String(e.severity) : "",
     body_part: e.body_part ?? "",
-    race_distance: e.race_distance ?? "",
+    race_distance: isStd ? (e.race_distance as string) : (e.race_distance ? "__custom__" : ""),
+    race_distance_custom: isStd ? "" : (e.race_distance ?? ""),
     race_result: e.race_result ?? "",
     race_priority: (e.race_priority as any) ?? "",
+    official_time_input: formatSecondsToTime(e.official_time_seconds),
     location: e.location ?? "",
   };
 }
@@ -117,6 +133,8 @@ export function TrainingEventsPanel() {
     [events, filter],
   );
 
+  const medals = useMemo(() => computeMedals(events), [events]);
+
   const openNew = (type: TrainingEventType = "injury_illness") => {
     setForm(emptyForm(type));
     setDialogOpen(true);
@@ -128,6 +146,14 @@ export function TrainingEventsPanel() {
 
   const submit = async () => {
     if (!form.title.trim() || !form.start_date) return;
+    const resolvedDistance =
+      form.event_type === "race"
+        ? form.race_distance === "__custom__"
+          ? form.race_distance_custom.trim() || null
+          : form.race_distance || null
+        : null;
+    const officialSec =
+      form.event_type === "race" ? parseTimeToSeconds(form.official_time_input) : null;
     const saved = await upsert.mutateAsync({
       id: form.id,
       event_type: form.event_type,
@@ -137,9 +163,10 @@ export function TrainingEventsPanel() {
       end_date: form.end_date || null,
       severity: form.severity ? Number(form.severity) : null,
       body_part: form.body_part.trim() || null,
-      race_distance: form.race_distance.trim() || null,
+      race_distance: resolvedDistance,
       race_result: form.race_result.trim() || null,
       race_priority: form.race_priority || null,
+      official_time_seconds: officialSec,
       location: form.location.trim() || null,
     });
     // Keep dialog open with the new ID so the user can immediately attach files
@@ -250,6 +277,22 @@ export function TrainingEventsPanel() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold truncate">{e.title}</h3>
                           <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
+                          {isStandardRaceKey(e.race_distance) && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {RACE_DISTANCE_LABELS[e.race_distance]}
+                            </Badge>
+                          )}
+                          {medals[e.id] && (
+                            <Badge
+                              variant="outline"
+                              className={cn("text-[10px] border", MEDAL_META[medals[e.id]].className)}
+                              title={`${MEDAL_META[medals[e.id]].label} for ${
+                                isStandardRaceKey(e.race_distance) ? RACE_DISTANCE_LABELS[e.race_distance] : ""
+                              }`}
+                            >
+                              {MEDAL_META[medals[e.id]].emoji} {MEDAL_META[medals[e.id]].label}
+                            </Badge>
+                          )}
                           {e.race_priority && (
                             <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
                           )}
@@ -263,7 +306,14 @@ export function TrainingEventsPanel() {
                         )}
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
                           {e.body_part && <span>Body part: {e.body_part}</span>}
-                          {e.race_distance && <span>Distance: {e.race_distance}</span>}
+                          {e.race_distance && !isStandardRaceKey(e.race_distance) && (
+                            <span>Distance: {e.race_distance}</span>
+                          )}
+                          {e.official_time_seconds != null && (
+                            <span className="font-medium text-foreground">
+                              Official time: {formatSecondsToTime(e.official_time_seconds)}
+                            </span>
+                          )}
                           {e.race_result && <span>Result: {e.race_result}</span>}
                           {e.location && <span>Location: {e.location}</span>}
                         </div>
@@ -375,13 +425,28 @@ export function TrainingEventsPanel() {
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Distance / type</Label>
-                    <Input
-                      value={form.race_distance}
-                      onChange={(e) => setForm({ ...form, race_distance: e.target.value })}
-                      placeholder="e.g. 10K, Half marathon"
-                      maxLength={100}
-                    />
+                    <Label>Distance</Label>
+                    <Select
+                      value={form.race_distance || undefined}
+                      onValueChange={(v) => setForm({ ...form, race_distance: v })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select distance" /></SelectTrigger>
+                      <SelectContent>
+                        {STANDARD_DISTANCES.map((s) => (
+                          <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">Other (custom)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {form.race_distance === "__custom__" && (
+                      <Input
+                        className="mt-2"
+                        value={form.race_distance_custom}
+                        onChange={(e) => setForm({ ...form, race_distance_custom: e.target.value })}
+                        placeholder="e.g. 15K, Ultra 50K"
+                        maxLength={100}
+                      />
+                    )}
                   </div>
                   <div className="space-y-1.5">
                     <Label>Priority</Label>
@@ -398,14 +463,28 @@ export function TrainingEventsPanel() {
                     </Select>
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Result (optional)</Label>
-                  <Input
-                    value={form.race_result}
-                    onChange={(e) => setForm({ ...form, race_result: e.target.value })}
-                    placeholder="e.g. 42:18, 5th overall"
-                    maxLength={200}
-                  />
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Official time</Label>
+                    <Input
+                      value={form.official_time_input}
+                      onChange={(e) => setForm({ ...form, official_time_input: e.target.value })}
+                      placeholder="hh:mm:ss or mm:ss"
+                      inputMode="numeric"
+                    />
+                    <p className="text-[11px] text-muted-foreground">
+                      Chip/gun time — used to rank PB, silver, bronze across same-distance races.
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Result note (optional)</Label>
+                    <Input
+                      value={form.race_result}
+                      onChange={(e) => setForm({ ...form, race_result: e.target.value })}
+                      placeholder="e.g. 5th overall, AG winner"
+                      maxLength={200}
+                    />
+                  </div>
                 </div>
               </>
             )}

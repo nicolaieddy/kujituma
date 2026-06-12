@@ -17,6 +17,7 @@ export interface TrainingEvent {
   race_distance: string | null;
   race_result: string | null;
   race_priority: "A" | "B" | "C" | null;
+  official_time_seconds: number | null;
   location: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
