@@ -277,6 +277,22 @@ export function TrainingEventsPanel() {
                         <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold truncate">{e.title}</h3>
                           <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
+                          {isStandardRaceKey(e.race_distance) && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {RACE_DISTANCE_LABELS[e.race_distance]}
+                            </Badge>
+                          )}
+                          {medals[e.id] && (
+                            <Badge
+                              variant="outline"
+                              className={cn("text-[10px] border", MEDAL_META[medals[e.id]].className)}
+                              title={`${MEDAL_META[medals[e.id]].label} for ${
+                                isStandardRaceKey(e.race_distance) ? RACE_DISTANCE_LABELS[e.race_distance] : ""
+                              }`}
+                            >
+                              {MEDAL_META[medals[e.id]].emoji} {MEDAL_META[medals[e.id]].label}
+                            </Badge>
+                          )}
                           {e.race_priority && (
                             <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
                           )}
@@ -290,7 +306,14 @@ export function TrainingEventsPanel() {
                         )}
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
                           {e.body_part && <span>Body part: {e.body_part}</span>}
-                          {e.race_distance && <span>Distance: {e.race_distance}</span>}
+                          {e.race_distance && !isStandardRaceKey(e.race_distance) && (
+                            <span>Distance: {e.race_distance}</span>
+                          )}
+                          {e.official_time_seconds != null && (
+                            <span className="font-medium text-foreground">
+                              Official time: {formatSecondsToTime(e.official_time_seconds)}
+                            </span>
+                          )}
                           {e.race_result && <span>Result: {e.race_result}</span>}
                           {e.location && <span>Location: {e.location}</span>}
                         </div>
