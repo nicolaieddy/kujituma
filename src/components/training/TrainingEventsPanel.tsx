@@ -144,6 +144,14 @@ export function TrainingEventsPanel() {
 
   const submit = async () => {
     if (!form.title.trim() || !form.start_date) return;
+    const resolvedDistance =
+      form.event_type === "race"
+        ? form.race_distance === "__custom__"
+          ? form.race_distance_custom.trim() || null
+          : form.race_distance || null
+        : null;
+    const officialSec =
+      form.event_type === "race" ? parseTimeToSeconds(form.official_time_input) : null;
     const saved = await upsert.mutateAsync({
       id: form.id,
       event_type: form.event_type,
@@ -153,9 +161,10 @@ export function TrainingEventsPanel() {
       end_date: form.end_date || null,
       severity: form.severity ? Number(form.severity) : null,
       body_part: form.body_part.trim() || null,
-      race_distance: form.race_distance.trim() || null,
+      race_distance: resolvedDistance,
       race_result: form.race_result.trim() || null,
       race_priority: form.race_priority || null,
+      official_time_seconds: officialSec,
       location: form.location.trim() || null,
     });
     // Keep dialog open with the new ID so the user can immediately attach files
