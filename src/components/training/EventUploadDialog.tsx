@@ -90,6 +90,7 @@ interface Proposal {
     severity?: number | null;
     race_distance?: string | null;
     race_result?: string | null;
+    official_time_seconds?: number | null;
     race_priority?: "A" | "B" | "C" | null;
     location?: string | null;
     summary?: string;
