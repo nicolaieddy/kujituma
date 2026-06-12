@@ -88,13 +88,16 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     severity: "",
     body_part: "",
     race_distance: "",
+    race_distance_custom: "",
     race_result: "",
     race_priority: "",
+    official_time_input: "",
     location: "",
   };
 }
 
 function eventToForm(e: TrainingEvent): FormState {
+  const isStd = isStandardRaceKey(e.race_distance ?? "");
   return {
     id: e.id,
     event_type: e.event_type,
@@ -104,9 +107,11 @@ function eventToForm(e: TrainingEvent): FormState {
     end_date: e.end_date ?? "",
     severity: e.severity ? String(e.severity) : "",
     body_part: e.body_part ?? "",
-    race_distance: e.race_distance ?? "",
+    race_distance: isStd ? (e.race_distance as string) : (e.race_distance ? "__custom__" : ""),
+    race_distance_custom: isStd ? "" : (e.race_distance ?? ""),
     race_result: e.race_result ?? "",
     race_priority: (e.race_priority as any) ?? "",
+    official_time_input: formatSecondsToTime(e.official_time_seconds),
     location: e.location ?? "",
   };
 }
