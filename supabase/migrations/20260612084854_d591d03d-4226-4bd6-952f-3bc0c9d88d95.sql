@@ -1,0 +1,1 @@
+ALTER TABLE public.training_events ADD COLUMN IF NOT EXISTS official_time_seconds INTEGER;

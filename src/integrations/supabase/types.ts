@@ -3404,6 +3404,7 @@ export type Database = {
           id: string
           location: string | null
           metadata: Json
+          official_time_seconds: number | null
           race_distance: string | null
           race_priority: string | null
           race_result: string | null
@@ -3422,6 +3423,7 @@ export type Database = {
           id?: string
           location?: string | null
           metadata?: Json
+          official_time_seconds?: number | null
           race_distance?: string | null
           race_priority?: string | null
           race_result?: string | null
@@ -3440,6 +3442,7 @@ export type Database = {
           id?: string
           location?: string | null
           metadata?: Json
+          official_time_seconds?: number | null
           race_distance?: string | null
           race_priority?: string | null
           race_result?: string | null
