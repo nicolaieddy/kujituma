@@ -488,7 +488,6 @@ export function TrainingEventsPanel() {
                 </div>
               </>
             )}
-            )}
 
             <div className="space-y-1.5">
               <Label>Location (optional)</Label>
