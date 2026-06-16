@@ -61,10 +61,10 @@ export function formatMinutes(min: number | null): string | null {
 export function useSleepEntriesRange(startDate: string, endDate: string) {
   const { user } = useAuth();
 
-  return useQuery({
+  return useOfflineQuery<SleepRangeStats>({
     queryKey: ["sleep-entries", "range", startDate, endDate, user?.id],
     enabled: !!user && !!startDate && !!endDate,
-    queryFn: async (): Promise<SleepRangeStats> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("sleep_entries")
         .select(
