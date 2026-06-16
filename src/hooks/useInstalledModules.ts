@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOfflineQuery } from "@/hooks/useOfflineQuery";
 import type { ModuleId, UserModuleRow, UserModuleStatus } from "@/modules/types";
 
 const INSTALLED_STATUSES: UserModuleStatus[] = ["installed", "trialing"];
@@ -11,20 +12,21 @@ export const installedModulesKey = (userId: string | undefined) =>
 export function useInstalledModules() {
   const { user } = useAuth();
 
-  return useQuery({
+  const q = useOfflineQuery<ModuleId[]>({
     queryKey: installedModulesKey(user?.id),
     enabled: !!user?.id,
-    queryFn: async (): Promise<Set<ModuleId>> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("user_modules")
         .select("module_id, status")
         .eq("user_id", user!.id)
         .in("status", INSTALLED_STATUSES);
       if (error) throw error;
-      return new Set((data ?? []).map((r) => r.module_id as ModuleId));
+      return (data ?? []).map((r) => r.module_id as ModuleId);
     },
     staleTime: 60_000,
   });
+  return { ...q, data: q.data ? new Set(q.data) : undefined };
 }
 
 export function useIsModuleInstalled(id: ModuleId): boolean {
@@ -34,10 +36,10 @@ export function useIsModuleInstalled(id: ModuleId): boolean {
 
 export function useAllUserModules() {
   const { user } = useAuth();
-  return useQuery({
+  return useOfflineQuery<UserModuleRow[]>({
     queryKey: ["user-modules-all", user?.id],
     enabled: !!user?.id,
-    queryFn: async (): Promise<UserModuleRow[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("user_modules")
         .select("*")

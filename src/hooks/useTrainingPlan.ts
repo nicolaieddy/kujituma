@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { getLocalDateString, parseLocalDate } from "@/utils/dateUtils";
+import { useOfflineQuery } from "@/hooks/useOfflineQuery";
 
 export interface TrainingPlanWorkout {
   id: string;
@@ -47,7 +48,7 @@ export function useTrainingPlan(weekStart: string) {
   const queryClient = useQueryClient();
 
   // Fetch workouts
-  const { data: rawWorkouts = [], isLoading } = useQuery({
+  const { data: rawWorkouts = [], isLoading } = useOfflineQuery<TrainingPlanWorkout[]>({
     queryKey: ["training-plan", user?.id, weekStart],
     queryFn: async () => {
       if (!user) return [];
@@ -64,6 +65,7 @@ export function useTrainingPlan(weekStart: string) {
     enabled: !!user,
     staleTime: 1000 * 60 * 5,
   });
+
 
   // Fetch goal links from junction table
   const workoutIds = rawWorkouts.map(w => w.id);

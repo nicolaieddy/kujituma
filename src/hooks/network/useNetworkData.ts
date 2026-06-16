@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOfflineQuery } from "@/hooks/useOfflineQuery";
 
 export interface Contact {
   id: string;
@@ -51,7 +52,7 @@ export type InteractionInsert = Omit<Interaction, "id" | "created_at">;
 
 export const useContacts = () => {
   const { user } = useAuth();
-  return useQuery({
+  return useOfflineQuery<Contact[]>({
     queryKey: ["contacts"],
     queryFn: async () => {
       const { data, error } = await supabase

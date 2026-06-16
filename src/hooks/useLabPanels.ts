@@ -1,6 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOfflineQuery } from "@/hooks/useOfflineQuery";
 
 export interface LabMarkerValue {
   id: string;
@@ -43,10 +44,10 @@ function computeFlag(v: Pick<LabMarkerValue, "value_numeric" | "reference_low" |
 
 export function useLabPanels() {
   const { user } = useAuth();
-  return useQuery({
+  return useOfflineQuery<LabPanel[]>({
     queryKey: ["lab-panels", user?.id],
     enabled: !!user,
-    queryFn: async (): Promise<LabPanel[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("lab_results")
         .select("*, values:lab_result_values(*)")

@@ -1,6 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOfflineQuery } from "@/hooks/useOfflineQuery";
+import { isNetworkError, queueOfflineMutation } from "@/utils/offlineUtils";
+import { toast } from "@/hooks/use-toast";
 
 export interface BodyMeasurement {
   id: string;
@@ -27,10 +30,10 @@ export interface NewBodyMeasurement {
 
 export function useBodyMeasurements(startDate?: string, endDate?: string) {
   const { user } = useAuth();
-  return useQuery({
+  return useOfflineQuery<BodyMeasurement[]>({
     queryKey: ["body-measurements", user?.id, startDate ?? "all", endDate ?? "all"],
     enabled: !!user,
-    queryFn: async (): Promise<BodyMeasurement[]> => {
+    queryFn: async () => {
       let q = supabase
         .from("body_measurements")
         .select("*")
@@ -51,14 +54,28 @@ export function useAddBodyMeasurement() {
   return useMutation({
     mutationFn: async (input: NewBodyMeasurement) => {
       if (!user?.id) throw new Error("Not authenticated");
-      const { error } = await supabase.from("body_measurements").insert({
-        user_id: user.id,
-        source: "manual",
-        ...input,
-      });
-      if (error) throw error;
+      const payload = { user_id: user.id, source: "manual" as const, ...input };
+      try {
+        const { error } = await supabase.from("body_measurements").insert(payload);
+        if (error) throw error;
+        return { wasOffline: false };
+      } catch (err) {
+        if (isNetworkError(err)) {
+          await queueOfflineMutation("create", "body_measurements", {
+            id: crypto.randomUUID(),
+            ...payload,
+          });
+          return { wasOffline: true };
+        }
+        throw err;
+      }
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["body-measurements"] }),
+    onSuccess: ({ wasOffline }) => {
+      qc.invalidateQueries({ queryKey: ["body-measurements"] });
+      if (wasOffline) {
+        toast({ title: "Saved offline", description: "Will sync when you're back online." });
+      }
+    },
   });
 }
 

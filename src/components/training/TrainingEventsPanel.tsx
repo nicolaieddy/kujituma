@@ -170,8 +170,8 @@ export function TrainingEventsPanel() {
       location: form.location.trim() || null,
     });
     // Keep dialog open with the new ID so the user can immediately attach files
-    if (!form.id && saved?.id) {
-      setForm({ ...form, id: saved.id });
+    if (!form.id && saved?.data?.id) {
+      setForm({ ...form, id: saved.data.id });
     } else {
       setDialogOpen(false);
     }
