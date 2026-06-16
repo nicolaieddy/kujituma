@@ -12,6 +12,9 @@ import { ObjectiveTimeBlocker } from "@/components/habits/ObjectiveTimeBlocker";
 import { SortableObjectiveItem } from "./SortableObjectiveItem";
 import { ObjectiveFeedbackIndicator } from "@/components/thisweek/ObjectiveFeedbackIndicator";
 import { ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
+import { usePendingSyncIds } from "@/hooks/usePendingSyncIds";
+import { PendingSyncChip, pendingSyncAccent } from "@/components/pwa/PendingSyncChip";
+import { cn } from "@/lib/utils";
 
 interface GroupedGoals {
   in_progress: Goal[];
@@ -87,17 +90,20 @@ export const ObjectiveItem = memo(({
   const goalName = getGoalName(objective.goal_id);
   const isSaving = savingObjectiveIds.has(objective.id) || pendingUpdateIds.has(objective.id);
   const justSaved = recentlySavedIds.has(objective.id);
+  const pendingSyncIds = usePendingSyncIds("weekly_objectives");
+  const isPendingSync = pendingSyncIds.has(objective.id);
 
   return (
     <SortableObjectiveItem id={objective.id}>
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, x: -20 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: 20 }}
         transition={{ duration: 0.2, delay: index * 0.05 }}
-        className="space-y-2"
+        className={cn("space-y-2 rounded-md", isPendingSync && `${pendingSyncAccent} pl-2`)}
       >
         <div className="flex items-start sm:items-center gap-2 sm:gap-3 group">
+          {isPendingSync && <PendingSyncChip className="mt-1 sm:mt-0" />}
           <div className="relative mt-0.5 sm:mt-0 flex-shrink-0">
             <Checkbox
               checked={objective.is_completed}
