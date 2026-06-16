@@ -492,6 +492,12 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
   
   const content = (
     <div className="space-y-5">
+      {!navigator.onLine && (
+        <div className="flex items-start gap-2 rounded-md border-l-2 border-l-amber-500/70 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+          <span className="font-medium">You're offline.</span>
+          <span className="opacity-90">Your check-in will be saved on this device and synced automatically when you're back online.</span>
+        </div>
+      )}
       {/* Habits Due Today */}
       {habitItemsDueToday.length > 0 && (
         <div className="space-y-3">
