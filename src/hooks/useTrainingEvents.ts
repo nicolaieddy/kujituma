@@ -60,27 +60,45 @@ export function useUpsertTrainingEvent() {
       };
       delete payload.id;
 
-      if (input.id) {
+      try {
+        if (input.id) {
+          const { data, error } = await supabase
+            .from("training_events")
+            .update(payload)
+            .eq("id", input.id)
+            .select()
+            .single();
+          if (error) throw error;
+          return { data, wasOffline: false };
+        }
         const { data, error } = await supabase
           .from("training_events")
-          .update(payload)
-          .eq("id", input.id)
+          .insert(payload)
           .select()
           .single();
         if (error) throw error;
-        return data;
+        return { data, wasOffline: false };
+      } catch (err) {
+        if (isNetworkError(err) && !input.id) {
+          const optimistic = {
+            id: crypto.randomUUID(),
+            ...payload,
+            metadata: payload.metadata ?? {},
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          await queueOfflineMutation("create", "training_events", optimistic);
+          return { data: optimistic, wasOffline: true };
+        }
+        throw err;
       }
-      const { data, error } = await supabase
-        .from("training_events")
-        .insert(payload)
-        .select()
-        .single();
-      if (error) throw error;
-      return data;
     },
-    onSuccess: () => {
+    onSuccess: ({ wasOffline }) => {
       qc.invalidateQueries({ queryKey: KEY });
-      toast({ title: "Event saved" });
+      toast({
+        title: wasOffline ? "Saved offline" : "Event saved",
+        description: wasOffline ? "Will sync when you're back online." : undefined,
+      });
     },
     onError: (e: any) => toast({ title: "Could not save event", description: e.message, variant: "destructive" }),
   });
