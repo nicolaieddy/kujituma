@@ -35,10 +35,10 @@ export interface NewSupplementInput {
 
 export function useSupplements() {
   const { user } = useAuth();
-  return useQuery({
+  return useOfflineQuery<Supplement[]>({
     queryKey: ["supplements", user?.id],
     enabled: !!user,
-    queryFn: async (): Promise<Supplement[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("supplements")
         .select("*")
@@ -53,10 +53,10 @@ export function useSupplements() {
 
 export function useSupplementLogs(startDate: string, endDate: string) {
   const { user } = useAuth();
-  return useQuery({
+  return useOfflineQuery<SupplementLog[]>({
     queryKey: ["supplement-logs", user?.id, startDate, endDate],
     enabled: !!user && !!startDate && !!endDate,
-    queryFn: async (): Promise<SupplementLog[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("supplement_logs")
         .select("*")
