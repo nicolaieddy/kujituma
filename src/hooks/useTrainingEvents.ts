@@ -1,6 +1,8 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useOfflineQuery } from "@/hooks/useOfflineQuery";
+import { isNetworkError, queueOfflineMutation } from "@/utils/offlineUtils";
 
 export type TrainingEventType = "injury_illness" | "race" | "other";
 
@@ -32,9 +34,9 @@ export type TrainingEventInput = Omit<
 const KEY = ["training-events"] as const;
 
 export function useTrainingEvents() {
-  return useQuery({
+  return useOfflineQuery<TrainingEvent[]>({
     queryKey: KEY,
-    queryFn: async (): Promise<TrainingEvent[]> => {
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("training_events")
         .select("*")
