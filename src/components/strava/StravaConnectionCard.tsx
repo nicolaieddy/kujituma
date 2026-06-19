@@ -124,6 +124,39 @@ export function StravaConnectionCard() {
               </Button>
             </div>
 
+            <div className="rounded-lg border bg-muted/20 p-3 space-y-2">
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium flex items-center gap-1.5">
+                    <History className="h-3.5 w-3.5" />
+                    Pull full history
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Backfill every activity Strava has on record (may take a few minutes).
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={backfillHistory}
+                  disabled={isBackfilling || isSyncing}
+                >
+                  {isBackfilling ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <History className="h-4 w-4 mr-2" />
+                  )}
+                  {isBackfilling ? "Backfilling…" : "Backfill"}
+                </Button>
+              </div>
+              {isBackfilling && backfillProgress && (
+                <p className="text-xs text-muted-foreground tabular-nums">
+                  Synced {backfillProgress.total} new activities
+                  {backfillProgress.oldest ? ` — oldest so far ${backfillProgress.oldest}` : "…"}
+                </p>
+              )}
+            </div>
+
             <SyncRunLogPanel provider="strava" title="Strava sync history" />
           </>
         ) : (
