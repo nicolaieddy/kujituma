@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
 import { addWeeks, format, startOfWeek } from "date-fns";
-import { Dumbbell, ChevronLeft, ChevronRight, Settings, Flag } from "lucide-react";
+import { Dumbbell, ChevronLeft, ChevronRight, Settings, Flag, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
 import { TrainingSetupPanel } from "@/components/training/TrainingSetupPanel";
 import { TrainingEventsPanel } from "@/components/training/TrainingEventsPanel";
+import { WeeklyRunningChart } from "@/components/training/WeeklyRunningChart";
 
 function toWeekKey(d: Date) {
   return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
-type TrainingView = "plan" | "events" | "setup";
+type TrainingView = "plan" | "events" | "trends" | "setup";
 
 export default function Training() {
   const todayWeek = useMemo(() => toWeekKey(new Date()), []);
