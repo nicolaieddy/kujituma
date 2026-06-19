@@ -329,8 +329,14 @@ export function WeeklyRunningChart() {
   // Compare mode is only meaningful for week/month
   const compareGranularity: "week" | "month" = granularity === "year" ? "week" : granularity;
   const compare = useMemo(
-    () => buildCompareSeries(sessions, aggregates, compareGranularity, compareYears),
-    [sessions, aggregates, compareGranularity, compareYears],
+    () => {
+      const built = buildCompareSeries(sessions, aggregates, compareGranularity, compareYears);
+      if (!compareYTD) return built;
+      const now = new Date();
+      const cutoff = compareGranularity === "month" ? getMonth(now) + 1 : getISOWeek(now);
+      return { ...built, rows: built.rows.slice(0, cutoff) };
+    },
+    [sessions, aggregates, compareGranularity, compareYears, compareYTD],
   );
 
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";
