@@ -233,20 +233,24 @@ export function WeeklyRunningChart() {
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
   const { data: sessions = [], isLoading } = useRunningSessions();
+  const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
 
   // Reset trailing to a sensible default when granularity changes
   const ranges = TRAILING_RANGES[granularity];
   const trailingActive = ranges.find((r) => r.value === trailingN) ? trailingN : ranges[0].value;
 
-  // Trailing mode data
+  // Trailing mode data — sessions, gap-filled, then merged with Garmin monthly aggregates (take max per bucket)
   const trailingData = useMemo(() => {
     const agg = aggregate(sessions, granularity);
     const trimmed = trailingActive ? trimToTrailing(agg, granularity, trailingActive) : agg;
-    return trailingActive ? fillGaps(trimmed, granularity, trailingActive) : trimmed;
-  }, [sessions, granularity, trailingActive]);
+    const filled = trailingActive ? fillGaps(trimmed, granularity, trailingActive) : trimmed;
+    return reconcileWithAggregates(filled, aggregates, granularity);
+  }, [sessions, aggregates, granularity, trailingActive]);
 
   const stats = useMemo(() => {
-    const source = mode === "trailing" ? trailingData : aggregate(sessions, granularity);
+    const source = mode === "trailing"
+      ? trailingData
+      : reconcileWithAggregates(aggregate(sessions, granularity), aggregates, granularity);
     if (source.length === 0) return null;
     const total = source.reduce((s, r) => s + r.total_km, 0);
     const active = source.filter((r) => r.total_km > 0).length || 1;
@@ -256,13 +260,13 @@ export function WeeklyRunningChart() {
       avg: Math.round((total / active) * 10) / 10,
       peak,
     };
-  }, [mode, trailingData, sessions, granularity]);
+  }, [mode, trailingData, sessions, aggregates, granularity]);
 
   // Compare mode is only meaningful for week/month
   const compareGranularity: "week" | "month" = granularity === "year" ? "week" : granularity;
   const compare = useMemo(
-    () => buildCompareSeries(sessions, compareGranularity, compareYears),
-    [sessions, compareGranularity, compareYears],
+    () => buildCompareSeries(sessions, aggregates, compareGranularity, compareYears),
+    [sessions, aggregates, compareGranularity, compareYears],
   );
 
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";
