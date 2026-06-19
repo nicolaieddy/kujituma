@@ -295,6 +295,7 @@ export function WeeklyRunningChart() {
   const DEFAULT_TRAILING: Record<Granularity, number> = { week: 52, month: 12, year: 3 };
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
+  const [compareYTD, setCompareYTD] = useState<boolean>(false);
   const { data: sessions = [], isLoading } = useRunningSessions();
   const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
 
@@ -328,8 +329,14 @@ export function WeeklyRunningChart() {
   // Compare mode is only meaningful for week/month
   const compareGranularity: "week" | "month" = granularity === "year" ? "week" : granularity;
   const compare = useMemo(
-    () => buildCompareSeries(sessions, aggregates, compareGranularity, compareYears),
-    [sessions, aggregates, compareGranularity, compareYears],
+    () => {
+      const built = buildCompareSeries(sessions, aggregates, compareGranularity, compareYears);
+      if (!compareYTD) return built;
+      const now = new Date();
+      const cutoff = compareGranularity === "month" ? getMonth(now) + 1 : getISOWeek(now);
+      return { ...built, rows: built.rows.slice(0, cutoff) };
+    },
+    [sessions, aggregates, compareGranularity, compareYears, compareYTD],
   );
 
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";
@@ -407,18 +414,38 @@ export function WeeklyRunningChart() {
               ))}
             </div>
           ) : (
-            <div className="flex gap-1 bg-muted rounded-lg p-1">
-              {COMPARE_YEARS.map((c) => (
+            <div className="flex flex-wrap gap-2">
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
+                {COMPARE_YEARS.map((c) => (
+                  <Button
+                    key={c.value}
+                    variant={compareYears === c.value ? "default" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
+                    onClick={() => setCompareYears(c.value)}
+                  >
+                    {c.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
                 <Button
-                  key={c.value}
-                  variant={compareYears === c.value ? "default" : "ghost"}
+                  variant={!compareYTD ? "default" : "ghost"}
                   size="sm"
                   className="h-7 px-2.5 text-xs"
-                  onClick={() => setCompareYears(c.value)}
+                  onClick={() => setCompareYTD(false)}
                 >
-                  {c.label}
+                  Full year
                 </Button>
-              ))}
+                <Button
+                  variant={compareYTD ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2.5 text-xs"
+                  onClick={() => setCompareYTD(true)}
+                >
+                  YTD
+                </Button>
+              </div>
             </div>
           )}
         </div>
