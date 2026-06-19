@@ -31,6 +31,7 @@ import {
   getYear,
 } from "date-fns";
 import { useRunningSessions, type RunningSession } from "@/hooks/useRunningSessions";
+import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/useMonthlyDistanceAggregates";
 
 type Granularity = "week" | "month" | "year";
 type Mode = "trailing" | "compare";
