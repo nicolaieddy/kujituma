@@ -463,22 +463,23 @@ serve(async (req) => {
       }
     }
 
-    // Auto-match training plan workouts — include all weeks with synced activities
-    // Gather weeks from ALL synced activities (not just newly fetched)
-    const { data: allSyncedDates } = await supabase
-      .from("synced_activities")
-      .select("start_date")
-      .eq("user_id", user.id);
-    if (allSyncedDates) {
-      for (const row of allSyncedDates) {
-        const dateStr = (row.start_date || "").replace(" ", "T");
-        if (dateStr) affectedWeeks.add(getMondayOfDate(dateStr));
+    // Skip heavy auto-match work in backfill mode; we only persist activities.
+    if (mode !== "backfill") {
+      // Auto-match training plan workouts — include all weeks with synced activities
+      const { data: allSyncedDates } = await supabase
+        .from("synced_activities")
+        .select("start_date")
+        .eq("user_id", user.id);
+      if (allSyncedDates) {
+        for (const row of allSyncedDates) {
+          const dateStr = (row.start_date || "").replace(" ", "T");
+          if (dateStr) affectedWeeks.add(getMondayOfDate(dateStr));
+        }
       }
-    }
-
-    results.training_matched = await autoMatchTrainingPlan(supabase, user.id, affectedWeeks);
-    if (results.training_matched > 0) {
-      console.log(`Auto-matched ${results.training_matched} training plan workouts`);
+      results.training_matched = await autoMatchTrainingPlan(supabase, user.id, affectedWeeks);
+      if (results.training_matched > 0) {
+        console.log(`Auto-matched ${results.training_matched} training plan workouts`);
+      }
     }
 
     // Update last_synced_at timestamp
@@ -489,23 +490,30 @@ serve(async (req) => {
 
     console.log("Sync results:", results);
 
+    // In backfill mode, return the oldest activity timestamp so client can paginate further back.
+    let oldestUnix: number | null = null;
+    if (mode === "backfill" && activities.length > 0) {
+      oldestUnix = Math.min(
+        ...activities.map((a) => Math.floor(new Date(a.start_date).getTime() / 1000)),
+      );
+    }
+    const hasMore = mode === "backfill" && activities.length >= backfillMaxPages * 200;
+
     logger?.setCounter("activities_fetched", activities.length);
     if (results.skipped > 0) logger?.incCounter("skipped", results.skipped);
     if (results.rematched > 0) logger?.incCounter("rematched", results.rematched);
     if (results.training_matched > 0) logger?.incCounter("training_matched", results.training_matched);
 
-    const finalStatus: RunStatus =
-      results.synced === 0 && activities.length === 0
-        ? "success"
-        : results.synced > 0
-          ? "success"
-          : "success";
+    const finalStatus: RunStatus = "success";
     await logger?.finalize(finalStatus);
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true,
       activities: activities.length,
-      ...results
+      mode,
+      oldest_unix: oldestUnix,
+      has_more: hasMore,
+      ...results,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
