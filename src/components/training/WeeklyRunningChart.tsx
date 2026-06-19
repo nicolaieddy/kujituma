@@ -117,10 +117,11 @@ function aggregate(sessions: RunningSession[], g: Granularity): Bucket[] {
 }
 
 /**
- * Apply monthly aggregate imports (e.g. Garmin CSV) by taking the
- * LARGER of (sessions total, imported aggregate total) per bucket.
- * Only meaningful for month/year granularities — weekly bars are left
- * untouched because a month total can't be split into weeks reliably.
+ * Apply monthly aggregate imports (e.g. Garmin CSV).
+ * - month/year: take the LARGER of (sessions total, imported aggregate total).
+ * - week: for months that have NO session data, distribute the monthly total
+ *   evenly across weeks whose Monday falls in that month and expose it as
+ *   `imported_km` so the chart can render it with a distinct style.
  */
 function reconcileWithAggregates(
   buckets: Bucket[],
@@ -128,7 +129,47 @@ function reconcileWithAggregates(
   g: Granularity,
   includeMissingBuckets = false,
 ): Bucket[] {
-  if (g === "week" || aggregates.length === 0) return buckets;
+  if (aggregates.length === 0) return buckets;
+
+  if (g === "week") {
+    const map = new Map(buckets.map((b) => [b.key, { ...b, imported_km: 0 }]));
+    for (const a of aggregates) {
+      const monthStart = startOfMonth(new Date(a.month + "T12:00:00"));
+      const monthEnd = endOfMonth(monthStart);
+      const weekStarts: Date[] = [];
+      let w = startOfWeek(monthStart, { weekStartsOn: 1 });
+      while (w < monthStart) w = addWeeks(w, 1);
+      while (w <= monthEnd) {
+        weekStarts.push(w);
+        w = addWeeks(w, 1);
+      }
+      if (weekStarts.length === 0) continue;
+      // If sessions already exist in any of these weeks, sessions win — skip.
+      const sessionSum = weekStarts.reduce(
+        (s, ws) => s + (map.get(bucketKey(ws, "week"))?.total_km ?? 0),
+        0,
+      );
+      if (sessionSum > 0) continue;
+      const per = a.distance_km / weekStarts.length;
+      for (const ws of weekStarts) {
+        const k = bucketKey(ws, "week");
+        const existing = map.get(k);
+        if (existing) {
+          existing.imported_km = per;
+        } else if (includeMissingBuckets) {
+          map.set(k, {
+            key: k,
+            label: bucketLabel(ws, "week"),
+            total_km: 0,
+            count: 0,
+            duration_min: 0,
+            imported_km: per,
+          });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
+  }
 
   // Build aggregate totals per bucket key.
   const aggTotals = new Map<string, number>();
