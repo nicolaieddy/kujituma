@@ -38,7 +38,51 @@ function timeDelta(plannedSeconds: number | null, actualSeconds: number | null):
   return { text: diff <= 0 ? `−${m}m` : `+${m}m`, positive: diff <= 0 };
 }
 
-/* ── Inline stat chip ─────────────────────────────────────── */
+type Tone = "good" | "warn" | "bad";
+const toneTextClass: Record<Tone, string> = {
+  good: "text-emerald-500 dark:text-emerald-400",
+  warn: "text-amber-500 dark:text-amber-400",
+  bad: "text-red-500 dark:text-red-400",
+};
+const toneDotClass: Record<Tone, string> = {
+  good: "bg-emerald-500",
+  warn: "bg-amber-500",
+  bad: "bg-red-500",
+};
+
+function distanceDelta(plannedM?: number | null, actualM?: number | null): { text: string; tone: Tone } | null {
+  if (!plannedM || !actualM) return null;
+  const diffKm = (actualM - plannedM) / 1000;
+  const abs = Math.abs(diffKm);
+  const pct = abs / (plannedM / 1000);
+  if (abs < 0.05) return { text: "on plan", tone: "good" };
+  const sign = diffKm > 0 ? "+" : "−";
+  const tone: Tone = pct < 0.05 ? "good" : pct < 0.15 ? "warn" : "bad";
+  return { text: `${sign}${abs.toFixed(abs >= 1 ? 1 : 2)}km`, tone };
+}
+
+function paceDelta(plannedSecPerKm?: number | null, actualSecPerKm?: number | null): { text: string; tone: Tone } | null {
+  if (!plannedSecPerKm || !actualSecPerKm) return null;
+  const diff = Math.round(actualSecPerKm - plannedSecPerKm); // positive = slower than plan
+  const abs = Math.abs(diff);
+  if (abs <= 2) return { text: "on pace", tone: "good" };
+  const sign = diff < 0 ? "▾" : "▴"; // faster down, slower up
+  const min = Math.floor(abs / 60);
+  const sec = abs % 60;
+  const text = min > 0 ? `${sign}${min}:${String(sec).padStart(2, "0")}` : `${sign}${sec}s`;
+  const tone: Tone = abs <= 5 ? "good" : abs <= 15 ? "warn" : "bad";
+  return { text, tone };
+}
+
+function planSummary(w: TrainingPlanDisplayWorkout): string | null {
+  const parts: string[] = [];
+  if (w.target_distance_meters) parts.push(formatDistance(w.target_distance_meters));
+  else if (w.target_duration_seconds) parts.push(formatDuration(w.target_duration_seconds));
+  if (w.target_pace_per_km) parts.push(`@ ${formatPace(w.target_pace_per_km)}`);
+  return parts.length ? parts.join(" ") : null;
+}
+
+/* ── Inline stat chip (used in expanded session view) ──────────── */
 
 function InlineStat({ icon: Icon, value, delta, className }: {
   icon: React.ElementType;
@@ -359,100 +403,124 @@ export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
     ? timeDelta(workout.target_duration_seconds, displayActivity.duration_seconds)
     : null;
 
-  // Build inline summary stats for collapsed row
-  const summaryStats: { icon: React.ElementType; value: string; delta?: { text: string; positive: boolean } | null }[] = [];
+  // Headline title: Strava/.fit activity name when available, otherwise the plan title.
+  const headline = displayActivity?.activity_name?.trim()
+    || workout.title?.trim()
+    || workout.workout_type
+    || "Workout";
 
-  if (displayActivity) {
-    if (displayActivity.duration_seconds) summaryStats.push({ icon: Clock, value: formatDuration(displayActivity.duration_seconds), delta });
-    if (displayActivity.distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(displayActivity.distance_meters) });
-    if (displayActivity.average_speed) summaryStats.push({ icon: Gauge, value: formatSpeed(displayActivity.average_speed) });
-    if (displayActivity.average_heartrate) summaryStats.push({ icon: Heart, value: `${Math.round(displayActivity.average_heartrate)}` });
-    if (displayActivity.total_elevation_gain) summaryStats.push({ icon: Mountain, value: `+${Math.round(displayActivity.total_elevation_gain)}m` });
-    if (isMultiSession) summaryStats.push({ icon: File, value: `${sessions.length} sessions` });
-  } else if (workout.target_duration_seconds) {
-    summaryStats.push({ icon: Clock, value: formatDuration(workout.target_duration_seconds) });
-    if (workout.target_distance_meters) summaryStats.push({ icon: Activity, value: formatDistance(workout.target_distance_meters) });
-  }
+  // Plan summary line ("10km @ 5:00/km")
+  const planLine = planSummary(workout);
 
-  const statusIcon = status === "done"
-    ? <Check className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-    : status === "missed"
-    ? <X className="h-3 w-3 text-red-500 dark:text-red-400" />
-    : null;
+  // Actual numbers
+  const actualDistanceKm = displayActivity?.distance_meters ? displayActivity.distance_meters / 1000 : null;
+  const actualPaceSecPerKm = displayActivity?.average_speed ? 1000 / displayActivity.average_speed : null;
+  const actualHr = displayActivity?.average_heartrate ? Math.round(displayActivity.average_heartrate) : null;
+  const actualDurationSec = displayActivity?.duration_seconds ?? null;
 
-  const statusBg = status === "done"
-    ? "bg-emerald-50 dark:bg-emerald-950/30"
-    : status === "missed"
-    ? "bg-red-50 dark:bg-red-950/20"
-    : "";
+  // Deltas (pace + distance only — per design choice)
+  const dDelta = distanceDelta(workout.target_distance_meters, displayActivity?.distance_meters);
+  const pDelta = paceDelta(workout.target_pace_per_km, actualPaceSecPerKm);
+
+  // Overall fidelity tone: bad wins over warn wins over good.
+  const fidelityTone: Tone | null = (() => {
+    const tones = [dDelta?.tone, pDelta?.tone].filter(Boolean) as Tone[];
+    if (tones.length === 0) return null;
+    if (tones.includes("bad")) return "bad";
+    if (tones.includes("warn")) return "warn";
+    return "good";
+  })();
+
+  const sources = [...new Set(activities.map((a: any) => a.source))] as string[];
 
   return (
     <article
       className={cn(
         "group relative overflow-hidden rounded-xl border bg-card transition-all duration-200",
-        isRest && "border-border/40 bg-muted/20",
-        !isRest && status === "done" && "border-emerald-200/60 dark:border-emerald-800/40",
-        !isRest && status === "missed" && "border-red-200/50 dark:border-red-800/30",
+        isRest && "border-border/40 bg-muted/20 opacity-70",
+        !isRest && status === "done" && "border-border hover:border-emerald-500/40",
+        !isRest && status === "missed" && "border-border hover:border-red-500/40",
         !isRest && status === "upcoming" && "border-border",
         workout.isDerivedSession && "bg-accent/30",
       )}
     >
-    {/* Simple rest day row */}
+    {/* Rest / cross-training: same card, muted */}
     {isRest ? (
-      <div className="flex items-center gap-3 px-4 py-2.5 text-muted-foreground/60">
-        <span className="h-2 w-2 rounded-full bg-muted-foreground/20" />
-        <span className="text-sm italic">Rest Day</span>
+      <div className="flex items-center gap-3 px-4 py-3 text-muted-foreground/70">
+        <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+        <span className="text-sm font-medium">{workout.title || "Rest"}</span>
+        <span className="text-xs uppercase tracking-wider text-muted-foreground/50">
+          {workout.workout_type}
+        </span>
       </div>
     ) : (
     <>
-      {/* Subtle left accent */}
-      <div className={cn(
-        "absolute inset-y-0 left-0 w-[3px]",
-        status === "done" && "bg-emerald-500/60",
-        status === "missed" && "bg-red-400/50",
-        status === "upcoming" && "bg-muted-foreground/15"
-      )} />
+      {/* Left accent rail — tone-coloured */}
+      <div
+        className={cn(
+          "absolute inset-y-0 left-0 w-[3px]",
+          status === "done" && fidelityTone ? toneDotClass[fidelityTone] : "",
+          status === "done" && !fidelityTone && "bg-emerald-500/60",
+          status === "missed" && "bg-red-500/60",
+          status === "upcoming" && "bg-muted-foreground/15",
+        )}
+      />
 
-      {/* Collapsed single-line row */}
+      {/* Header row: title + plan badge + actions */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-accent/30 transition-colors"
+        className="w-full text-left px-4 pt-3 pb-2.5 hover:bg-accent/20 transition-colors"
       >
-        {/* Status indicator */}
-        <div className={cn(
-          "flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-          status === "done" && "bg-emerald-100 dark:bg-emerald-900/40",
-          status === "missed" && "bg-red-100 dark:bg-red-900/40",
-          status === "upcoming" && "bg-muted/60",
-        )}>
-          {statusIcon || <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />}
-        </div>
-
-        {/* Title + type */}
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <span className={cn(
-            "text-sm font-medium truncate",
-            status === "done" && "text-foreground",
-            status === "missed" && "text-muted-foreground line-through",
-            status === "upcoming" && "text-foreground",
+        <div className="flex items-start gap-3">
+          {/* Status dot */}
+          <div className={cn(
+            "mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full",
+            status === "done" && "bg-emerald-500/15",
+            status === "missed" && "bg-red-500/15",
+            status === "upcoming" && "bg-muted/60",
           )}>
-            {workout.title || workout.workout_type}
-          </span>
-          <Badge variant="outline" className="rounded-md text-[10px] shrink-0 px-1.5 py-0 h-5 font-medium text-muted-foreground border-border/60">
-            {workout.workout_type}
-          </Badge>
-          {(() => {
-            const sources = [...new Set(activities.map((a: any) => a.source))];
-            return sources.map((source: string) => (
+            {status === "done" ? (
+              <Check className="h-3 w-3 text-emerald-500 dark:text-emerald-400" />
+            ) : status === "missed" ? (
+              <X className="h-3 w-3 text-red-500 dark:text-red-400" />
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+            )}
+          </div>
+
+          {/* Title + plan badge stack */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <h3 className={cn(
+                "text-[15px] font-semibold leading-tight truncate",
+                status === "missed" ? "text-muted-foreground" : "text-foreground",
+              )}>
+                {headline}
+              </h3>
+              <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground/60">
+                {workout.workout_type}
+              </span>
+            </div>
+            {planLine && (
+              <p className="mt-0.5 text-xs text-muted-foreground/80">
+                <span className="font-bold uppercase tracking-wider text-muted-foreground/50 mr-1.5">Plan</span>
+                <span className="tabular-nums">{planLine}</span>
+              </p>
+            )}
+          </div>
+
+          {/* Source pills + actions + chevron */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {sources.map((source) => (
               <Badge
                 key={source}
                 variant="outline"
                 className={cn(
-                  "rounded-md text-[10px] shrink-0 px-1.5 py-0 h-5 font-medium gap-0.5",
+                  "rounded-md text-[10px] px-1.5 py-0 h-5 font-medium gap-0.5",
                   source === "fit_upload"
-                    ? "border-warning/30 bg-warning/10 text-warning-foreground"
-                    : "border-primary/30 bg-primary/10 text-primary"
+                    ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                    : "border-primary/30 bg-primary/10 text-primary",
                 )}
               >
                 {source === "fit_upload" ? (
@@ -461,118 +529,142 @@ export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
                   <><Activity className="h-2.5 w-2.5" />Strava</>
                 )}
               </Badge>
-            ));
-          })()}
-          {sourceImportId && onViewSource && (
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); onViewSource(sourceImportId); }}
-              className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-1.5 py-0 h-5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
-              title="View original coach plan"
-            >
-              <FileText className="h-2.5 w-2.5" />
-              Source
-            </button>
-          )}
+            ))}
+            {sourceImportId && onViewSource && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); onViewSource(sourceImportId); }}
+                className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/40 px-1.5 py-0 h-5 text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
+                title="View original coach plan"
+              >
+                <FileText className="h-2.5 w-2.5" />
+                Source
+              </button>
+            )}
+            {!isReadOnly && !workout.isDerivedSession && (
+              <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onEdit && (
+                  <Button variant="ghost" size="icon"
+                    className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground"
+                    onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                    <Pencil className="h-3 w-3" />
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button variant="ghost" size="icon"
+                    className="h-6 w-6 rounded-md text-muted-foreground hover:text-destructive"
+                    onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            )}
+            <ChevronDown className={cn(
+              "h-4 w-4 text-muted-foreground/50 transition-transform duration-200",
+              expanded && "rotate-180",
+            )} />
+          </div>
         </div>
 
-        {/* Inline stats */}
-        <div className="hidden sm:flex items-center gap-3 shrink-0">
-          {summaryStats.slice(0, 4).map((s, i) => (
-            <InlineStat key={i} icon={s.icon} value={s.value} delta={s.delta} />
-          ))}
-        </div>
-
-        {/* Actions (hover) + expand arrow */}
-        <div className="flex items-center gap-1 shrink-0">
-          {!isReadOnly && !workout.isDerivedSession && (
-            <div className="hidden sm:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-              {onEdit && (
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-6 w-6 rounded-md text-muted-foreground hover:text-foreground"
-                  onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                >
-                  <Pencil className="h-3 w-3" />
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="ghost" size="icon"
-                  className="h-6 w-6 rounded-md text-muted-foreground hover:text-destructive"
-                  onClick={(e) => { e.stopPropagation(); onDelete(); }}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
+        {/* Performance metrics row */}
+        {(displayActivity || workout.target_distance_meters || workout.target_duration_seconds) && (
+          <div className="mt-3 pl-8 grid grid-cols-[1fr_1fr_auto] sm:grid-cols-[1fr_1fr_auto_auto] gap-x-4 gap-y-1 items-end">
+            {/* Distance */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50">Distance</p>
+              <p className="text-base font-semibold tabular-nums leading-none">
+                {actualDistanceKm != null
+                  ? `${actualDistanceKm.toFixed(2)} km`
+                  : workout.target_distance_meters
+                    ? <span className="text-muted-foreground/60">{formatDistance(workout.target_distance_meters)}</span>
+                    : <span className="text-muted-foreground/40">—</span>}
+              </p>
+              {dDelta && (
+                <p className={cn("text-[11px] font-semibold tabular-nums", toneTextClass[dDelta.tone])}>
+                  {dDelta.text}
+                </p>
               )}
             </div>
-          )}
-          <ChevronDown className={cn(
-            "h-4 w-4 text-muted-foreground/50 transition-transform duration-200",
-            expanded && "rotate-180"
-          )} />
-        </div>
+
+            {/* Pace */}
+            <div className="space-y-0.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50">Pace</p>
+              <p className="text-base font-semibold tabular-nums leading-none">
+                {actualPaceSecPerKm != null
+                  ? formatPace(actualPaceSecPerKm)
+                  : workout.target_pace_per_km
+                    ? <span className="text-muted-foreground/60">{formatPace(workout.target_pace_per_km)}</span>
+                    : <span className="text-muted-foreground/40">—</span>}
+              </p>
+              {pDelta && (
+                <p className={cn("text-[11px] font-semibold tabular-nums", toneTextClass[pDelta.tone])}>
+                  {pDelta.text}
+                </p>
+              )}
+            </div>
+
+            {/* Secondary: duration + HR (no delta) */}
+            <div className="hidden sm:block space-y-0.5 text-right">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50">Time</p>
+              <p className="text-sm font-medium tabular-nums leading-none text-muted-foreground">
+                {actualDurationSec != null
+                  ? formatDuration(actualDurationSec)
+                  : workout.target_duration_seconds
+                    ? formatDuration(workout.target_duration_seconds)
+                    : "—"}
+              </p>
+            </div>
+
+            <div className="space-y-0.5 text-right">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50">HR</p>
+              <p className="text-sm font-medium tabular-nums leading-none text-muted-foreground">
+                {actualHr != null ? <><Heart className="inline h-3 w-3 mr-0.5 -mt-0.5" />{actualHr}</> : "—"}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Goal tags (compact) */}
+        {goalNames.length > 0 && (
+          <div className="mt-2 pl-8 flex items-center gap-1.5 flex-wrap">
+            <Target className="h-3 w-3 text-muted-foreground/40" />
+            {goalNames.map((name) => (
+              <span key={name} className="text-[10px] text-muted-foreground/70">{name}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Reflection preview when collapsed */}
+        {!expanded && primaryActivity?.reflection && (
+          <div className="mt-2 pl-8">
+            <ActivityReflection
+              activityId={primaryActivity.id}
+              reflection={primaryActivity.reflection}
+              variant="preview"
+            />
+          </div>
+        )}
+
+        {/* Mobile actions */}
+        {!isReadOnly && !workout.isDerivedSession && (onEdit || onDelete) && (
+          <div className="flex sm:hidden items-center gap-1 mt-2 justify-end">
+            {onEdit && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={(e) => { e.stopPropagation(); onEdit(); }}>
+                <Pencil className="h-3 w-3 mr-1" /> Edit
+              </Button>
+            )}
+            {onDelete && (
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); onDelete(); }}>
+                <Trash2 className="h-3 w-3 mr-1" /> Delete
+              </Button>
+            )}
+          </div>
+        )}
       </button>
-
-      {/* Mobile stats row (visible only on small screens when collapsed) */}
-      {!expanded && summaryStats.length > 0 && (
-        <div className="flex sm:hidden items-center gap-3 px-4 pb-2.5 pl-[52px]">
-          {summaryStats.slice(0, 4).map((s, i) => (
-            <InlineStat key={i} icon={s.icon} value={s.value} delta={s.delta} />
-          ))}
-        </div>
-      )}
-
-      {/* Goal tags - shown in collapsed if present */}
-      {goalNames.length > 0 && !expanded && (
-        <div className="flex items-center gap-1.5 px-4 pb-2.5 pl-[52px]">
-          <Target className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-          {goalNames.map(name => (
-            <span key={name} className="text-[10px] text-muted-foreground/70">{name}</span>
-          ))}
-        </div>
-      )}
-
-      {/* Reflection preview - shown in collapsed state when present (uses primary session) */}
-      {!expanded && primaryActivity?.reflection && (
-        <div className="px-4 pb-2.5 pl-[52px]">
-          <ActivityReflection
-            activityId={primaryActivity.id}
-            reflection={primaryActivity.reflection}
-            variant="preview"
-          />
-        </div>
-      )}
 
       {/* Expanded content */}
       {expanded && (
         <div className="border-t border-border/40">
-          {/* Goal tags in expanded view */}
-          {goalNames.length > 0 && (
-            <div className="flex items-center gap-1.5 px-4 pt-3 pl-[52px]">
-              <Target className="h-3 w-3 text-muted-foreground/40 shrink-0" />
-              {goalNames.map(name => (
-                <span key={name} className="rounded-md bg-muted/20 px-2 py-0.5 text-[10px] font-medium text-muted-foreground">{name}</span>
-              ))}
-            </div>
-          )}
-
-          {/* Mobile actions */}
-          {!isReadOnly && !workout.isDerivedSession && (onEdit || onDelete) && (
-            <div className="flex sm:hidden items-center gap-1 px-4 pt-2 justify-end">
-              {onEdit && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={onEdit}>
-                  <Pencil className="h-3 w-3 mr-1" /> Edit
-                </Button>
-              )}
-              {onDelete && (
-                <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-destructive" onClick={onDelete}>
-                  <Trash2 className="h-3 w-3 mr-1" /> Delete
-                </Button>
-              )}
-            </div>
-          )}
-
           {/* Multi-session expanded view */}
           {isMultiSession ? (
             <div className="px-4 pb-4 pt-1 space-y-4">
@@ -592,16 +684,14 @@ export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
               ))}
             </div>
           ) : (
-            <>
-              <SingleSessionExpanded
-                workout={workout}
-                session={sessions[0] || null}
-                onDeleteActivity={onDeleteActivity}
-                confirmDeleteId={confirmDeleteActivity}
-                setConfirmDeleteId={setConfirmDeleteActivity}
-                isDeletingActivity={isDeletingActivity}
-              />
-            </>
+            <SingleSessionExpanded
+              workout={workout}
+              session={sessions[0] || null}
+              onDeleteActivity={onDeleteActivity}
+              confirmDeleteId={confirmDeleteActivity}
+              setConfirmDeleteId={setConfirmDeleteActivity}
+              isDeletingActivity={isDeletingActivity}
+            />
           )}
         </div>
       )}
