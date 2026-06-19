@@ -31,6 +31,8 @@ export function useStravaConnection() {
   const [connection, setConnection] = useState<StravaConnection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isBackfilling, setIsBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState<{ total: number; oldest: string | null } | null>(null);
 
   const checkConnectionStatus = useCallback(async () => {
     if (!user || !session) {
@@ -212,14 +214,64 @@ export function useStravaConnection() {
     }
   }, [session, checkConnectionStatus]);
 
+  const backfillHistory = useCallback(async () => {
+    if (!session) {
+      toast.error("Please log in first");
+      return;
+    }
+    setIsBackfilling(true);
+    setBackfillProgress({ total: 0, oldest: null });
+    let before: number | undefined = undefined;
+    let totalSynced = 0;
+    let oldestIso: string | null = null;
+    try {
+      for (let i = 0; i < 12; i++) {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/strava-sync`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ trigger: "manual", mode: "backfill", before, max_pages: 5 }),
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || "Backfill failed");
+        totalSynced += result.synced || 0;
+        if (result.oldest_unix) {
+          oldestIso = new Date(result.oldest_unix * 1000).toISOString().slice(0, 10);
+          before = result.oldest_unix - 1; // walk further back
+        }
+        setBackfillProgress({ total: totalSynced, oldest: oldestIso });
+        if (!result.has_more || !result.oldest_unix || (result.activities ?? 0) === 0) break;
+      }
+      await checkConnectionStatus();
+      queryClient.invalidateQueries({ queryKey: ["synced-activities"] });
+      queryClient.invalidateQueries({ queryKey: ["training-load-weekly"] });
+      queryClient.invalidateQueries({ queryKey: ["weekly-running-km"] });
+      toast.success(
+        oldestIso
+          ? `Backfill complete — ${totalSynced} new activities, oldest from ${oldestIso}`
+          : `Backfill complete — ${totalSynced} new activities`,
+      );
+    } catch (error) {
+      console.error("Strava backfill failed:", error);
+      toast.error(`Backfill failed: ${(error as Error).message}`);
+    } finally {
+      setIsBackfilling(false);
+    }
+  }, [session, checkConnectionStatus, queryClient]);
+
   return {
     isConnected,
     connection,
     isLoading,
     isSyncing,
+    isBackfilling,
+    backfillProgress,
     initiateConnect,
     disconnect,
     syncActivities,
+    backfillHistory,
     toggleAutoSync,
     refreshStatus: checkConnectionStatus,
   };

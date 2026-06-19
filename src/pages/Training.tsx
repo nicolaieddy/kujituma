@@ -1,16 +1,17 @@
 import { useMemo, useState } from "react";
 import { addWeeks, format, startOfWeek } from "date-fns";
-import { Dumbbell, ChevronLeft, ChevronRight, Settings, Flag } from "lucide-react";
+import { Dumbbell, ChevronLeft, ChevronRight, Settings, Flag, LineChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
 import { TrainingSetupPanel } from "@/components/training/TrainingSetupPanel";
 import { TrainingEventsPanel } from "@/components/training/TrainingEventsPanel";
+import { WeeklyRunningChart } from "@/components/training/WeeklyRunningChart";
 
 function toWeekKey(d: Date) {
   return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
 }
 
-type TrainingView = "plan" | "events" | "setup";
+type TrainingView = "plan" | "events" | "trends" | "setup";
 
 export default function Training() {
   const todayWeek = useMemo(() => toWeekKey(new Date()), []);
@@ -20,6 +21,7 @@ export default function Training() {
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "setup") return "setup";
     if (v === "events") return "events";
+    if (v === "trends") return "trends";
     return "plan";
   });
 
@@ -66,10 +68,11 @@ export default function Training() {
       </header>
 
       {/* View switcher */}
-      <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit">
+      <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit flex-wrap">
         {([
           { id: "plan", label: "Plan", icon: Dumbbell },
           { id: "events", label: "Events", icon: Flag },
+          { id: "trends", label: "Trends", icon: LineChart },
           { id: "setup", label: "Setup", icon: Settings },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
@@ -88,6 +91,7 @@ export default function Training() {
 
       {view === "plan" && <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />}
       {view === "events" && <TrainingEventsPanel />}
+      {view === "trends" && <WeeklyRunningChart />}
       {view === "setup" && <TrainingSetupPanel />}
     </div>
   );

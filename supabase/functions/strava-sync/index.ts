@@ -144,12 +144,18 @@ serve(async (req) => {
       throw new Error("No authorization header provided");
     }
 
-    // Optional body: { trigger: "manual" | "scheduled" | "webhook" }
+    // Optional body: { trigger, mode: "backfill", before?: epoch_seconds, max_pages?: number }
     let trigger: "manual" | "scheduled" | "webhook" = "manual";
+    let mode: "incremental" | "backfill" = "incremental";
+    let backfillBefore: number | undefined = undefined;
+    let backfillMaxPages = 5;
     try {
       if (req.headers.get("content-type")?.includes("application/json")) {
         const body = await req.json();
         if (body?.trigger) trigger = body.trigger;
+        if (body?.mode === "backfill") mode = "backfill";
+        if (typeof body?.before === "number") backfillBefore = body.before;
+        if (typeof body?.max_pages === "number") backfillMaxPages = Math.min(Math.max(body.max_pages, 1), 10);
       }
     } catch { /* ignore */ }
 
@@ -214,20 +220,36 @@ serve(async (req) => {
       console.log(`Looking back to: ${new Date(earliestDate * 1000).toISOString()}`);
     }
 
-    // Fetch activities from Strava
-    const activitiesResponse = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?after=${earliestDate}&per_page=200`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
+    // Fetch activities from Strava — paginate in backfill mode
+    let activities: StravaActivity[] = [];
+    if (mode === "backfill") {
+      console.log(`Backfill mode — paginating (before=${backfillBefore ?? "now"}, max_pages=${backfillMaxPages})`);
+      for (let page = 1; page <= backfillMaxPages; page++) {
+        const params = new URLSearchParams({ per_page: "200", page: String(page) });
+        if (backfillBefore) params.set("before", String(backfillBefore));
+        const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!r.ok) {
+          const errorText = await r.text();
+          throw new Error(`Failed to fetch activities (page ${page}): ${errorText}`);
+        }
+        const batch: StravaActivity[] = await r.json();
+        console.log(`  page ${page}: ${batch.length} activities`);
+        activities.push(...batch);
+        if (batch.length < 200) break; // no more pages
       }
-    );
-
-    if (!activitiesResponse.ok) {
-      const errorText = await activitiesResponse.text();
-      throw new Error(`Failed to fetch activities: ${errorText}`);
+    } else {
+      const activitiesResponse = await fetch(
+        `https://www.strava.com/api/v3/athlete/activities?after=${earliestDate}&per_page=200`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!activitiesResponse.ok) {
+        const errorText = await activitiesResponse.text();
+        throw new Error(`Failed to fetch activities: ${errorText}`);
+      }
+      activities = await activitiesResponse.json();
     }
-
-    const activities: StravaActivity[] = await activitiesResponse.json();
     console.log(`Fetched ${activities.length} activities from Strava`);
 
     // Get already synced activities
@@ -441,22 +463,23 @@ serve(async (req) => {
       }
     }
 
-    // Auto-match training plan workouts — include all weeks with synced activities
-    // Gather weeks from ALL synced activities (not just newly fetched)
-    const { data: allSyncedDates } = await supabase
-      .from("synced_activities")
-      .select("start_date")
-      .eq("user_id", user.id);
-    if (allSyncedDates) {
-      for (const row of allSyncedDates) {
-        const dateStr = (row.start_date || "").replace(" ", "T");
-        if (dateStr) affectedWeeks.add(getMondayOfDate(dateStr));
+    // Skip heavy auto-match work in backfill mode; we only persist activities.
+    if (mode !== "backfill") {
+      // Auto-match training plan workouts — include all weeks with synced activities
+      const { data: allSyncedDates } = await supabase
+        .from("synced_activities")
+        .select("start_date")
+        .eq("user_id", user.id);
+      if (allSyncedDates) {
+        for (const row of allSyncedDates) {
+          const dateStr = (row.start_date || "").replace(" ", "T");
+          if (dateStr) affectedWeeks.add(getMondayOfDate(dateStr));
+        }
       }
-    }
-
-    results.training_matched = await autoMatchTrainingPlan(supabase, user.id, affectedWeeks);
-    if (results.training_matched > 0) {
-      console.log(`Auto-matched ${results.training_matched} training plan workouts`);
+      results.training_matched = await autoMatchTrainingPlan(supabase, user.id, affectedWeeks);
+      if (results.training_matched > 0) {
+        console.log(`Auto-matched ${results.training_matched} training plan workouts`);
+      }
     }
 
     // Update last_synced_at timestamp
@@ -467,23 +490,30 @@ serve(async (req) => {
 
     console.log("Sync results:", results);
 
+    // In backfill mode, return the oldest activity timestamp so client can paginate further back.
+    let oldestUnix: number | null = null;
+    if (mode === "backfill" && activities.length > 0) {
+      oldestUnix = Math.min(
+        ...activities.map((a) => Math.floor(new Date(a.start_date).getTime() / 1000)),
+      );
+    }
+    const hasMore = mode === "backfill" && activities.length >= backfillMaxPages * 200;
+
     logger?.setCounter("activities_fetched", activities.length);
     if (results.skipped > 0) logger?.incCounter("skipped", results.skipped);
     if (results.rematched > 0) logger?.incCounter("rematched", results.rematched);
     if (results.training_matched > 0) logger?.incCounter("training_matched", results.training_matched);
 
-    const finalStatus: RunStatus =
-      results.synced === 0 && activities.length === 0
-        ? "success"
-        : results.synced > 0
-          ? "success"
-          : "success";
+    const finalStatus: RunStatus = "success";
     await logger?.finalize(finalStatus);
 
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       success: true,
       activities: activities.length,
-      ...results
+      mode,
+      oldest_unix: oldestUnix,
+      has_more: hasMore,
+      ...results,
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
