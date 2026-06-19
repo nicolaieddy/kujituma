@@ -69,29 +69,46 @@ export function GarminMonthlyUploadCard() {
     },
   });
 
-  async function handleFile(file: File) {
-    if (!user) return;
+  async function handleFiles(files: File[]) {
+    if (!user || files.length === 0) return;
     setUploading(true);
     try {
-      const text = await file.text();
-      const parsed = parseGarminCsv(text);
-      const runRows = parsed.filter((r) => /run/i.test(r.sport));
-      if (runRows.length === 0) {
-        toast.error("No running rows found in the CSV.");
+      const allRows: ParsedRow[] = [];
+      let failedFiles = 0;
+      for (const file of files) {
+        try {
+          const text = await file.text();
+          const parsed = parseGarminCsv(text);
+          allRows.push(...parsed.filter((r) => /run/i.test(r.sport)));
+        } catch {
+          failedFiles++;
+        }
+      }
+      if (allRows.length === 0) {
+        toast.error("No running rows found across the selected files.");
         return;
       }
-      const payload = runRows.map((r) => ({
+      // Dedupe by month — keep the largest value if multiple files cover the same month
+      const byMonth = new Map<string, number>();
+      for (const r of allRows) {
+        const prev = byMonth.get(r.month) ?? 0;
+        if (r.distance_km > prev) byMonth.set(r.month, r.distance_km);
+      }
+      const payload = Array.from(byMonth.entries()).map(([month, distance_km]) => ({
         user_id: user.id,
-        month: r.month,
+        month,
         sport: "Running",
-        distance_km: r.distance_km,
+        distance_km,
         source: "garmin_csv",
       }));
       const { error } = await supabase
         .from("monthly_distance_aggregates")
         .upsert(payload, { onConflict: "user_id,month,sport,source" });
       if (error) throw error;
-      toast.success(`Imported ${runRows.length} months of Garmin running totals`);
+      toast.success(
+        `Imported ${payload.length} months from ${files.length} file${files.length === 1 ? "" : "s"}` +
+          (failedFiles ? ` · ${failedFiles} failed` : ""),
+      );
       qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates"] });
       qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates-all"] });
     } catch (e: any) {
@@ -135,15 +152,16 @@ export function GarminMonthlyUploadCard() {
             ref={fileRef}
             type="file"
             accept=".csv,text/csv"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
+              const fs = Array.from(e.target.files ?? []);
+              if (fs.length) handleFiles(fs);
             }}
           />
           <Button onClick={() => fileRef.current?.click()} disabled={uploading} size="sm">
             {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Importing…" : "Upload CSV"}
+            {uploading ? "Importing…" : "Upload CSV(s)"}
           </Button>
           {existing.length > 0 && (
             <Button onClick={clearAll} variant="outline" size="sm">
