@@ -25,7 +25,7 @@ export function useWeeklyRunningKm(weeks?: number) {
     queryFn: async (): Promise<WeeklyRunningBucket[]> => {
       let query = supabase
         .from("synced_activities")
-        .select("activity_type, sport_type, activity_date, start_date, distance_meters, duration_seconds")
+        .select("id, source, activity_type, sport_type, activity_date, start_date, distance_meters, duration_seconds")
         .eq("user_id", user!.id);
 
       if (weeks && weeks > 0) {
@@ -41,16 +41,25 @@ export function useWeeklyRunningKm(weeks?: number) {
         return /run|trail|treadmill/.test(s);
       };
 
+      const runRows = (data ?? []).filter(
+        (row: any) => isRun(row.activity_type) || isRun(row.sport_type),
+      );
+
+      // Dedupe: Strava + .FIT for the same physical session are stored as separate rows.
+      // Merge them and count each session once (prefer Strava distance/duration when present).
+      const sessions = mergeActivitiesIntoSessions(runRows);
+
       const buckets = new Map<string, WeeklyRunningBucket>();
 
-      (data ?? []).forEach((row: any) => {
-        if (!isRun(row.activity_type) && !isRun(row.sport_type)) return;
-        const localDate = row.activity_date
-          ? parseLocalDate(row.activity_date)
-          : new Date(row.start_date);
+      sessions.forEach((session) => {
+        const stravaRow = session.activities.find((a: any) => a.source !== "fit_upload");
+        const primary = stravaRow || session.displayActivity;
+        const localDate = primary.activity_date
+          ? parseLocalDate(primary.activity_date)
+          : new Date(primary.start_date);
         const wk = format(startOfWeek(localDate, { weekStartsOn: 1 }), "yyyy-MM-dd");
-        const km = Number(row.distance_meters || 0) / 1000;
-        const min = Number(row.duration_seconds || 0) / 60;
+        const km = Number(primary.distance_meters || 0) / 1000;
+        const min = Number(primary.duration_seconds || 0) / 60;
         const existing = buckets.get(wk) ?? { week_start: wk, total_km: 0, run_count: 0, total_duration_min: 0 };
         existing.total_km += km;
         existing.run_count += 1;
