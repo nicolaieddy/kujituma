@@ -662,6 +662,9 @@ export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
         )}
       </button>
 
+      {/* Expanded content */}
+      {expanded && (
+        <div className="border-t border-border/40">
           {/* Multi-session expanded view */}
           {isMultiSession ? (
             <div className="px-4 pb-4 pt-1 space-y-4">
@@ -681,16 +684,14 @@ export const TrainingWorkoutCard = memo(function TrainingWorkoutCard({
               ))}
             </div>
           ) : (
-            <>
-              <SingleSessionExpanded
-                workout={workout}
-                session={sessions[0] || null}
-                onDeleteActivity={onDeleteActivity}
-                confirmDeleteId={confirmDeleteActivity}
-                setConfirmDeleteId={setConfirmDeleteActivity}
-                isDeletingActivity={isDeletingActivity}
-              />
-            </>
+            <SingleSessionExpanded
+              workout={workout}
+              session={sessions[0] || null}
+              onDeleteActivity={onDeleteActivity}
+              confirmDeleteId={confirmDeleteActivity}
+              setConfirmDeleteId={setConfirmDeleteActivity}
+              isDeletingActivity={isDeletingActivity}
+            />
           )}
         </div>
       )}
