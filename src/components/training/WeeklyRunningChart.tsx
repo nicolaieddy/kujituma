@@ -160,26 +160,56 @@ function reconcileWithAggregates(
 }
 
 function trimToTrailing(buckets: Bucket[], g: Granularity, n: number): Bucket[] {
-  if (!n) return buckets;
+  if (!n) return buckets; // "All"
   const now = new Date();
-  const start =
-    g === "year" ? startOfYear(subYears(now, n - 1))
-    : g === "month" ? startOfMonth(subMonths(now, n - 1))
-    : startOfWeek(subWeeks(now, n - 1), { weekStartsOn: 1 });
+  let start: Date;
+  if (n === -1) {
+    start = g === "year"
+      ? startOfYear(now)
+      : g === "month"
+      ? startOfYear(now)
+      : startOfWeek(startOfYear(now), { weekStartsOn: 1 });
+  } else {
+    start =
+      g === "year" ? startOfYear(subYears(now, n - 1))
+      : g === "month" ? startOfMonth(subMonths(now, n - 1))
+      : startOfWeek(subWeeks(now, n - 1), { weekStartsOn: 1 });
+  }
   const startKey = bucketKey(start, g);
   return buckets.filter((b) => b.key >= startKey);
 }
 
 function fillGaps(buckets: Bucket[], g: Granularity, n: number): Bucket[] {
-  if (!n) return buckets;
+  if (!n) return buckets; // "All"
   const filled: Bucket[] = [];
   const map = new Map(buckets.map((b) => [b.key, b]));
   const now = new Date();
-  const start =
-    g === "year" ? startOfYear(subYears(now, n - 1))
-    : g === "month" ? startOfMonth(subMonths(now, n - 1))
-    : startOfWeek(subWeeks(now, n - 1), { weekStartsOn: 1 });
-  for (let i = 0; i < n; i++) {
+  let start: Date;
+  let count: number;
+  if (n === -1) {
+    if (g === "year") {
+      start = startOfYear(now);
+      count = 1;
+    } else if (g === "month") {
+      start = startOfYear(now);
+      count = getMonth(now) + 1;
+    } else {
+      start = startOfWeek(startOfYear(now), { weekStartsOn: 1 });
+      count = 0;
+      let d = start;
+      while (d <= now) {
+        count++;
+        d = addWeeks(d, 1);
+      }
+    }
+  } else {
+    start =
+      g === "year" ? startOfYear(subYears(now, n - 1))
+      : g === "month" ? startOfMonth(subMonths(now, n - 1))
+      : startOfWeek(subWeeks(now, n - 1), { weekStartsOn: 1 });
+    count = n;
+  }
+  for (let i = 0; i < count; i++) {
     const d =
       g === "year" ? addYears(start, i)
       : g === "month" ? addMonths(start, i)
