@@ -282,6 +282,7 @@ export function McpSection() {
               { name: "get_friends", desc: "List friends" },
               { name: "get_training_plan", desc: "View planned vs actual workouts" },
               { name: "get_training_history", desc: "Analyze training trends" },
+              { name: "get_weekly_running_distance", desc: "Weekly km/run-count/minutes for running activities" },
               { name: "get_strava_activity_details", desc: "See full Strava workout data" },
               { name: "create_goal", desc: "Create a new goal" },
               { name: "update_goal", desc: "Update goal status/details" },
