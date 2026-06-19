@@ -322,6 +322,73 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
     },
   });
 
+  mcp.tool("get_weekly_running_distance", {
+    description: "Weekly running distance buckets (km, run count, total minutes). Includes Run, TrailRun, VirtualRun, and treadmill activities. Use to analyze training volume trends over time.",
+    inputSchema: {
+      type: "object",
+      properties: {
+        weeks: { type: "number", description: "Number of trailing weeks (default 26). Omit or set to 0 for all-time." },
+        from: { type: "string", description: "Optional ISO date (YYYY-MM-DD) lower bound. Overrides 'weeks' when provided." },
+        to: { type: "string", description: "Optional ISO date (YYYY-MM-DD) upper bound. Defaults to today." },
+      },
+    },
+    handler: async ({ weeks, from, to }: { weeks?: number; from?: string; to?: string }) => {
+      let query = supabase
+        .from("synced_activities")
+        .select("activity_type, sport_type, activity_date, start_date, distance_meters, duration_seconds")
+        .eq("user_id", userId);
+
+      if (from) {
+        query = query.gte("start_date", `${from}T00:00:00Z`);
+      } else if (weeks && weeks > 0) {
+        const since = new Date();
+        since.setDate(since.getDate() - weeks * 7);
+        query = query.gte("start_date", since.toISOString());
+      }
+      if (to) query = query.lte("start_date", `${to}T23:59:59Z`);
+
+      const { data, error } = await query;
+      if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
+
+      const isRun = (t?: string | null) => /run|trail|treadmill/i.test(t || "");
+      const buckets = new Map<string, { week_start: string; total_km: number; run_count: number; total_duration_min: number }>();
+
+      for (const row of (data || [])) {
+        if (!isRun(row.activity_type as string) && !isRun(row.sport_type as string)) continue;
+        const dateStr = (row.activity_date as string) || (row.start_date as string)?.slice(0, 10);
+        if (!dateStr) continue;
+        const wk = getMondayOfWeek(new Date(dateStr + "T12:00:00"));
+        const km = Number(row.distance_meters || 0) / 1000;
+        const min = Number(row.duration_seconds || 0) / 60;
+        const b = buckets.get(wk) || { week_start: wk, total_km: 0, run_count: 0, total_duration_min: 0 };
+        b.total_km += km;
+        b.run_count += 1;
+        b.total_duration_min += min;
+        buckets.set(wk, b);
+      }
+
+      const rows = Array.from(buckets.values())
+        .map((b) => ({
+          week_start: b.week_start,
+          total_km: Math.round(b.total_km * 10) / 10,
+          run_count: b.run_count,
+          total_duration_min: Math.round(b.total_duration_min),
+        }))
+        .sort((a, b) => (a.week_start < b.week_start ? -1 : 1));
+
+      const totalKm = Math.round(rows.reduce((s, r) => s + r.total_km, 0) * 10) / 10;
+      const activeWeeks = rows.filter((r) => r.total_km > 0).length;
+      const avg = activeWeeks ? Math.round((totalKm / activeWeeks) * 10) / 10 : 0;
+      const peak = rows.reduce((m, r) => (r.total_km > (m?.total_km ?? -1) ? r : m), rows[0]);
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: `Weekly running volume — ${rows.length} weeks, ${totalKm} km total, ${avg} km/active week, peak ${peak?.total_km ?? 0} km (${peak?.week_start ?? "n/a"}).\n\n${JSON.stringify(rows, null, 2)}`,
+        }],
+      };
+    },
+
   mcp.tool("list_activities", {
     description: "List activity summaries by date range, type, or source. Use to discover activities (including .fit uploads) that can then be inspected with get_activity_details or get_activity_laps.",
     inputSchema: {
