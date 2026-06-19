@@ -568,16 +568,45 @@ export function WeeklyRunningChart() {
                     fontSize: 12,
                   }}
                   labelStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number, _name, props: { payload?: RunningTooltipPayload }) => {
+                  formatter={(value: number, name, props: { payload?: RunningTooltipPayload }) => {
                     const p = props?.payload;
+                    const km = `${Math.round(value * 10) / 10} km`;
+                    if (name === "imported_km") {
+                      return [`${km} (monthly avg)`, "Garmin backfill"];
+                    }
                     return [
-                      `${Math.round(value * 10) / 10} km · ${p?.count ?? 0} run${p?.count === 1 ? "" : "s"} · ${Math.round(p?.duration_min ?? 0)} min`,
-                      unitLabel,
+                      `${km} · ${p?.count ?? 0} run${p?.count === 1 ? "" : "s"} · ${Math.round(p?.duration_min ?? 0)} min`,
+                      "Strava / .FIT",
                     ];
                   }}
                   labelFormatter={(label) => label}
                 />
-                <Bar dataKey="total_km" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                  formatter={(value) =>
+                    value === "imported_km"
+                      ? "Garmin backfill (monthly avg / week)"
+                      : "Strava / .FIT sessions"
+                  }
+                />
+                <Bar
+                  dataKey="total_km"
+                  name="total_km"
+                  stackId="km"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="imported_km"
+                  name="imported_km"
+                  stackId="km"
+                  fill="hsl(var(--muted-foreground))"
+                  fillOpacity={0.35}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="3 2"
+                  strokeWidth={1}
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           ) : (
