@@ -79,7 +79,7 @@ export function StravaConnectionCard() {
                 <div className="text-xs">
                   <p className="font-medium">Sync may need attention</p>
                   <p className="opacity-80">
-                    Auto-sync is enabled but last sync was {daysSinceSync} days ago. Try syncing manually.
+                    No new activities have been pulled in for {daysSinceSync} days. Try syncing manually if you expected new data.
                   </p>
                 </div>
               </div>
