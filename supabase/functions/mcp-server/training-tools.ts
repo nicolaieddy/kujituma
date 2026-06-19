@@ -335,7 +335,7 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
     handler: async ({ weeks, from, to }: { weeks?: number; from?: string; to?: string }) => {
       let query = supabase
         .from("synced_activities")
-        .select("activity_type, sport_type, activity_date, start_date, distance_meters, duration_seconds")
+        .select("id, source, activity_type, sport_type, activity_date, start_date, distance_meters, duration_seconds")
         .eq("user_id", userId);
 
       if (from) {
@@ -351,10 +351,42 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
 
       const isRun = (t?: string | null) => /run|trail|treadmill/i.test(t || "");
-      const buckets = new Map<string, { week_start: string; total_km: number; run_count: number; total_duration_min: number }>();
+      const runRows = (data || []).filter(
+        (r: any) => isRun(r.activity_type as string) || isRun(r.sport_type as string),
+      );
 
-      for (const row of (data || [])) {
-        if (!isRun(row.activity_type as string) && !isRun(row.sport_type as string)) continue;
+      // Dedupe Strava + .FIT rows that represent the same physical session.
+      // Group by (calendar date, source) then collapse matching sessions across sources.
+      const used = new Set<string>();
+      const sorted = [...runRows].sort(
+        (a: any, b: any) => new Date(a.start_date).getTime() - new Date(b.start_date).getTime(),
+      );
+      const sessions: any[] = [];
+      for (let i = 0; i < sorted.length; i++) {
+        const a: any = sorted[i];
+        if (used.has(a.id)) continue;
+        used.add(a.id);
+        let primary = a;
+        for (let j = i + 1; j < sorted.length; j++) {
+          const b: any = sorted[j];
+          if (used.has(b.id)) continue;
+          if (b.source === a.source) continue;
+          const dateA = a.activity_date || (a.start_date || "").slice(0, 10);
+          const dateB = b.activity_date || (b.start_date || "").slice(0, 10);
+          if (dateA !== dateB) continue;
+          if (a.duration_seconds && b.duration_seconds) {
+            const ratio = a.duration_seconds / b.duration_seconds;
+            if (ratio < 0.75 || ratio > 1.33) continue;
+          }
+          used.add(b.id);
+          // Prefer the Strava row for headline distance/duration
+          if (primary.source === "fit_upload" && b.source !== "fit_upload") primary = b;
+        }
+        sessions.push(primary);
+      }
+
+      const buckets = new Map<string, { week_start: string; total_km: number; run_count: number; total_duration_min: number }>();
+      for (const row of sessions) {
         const dateStr = (row.activity_date as string) || (row.start_date as string)?.slice(0, 10);
         if (!dateStr) continue;
         const wk = getMondayOfWeek(new Date(dateStr + "T12:00:00"));
