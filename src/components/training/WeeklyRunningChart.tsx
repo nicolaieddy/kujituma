@@ -133,7 +133,14 @@ function reconcileWithAggregates(
 
   if (g === "week") {
     const map = new Map(buckets.map((b) => [b.key, { ...b, imported_km: 0 }]));
+    // Dedupe: at most one (largest) aggregate per month across sources.
+    const perMonth = new Map<string, number>();
     for (const a of aggregates) {
+      const monthKey = a.month.slice(0, 7);
+      perMonth.set(monthKey, Math.max(perMonth.get(monthKey) ?? 0, a.distance_km));
+    }
+    for (const [monthKey, distance_km] of perMonth) {
+      const a = { month: `${monthKey}-01`, distance_km };
       const monthStart = startOfMonth(new Date(a.month + "T12:00:00"));
       const monthEnd = endOfMonth(monthStart);
       const weekStarts: Date[] = [];
@@ -171,12 +178,21 @@ function reconcileWithAggregates(
     return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
   }
 
-  // Build aggregate totals per bucket key.
-  const aggTotals = new Map<string, number>();
+  // Deduplicate aggregates across sources: take the MAX per actual month
+  // (otherwise a month with both a Garmin CSV row and a sessions-derived row
+  // would be summed and double-counted).
+  const perMonth = new Map<string, number>();
   for (const a of aggregates) {
-    const d = new Date(a.month + "T12:00:00");
+    const monthKey = a.month.slice(0, 7); // YYYY-MM
+    perMonth.set(monthKey, Math.max(perMonth.get(monthKey) ?? 0, a.distance_km));
+  }
+
+  // Roll up into the requested granularity (sum monthly maxes into years).
+  const aggTotals = new Map<string, number>();
+  for (const [monthKey, km] of perMonth) {
+    const d = new Date(monthKey + "-01T12:00:00");
     const key = bucketKey(d, g);
-    aggTotals.set(key, (aggTotals.get(key) ?? 0) + a.distance_km);
+    aggTotals.set(key, (aggTotals.get(key) ?? 0) + km);
   }
 
   const map = new Map(buckets.map((b) => [b.key, { ...b }]));
