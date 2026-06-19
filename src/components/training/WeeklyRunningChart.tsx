@@ -195,6 +195,7 @@ interface CompareRow {
 
 function buildCompareSeries(
   sessions: RunningSession[],
+  aggregates: MonthlyAggregate[],
   g: Exclude<Granularity, "year">,
   yearsBack: number,
 ): { rows: CompareRow[]; years: number[] } {
@@ -218,6 +219,19 @@ function buildCompareSeries(
     const slot = g === "month" ? idx : idx - 1;
     if (slot < 0 || slot >= slots) continue;
     rows[slot][String(y)] = (rows[slot][String(y)] as number) + s.distance_km;
+  }
+
+  // For month granularity, reconcile each (year, month) cell with the larger of
+  // (session sum, imported Garmin aggregate). For week compare, leave as-is.
+  if (g === "month") {
+    for (const a of aggregates) {
+      const d = new Date(a.month + "T12:00:00");
+      const y = getYear(d);
+      if (!years.includes(y)) continue;
+      const slot = getMonth(d);
+      const existing = rows[slot][String(y)] as number;
+      if (a.distance_km > existing) rows[slot][String(y)] = a.distance_km;
+    }
   }
 
   // Round
