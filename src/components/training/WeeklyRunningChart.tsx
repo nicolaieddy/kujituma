@@ -359,13 +359,14 @@ export function WeeklyRunningChart() {
       ? trailingData
       : reconcileWithAggregates(aggregate(sessions, granularity), aggregates, granularity);
     if (source.length === 0) return null;
-    const total = source.reduce((s, r) => s + r.total_km, 0);
-    const active = source.filter((r) => r.total_km > 0).length || 1;
-    const peak = source.reduce((m, r) => (r.total_km > m.total_km ? r : m), source[0]);
+    const value = (r: Bucket) => r.total_km + (r.imported_km ?? 0);
+    const total = source.reduce((s, r) => s + value(r), 0);
+    const active = source.filter((r) => value(r) > 0).length || 1;
+    const peak = source.reduce((m, r) => (value(r) > value(m) ? r : m), source[0]);
     return {
       total: Math.round(total * 10) / 10,
       avg: Math.round((total / active) * 10) / 10,
-      peak,
+      peak: { ...peak, total_km: value(peak) },
     };
   }, [mode, trailingData, sessions, aggregates, granularity]);
 
