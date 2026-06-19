@@ -78,6 +78,7 @@ interface Bucket {
   total_km: number;
   count: number;
   duration_min: number;
+  imported_km?: number; // weekly avg derived from a Garmin monthly aggregate
 }
 
 function bucketKey(d: Date, g: Granularity): string {
