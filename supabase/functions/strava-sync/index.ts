@@ -144,12 +144,18 @@ serve(async (req) => {
       throw new Error("No authorization header provided");
     }
 
-    // Optional body: { trigger: "manual" | "scheduled" | "webhook" }
+    // Optional body: { trigger, mode: "backfill", before?: epoch_seconds, max_pages?: number }
     let trigger: "manual" | "scheduled" | "webhook" = "manual";
+    let mode: "incremental" | "backfill" = "incremental";
+    let backfillBefore: number | undefined = undefined;
+    let backfillMaxPages = 5;
     try {
       if (req.headers.get("content-type")?.includes("application/json")) {
         const body = await req.json();
         if (body?.trigger) trigger = body.trigger;
+        if (body?.mode === "backfill") mode = "backfill";
+        if (typeof body?.before === "number") backfillBefore = body.before;
+        if (typeof body?.max_pages === "number") backfillMaxPages = Math.min(Math.max(body.max_pages, 1), 10);
       }
     } catch { /* ignore */ }
 
