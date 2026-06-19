@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Upload, Loader2, FileSpreadsheet, Trash2 } from "lucide-react";
+import { Upload, Loader2, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -119,20 +119,6 @@ export function GarminMonthlyUploadCard() {
     }
   }
 
-  async function clearAll() {
-    if (!user) return;
-    if (!confirm("Remove all imported Garmin monthly totals?")) return;
-    const { error } = await supabase
-      .from("monthly_distance_aggregates")
-      .delete()
-      .eq("user_id", user.id)
-      .eq("source", "garmin_csv");
-    if (error) return toast.error(error.message);
-    toast.success("Cleared imported aggregates");
-    qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates"] });
-    qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates-all"] });
-  }
-
   return (
     <Card>
       <CardHeader>
@@ -163,11 +149,6 @@ export function GarminMonthlyUploadCard() {
             {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
             {uploading ? "Importing…" : "Upload CSV(s)"}
           </Button>
-          {existing.length > 0 && (
-            <Button onClick={clearAll} variant="outline" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" /> Clear imported
-            </Button>
-          )}
         </div>
 
         {existing.length > 0 && (
