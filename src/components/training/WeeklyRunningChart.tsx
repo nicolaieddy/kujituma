@@ -414,18 +414,38 @@ export function WeeklyRunningChart() {
               ))}
             </div>
           ) : (
-            <div className="flex gap-1 bg-muted rounded-lg p-1">
-              {COMPARE_YEARS.map((c) => (
+            <div className="flex flex-wrap gap-2">
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
+                {COMPARE_YEARS.map((c) => (
+                  <Button
+                    key={c.value}
+                    variant={compareYears === c.value ? "default" : "ghost"}
+                    size="sm"
+                    className="h-7 px-2.5 text-xs"
+                    onClick={() => setCompareYears(c.value)}
+                  >
+                    {c.label}
+                  </Button>
+                ))}
+              </div>
+              <div className="flex gap-1 bg-muted rounded-lg p-1">
                 <Button
-                  key={c.value}
-                  variant={compareYears === c.value ? "default" : "ghost"}
+                  variant={!compareYTD ? "default" : "ghost"}
                   size="sm"
                   className="h-7 px-2.5 text-xs"
-                  onClick={() => setCompareYears(c.value)}
+                  onClick={() => setCompareYTD(false)}
                 >
-                  {c.label}
+                  Full year
                 </Button>
-              ))}
+                <Button
+                  variant={compareYTD ? "default" : "ghost"}
+                  size="sm"
+                  className="h-7 px-2.5 text-xs"
+                  onClick={() => setCompareYTD(true)}
+                >
+                  YTD
+                </Button>
+              </div>
             </div>
           )}
         </div>
