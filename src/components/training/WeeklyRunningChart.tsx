@@ -112,6 +112,39 @@ function aggregate(sessions: RunningSession[], g: Granularity): Bucket[] {
   return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
 }
 
+/**
+ * Apply monthly aggregate imports (e.g. Garmin CSV) by taking the
+ * LARGER of (sessions total, imported aggregate total) per bucket.
+ * Only meaningful for month/year granularities — weekly bars are left
+ * untouched because a month total can't be split into weeks reliably.
+ */
+function reconcileWithAggregates(
+  buckets: Bucket[],
+  aggregates: MonthlyAggregate[],
+  g: Granularity,
+): Bucket[] {
+  if (g === "week" || aggregates.length === 0) return buckets;
+
+  // Build aggregate totals per bucket key.
+  const aggTotals = new Map<string, number>();
+  for (const a of aggregates) {
+    const d = new Date(a.month + "T12:00:00");
+    const key = bucketKey(d, g);
+    aggTotals.set(key, (aggTotals.get(key) ?? 0) + a.distance_km);
+  }
+
+  const map = new Map(buckets.map((b) => [b.key, { ...b }]));
+  for (const [key, kmAgg] of aggTotals) {
+    const existing = map.get(key);
+    if (!existing) continue; // outside the window
+    if (kmAgg > existing.total_km) {
+      existing.total_km = kmAgg;
+      // Sessions count/duration are unknown for the imported portion — leave as-is.
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
+}
+
 function trimToTrailing(buckets: Bucket[], g: Granularity, n: number): Bucket[] {
   if (!n) return buckets;
   const now = new Date();
