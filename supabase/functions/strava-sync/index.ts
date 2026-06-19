@@ -220,20 +220,36 @@ serve(async (req) => {
       console.log(`Looking back to: ${new Date(earliestDate * 1000).toISOString()}`);
     }
 
-    // Fetch activities from Strava
-    const activitiesResponse = await fetch(
-      `https://www.strava.com/api/v3/athlete/activities?after=${earliestDate}&per_page=200`,
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
+    // Fetch activities from Strava — paginate in backfill mode
+    let activities: StravaActivity[] = [];
+    if (mode === "backfill") {
+      console.log(`Backfill mode — paginating (before=${backfillBefore ?? "now"}, max_pages=${backfillMaxPages})`);
+      for (let page = 1; page <= backfillMaxPages; page++) {
+        const params = new URLSearchParams({ per_page: "200", page: String(page) });
+        if (backfillBefore) params.set("before", String(backfillBefore));
+        const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        });
+        if (!r.ok) {
+          const errorText = await r.text();
+          throw new Error(`Failed to fetch activities (page ${page}): ${errorText}`);
+        }
+        const batch: StravaActivity[] = await r.json();
+        console.log(`  page ${page}: ${batch.length} activities`);
+        activities.push(...batch);
+        if (batch.length < 200) break; // no more pages
       }
-    );
-
-    if (!activitiesResponse.ok) {
-      const errorText = await activitiesResponse.text();
-      throw new Error(`Failed to fetch activities: ${errorText}`);
+    } else {
+      const activitiesResponse = await fetch(
+        `https://www.strava.com/api/v3/athlete/activities?after=${earliestDate}&per_page=200`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+      if (!activitiesResponse.ok) {
+        const errorText = await activitiesResponse.text();
+        throw new Error(`Failed to fetch activities: ${errorText}`);
+      }
+      activities = await activitiesResponse.json();
     }
-
-    const activities: StravaActivity[] = await activitiesResponse.json();
     console.log(`Fetched ${activities.length} activities from Strava`);
 
     // Get already synced activities
