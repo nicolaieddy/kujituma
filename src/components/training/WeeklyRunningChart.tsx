@@ -18,6 +18,7 @@ import {
 import {
   startOfWeek,
   startOfMonth,
+  endOfMonth,
   startOfYear,
   format,
   subWeeks,
