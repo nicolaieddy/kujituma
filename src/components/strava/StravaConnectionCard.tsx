@@ -32,10 +32,12 @@ export function StravaConnectionCard() {
     );
   }
 
-  // Calculate if sync is stale (more than 2 days old when auto-sync is enabled)
+  // `last_synced_at` only updates when a sync actually fetches new activities.
+  // Session-based auto-sync may run frequently without bumping it, so don't
+  // alarm the user unless it's been a really long time (30+ days).
   const lastSyncDate = connection?.last_synced_at ? new Date(connection.last_synced_at) : null;
   const daysSinceSync = lastSyncDate ? differenceInDays(new Date(), lastSyncDate) : null;
-  const isSyncStale = connection?.auto_sync_enabled && daysSinceSync !== null && daysSinceSync > 1;
+  const isSyncStale = connection?.auto_sync_enabled && daysSinceSync !== null && daysSinceSync > 30;
 
   return (
     <Card>
@@ -64,7 +66,7 @@ export function StravaConnectionCard() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <Clock className="h-3 w-3" />
                   {connection.last_synced_at
-                    ? `Last synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
+                    ? `Last new activity ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
                     : "Not yet synced"}
                 </p>
               </div>
@@ -77,7 +79,7 @@ export function StravaConnectionCard() {
                 <div className="text-xs">
                   <p className="font-medium">Sync may need attention</p>
                   <p className="opacity-80">
-                    Auto-sync is enabled but last sync was {daysSinceSync} days ago. Try syncing manually.
+                    No new activities have been pulled in for {daysSinceSync} days. Try syncing manually if you expected new data.
                   </p>
                 </div>
               </div>
