@@ -21,6 +21,7 @@ export default function Training() {
     const v = new URLSearchParams(window.location.search).get("view");
     if (v === "setup") return "setup";
     if (v === "events") return "events";
+    if (v === "trends") return "trends";
     return "plan";
   });
 
