@@ -295,6 +295,7 @@ export function WeeklyRunningChart() {
   const DEFAULT_TRAILING: Record<Granularity, number> = { week: 52, month: 12, year: 3 };
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
+  const [compareYTD, setCompareYTD] = useState<boolean>(false);
   const { data: sessions = [], isLoading } = useRunningSessions();
   const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
 
