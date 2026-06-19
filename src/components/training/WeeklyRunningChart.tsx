@@ -260,7 +260,7 @@ export function WeeklyRunningChart() {
                 className="h-7 px-2.5 text-xs capitalize"
                 onClick={() => {
                   setGranularity(g);
-                  if (g === "year" && mode === "compare") setMode("trailing");
+                  setTrailingN(DEFAULT_TRAILING[g]);
                 }}
               >
                 {g}
