@@ -32,10 +32,12 @@ export function StravaConnectionCard() {
     );
   }
 
-  // Calculate if sync is stale (more than 2 days old when auto-sync is enabled)
+  // `last_synced_at` only updates when a sync actually fetches new activities.
+  // Session-based auto-sync may run frequently without bumping it, so don't
+  // alarm the user unless it's been a really long time (30+ days).
   const lastSyncDate = connection?.last_synced_at ? new Date(connection.last_synced_at) : null;
   const daysSinceSync = lastSyncDate ? differenceInDays(new Date(), lastSyncDate) : null;
-  const isSyncStale = connection?.auto_sync_enabled && daysSinceSync !== null && daysSinceSync > 1;
+  const isSyncStale = connection?.auto_sync_enabled && daysSinceSync !== null && daysSinceSync > 30;
 
   return (
     <Card>
