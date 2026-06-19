@@ -194,7 +194,9 @@ function buildCompareSeries(
 export function WeeklyRunningChart() {
   const [granularity, setGranularity] = useState<Granularity>("week");
   const [mode, setMode] = useState<Mode>("trailing");
-  const [trailingN, setTrailingN] = useState<number>(26);
+  // Defaults: 52 weeks / 12 months / 3 years
+  const DEFAULT_TRAILING: Record<Granularity, number> = { week: 52, month: 12, year: 3 };
+  const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
   const { data: sessions = [], isLoading } = useRunningSessions();
 
@@ -258,6 +260,7 @@ export function WeeklyRunningChart() {
                 className="h-7 px-2.5 text-xs capitalize"
                 onClick={() => {
                   setGranularity(g);
+                  setTrailingN(DEFAULT_TRAILING[g]);
                   if (g === "year" && mode === "compare") setMode("trailing");
                 }}
               >
