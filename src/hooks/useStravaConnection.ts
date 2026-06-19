@@ -31,6 +31,8 @@ export function useStravaConnection() {
   const [connection, setConnection] = useState<StravaConnection | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isBackfilling, setIsBackfilling] = useState(false);
+  const [backfillProgress, setBackfillProgress] = useState<{ total: number; oldest: string | null } | null>(null);
 
   const checkConnectionStatus = useCallback(async () => {
     if (!user || !session) {
