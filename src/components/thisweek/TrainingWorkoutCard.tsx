@@ -38,7 +38,51 @@ function timeDelta(plannedSeconds: number | null, actualSeconds: number | null):
   return { text: diff <= 0 ? `−${m}m` : `+${m}m`, positive: diff <= 0 };
 }
 
-/* ── Inline stat chip ─────────────────────────────────────── */
+type Tone = "good" | "warn" | "bad";
+const toneTextClass: Record<Tone, string> = {
+  good: "text-emerald-500 dark:text-emerald-400",
+  warn: "text-amber-500 dark:text-amber-400",
+  bad: "text-red-500 dark:text-red-400",
+};
+const toneDotClass: Record<Tone, string> = {
+  good: "bg-emerald-500",
+  warn: "bg-amber-500",
+  bad: "bg-red-500",
+};
+
+function distanceDelta(plannedM?: number | null, actualM?: number | null): { text: string; tone: Tone } | null {
+  if (!plannedM || !actualM) return null;
+  const diffKm = (actualM - plannedM) / 1000;
+  const abs = Math.abs(diffKm);
+  const pct = abs / (plannedM / 1000);
+  if (abs < 0.05) return { text: "on plan", tone: "good" };
+  const sign = diffKm > 0 ? "+" : "−";
+  const tone: Tone = pct < 0.05 ? "good" : pct < 0.15 ? "warn" : "bad";
+  return { text: `${sign}${abs.toFixed(abs >= 1 ? 1 : 2)}km`, tone };
+}
+
+function paceDelta(plannedSecPerKm?: number | null, actualSecPerKm?: number | null): { text: string; tone: Tone } | null {
+  if (!plannedSecPerKm || !actualSecPerKm) return null;
+  const diff = Math.round(actualSecPerKm - plannedSecPerKm); // positive = slower than plan
+  const abs = Math.abs(diff);
+  if (abs <= 2) return { text: "on pace", tone: "good" };
+  const sign = diff < 0 ? "▾" : "▴"; // faster down, slower up
+  const min = Math.floor(abs / 60);
+  const sec = abs % 60;
+  const text = min > 0 ? `${sign}${min}:${String(sec).padStart(2, "0")}` : `${sign}${sec}s`;
+  const tone: Tone = abs <= 5 ? "good" : abs <= 15 ? "warn" : "bad";
+  return { text, tone };
+}
+
+function planSummary(w: TrainingPlanDisplayWorkout): string | null {
+  const parts: string[] = [];
+  if (w.target_distance_meters) parts.push(formatDistance(w.target_distance_meters));
+  else if (w.target_duration_seconds) parts.push(formatDuration(w.target_duration_seconds));
+  if (w.target_pace_per_km) parts.push(`@ ${formatPace(w.target_pace_per_km)}`);
+  return parts.length ? parts.join(" ") : null;
+}
+
+/* ── Inline stat chip (used in expanded session view) ──────────── */
 
 function InlineStat({ icon: Icon, value, delta, className }: {
   icon: React.ElementType;
