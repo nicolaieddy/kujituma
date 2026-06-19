@@ -66,7 +66,7 @@ export function StravaConnectionCard() {
                 <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                   <Clock className="h-3 w-3" />
                   {connection.last_synced_at
-                    ? `Last synced ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
+                    ? `Last new activity ${formatDistanceToNow(new Date(connection.last_synced_at), { addSuffix: true })}`
                     : "Not yet synced"}
                 </p>
               </div>
