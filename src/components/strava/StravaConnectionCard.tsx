@@ -13,9 +13,12 @@ export function StravaConnectionCard() {
     connection, 
     isLoading, 
     isSyncing,
+    isBackfilling,
+    backfillProgress,
     initiateConnect, 
     disconnect,
     syncActivities,
+    backfillHistory,
     toggleAutoSync,
   } = useStravaConnection();
 
