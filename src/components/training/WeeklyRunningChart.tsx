@@ -122,6 +122,7 @@ function reconcileWithAggregates(
   buckets: Bucket[],
   aggregates: MonthlyAggregate[],
   g: Granularity,
+  includeMissingBuckets = false,
 ): Bucket[] {
   if (g === "week" || aggregates.length === 0) return buckets;
 
@@ -136,7 +137,18 @@ function reconcileWithAggregates(
   const map = new Map(buckets.map((b) => [b.key, { ...b }]));
   for (const [key, kmAgg] of aggTotals) {
     const existing = map.get(key);
-    if (!existing) continue; // outside the window
+    if (!existing) {
+      if (!includeMissingBuckets) continue; // outside the selected trailing window
+      const d = new Date((g === "year" ? `${key}-01-01` : `${key}-01`) + "T12:00:00");
+      map.set(key, {
+        key,
+        label: bucketLabel(g === "year" ? startOfYear(d) : startOfMonth(d), g),
+        total_km: kmAgg,
+        count: 0,
+        duration_min: 0,
+      });
+      continue;
+    }
     if (kmAgg > existing.total_km) {
       existing.total_km = kmAgg;
       // Sessions count/duration are unknown for the imported portion — leave as-is.
@@ -258,7 +270,7 @@ export function WeeklyRunningChart() {
     const agg = aggregate(sessions, granularity);
     const trimmed = trailingActive ? trimToTrailing(agg, granularity, trailingActive) : agg;
     const filled = trailingActive ? fillGaps(trimmed, granularity, trailingActive) : trimmed;
-    return reconcileWithAggregates(filled, aggregates, granularity);
+    return reconcileWithAggregates(filled, aggregates, granularity, trailingActive === 0);
   }, [sessions, aggregates, granularity, trailingActive]);
 
   const stats = useMemo(() => {
