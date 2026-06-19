@@ -68,10 +68,11 @@ export default function Training() {
       </header>
 
       {/* View switcher */}
-      <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit">
+      <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit flex-wrap">
         {([
           { id: "plan", label: "Plan", icon: Dumbbell },
           { id: "events", label: "Events", icon: Flag },
+          { id: "trends", label: "Trends", icon: LineChart },
           { id: "setup", label: "Setup", icon: Settings },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
@@ -90,6 +91,7 @@ export default function Training() {
 
       {view === "plan" && <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />}
       {view === "events" && <TrainingEventsPanel />}
+      {view === "trends" && <WeeklyRunningChart />}
       {view === "setup" && <TrainingSetupPanel />}
     </div>
   );
