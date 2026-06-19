@@ -18,6 +18,7 @@ import {
 import {
   startOfWeek,
   startOfMonth,
+  endOfMonth,
   startOfYear,
   format,
   subWeeks,
@@ -77,6 +78,7 @@ interface Bucket {
   total_km: number;
   count: number;
   duration_min: number;
+  imported_km?: number; // weekly avg derived from a Garmin monthly aggregate
 }
 
 function bucketKey(d: Date, g: Granularity): string {
@@ -115,10 +117,11 @@ function aggregate(sessions: RunningSession[], g: Granularity): Bucket[] {
 }
 
 /**
- * Apply monthly aggregate imports (e.g. Garmin CSV) by taking the
- * LARGER of (sessions total, imported aggregate total) per bucket.
- * Only meaningful for month/year granularities — weekly bars are left
- * untouched because a month total can't be split into weeks reliably.
+ * Apply monthly aggregate imports (e.g. Garmin CSV).
+ * - month/year: take the LARGER of (sessions total, imported aggregate total).
+ * - week: for months that have NO session data, distribute the monthly total
+ *   evenly across weeks whose Monday falls in that month and expose it as
+ *   `imported_km` so the chart can render it with a distinct style.
  */
 function reconcileWithAggregates(
   buckets: Bucket[],
@@ -126,7 +129,47 @@ function reconcileWithAggregates(
   g: Granularity,
   includeMissingBuckets = false,
 ): Bucket[] {
-  if (g === "week" || aggregates.length === 0) return buckets;
+  if (aggregates.length === 0) return buckets;
+
+  if (g === "week") {
+    const map = new Map(buckets.map((b) => [b.key, { ...b, imported_km: 0 }]));
+    for (const a of aggregates) {
+      const monthStart = startOfMonth(new Date(a.month + "T12:00:00"));
+      const monthEnd = endOfMonth(monthStart);
+      const weekStarts: Date[] = [];
+      let w = startOfWeek(monthStart, { weekStartsOn: 1 });
+      while (w < monthStart) w = addWeeks(w, 1);
+      while (w <= monthEnd) {
+        weekStarts.push(w);
+        w = addWeeks(w, 1);
+      }
+      if (weekStarts.length === 0) continue;
+      // If sessions already exist in any of these weeks, sessions win — skip.
+      const sessionSum = weekStarts.reduce(
+        (s, ws) => s + (map.get(bucketKey(ws, "week"))?.total_km ?? 0),
+        0,
+      );
+      if (sessionSum > 0) continue;
+      const per = a.distance_km / weekStarts.length;
+      for (const ws of weekStarts) {
+        const k = bucketKey(ws, "week");
+        const existing = map.get(k);
+        if (existing) {
+          existing.imported_km = per;
+        } else if (includeMissingBuckets) {
+          map.set(k, {
+            key: k,
+            label: bucketLabel(ws, "week"),
+            total_km: 0,
+            count: 0,
+            duration_min: 0,
+            imported_km: per,
+          });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
+  }
 
   // Build aggregate totals per bucket key.
   const aggTotals = new Map<string, number>();
@@ -316,13 +359,14 @@ export function WeeklyRunningChart() {
       ? trailingData
       : reconcileWithAggregates(aggregate(sessions, granularity), aggregates, granularity);
     if (source.length === 0) return null;
-    const total = source.reduce((s, r) => s + r.total_km, 0);
-    const active = source.filter((r) => r.total_km > 0).length || 1;
-    const peak = source.reduce((m, r) => (r.total_km > m.total_km ? r : m), source[0]);
+    const value = (r: Bucket) => r.total_km + (r.imported_km ?? 0);
+    const total = source.reduce((s, r) => s + value(r), 0);
+    const active = source.filter((r) => value(r) > 0).length || 1;
+    const peak = source.reduce((m, r) => (value(r) > value(m) ? r : m), source[0]);
     return {
       total: Math.round(total * 10) / 10,
       avg: Math.round((total / active) * 10) / 10,
-      peak,
+      peak: { ...peak, total_km: value(peak) },
     };
   }, [mode, trailingData, sessions, aggregates, granularity]);
 
@@ -524,16 +568,45 @@ export function WeeklyRunningChart() {
                     fontSize: 12,
                   }}
                   labelStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number, _name, props: { payload?: RunningTooltipPayload }) => {
+                  formatter={(value: number, name, props: { payload?: RunningTooltipPayload }) => {
                     const p = props?.payload;
+                    const km = `${Math.round(value * 10) / 10} km`;
+                    if (name === "imported_km") {
+                      return [`${km} (monthly avg)`, "Garmin backfill"];
+                    }
                     return [
-                      `${Math.round(value * 10) / 10} km · ${p?.count ?? 0} run${p?.count === 1 ? "" : "s"} · ${Math.round(p?.duration_min ?? 0)} min`,
-                      unitLabel,
+                      `${km} · ${p?.count ?? 0} run${p?.count === 1 ? "" : "s"} · ${Math.round(p?.duration_min ?? 0)} min`,
+                      "Strava / .FIT",
                     ];
                   }}
                   labelFormatter={(label) => label}
                 />
-                <Bar dataKey="total_km" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <Legend
+                  wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
+                  formatter={(value) =>
+                    value === "imported_km"
+                      ? "Garmin backfill (monthly avg / week)"
+                      : "Strava / .FIT sessions"
+                  }
+                />
+                <Bar
+                  dataKey="total_km"
+                  name="total_km"
+                  stackId="km"
+                  fill="hsl(var(--primary))"
+                  radius={[4, 4, 0, 0]}
+                />
+                <Bar
+                  dataKey="imported_km"
+                  name="imported_km"
+                  stackId="km"
+                  fill="hsl(var(--muted-foreground))"
+                  fillOpacity={0.35}
+                  stroke="hsl(var(--muted-foreground))"
+                  strokeDasharray="3 2"
+                  strokeWidth={1}
+                  radius={[4, 4, 0, 0]}
+                />
               </BarChart>
             </ResponsiveContainer>
           ) : (
