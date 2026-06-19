@@ -388,6 +388,7 @@ export function registerTrainingReadTools(mcp: McpServer, supabase: Supabase, us
         }],
       };
     },
+  });
 
   mcp.tool("list_activities", {
     description: "List activity summaries by date range, type, or source. Use to discover activities (including .fit uploads) that can then be inspected with get_activity_details or get_activity_laps.",
