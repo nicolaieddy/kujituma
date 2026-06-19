@@ -195,7 +195,7 @@ function reconcileWithAggregates(
     aggTotals.set(key, (aggTotals.get(key) ?? 0) + km);
   }
 
-  const map = new Map(buckets.map((b) => [b.key, { ...b }]));
+  const map = new Map(buckets.map((b) => [b.key, { ...b, imported_km: 0 }]));
   for (const [key, kmAgg] of aggTotals) {
     const existing = map.get(key);
     if (!existing) {
@@ -204,15 +204,18 @@ function reconcileWithAggregates(
       map.set(key, {
         key,
         label: bucketLabel(g === "year" ? startOfYear(d) : startOfMonth(d), g),
-        total_km: kmAgg,
+        total_km: 0,
         count: 0,
         duration_min: 0,
+        imported_km: kmAgg,
       });
       continue;
     }
+    // If the imported aggregate exceeds session data, surface the difference
+    // as a separate `imported_km` slice so it stacks visually and is labeled
+    // as Garmin backfill in the tooltip.
     if (kmAgg > existing.total_km) {
-      existing.total_km = kmAgg;
-      // Sessions count/duration are unknown for the imported portion — leave as-is.
+      existing.imported_km = Math.round((kmAgg - existing.total_km) * 10) / 10;
     }
   }
   return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
