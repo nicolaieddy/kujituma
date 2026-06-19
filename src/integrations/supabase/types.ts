@@ -1821,6 +1821,39 @@ export type Database = {
           },
         ]
       }
+      monthly_distance_aggregates: {
+        Row: {
+          created_at: string
+          distance_km: number
+          id: string
+          month: string
+          source: string
+          sport: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          distance_km?: number
+          id?: string
+          month: string
+          source?: string
+          sport?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          distance_km?: number
+          id?: string
+          month?: string
+          source?: string
+          sport?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       network_contact_events: {
         Row: {
           contact_id: string

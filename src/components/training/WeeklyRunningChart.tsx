@@ -31,6 +31,7 @@ import {
   getYear,
 } from "date-fns";
 import { useRunningSessions, type RunningSession } from "@/hooks/useRunningSessions";
+import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/useMonthlyDistanceAggregates";
 
 type Granularity = "week" | "month" | "year";
 type Mode = "trailing" | "compare";
@@ -111,6 +112,39 @@ function aggregate(sessions: RunningSession[], g: Granularity): Bucket[] {
   return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
 }
 
+/**
+ * Apply monthly aggregate imports (e.g. Garmin CSV) by taking the
+ * LARGER of (sessions total, imported aggregate total) per bucket.
+ * Only meaningful for month/year granularities — weekly bars are left
+ * untouched because a month total can't be split into weeks reliably.
+ */
+function reconcileWithAggregates(
+  buckets: Bucket[],
+  aggregates: MonthlyAggregate[],
+  g: Granularity,
+): Bucket[] {
+  if (g === "week" || aggregates.length === 0) return buckets;
+
+  // Build aggregate totals per bucket key.
+  const aggTotals = new Map<string, number>();
+  for (const a of aggregates) {
+    const d = new Date(a.month + "T12:00:00");
+    const key = bucketKey(d, g);
+    aggTotals.set(key, (aggTotals.get(key) ?? 0) + a.distance_km);
+  }
+
+  const map = new Map(buckets.map((b) => [b.key, { ...b }]));
+  for (const [key, kmAgg] of aggTotals) {
+    const existing = map.get(key);
+    if (!existing) continue; // outside the window
+    if (kmAgg > existing.total_km) {
+      existing.total_km = kmAgg;
+      // Sessions count/duration are unknown for the imported portion — leave as-is.
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
+}
+
 function trimToTrailing(buckets: Bucket[], g: Granularity, n: number): Bucket[] {
   if (!n) return buckets;
   const now = new Date();
@@ -161,6 +195,7 @@ interface CompareRow {
 
 function buildCompareSeries(
   sessions: RunningSession[],
+  aggregates: MonthlyAggregate[],
   g: Exclude<Granularity, "year">,
   yearsBack: number,
 ): { rows: CompareRow[]; years: number[] } {
@@ -186,6 +221,19 @@ function buildCompareSeries(
     rows[slot][String(y)] = (rows[slot][String(y)] as number) + s.distance_km;
   }
 
+  // For month granularity, reconcile each (year, month) cell with the larger of
+  // (session sum, imported Garmin aggregate). For week compare, leave as-is.
+  if (g === "month") {
+    for (const a of aggregates) {
+      const d = new Date(a.month + "T12:00:00");
+      const y = getYear(d);
+      if (!years.includes(y)) continue;
+      const slot = getMonth(d);
+      const existing = rows[slot][String(y)] as number;
+      if (a.distance_km > existing) rows[slot][String(y)] = a.distance_km;
+    }
+  }
+
   // Round
   for (const r of rows) for (const y of years) r[String(y)] = Math.round((r[String(y)] as number) * 10) / 10;
   return { rows, years };
@@ -199,20 +247,24 @@ export function WeeklyRunningChart() {
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
   const { data: sessions = [], isLoading } = useRunningSessions();
+  const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
 
   // Reset trailing to a sensible default when granularity changes
   const ranges = TRAILING_RANGES[granularity];
   const trailingActive = ranges.find((r) => r.value === trailingN) ? trailingN : ranges[0].value;
 
-  // Trailing mode data
+  // Trailing mode data — sessions, gap-filled, then merged with Garmin monthly aggregates (take max per bucket)
   const trailingData = useMemo(() => {
     const agg = aggregate(sessions, granularity);
     const trimmed = trailingActive ? trimToTrailing(agg, granularity, trailingActive) : agg;
-    return trailingActive ? fillGaps(trimmed, granularity, trailingActive) : trimmed;
-  }, [sessions, granularity, trailingActive]);
+    const filled = trailingActive ? fillGaps(trimmed, granularity, trailingActive) : trimmed;
+    return reconcileWithAggregates(filled, aggregates, granularity);
+  }, [sessions, aggregates, granularity, trailingActive]);
 
   const stats = useMemo(() => {
-    const source = mode === "trailing" ? trailingData : aggregate(sessions, granularity);
+    const source = mode === "trailing"
+      ? trailingData
+      : reconcileWithAggregates(aggregate(sessions, granularity), aggregates, granularity);
     if (source.length === 0) return null;
     const total = source.reduce((s, r) => s + r.total_km, 0);
     const active = source.filter((r) => r.total_km > 0).length || 1;
@@ -222,13 +274,13 @@ export function WeeklyRunningChart() {
       avg: Math.round((total / active) * 10) / 10,
       peak,
     };
-  }, [mode, trailingData, sessions, granularity]);
+  }, [mode, trailingData, sessions, aggregates, granularity]);
 
   // Compare mode is only meaningful for week/month
   const compareGranularity: "week" | "month" = granularity === "year" ? "week" : granularity;
   const compare = useMemo(
-    () => buildCompareSeries(sessions, compareGranularity, compareYears),
-    [sessions, compareGranularity, compareYears],
+    () => buildCompareSeries(sessions, aggregates, compareGranularity, compareYears),
+    [sessions, aggregates, compareGranularity, compareYears],
   );
 
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";

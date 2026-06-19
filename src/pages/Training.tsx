@@ -6,6 +6,7 @@ import { TrainingPlanCard } from "@/components/thisweek/TrainingPlanCard";
 import { TrainingSetupPanel } from "@/components/training/TrainingSetupPanel";
 import { TrainingEventsPanel } from "@/components/training/TrainingEventsPanel";
 import { WeeklyRunningChart } from "@/components/training/WeeklyRunningChart";
+import { GarminMonthlyUploadCard } from "@/components/training/GarminMonthlyUploadCard";
 
 function toWeekKey(d: Date) {
   return format(startOfWeek(d, { weekStartsOn: 1 }), "yyyy-MM-dd");
@@ -91,7 +92,12 @@ export default function Training() {
 
       {view === "plan" && <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />}
       {view === "events" && <TrainingEventsPanel />}
-      {view === "trends" && <WeeklyRunningChart />}
+      {view === "trends" && (
+        <div className="space-y-4">
+          <WeeklyRunningChart />
+          <GarminMonthlyUploadCard />
+        </div>
+      )}
       {view === "setup" && <TrainingSetupPanel />}
     </div>
   );
