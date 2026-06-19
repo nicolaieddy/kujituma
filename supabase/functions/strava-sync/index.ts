@@ -295,14 +295,19 @@ serve(async (req) => {
         const needsEnrichment = !existingSync.average_speed && activity.average_speed;
         const needsDateFix = !existingSync.activity_date || existingSync.activity_date !== activityLocalDate;
         const needsTzFix = !existingSync.timezone || existingSync.timezone !== activityTz;
-        
-        if (needsEnrichment || needsDateFix || needsTzFix) {
+        const needsNameFix = (existingSync.activity_name || "") !== (activity.name || "");
+        const newActivityType = activity.sport_type || activity.type;
+        const needsTypeFix = (existingSync.activity_type || "") !== (newActivityType || "");
+
+        if (needsEnrichment || needsDateFix || needsTzFix || needsNameFix || needsTypeFix) {
           await supabase
             .from("synced_activities")
             .update({
               ...enrichedFields,
               activity_date: activityLocalDate,
               timezone: activityTz,
+              activity_name: activity.name,
+              activity_type: newActivityType,
             })
             .eq("id", existingSync.id);
         }
