@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { startOfWeek, format, subWeeks, addWeeks } from "date-fns";
 import { parseLocalDate } from "@/utils/dateUtils";
+import { mergeActivitiesIntoSessions } from "@/components/thisweek/trainingPlanUtils";
 
 export interface WeeklyRunningBucket {
   week_start: string; // YYYY-MM-DD (Monday)
