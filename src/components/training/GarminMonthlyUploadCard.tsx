@@ -111,8 +111,8 @@ export function GarminMonthlyUploadCard() {
       );
       qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates"] });
       qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates-all"] });
-    } catch (e: any) {
-      toast.error(e.message || "Upload failed");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Upload failed");
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
