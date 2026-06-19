@@ -152,15 +152,16 @@ export function GarminMonthlyUploadCard() {
             ref={fileRef}
             type="file"
             accept=".csv,text/csv"
+            multiple
             className="hidden"
             onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
+              const fs = Array.from(e.target.files ?? []);
+              if (fs.length) handleFiles(fs);
             }}
           />
           <Button onClick={() => fileRef.current?.click()} disabled={uploading} size="sm">
             {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Importing…" : "Upload CSV"}
+            {uploading ? "Importing…" : "Upload CSV(s)"}
           </Button>
           {existing.length > 0 && (
             <Button onClick={clearAll} variant="outline" size="sm">
