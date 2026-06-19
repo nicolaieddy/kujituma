@@ -205,6 +205,11 @@ interface CompareRow {
   [yearKey: string]: number | string;
 }
 
+interface RunningTooltipPayload {
+  count: number;
+  duration_min: number;
+}
+
 function buildCompareSeries(
   sessions: RunningSession[],
   aggregates: MonthlyAggregate[],
@@ -460,8 +465,8 @@ export function WeeklyRunningChart() {
                     fontSize: 12,
                   }}
                   labelStyle={{ color: "hsl(var(--foreground))" }}
-                  formatter={(value: number, _name, props: any) => {
-                    const p = props?.payload as { count: number; duration_min: number };
+                  formatter={(value: number, _name, props: { payload?: RunningTooltipPayload }) => {
+                    const p = props?.payload;
                     return [
                       `${Math.round(value * 10) / 10} km · ${p?.count ?? 0} run${p?.count === 1 ? "" : "s"} · ${Math.round(p?.duration_min ?? 0)} min`,
                       unitLabel,
