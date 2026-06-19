@@ -38,12 +38,14 @@ type Mode = "trailing" | "compare";
 
 const TRAILING_RANGES: Record<Granularity, { value: number; label: string }[]> = {
   week: [
+    { value: -1, label: "YTD" },
     { value: 12, label: "12w" },
     { value: 26, label: "26w" },
     { value: 52, label: "52w" },
     { value: 0, label: "All" },
   ],
   month: [
+    { value: -1, label: "YTD" },
     { value: 6, label: "6m" },
     { value: 12, label: "12m" },
     { value: 24, label: "24m" },
