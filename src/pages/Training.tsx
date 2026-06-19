@@ -92,7 +92,12 @@ export default function Training() {
 
       {view === "plan" && <TrainingPlanCard weekStart={weekStart} isReadOnly={!isCurrent && !isFuture} />}
       {view === "events" && <TrainingEventsPanel />}
-      {view === "trends" && <WeeklyRunningChart />}
+      {view === "trends" && (
+        <div className="space-y-4">
+          <WeeklyRunningChart />
+          <GarminMonthlyUploadCard />
+        </div>
+      )}
       {view === "setup" && <TrainingSetupPanel />}
     </div>
   );
