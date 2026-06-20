@@ -879,39 +879,18 @@ export function WeeklyRunningChart() {
                   />
                 ))}
 
-                {/* Injury / illness bands (current year only) */}
-                {showInjuries && compareOverlays.injuries.map((b, i) => (
-                  <ReferenceArea
-                    key={`cmp-inj-${i}`}
-                    x1={b.x1}
-                    x2={b.x2}
-                    fill={INJURY_COLOR}
-                    fillOpacity={0.14}
-                    stroke={INJURY_COLOR}
-                    strokeOpacity={0.4}
-                    strokeDasharray="2 3"
-                    ifOverflow="extendDomain"
-                    label={{ value: b.event.title, position: "insideTop", fontSize: 9, fill: INJURY_COLOR }}
-                  />
-                ))}
+                {/* Interactive overlays — current-year injury bands + per-year race markers */}
+                <Customized
+                  component={makeEventOverlay({
+                    injuries: showInjuries ? compareOverlays.injuries : [],
+                    races: showRaces ? compareOverlays.races : [],
+                    raceColor,
+                    injuryColor,
+                    injuryOpacity,
+                    onSelect: openEvent,
+                  })}
+                />
 
-                {/* Race markers tinted to the year they belong to */}
-                {showRaces && compareOverlays.races.map((r, i) => (
-                  <ReferenceLine
-                    key={`cmp-race-${i}`}
-                    x={r.label}
-                    stroke={r.color}
-                    strokeWidth={1.5}
-                    strokeDasharray="2 2"
-                    ifOverflow="extendDomain"
-                    label={{
-                      value: `🏁 ${r.event.title}${r.event.race_priority ? ` (${r.event.race_priority})` : ""}`,
-                      position: "top",
-                      fontSize: 9,
-                      fill: r.color,
-                    }}
-                  />
-                ))}
               </LineChart>
 
             </ResponsiveContainer>
