@@ -1006,6 +1006,21 @@ export function WeeklyRunningChart() {
 
 
       <CardContent className="space-y-4">
+        {mode === "trailing" && trailingActive !== 0 && (
+          <ChartTimeNavigator
+            granularity={granularity}
+            windowSize={trailingActive === -1 ? Math.max(1, trailingData.length) : trailingActive}
+            anchorEnd={anchorEnd}
+            minDate={dataExtents.minDate}
+            maxDate={dataExtents.maxDate}
+            miniSeries={miniSeries}
+            peakDate={peakDate}
+            rangeLabel={rangeLabel}
+            years={years}
+            focusedYear={focusedYear}
+            onAnchorChange={setAnchorEnd}
+          />
+        )}
         {stats && mode === "trailing" && (
           <div className="grid grid-cols-3 gap-3 text-sm">
             <div className="rounded-md border bg-muted/30 p-3">
