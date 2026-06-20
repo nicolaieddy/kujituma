@@ -294,7 +294,7 @@ export function TrainingEventsPanel() {
                 ? `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`
                 : format(start, "d MMM yyyy");
               return (
-                <Card key={e.id} className="p-4 border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
+                <Card id={`event-${e.id}`} key={e.id} className="p-4 border-l-4 scroll-mt-24" style={{ borderLeftColor: "hsl(var(--primary))" }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", meta.color)} />
