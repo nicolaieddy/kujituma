@@ -66,7 +66,7 @@ function TimelineEventCard({
   const durationDays = end ? differenceInDays(end, start) + 1 : null;
 
   return (
-    <div className="relative flex items-start gap-4 group">
+    <div id={`event-${event.id}`} className="relative flex items-start gap-4 group scroll-mt-24">
       {/* Date column */}
       <div className="w-20 shrink-0 text-right pt-1">
         <div className="text-xs font-medium text-foreground">{format(start, "d MMM")}</div>
