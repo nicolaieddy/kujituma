@@ -789,9 +789,84 @@ export function WeeklyRunningChart() {
               <HeartPulse className="h-3.5 w-3.5" />
               Injuries
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="Overlay appearance"
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 space-y-3 p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Overlay appearance
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="race-color" className="text-xs flex items-center gap-1.5">
+                    <Trophy className="h-3.5 w-3.5" style={{ color: raceColor }} />
+                    Race color
+                  </Label>
+                  <input
+                    id="race-color"
+                    type="color"
+                    value={raceColor}
+                    onChange={(e) => setRaceColor(e.target.value)}
+                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent p-0"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="injury-color" className="text-xs flex items-center gap-1.5">
+                    <HeartPulse className="h-3.5 w-3.5" style={{ color: injuryColor }} />
+                    Injury color
+                  </Label>
+                  <input
+                    id="injury-color"
+                    type="color"
+                    value={injuryColor}
+                    onChange={(e) => setInjuryColor(e.target.value)}
+                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent p-0"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="injury-opacity" className="text-xs">
+                      Injury band opacity
+                    </Label>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">
+                      {Math.round(injuryOpacity * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    id="injury-opacity"
+                    type="range"
+                    min={0.05}
+                    max={0.6}
+                    step={0.01}
+                    value={injuryOpacity}
+                    onChange={(e) => setInjuryOpacity(Number(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  onClick={() => {
+                    setRaceColor(DEFAULT_RACE_COLOR);
+                    setInjuryColor(DEFAULT_INJURY_COLOR);
+                    setInjuryOpacity(DEFAULT_INJURY_OPACITY);
+                  }}
+                >
+                  Reset to defaults
+                </button>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </CardHeader>
+
 
 
       <CardContent className="space-y-4">
