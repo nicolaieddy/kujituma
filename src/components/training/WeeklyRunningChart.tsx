@@ -597,8 +597,33 @@ export function WeeklyRunningChart() {
               </div>
             </div>
           )}
+
+          {/* Overlay toggles: races (on by default) + injuries (off) */}
+          <div className="flex gap-1 bg-muted rounded-lg p-1 ml-auto">
+            <Button
+              variant={showRaces ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => setShowRaces((v) => !v)}
+              title="Show race events from the Events page"
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              Races
+            </Button>
+            <Button
+              variant={showInjuries ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => setShowInjuries((v) => !v)}
+              title="Shade injury / illness periods from the Events page"
+            >
+              <HeartPulse className="h-3.5 w-3.5" />
+              Injuries
+            </Button>
+          </div>
         </div>
       </CardHeader>
+
 
       <CardContent className="space-y-4">
         {stats && mode === "trailing" && (
