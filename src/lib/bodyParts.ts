@@ -13,20 +13,162 @@ export interface BodyPartDef {
   aliases: string[]; // extra words that should match in search
 }
 
+// Shared alias buckets so a search like "leg" or "lower body" surfaces every
+// relevant part. Each part below pulls from these and adds its own specifics.
+const LEG_SYNONYMS = [
+  "leg", "legs", "lower body", "lower limb", "lower limbs", "lower leg",
+  "lower legs", "lower extremity", "lower extremities",
+];
+const BACK_SYNONYMS = ["back", "spine", "spinal", "backache", "back pain"];
+const UPPER_BODY_SYNONYMS = [
+  "upper body", "upper limb", "upper limbs", "torso", "trunk", "core",
+];
+const HEAD_SYNONYMS = ["head", "skull", "face", "facial"];
+
 // Broader, runner-friendly, non-medical taxonomy.
+// Aliases include common misspellings, plurals, slang, and broader region words
+// so searching "leg", "lowerleg", "achilis", "kneecap", etc. all find a match.
 export const BODY_PARTS: BodyPartDef[] = [
-  { key: "foot",        label: "Foot",         region: "Leg",        aliases: ["toe", "toes", "arch", "heel", "plantar", "metatarsal", "leg"] },
-  { key: "ankle",       label: "Ankle",        region: "Leg",        aliases: ["achilles", "leg"] },
-  { key: "calf_shin",   label: "Calf / Shin",  region: "Leg",        aliases: ["calf", "shin", "soleus", "gastroc", "tibia", "shin splint", "leg"] },
-  { key: "knee",        label: "Knee",         region: "Leg",        aliases: ["patella", "itb", "meniscus", "kneecap", "leg"] },
-  { key: "hamstring",   label: "Hamstring",    region: "Leg",        aliases: ["hammy", "back of leg", "leg"] },
-  { key: "quad",        label: "Quad",         region: "Leg",        aliases: ["quadriceps", "thigh", "front of leg", "leg"] },
-  { key: "groin",       label: "Groin",        region: "Leg",        aliases: ["adductor", "inner thigh", "leg", "hip"] },
-  { key: "hip_glute",   label: "Hip / Glute",  region: "Leg",        aliases: ["hip", "glute", "butt", "piriformis", "leg"] },
-  { key: "lower_back",  label: "Lower back",   region: "Back",       aliases: ["lumbar", "back", "si joint", "sciatica"] },
-  { key: "upper_body",  label: "Upper body",   region: "Upper body", aliases: ["shoulder", "chest", "arm", "neck", "elbow", "wrist", "rib"] },
-  { key: "head",        label: "Head",         region: "Head",       aliases: ["headache", "concussion", "jaw", "ear", "face"] },
-  { key: "other",       label: "Other",        region: "Other",      aliases: ["stomach", "gut", "skin", "general"] },
+  {
+    key: "foot",
+    label: "Foot",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "foot", "feet", "toe", "toes", "big toe", "arch", "arches", "heel", "heels",
+      "plantar", "plantar fascia", "plantar fasciitis", "fascitis", "fasciitis",
+      "metatarsal", "metatarsals", "ball of foot", "forefoot", "midfoot",
+      "sole", "instep", "bunion", "bunions", "blister", "blisters", "nail",
+      "toenail", "black toenail",
+    ],
+  },
+  {
+    key: "ankle",
+    label: "Ankle",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "ankle", "ankles", "achilles", "achillies", "achilis", "achiles",
+      "tendon", "achilles tendon", "achilles tendinitis", "tendonitis",
+      "tendinopathy", "sprain", "sprained ankle", "rolled ankle",
+    ],
+  },
+  {
+    key: "calf_shin",
+    label: "Calf / Shin",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "calf", "calves", "calfs", "shin", "shins", "shin splint", "shin splints",
+      "splints", "soleus", "gastroc", "gastrocnemius", "tibia", "tibial",
+      "lower leg", "back of lower leg", "front of lower leg",
+      "compartment syndrome", "stress fracture",
+    ],
+  },
+  {
+    key: "knee",
+    label: "Knee",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "knee", "knees", "kneecap", "knee cap", "patella", "patellar",
+      "patellar tendon", "patella tendon", "runners knee", "runner's knee",
+      "itb", "it band", "iliotibial", "iliotibial band", "meniscus",
+      "mcl", "lcl", "acl", "pcl", "ligament", "chondromalacia",
+    ],
+  },
+  {
+    key: "hamstring",
+    label: "Hamstring",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "hamstring", "hamstrings", "hammy", "hammies", "ham string",
+      "back of leg", "back of thigh", "back thigh", "biceps femoris",
+      "high hamstring", "hamstring tendinopathy",
+    ],
+  },
+  {
+    key: "quad",
+    label: "Quad",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "quad", "quads", "quadriceps", "quadricep", "thigh", "thighs",
+      "front of leg", "front of thigh", "front thigh", "vmo", "rectus femoris",
+    ],
+  },
+  {
+    key: "groin",
+    label: "Groin",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "groin", "groan", "adductor", "adductors", "inner thigh", "inner thighs",
+      "pubic", "pubis", "osteitis pubis", "hip",
+    ],
+  },
+  {
+    key: "hip_glute",
+    label: "Hip / Glute",
+    region: "Leg",
+    aliases: [
+      ...LEG_SYNONYMS,
+      "hip", "hips", "hip flexor", "hip flexors", "flexor", "psoas",
+      "glute", "glutes", "gluteal", "gluteus", "butt", "buttock", "buttocks",
+      "bum", "piriformis", "bursitis", "labrum", "labral",
+    ],
+  },
+  {
+    key: "lower_back",
+    label: "Lower back",
+    region: "Back",
+    aliases: [
+      ...BACK_SYNONYMS,
+      "lower back", "low back", "lumbar", "lumbar spine", "si joint", "si",
+      "sacroiliac", "sciatica", "sciatic", "disc", "slipped disc", "herniated",
+      "qL", "quadratus lumborum",
+    ],
+  },
+  {
+    key: "upper_body",
+    label: "Upper body",
+    region: "Upper body",
+    aliases: [
+      ...UPPER_BODY_SYNONYMS, ...BACK_SYNONYMS,
+      "upper back", "mid back", "thoracic", "shoulder", "shoulders",
+      "rotator cuff", "neck", "trap", "traps", "trapezius",
+      "chest", "pec", "pecs", "pectoral", "rib", "ribs", "intercostal",
+      "arm", "arms", "bicep", "biceps", "tricep", "triceps", "elbow", "elbows",
+      "forearm", "forearms", "wrist", "wrists", "hand", "hands", "finger",
+      "fingers", "thumb", "core", "ab", "abs", "abdominal", "abdominals",
+      "oblique", "obliques",
+    ],
+  },
+  {
+    key: "head",
+    label: "Head",
+    region: "Head",
+    aliases: [
+      ...HEAD_SYNONYMS,
+      "headache", "headaches", "migraine", "migraines", "concussion",
+      "dizzy", "dizziness", "vertigo", "jaw", "tmj", "ear", "ears",
+      "eye", "eyes", "sinus", "sinuses", "tooth", "teeth", "dental",
+    ],
+  },
+  {
+    key: "other",
+    label: "Other",
+    region: "Other",
+    aliases: [
+      "other", "general", "whole body", "systemic", "fatigue", "tired",
+      "stomach", "tummy", "belly", "gut", "gi", "digestion", "nausea",
+      "cramp", "cramps", "skin", "rash", "chafing", "chafe",
+      "cold", "flu", "fever", "cough", "sore throat", "covid",
+      "respiratory", "lung", "lungs", "asthma", "allergy", "allergies",
+      "heart", "cardiac", "mental", "stress", "anxiety", "sleep",
+    ],
+  },
 ];
 
 export const BODY_PART_BY_KEY: Record<string, BodyPartDef> = BODY_PARTS.reduce(
