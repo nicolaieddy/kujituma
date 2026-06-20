@@ -70,6 +70,36 @@ export function GarminMonthlyUploadCard() {
     },
   });
 
+  const { data: activityCounts } = useQuery({
+    queryKey: ["running-activity-counts-by-source", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const isRunLike = (t?: string | null) => /run|trail|treadmill/i.test(t || "");
+      const pageSize = 1000;
+      let from = 0;
+      let all: any[] = [];
+      for (let i = 0; i < 20; i++) {
+        const { data, error } = await supabase
+          .from("synced_activities")
+          .select("source, activity_type, sport_type")
+          .eq("user_id", user!.id)
+          .order("start_date", { ascending: true })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        all = all.concat(data ?? []);
+        if (!data || data.length < pageSize) break;
+        from += pageSize;
+      }
+      const counts: Record<string, number> = {};
+      for (const row of all) {
+        if (isRunLike(row.activity_type) || isRunLike(row.sport_type)) {
+          counts[row.source] = (counts[row.source] ?? 0) + 1;
+        }
+      }
+      return counts;
+    },
+  });
+
   async function handleFiles(files: File[]) {
     if (!user || files.length === 0) return;
     setUploading(true);
@@ -162,6 +192,16 @@ export function GarminMonthlyUploadCard() {
       {existing.length > 0 && (
         <span className="tabular-nums">
           {existing.length} mo imported · latest {format(new Date(latest!), "MMM yyyy")}
+        </span>
+      )}
+      {(activityCounts?.strava ?? 0) > 0 && (
+        <span className="tabular-nums text-[10px] text-muted-foreground">
+          {activityCounts!.strava} Strava
+        </span>
+      )}
+      {(activityCounts?.fit_upload ?? 0) > 0 && (
+        <span className="tabular-nums text-[10px] text-muted-foreground">
+          {activityCounts!.fit_upload} .FIT
         </span>
       )}
     </div>
