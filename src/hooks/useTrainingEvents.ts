@@ -4,7 +4,10 @@ import { toast } from "@/hooks/use-toast";
 import { useOfflineQuery } from "@/hooks/useOfflineQuery";
 import { isNetworkError, queueOfflineMutation } from "@/utils/offlineUtils";
 
+import type { BodyPartEntry } from "@/lib/bodyParts";
+
 export type TrainingEventType = "injury_illness" | "race" | "other";
+export type IssueCategory = "niggle" | "injury" | "illness";
 
 export interface TrainingEvent {
   id: string;
@@ -15,7 +18,9 @@ export interface TrainingEvent {
   start_date: string;
   end_date: string | null;
   severity: number | null;
-  body_part: string | null;
+  body_part: string | null; // legacy free-text, kept for back-compat
+  body_parts: BodyPartEntry[];
+  issue_category: IssueCategory | null;
   race_distance: string | null;
   race_result: string | null;
   race_priority: "A" | "B" | "C" | null;
