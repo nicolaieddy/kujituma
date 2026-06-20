@@ -519,6 +519,8 @@ export function WeeklyRunningChart() {
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
   const [compareYTD, setCompareYTD] = useState<boolean>(false);
+  /** Window-end anchor for trailing mode. null = latest data. */
+  const [anchorEnd, setAnchorEnd] = useState<Date | null>(null);
   const [showInjuries, setShowInjuries] = useState<boolean>(false);
   const [showRaces, setShowRaces] = useState<boolean>(true);
   const [raceColor, setRaceColor] = useState<string>(
@@ -549,13 +551,19 @@ export function WeeklyRunningChart() {
   const ranges = TRAILING_RANGES[granularity];
   const trailingActive = ranges.find((r) => r.value === trailingN) ? trailingN : ranges[0].value;
 
+  // Reset anchor when granularity or window size changes (avoid weird mismatches).
+  useEffect(() => {
+    setAnchorEnd(null);
+  }, [granularity, trailingActive]);
+
   // Trailing mode data — sessions, gap-filled, then merged with Garmin monthly aggregates (take max per bucket)
   const trailingData = useMemo(() => {
     const agg = aggregate(sessions, granularity);
-    const trimmed = trailingActive ? trimToTrailing(agg, granularity, trailingActive) : agg;
-    const filled = trailingActive ? fillGaps(trimmed, granularity, trailingActive) : trimmed;
+    const anchor = anchorEnd ?? undefined;
+    const trimmed = trailingActive ? trimToTrailing(agg, granularity, trailingActive, anchor) : agg;
+    const filled = trailingActive ? fillGaps(trimmed, granularity, trailingActive, anchor) : trimmed;
     return reconcileWithAggregates(filled, aggregates, granularity, trailingActive === 0);
-  }, [sessions, aggregates, granularity, trailingActive]);
+  }, [sessions, aggregates, granularity, trailingActive, anchorEnd]);
 
   const stats = useMemo(() => {
     const source = mode === "trailing"
