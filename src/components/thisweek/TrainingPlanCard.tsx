@@ -168,7 +168,7 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                   )}
                   {linkedGoalNames.length === 0 && !prefs.default_goal_id && (
                     <p className="text-xs text-muted-foreground">
-                      <Link to="/profile?tab=workouts" className="underline underline-offset-2 hover:text-foreground">
+                      <Link to="/training?view=setup" className="underline underline-offset-2 hover:text-foreground">
                         Set a default training goal
                       </Link>{" "}
                       to auto-link activities.
