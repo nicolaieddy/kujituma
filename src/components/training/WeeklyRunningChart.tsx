@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Activity, TrendingUp } from "lucide-react";
+import { Loader2, Activity, TrendingUp, Trophy, HeartPulse } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Cell,
   LineChart,
   Line,
   XAxis,
@@ -13,8 +14,10 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceLine,
+  ReferenceArea,
   Legend,
 } from "recharts";
+
 import {
   startOfWeek,
   startOfMonth,
@@ -33,6 +36,12 @@ import {
 } from "date-fns";
 import { useRunningSessions, type RunningSession } from "@/hooks/useRunningSessions";
 import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/useMonthlyDistanceAggregates";
+import { useTrainingEvents, type TrainingEvent } from "@/hooks/useTrainingEvents";
+import { parseLocalDate } from "@/utils/dateUtils";
+
+const RACE_COLOR = "hsl(45 93% 55%)"; // amber
+const INJURY_COLOR = "hsl(0 72% 51%)"; // red
+
 
 type Granularity = "week" | "month" | "year";
 type Mode = "trailing" | "compare";
@@ -358,8 +367,12 @@ export function WeeklyRunningChart() {
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
   const [compareYTD, setCompareYTD] = useState<boolean>(false);
+  const [showInjuries, setShowInjuries] = useState<boolean>(false);
+  const [showRaces, setShowRaces] = useState<boolean>(true);
   const { data: sessions = [], isLoading } = useRunningSessions();
   const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
+  const { data: events = [] } = useTrainingEvents();
+
 
   // Reset trailing to a sensible default when granularity changes
   const ranges = TRAILING_RANGES[granularity];
@@ -402,7 +415,80 @@ export function WeeklyRunningChart() {
     [sessions, aggregates, compareGranularity, compareYears, compareYTD],
   );
 
+  // ── Event overlays (races + injury/illness) ──────────────────────────
+  const races = useMemo(() => events.filter((e) => e.event_type === "race"), [events]);
+  const injuries = useMemo(() => events.filter((e) => e.event_type === "injury_illness"), [events]);
+
+  // For trailing mode: map each event to bucket label(s) in the visible window.
+  const trailingOverlays = useMemo(() => {
+    if (trailingData.length === 0) return { races: [], injuries: [], raceKeys: new Map<string, TrainingEvent>() };
+    const firstKey = trailingData[0].key;
+    const lastKey = trailingData[trailingData.length - 1].key;
+
+    const raceKeys = new Map<string, TrainingEvent>();
+    const raceMarkers: { label: string; event: TrainingEvent }[] = [];
+    for (const r of races) {
+      const d = parseLocalDate(r.start_date);
+      const k = bucketKey(d, granularity);
+      if (k < firstKey || k > lastKey) continue;
+      const bucket = trailingData.find((b) => b.key === k);
+      if (!bucket) continue;
+      raceKeys.set(k, r);
+      raceMarkers.push({ label: bucket.label, event: r });
+    }
+
+    const injuryBands: { x1: string; x2: string; event: TrainingEvent }[] = [];
+    for (const inj of injuries) {
+      const start = parseLocalDate(inj.start_date);
+      const end = inj.end_date ? parseLocalDate(inj.end_date) : start;
+      const sKey = bucketKey(start, granularity);
+      const eKey = bucketKey(end, granularity);
+      if (eKey < firstKey || sKey > lastKey) continue;
+      const startBucket = trailingData.find((b) => b.key >= sKey) ?? trailingData[0];
+      const endBucket = [...trailingData].reverse().find((b) => b.key <= eKey) ?? trailingData[trailingData.length - 1];
+      injuryBands.push({ x1: startBucket.label, x2: endBucket.label, event: inj });
+    }
+    return { races: raceMarkers, injuries: injuryBands, raceKeys };
+  }, [trailingData, races, injuries, granularity]);
+
+  // For compare mode: map events to period index → label. Only current year for injuries.
+  const compareOverlays = useMemo(() => {
+    if (compare.rows.length === 0) return { races: [], injuries: [] };
+    const currentYear = getYear(new Date());
+    const visibleYears = new Set(compare.years);
+    const labelForDate = (d: Date) => {
+      const idx = periodIndex(d, compareGranularity);
+      return periodLabel(idx, compareGranularity);
+    };
+    const inRange = (label: string) => compare.rows.some((r) => r.label === label);
+
+    const raceMarkers: { label: string; event: TrainingEvent; color: string }[] = [];
+    for (const r of races) {
+      const d = parseLocalDate(r.start_date);
+      const y = getYear(d);
+      if (!visibleYears.has(y)) continue;
+      const label = labelForDate(d);
+      if (!inRange(label)) continue;
+      const i = compare.years.indexOf(y);
+      raceMarkers.push({ label, event: r, color: YEAR_COLORS[i % YEAR_COLORS.length] });
+    }
+
+    const injuryBands: { x1: string; x2: string; event: TrainingEvent }[] = [];
+    for (const inj of injuries) {
+      const start = parseLocalDate(inj.start_date);
+      const end = inj.end_date ? parseLocalDate(inj.end_date) : start;
+      if (getYear(start) !== currentYear && getYear(end) !== currentYear) continue;
+      const x1 = labelForDate(start);
+      const x2 = labelForDate(end);
+      if (!inRange(x1) && !inRange(x2)) continue;
+      injuryBands.push({ x1, x2, event: inj });
+    }
+    return { races: raceMarkers, injuries: injuryBands };
+  }, [compare, races, injuries, compareGranularity]);
+
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";
+
+
 
   return (
     <Card>
@@ -511,8 +597,33 @@ export function WeeklyRunningChart() {
               </div>
             </div>
           )}
+
+          {/* Overlay toggles: races (on by default) + injuries (off) */}
+          <div className="flex gap-1 bg-muted rounded-lg p-1 ml-auto">
+            <Button
+              variant={showRaces ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => setShowRaces((v) => !v)}
+              title="Show race events from the Events page"
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              Races
+            </Button>
+            <Button
+              variant={showInjuries ? "default" : "ghost"}
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5"
+              onClick={() => setShowInjuries((v) => !v)}
+              title="Shade injury / illness periods from the Events page"
+            >
+              <HeartPulse className="h-3.5 w-3.5" />
+              Injuries
+            </Button>
+          </div>
         </div>
       </CardHeader>
+
 
       <CardContent className="space-y-4">
         {stats && mode === "trailing" && (
@@ -538,35 +649,58 @@ export function WeeklyRunningChart() {
         )}
 
         {/* Data source key — always visible so it's obvious which bars come from where */}
-        {mode === "trailing" ? (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
-            <span className="font-medium uppercase tracking-wide text-[10px] text-muted-foreground/70">
-              Data sources
-            </span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
+          <span className="font-medium uppercase tracking-wide text-[10px] text-muted-foreground/70">
+            Legend
+          </span>
+          {mode === "trailing" ? (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="inline-block h-3 w-3 rounded-sm"
+                  style={{ background: "hsl(var(--primary))" }}
+                  aria-hidden
+                />
+                Strava / .FIT sessions
+              </span>
+              {trailingData.some((b) => (b.imported_km ?? 0) > 0) && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground/60"
+                    style={{ background: "hsl(var(--muted-foreground) / 0.35)" }}
+                    aria-hidden
+                  />
+                  Garmin CSV backfill {granularity === "week" ? "(monthly avg / week)" : "(monthly total)"}
+                </span>
+              )}
+            </>
+          ) : (
+            <span>Lines combine Strava / .FIT with Garmin CSV backfill for months without sessions.</span>
+          )}
+          {showRaces && (
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-sm"
-                style={{ background: "hsl(var(--primary))" }}
+                style={{ background: RACE_COLOR }}
                 aria-hidden
               />
-              Strava / .FIT sessions
+              <Trophy className="h-3 w-3" style={{ color: RACE_COLOR }} aria-hidden />
+              Races
             </span>
-            {trailingData.some((b) => (b.imported_km ?? 0) > 0) && (
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground/60"
-                  style={{ background: "hsl(var(--muted-foreground) / 0.35)" }}
-                  aria-hidden
-                />
-                Garmin CSV backfill {granularity === "week" ? "(monthly avg / week)" : "(monthly total)"}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="text-[11px] text-muted-foreground">
-            Lines combine Strava / .FIT sessions with Garmin CSV backfill for months without session data.
-          </div>
-        )}
+          )}
+          {showInjuries && (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-block h-3 w-3 rounded-sm"
+                style={{ background: `${INJURY_COLOR.replace(")", " / 0.18)")}`, border: `1px solid ${INJURY_COLOR}` }}
+                aria-hidden
+              />
+              <HeartPulse className="h-3 w-3" style={{ color: INJURY_COLOR }} aria-hidden />
+              Injury / illness
+            </span>
+          )}
+        </div>
+
 
         <div className="h-72 w-full">
 
@@ -634,13 +768,40 @@ export function WeeklyRunningChart() {
                 />
 
 
+                {/* Injury / illness shaded bands (behind bars) */}
+                {showInjuries && trailingOverlays.injuries.map((b, i) => (
+                  <ReferenceArea
+                    key={`inj-${i}`}
+                    x1={b.x1}
+                    x2={b.x2}
+                    fill={INJURY_COLOR}
+                    fillOpacity={0.14}
+                    stroke={INJURY_COLOR}
+                    strokeOpacity={0.4}
+                    strokeDasharray="2 3"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: b.event.title,
+                      position: "insideTop",
+                      fontSize: 9,
+                      fill: INJURY_COLOR,
+                    }}
+                  />
+                ))}
+
                 <Bar
                   dataKey="total_km"
                   name="total_km"
                   stackId="km"
-                  fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
-                />
+                >
+                  {trailingData.map((b) => {
+                    const isRace = showRaces && trailingOverlays.raceKeys.has(b.key);
+                    return (
+                      <Cell key={b.key} fill={isRace ? RACE_COLOR : "hsl(var(--primary))"} />
+                    );
+                  })}
+                </Bar>
                 <Bar
                   dataKey="imported_km"
                   name="imported_km"
@@ -652,6 +813,25 @@ export function WeeklyRunningChart() {
                   strokeWidth={1}
                   radius={[4, 4, 0, 0]}
                 />
+
+                {/* Race markers — vertical line + flag label on top */}
+                {showRaces && trailingOverlays.races.map((r, i) => (
+                  <ReferenceLine
+                    key={`race-${i}`}
+                    x={r.label}
+                    stroke={RACE_COLOR}
+                    strokeWidth={1.5}
+                    strokeDasharray="2 2"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: `🏁 ${r.event.title}${r.event.race_priority ? ` (${r.event.race_priority})` : ""}`,
+                      position: "top",
+                      fontSize: 9,
+                      fill: RACE_COLOR,
+                    }}
+                  />
+                ))}
+
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -698,7 +878,42 @@ export function WeeklyRunningChart() {
                     activeDot={{ r: 4 }}
                   />
                 ))}
+
+                {/* Injury / illness bands (current year only) */}
+                {showInjuries && compareOverlays.injuries.map((b, i) => (
+                  <ReferenceArea
+                    key={`cmp-inj-${i}`}
+                    x1={b.x1}
+                    x2={b.x2}
+                    fill={INJURY_COLOR}
+                    fillOpacity={0.14}
+                    stroke={INJURY_COLOR}
+                    strokeOpacity={0.4}
+                    strokeDasharray="2 3"
+                    ifOverflow="extendDomain"
+                    label={{ value: b.event.title, position: "insideTop", fontSize: 9, fill: INJURY_COLOR }}
+                  />
+                ))}
+
+                {/* Race markers tinted to the year they belong to */}
+                {showRaces && compareOverlays.races.map((r, i) => (
+                  <ReferenceLine
+                    key={`cmp-race-${i}`}
+                    x={r.label}
+                    stroke={r.color}
+                    strokeWidth={1.5}
+                    strokeDasharray="2 2"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: `🏁 ${r.event.title}${r.event.race_priority ? ` (${r.event.race_priority})` : ""}`,
+                      position: "top",
+                      fontSize: 9,
+                      fill: r.color,
+                    }}
+                  />
+                ))}
               </LineChart>
+
             </ResponsiveContainer>
           )}
         </div>
