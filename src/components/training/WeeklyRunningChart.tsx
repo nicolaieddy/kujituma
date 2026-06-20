@@ -43,8 +43,10 @@ import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/use
 import { useTrainingEvents, type TrainingEvent } from "@/hooks/useTrainingEvents";
 import { parseLocalDate } from "@/utils/dateUtils";
 
-const RACE_COLOR = "hsl(45 93% 55%)"; // amber
-const INJURY_COLOR = "hsl(0 72% 51%)"; // red
+const DEFAULT_RACE_COLOR = "#f5b942"; // amber
+const DEFAULT_INJURY_COLOR = "#dc2626"; // red
+const DEFAULT_INJURY_OPACITY = 0.18;
+
 
 
 type Granularity = "week" | "month" | "year";
