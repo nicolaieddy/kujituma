@@ -394,7 +394,14 @@ export function TrainingEventsPanel() {
                 <Label>Type</Label>
                 <Select
                   value={form.event_type}
-                  onValueChange={(v) => setForm({ ...form, event_type: v as TrainingEventType })}
+                  onValueChange={(v) => {
+                    const next = v as TrainingEventType;
+                    setForm({
+                      ...form,
+                      event_type: next,
+                      issue_category: next === "injury_illness" ? (form.issue_category || "niggle") : "",
+                    });
+                  }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
