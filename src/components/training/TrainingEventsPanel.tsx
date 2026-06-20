@@ -435,26 +435,59 @@ export function TrainingEventsPanel() {
             </div>
 
             {form.event_type === "injury_illness" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-4 rounded-md border bg-muted/20 p-3">
                 <div className="space-y-1.5">
-                  <Label>Body part / area</Label>
-                  <Input
-                    value={form.body_part}
-                    onChange={(e) => setForm({ ...form, body_part: e.target.value })}
-                    placeholder="e.g. Left calf, Lower back"
-                    maxLength={100}
-                  />
+                  <Label>Category</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map((c) => {
+                      const meta = ISSUE_CATEGORY_META[c];
+                      const active = form.issue_category === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setForm({ ...form, issue_category: c })}
+                          className={cn(
+                            "rounded-md border p-2 text-left transition-colors",
+                            active
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/50",
+                          )}
+                        >
+                          <div className="text-sm font-medium">{meta.label}</div>
+                          <div className="text-[11px] text-muted-foreground leading-tight">
+                            {meta.description}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label>Severity (1-5)</Label>
+                  <Label>Body parts</Label>
+                  <BodyPartsPicker
+                    value={form.body_parts}
+                    onChange={(next) => setForm({ ...form, body_parts: next })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Add one or more. Try searching "leg", "back", "achilles"…
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Severity</Label>
                   <Select
                     value={form.severity}
                     onValueChange={(v) => setForm({ ...form, severity: v })}
                   >
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="How much is it affecting training?" /></SelectTrigger>
                     <SelectContent>
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                        <SelectItem key={n} value={String(n)}>
+                          <span className="font-medium">{n}.</span> {SEVERITY_LABELS[n].short}
+                          <span className="text-muted-foreground"> — {SEVERITY_LABELS[n].help}</span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
