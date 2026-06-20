@@ -36,6 +36,12 @@ import {
 } from "date-fns";
 import { useRunningSessions, type RunningSession } from "@/hooks/useRunningSessions";
 import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/useMonthlyDistanceAggregates";
+import { useTrainingEvents, type TrainingEvent } from "@/hooks/useTrainingEvents";
+import { parseLocalDate } from "@/utils/dateUtils";
+
+const RACE_COLOR = "hsl(45 93% 55%)"; // amber
+const INJURY_COLOR = "hsl(0 72% 51%)"; // red
+
 
 type Granularity = "week" | "month" | "year";
 type Mode = "trailing" | "compare";
