@@ -260,5 +260,44 @@ export async function autoMatchTrainingPlan(
     }
   }
 
+  // Auto-link default training goal: for any workout in these weeks that has
+  // at least one matched activity but no goal links yet, attach the user's
+  // default training goal (if configured + auto-link is on).
+  try {
+    const { data: prefs } = await supabase
+      .from("workout_preferences")
+      .select("default_goal_id, auto_link_activities")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (prefs?.auto_link_activities && prefs.default_goal_id) {
+      const weeksArr = Array.from(weekStarts);
+      const { data: weekWorkouts } = await supabase
+        .from("training_plan_workouts")
+        .select("id")
+        .eq("user_id", userId)
+        .in("week_start", weeksArr);
+      const workoutIds = (weekWorkouts || []).map((w: any) => w.id);
+      if (workoutIds.length > 0) {
+        const [{ data: existingGoalLinks }, { data: existingActivityLinks }] = await Promise.all([
+          supabase.from("training_workout_goals").select("workout_id").in("workout_id", workoutIds),
+          supabase.from("training_workout_activities").select("workout_id").in("workout_id", workoutIds),
+        ]);
+        const hasGoal = new Set((existingGoalLinks || []).map((r: any) => r.workout_id));
+        const hasActivity = new Set((existingActivityLinks || []).map((r: any) => r.workout_id));
+        const toLink = workoutIds.filter((id) => hasActivity.has(id) && !hasGoal.has(id));
+        if (toLink.length > 0) {
+          await supabase
+            .from("training_workout_goals")
+            .upsert(
+              toLink.map((wid) => ({ workout_id: wid, goal_id: prefs.default_goal_id })),
+              { onConflict: "workout_id,goal_id" },
+            );
+        }
+      }
+    }
+  } catch (err) {
+    console.error("auto-link default goal failed", err);
+  }
+
   return matched;
 }
