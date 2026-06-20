@@ -132,19 +132,6 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     setEditingWorkout(null);
   };
 
-  const handleBulkLink = async () => {
-    for (const w of workouts) {
-      await updateWorkout({ id: w.id, goal_ids: bulkSelectedGoals });
-    }
-    setBulkLinkOpen(false);
-  };
-
-  const toggleBulkGoal = (goalId: string) => {
-    setBulkSelectedGoals(prev =>
-      prev.includes(goalId) ? prev.filter(id => id !== goalId) : [...prev, goalId]
-    );
-  };
-
   // Helper to get goal names for a workout
   const getGoalNames = (workout: TrainingPlanWorkout) => {
     const ids = workout.goal_ids || (workout.goal_id ? [workout.goal_id] : []);
@@ -177,9 +164,12 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
                       ))}
                     </div>
                   )}
-                  {linkedGoalNames.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      No goals linked yet
+                  {linkedGoalNames.length === 0 && !prefs.default_goal_id && (
+                    <p className="text-xs text-muted-foreground">
+                      <Link to="/profile?tab=workouts" className="underline underline-offset-2 hover:text-foreground">
+                        Set a default training goal
+                      </Link>{" "}
+                      to auto-link activities.
                     </p>
                   )}
                 </div>
@@ -187,38 +177,6 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
               {!isReadOnly && (
                 <div className="flex flex-wrap gap-2 sm:justify-end">
-                  {activeGoals.length > 0 && totalCount > 0 && (
-                    <Popover open={bulkLinkOpen} onOpenChange={(open) => {
-                      setBulkLinkOpen(open);
-                      if (open) setBulkSelectedGoals(linkedGoalIds);
-                    }}>
-                      <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Link2 className="h-4 w-4" />
-                          Link to goal
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-72" align="end">
-                        <div className="space-y-3">
-                          <p className="text-sm font-medium">Link all workouts to goals</p>
-                          <div className="space-y-2 max-h-48 overflow-y-auto">
-                            {activeGoals.map(goal => (
-                              <label key={goal.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                                <Checkbox
-                                  checked={bulkSelectedGoals.includes(goal.id)}
-                                  onCheckedChange={() => toggleBulkGoal(goal.id)}
-                                />
-                                <span className="truncate text-foreground">{goal.title}</span>
-                              </label>
-                            ))}
-                          </div>
-                          <Button size="sm" className="w-full" onClick={handleBulkLink}>
-                            Apply to all workouts
-                          </Button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  )}
                   <Button variant="outline" size="sm" onClick={() => setBulkUploadOpen(true)}>
                     <Upload className="h-4 w-4" />
                     Upload activity / sleep
