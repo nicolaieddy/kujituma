@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FitFileUploadCard } from "@/components/training/FitFileUploadCard";
+import { TrainingDefaultsSection } from "@/components/profile/TrainingDefaultsSection";
 import { Dumbbell, Ruler, Thermometer, Gauge, Zap, Save, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -152,6 +153,8 @@ export function WorkoutPreferencesSection() {
           </Button>
         </div>
       )}
+
+      <TrainingDefaultsSection />
 
       <FitFileUploadCard />
     </div>
