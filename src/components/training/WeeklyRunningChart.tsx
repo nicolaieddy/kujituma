@@ -375,9 +375,28 @@ export function WeeklyRunningChart() {
   const [compareYTD, setCompareYTD] = useState<boolean>(false);
   const [showInjuries, setShowInjuries] = useState<boolean>(false);
   const [showRaces, setShowRaces] = useState<boolean>(true);
+  const [raceColor, setRaceColor] = useState<string>(
+    () => (typeof window !== "undefined" && localStorage.getItem("chartRaceColor")) || DEFAULT_RACE_COLOR,
+  );
+  const [injuryColor, setInjuryColor] = useState<string>(
+    () => (typeof window !== "undefined" && localStorage.getItem("chartInjuryColor")) || DEFAULT_INJURY_COLOR,
+  );
+  const [injuryOpacity, setInjuryOpacity] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_INJURY_OPACITY;
+    const v = Number(localStorage.getItem("chartInjuryOpacity"));
+    return Number.isFinite(v) && v > 0 ? v : DEFAULT_INJURY_OPACITY;
+  });
+  useEffect(() => {
+    localStorage.setItem("chartRaceColor", raceColor);
+    localStorage.setItem("chartInjuryColor", injuryColor);
+    localStorage.setItem("chartInjuryOpacity", String(injuryOpacity));
+  }, [raceColor, injuryColor, injuryOpacity]);
+  const navigate = useNavigate();
+  const openEvent = (id: string) => navigate(`/training?view=events#event-${id}`);
   const { data: sessions = [], isLoading } = useRunningSessions();
   const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
   const { data: events = [] } = useTrainingEvents();
+
 
 
   // Reset trailing to a sensible default when granularity changes
