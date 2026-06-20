@@ -649,35 +649,58 @@ export function WeeklyRunningChart() {
         )}
 
         {/* Data source key — always visible so it's obvious which bars come from where */}
-        {mode === "trailing" ? (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
-            <span className="font-medium uppercase tracking-wide text-[10px] text-muted-foreground/70">
-              Data sources
-            </span>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
+          <span className="font-medium uppercase tracking-wide text-[10px] text-muted-foreground/70">
+            Legend
+          </span>
+          {mode === "trailing" ? (
+            <>
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="inline-block h-3 w-3 rounded-sm"
+                  style={{ background: "hsl(var(--primary))" }}
+                  aria-hidden
+                />
+                Strava / .FIT sessions
+              </span>
+              {trailingData.some((b) => (b.imported_km ?? 0) > 0) && (
+                <span className="inline-flex items-center gap-1.5">
+                  <span
+                    className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground/60"
+                    style={{ background: "hsl(var(--muted-foreground) / 0.35)" }}
+                    aria-hidden
+                  />
+                  Garmin CSV backfill {granularity === "week" ? "(monthly avg / week)" : "(monthly total)"}
+                </span>
+              )}
+            </>
+          ) : (
+            <span>Lines combine Strava / .FIT with Garmin CSV backfill for months without sessions.</span>
+          )}
+          {showRaces && (
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-sm"
-                style={{ background: "hsl(var(--primary))" }}
+                style={{ background: RACE_COLOR }}
                 aria-hidden
               />
-              Strava / .FIT sessions
+              <Trophy className="h-3 w-3" style={{ color: RACE_COLOR }} aria-hidden />
+              Races
             </span>
-            {trailingData.some((b) => (b.imported_km ?? 0) > 0) && (
-              <span className="inline-flex items-center gap-1.5">
-                <span
-                  className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground/60"
-                  style={{ background: "hsl(var(--muted-foreground) / 0.35)" }}
-                  aria-hidden
-                />
-                Garmin CSV backfill {granularity === "week" ? "(monthly avg / week)" : "(monthly total)"}
-              </span>
-            )}
-          </div>
-        ) : (
-          <div className="text-[11px] text-muted-foreground">
-            Lines combine Strava / .FIT sessions with Garmin CSV backfill for months without session data.
-          </div>
-        )}
+          )}
+          {showInjuries && (
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-block h-3 w-3 rounded-sm"
+                style={{ background: `${INJURY_COLOR.replace(")", " / 0.18)")}`, border: `1px solid ${INJURY_COLOR}` }}
+                aria-hidden
+              />
+              <HeartPulse className="h-3 w-3" style={{ color: INJURY_COLOR }} aria-hidden />
+              Injury / illness
+            </span>
+          )}
+        </div>
+
 
         <div className="h-72 w-full">
 
