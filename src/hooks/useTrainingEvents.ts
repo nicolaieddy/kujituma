@@ -47,7 +47,10 @@ export function useTrainingEvents() {
         .select("*")
         .order("start_date", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as TrainingEvent[];
+      return (data ?? []).map((r: any) => ({
+        ...r,
+        body_parts: Array.isArray(r.body_parts) ? r.body_parts : [],
+      })) as TrainingEvent[];
     },
   });
 }
