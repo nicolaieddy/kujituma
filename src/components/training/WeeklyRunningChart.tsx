@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Activity, TrendingUp } from "lucide-react";
+import { Loader2, Activity, TrendingUp, Trophy, HeartPulse } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  Cell,
   LineChart,
   Line,
   XAxis,
@@ -13,8 +14,10 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceLine,
+  ReferenceArea,
   Legend,
 } from "recharts";
+
 import {
   startOfWeek,
   startOfMonth,
