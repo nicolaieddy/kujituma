@@ -94,10 +94,13 @@ export default function Training() {
       {view === "events" && <TrainingEventsPanel />}
       {view === "trends" && (
         <div className="space-y-4">
+          <div className="flex justify-end">
+            <GarminMonthlyUploadCard />
+          </div>
           <WeeklyRunningChart />
-          <GarminMonthlyUploadCard />
         </div>
       )}
+
       {view === "setup" && <TrainingSetupPanel />}
     </div>
   );
