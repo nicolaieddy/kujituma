@@ -202,6 +202,8 @@ export function TrainingEventsPanel() {
       end_date: form.end_date || null,
       severity: form.severity ? Number(form.severity) : null,
       body_part: form.body_part.trim() || null,
+      body_parts: form.event_type === "injury_illness" ? form.body_parts : [],
+      issue_category: form.event_type === "injury_illness" ? (form.issue_category || null) : null,
       race_distance: resolvedDistance,
       race_result: form.race_result.trim() || null,
       race_priority: form.race_priority || null,
