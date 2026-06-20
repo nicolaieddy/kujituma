@@ -69,8 +69,28 @@ export function mergeActivitiesIntoSessions(activities: any[]): MergedSession[] 
     // Prefer .FIT for laps (richer data), Strava for display name/description
     const fitActivity = group.find(a => a.source === "fit_upload");
     const stravaActivity = group.find(a => a.source !== "fit_upload");
-    // Use Strava as primary display if available (has name/description), else .FIT
-    const displayActivity = stravaActivity || fitActivity || group[0];
+    // Base on Strava (better name/description) but enrich missing metrics from .FIT
+    // so HR, pace, elevation, cadence, power etc. always show when ANY source has them.
+    const base = stravaActivity || fitActivity || group[0];
+    const enrichmentKeys = [
+      "average_heartrate", "max_heartrate", "average_speed", "max_speed",
+      "average_cadence", "max_cadence", "average_power", "max_power", "normalized_power",
+      "total_elevation_gain", "total_ascent", "total_descent",
+      "calories", "suffer_score", "tss", "training_effect",
+      "avg_vertical_oscillation", "avg_stance_time", "avg_vertical_ratio",
+      "avg_step_length", "total_strides", "avg_temperature", "num_laps",
+      "elapsed_time_seconds", "distance_meters", "duration_seconds",
+      "device_manufacturer", "device_product", "sub_sport",
+    ];
+    const displayActivity: any = { ...base };
+    for (const a of group) {
+      if (a === base) continue;
+      for (const k of enrichmentKeys) {
+        if (displayActivity[k] == null && a[k] != null) {
+          displayActivity[k] = a[k];
+        }
+      }
+    }
 
     sessions.push({
       displayActivity,
