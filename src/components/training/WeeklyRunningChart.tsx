@@ -667,6 +667,132 @@ export function WeeklyRunningChart() {
 
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";
 
+  // ── Navigator data ───────────────────────────────────────────────────
+  const dataExtents = useMemo(() => {
+    const times: number[] = [];
+    for (const s of sessions) times.push(s.localDate.getTime());
+    for (const a of aggregates) {
+      const d = new Date(a.month + "T12:00:00");
+      times.push(d.getTime());
+    }
+    if (times.length === 0) return { minDate: null as Date | null, maxDate: null as Date | null };
+    return {
+      minDate: new Date(Math.min(...times)),
+      maxDate: new Date(Math.max(times.concat(Date.now()))),
+    };
+  }, [sessions, aggregates]);
+
+  const miniSeries = useMemo(() => {
+    if (!dataExtents.minDate || !dataExtents.maxDate) return [];
+    const monthMap = new Map<string, number>();
+    for (const s of sessions) {
+      const k = format(startOfMonth(s.localDate), "yyyy-MM");
+      monthMap.set(k, (monthMap.get(k) ?? 0) + s.distance_km);
+    }
+    for (const a of aggregates) {
+      const k = a.month.slice(0, 7);
+      monthMap.set(k, Math.max(monthMap.get(k) ?? 0, a.distance_km));
+    }
+    const out: { key: string; km: number; date: Date }[] = [];
+    let cursor = startOfMonth(dataExtents.minDate);
+    const end = startOfMonth(dataExtents.maxDate);
+    while (cursor <= end) {
+      const k = format(cursor, "yyyy-MM");
+      out.push({ key: k, km: monthMap.get(k) ?? 0, date: cursor });
+      cursor = addMonths(cursor, 1);
+    }
+    return out;
+  }, [sessions, aggregates, dataExtents]);
+
+  const years = useMemo(() => {
+    if (!dataExtents.minDate || !dataExtents.maxDate) return [];
+    const y0 = getYear(dataExtents.minDate);
+    const y1 = getYear(dataExtents.maxDate);
+    const arr: number[] = [];
+    for (let y = y1; y >= y0; y--) arr.push(y);
+    return arr.slice(0, 6); // cap to keep header tidy
+  }, [dataExtents]);
+
+  const focusedYear = useMemo(() => {
+    if (trailingData.length === 0) return null;
+    const first = trailingData[0].key.slice(0, 4);
+    const last = trailingData[trailingData.length - 1].key.slice(0, 4);
+    return first === last ? Number(first) : null;
+  }, [trailingData]);
+
+  const peakDate = useMemo(() => {
+    if (sessions.length === 0 && aggregates.length === 0) return null;
+    let bestKey: string | null = null;
+    let bestKm = 0;
+    for (const p of miniSeries) {
+      if (p.km > bestKm) { bestKm = p.km; bestKey = p.key; }
+    }
+    if (!bestKey) return null;
+    return new Date(bestKey + "-15T12:00:00");
+  }, [miniSeries, sessions.length, aggregates.length]);
+
+  const rangeLabel = useMemo(() => {
+    if (trailingData.length === 0) return "";
+    const first = trailingData[0];
+    const last = trailingData[trailingData.length - 1];
+    if (granularity === "year") return `${first.label} – ${last.label}`;
+    const fmt = granularity === "month" ? "MMM yyyy" : "d MMM yyyy";
+    const toDate = (key: string) => {
+      if (granularity === "month") return new Date(key + "-01T12:00:00");
+      return new Date(key + "T12:00:00");
+    };
+    return `${format(toDate(first.key), fmt)} – ${format(toDate(last.key), fmt)}`;
+  }, [trailingData, granularity]);
+
+  // ── Drag-to-pan on the chart container ───────────────────────────────
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ startX: number; startAnchor: number; bucketPx: number } | null>(null);
+
+  const beginDrag = (clientX: number) => {
+    if (mode !== "trailing" || trailingActive === 0 || !dataExtents.maxDate) return;
+    const el = chartContainerRef.current;
+    if (!el || trailingData.length === 0) return;
+    const bucketPx = el.clientWidth / trailingData.length;
+    const anchorMs = (anchorEnd ?? dataExtents.maxDate).getTime();
+    dragRef.current = { startX: clientX, startAnchor: anchorMs, bucketPx };
+  };
+  const moveDrag = (clientX: number) => {
+    if (!dragRef.current) return;
+    const { startX, startAnchor, bucketPx } = dragRef.current;
+    const dx = clientX - startX;
+    const bucketsMoved = -dx / Math.max(1, bucketPx);
+    const stepMs =
+      granularity === "year" ? 365 * 86_400_000
+      : granularity === "month" ? 30 * 86_400_000
+      : 7 * 86_400_000;
+    let next = startAnchor + bucketsMoved * stepMs;
+    if (dataExtents.maxDate && next > dataExtents.maxDate.getTime()) next = dataExtents.maxDate.getTime();
+    if (dataExtents.minDate) {
+      const stepN =
+        granularity === "year" ? trailingActive * 365 * 86_400_000
+        : granularity === "month" ? trailingActive * 30 * 86_400_000
+        : trailingActive * 7 * 86_400_000;
+      const floor = dataExtents.minDate.getTime() + stepN;
+      if (next < floor) next = Math.min(dataExtents.maxDate?.getTime() ?? Infinity, floor);
+    }
+    if (dataExtents.maxDate && next >= dataExtents.maxDate.getTime() - 1) setAnchorEnd(null);
+    else setAnchorEnd(new Date(next));
+  };
+  const endDrag = () => { dragRef.current = null; };
+
+  useEffect(() => {
+    const move = (e: MouseEvent) => moveDrag(e.clientX);
+    const up = () => endDrag();
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [granularity, trailingActive, anchorEnd, trailingData.length]);
+
+
 
 
   return (
