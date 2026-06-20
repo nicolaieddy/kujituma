@@ -3430,11 +3430,13 @@ export type Database = {
       training_events: {
         Row: {
           body_part: string | null
+          body_parts: Json
           created_at: string
           description: string | null
           end_date: string | null
           event_type: Database["public"]["Enums"]["training_event_type"]
           id: string
+          issue_category: string | null
           location: string | null
           metadata: Json
           official_time_seconds: number | null
@@ -3449,11 +3451,13 @@ export type Database = {
         }
         Insert: {
           body_part?: string | null
+          body_parts?: Json
           created_at?: string
           description?: string | null
           end_date?: string | null
           event_type: Database["public"]["Enums"]["training_event_type"]
           id?: string
+          issue_category?: string | null
           location?: string | null
           metadata?: Json
           official_time_seconds?: number | null
@@ -3468,11 +3472,13 @@ export type Database = {
         }
         Update: {
           body_part?: string | null
+          body_parts?: Json
           created_at?: string
           description?: string | null
           end_date?: string | null
           event_type?: Database["public"]["Enums"]["training_event_type"]
           id?: string
+          issue_category?: string | null
           location?: string | null
           metadata?: Json
           official_time_seconds?: number | null
