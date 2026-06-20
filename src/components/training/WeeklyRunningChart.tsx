@@ -367,8 +367,12 @@ export function WeeklyRunningChart() {
   const [trailingN, setTrailingN] = useState<number>(DEFAULT_TRAILING.week);
   const [compareYears, setCompareYears] = useState<number>(2);
   const [compareYTD, setCompareYTD] = useState<boolean>(false);
+  const [showInjuries, setShowInjuries] = useState<boolean>(false);
+  const [showRaces, setShowRaces] = useState<boolean>(true);
   const { data: sessions = [], isLoading } = useRunningSessions();
   const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
+  const { data: events = [] } = useTrainingEvents();
+
 
   // Reset trailing to a sensible default when granularity changes
   const ranges = TRAILING_RANGES[granularity];
