@@ -42,6 +42,7 @@ import { useRunningSessions, type RunningSession } from "@/hooks/useRunningSessi
 import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/useMonthlyDistanceAggregates";
 import { useTrainingEvents, type TrainingEvent } from "@/hooks/useTrainingEvents";
 import { parseLocalDate } from "@/utils/dateUtils";
+import { ChartTimeNavigator } from "@/components/training/ChartTimeNavigator";
 
 const DEFAULT_RACE_COLOR = "#f5b942"; // amber
 const DEFAULT_INJURY_COLOR = "#dc2626"; // red
