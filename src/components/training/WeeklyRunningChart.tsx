@@ -537,7 +537,39 @@ export function WeeklyRunningChart() {
           </div>
         )}
 
+        {/* Data source key — always visible so it's obvious which bars come from where */}
+        {mode === "trailing" ? (
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-muted-foreground">
+            <span className="font-medium uppercase tracking-wide text-[10px] text-muted-foreground/70">
+              Data sources
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span
+                className="inline-block h-3 w-3 rounded-sm"
+                style={{ background: "hsl(var(--primary))" }}
+                aria-hidden
+              />
+              Strava / .FIT sessions
+            </span>
+            {trailingData.some((b) => (b.imported_km ?? 0) > 0) && (
+              <span className="inline-flex items-center gap-1.5">
+                <span
+                  className="inline-block h-3 w-3 rounded-sm border border-dashed border-muted-foreground/60"
+                  style={{ background: "hsl(var(--muted-foreground) / 0.35)" }}
+                  aria-hidden
+                />
+                Garmin CSV backfill {granularity === "week" ? "(monthly avg / week)" : "(monthly total)"}
+              </span>
+            )}
+          </div>
+        ) : (
+          <div className="text-[11px] text-muted-foreground">
+            Lines combine Strava / .FIT sessions with Garmin CSV backfill for months without session data.
+          </div>
+        )}
+
         <div className="h-72 w-full">
+
           {isLoading ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin mr-2" /> Loading…
