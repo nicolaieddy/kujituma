@@ -337,8 +337,15 @@ export function TrainingEventsPanel() {
                           {e.race_priority && (
                             <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
                           )}
+                          {e.issue_category && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {ISSUE_CATEGORY_META[e.issue_category].label}
+                            </Badge>
+                          )}
                           {e.severity && (
-                            <Badge variant="outline" className="text-[10px]">Severity {e.severity}/5</Badge>
+                            <Badge variant="outline" className="text-[10px]">
+                              Sev {e.severity}/5 · {SEVERITY_LABELS[e.severity].short}
+                            </Badge>
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 tabular-nums">{dateLabel}</div>
@@ -346,7 +353,11 @@ export function TrainingEventsPanel() {
                           <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
                         )}
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-                          {e.body_part && <span>Body part: {e.body_part}</span>}
+                          {e.body_parts && e.body_parts.length > 0 ? (
+                            <span>Body parts: {formatBodyParts(e.body_parts)}</span>
+                          ) : e.body_part ? (
+                            <span>Body part: {e.body_part}</span>
+                          ) : null}
                           {e.race_distance && !isStandardRaceKey(e.race_distance) && (
                             <span>Distance: {e.race_distance}</span>
                           )}
