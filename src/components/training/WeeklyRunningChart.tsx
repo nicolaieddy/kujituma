@@ -1083,7 +1083,34 @@ export function WeeklyRunningChart() {
         </div>
 
 
-        <div className="h-72 w-full">
+        <div
+          ref={chartContainerRef}
+          className={`h-72 w-full ${mode === "trailing" && trailingActive !== 0 ? "cursor-grab active:cursor-grabbing" : ""}`}
+          onMouseDown={(e) => beginDrag(e.clientX)}
+          onTouchStart={(e) => beginDrag(e.touches[0].clientX)}
+          onTouchMove={(e) => moveDrag(e.touches[0].clientX)}
+          onTouchEnd={endDrag}
+          onWheel={(e) => {
+            if (mode !== "trailing" || trailingActive === 0 || !dataExtents.maxDate) return;
+            // Only respond to dominantly-horizontal wheel/trackpad swipes
+            if (Math.abs(e.deltaX) <= Math.abs(e.deltaY)) return;
+            e.preventDefault();
+            const stepMs =
+              granularity === "year" ? 365 * 86_400_000
+              : granularity === "month" ? 30 * 86_400_000
+              : 7 * 86_400_000;
+            const bucketsMoved = e.deltaX / 40; // ~one bucket per 40px swipe
+            const base = (anchorEnd ?? dataExtents.maxDate).getTime();
+            let next = base + bucketsMoved * stepMs;
+            if (dataExtents.maxDate && next > dataExtents.maxDate.getTime()) next = dataExtents.maxDate.getTime();
+            if (dataExtents.minDate) {
+              const floor = dataExtents.minDate.getTime() + trailingActive * stepMs;
+              if (next < floor) next = Math.min(dataExtents.maxDate.getTime(), floor);
+            }
+            if (dataExtents.maxDate && next >= dataExtents.maxDate.getTime() - 1) setAnchorEnd(null);
+            else setAnchorEnd(new Date(next));
+          }}
+        >
 
           {isLoading ? (
             <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
