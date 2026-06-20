@@ -768,13 +768,40 @@ export function WeeklyRunningChart() {
                 />
 
 
+                {/* Injury / illness shaded bands (behind bars) */}
+                {showInjuries && trailingOverlays.injuries.map((b, i) => (
+                  <ReferenceArea
+                    key={`inj-${i}`}
+                    x1={b.x1}
+                    x2={b.x2}
+                    fill={INJURY_COLOR}
+                    fillOpacity={0.14}
+                    stroke={INJURY_COLOR}
+                    strokeOpacity={0.4}
+                    strokeDasharray="2 3"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: b.event.title,
+                      position: "insideTop",
+                      fontSize: 9,
+                      fill: INJURY_COLOR,
+                    }}
+                  />
+                ))}
+
                 <Bar
                   dataKey="total_km"
                   name="total_km"
                   stackId="km"
-                  fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
-                />
+                >
+                  {trailingData.map((b) => {
+                    const isRace = showRaces && trailingOverlays.raceKeys.has(b.key);
+                    return (
+                      <Cell key={b.key} fill={isRace ? RACE_COLOR : "hsl(var(--primary))"} />
+                    );
+                  })}
+                </Bar>
                 <Bar
                   dataKey="imported_km"
                   name="imported_km"
@@ -786,6 +813,25 @@ export function WeeklyRunningChart() {
                   strokeWidth={1}
                   radius={[4, 4, 0, 0]}
                 />
+
+                {/* Race markers — vertical line + flag label on top */}
+                {showRaces && trailingOverlays.races.map((r, i) => (
+                  <ReferenceLine
+                    key={`race-${i}`}
+                    x={r.label}
+                    stroke={RACE_COLOR}
+                    strokeWidth={1.5}
+                    strokeDasharray="2 2"
+                    ifOverflow="extendDomain"
+                    label={{
+                      value: `🏁 ${r.event.title}${r.event.race_priority ? ` (${r.event.race_priority})` : ""}`,
+                      position: "top",
+                      fontSize: 9,
+                      fill: RACE_COLOR,
+                    }}
+                  />
+                ))}
+
               </BarChart>
             </ResponsiveContainer>
           ) : (
