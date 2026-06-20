@@ -212,6 +212,9 @@ export function TrainingEventsPanel() {
       race_priority: form.race_priority || null,
       official_time_seconds: officialSec,
       location: form.location.trim() || null,
+      metadata: form.event_type === "race" && form.strava_url.trim()
+        ? { strava_url: form.strava_url.trim() }
+        : {},
     });
     // Keep dialog open with the new ID so the user can immediately attach files
     if (!form.id && saved?.data?.id) {
