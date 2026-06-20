@@ -47,6 +47,150 @@ const DEFAULT_RACE_COLOR = "#f5b942"; // amber
 const DEFAULT_INJURY_COLOR = "#dc2626"; // red
 const DEFAULT_INJURY_OPACITY = 0.18;
 
+interface OverlayInjury { x1: string; x2: string; event: TrainingEvent }
+interface OverlayRace { label: string; event: TrainingEvent; color?: string }
+
+interface MakeOverlayArgs {
+  injuries: OverlayInjury[];
+  races: OverlayRace[];
+  raceColor: string;
+  injuryColor: string;
+  injuryOpacity: number;
+  onSelect: (id: string) => void;
+}
+
+/**
+ * Custom Recharts overlay that draws injury bands and race markers as raw SVG
+ * with native <title> hover tooltips and onClick to open the event.
+ * Used inside <Customized component={...}> — receives the chart's xAxisMap+offset.
+ */
+function makeEventOverlay({
+  injuries,
+  races,
+  raceColor,
+  injuryColor,
+  injuryOpacity,
+  onSelect,
+}: MakeOverlayArgs) {
+  return function EventOverlay(chartProps: Record<string, unknown>) {
+    const xAxisMap = chartProps.xAxisMap as Record<string, { scale?: (v: string) => number | undefined }> | undefined;
+    const offset = chartProps.offset as { top: number; left: number; width: number; height: number } | undefined;
+    if (!xAxisMap || !offset) return null;
+    const firstKey = Object.keys(xAxisMap)[0];
+    const scale = xAxisMap[firstKey]?.scale as
+      | ((v: string) => number | undefined) & { bandwidth?: () => number }
+      | undefined;
+    if (!scale) return null;
+    const bw = typeof scale.bandwidth === "function" ? scale.bandwidth() : 0;
+    const safe = (v: number | undefined): number | null =>
+      v == null || Number.isNaN(v) ? null : v;
+    const leftPx = (label: string) => safe(scale(label));
+    const rightPx = (label: string) => {
+      const v = safe(scale(label));
+      return v == null ? null : (bw ? v + bw : v);
+    };
+    const centerPx = (label: string) => {
+      const v = safe(scale(label));
+      return v == null ? null : (bw ? v + bw / 2 : v);
+    };
+
+    const top = offset.top;
+    const height = offset.height;
+
+    const fmtDate = (s: string) => {
+      try {
+        return format(parseLocalDate(s), "d MMM yyyy");
+      } catch {
+        return s;
+      }
+    };
+
+    return (
+      <g style={{ pointerEvents: "all" }}>
+        {injuries.map((b, i) => {
+          const x1 = leftPx(b.x1);
+          const x2 = rightPx(b.x2);
+          if (x1 == null || x2 == null) return null;
+          const w = Math.max(2, x2 - x1);
+          const ev = b.event;
+          const dates = ev.end_date
+            ? `${fmtDate(ev.start_date)} → ${fmtDate(ev.end_date)}`
+            : fmtDate(ev.start_date);
+          const sev = ev.severity ? `\nSeverity: ${ev.severity}/10` : "";
+          const part = ev.body_part ? `\nArea: ${ev.body_part}` : "";
+          const notes = ev.description ? `\n\n${ev.description}` : "";
+          return (
+            <g
+              key={`ov-inj-${ev.id}-${i}`}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelect(ev.id)}
+            >
+              <rect
+                x={x1}
+                y={top}
+                width={w}
+                height={height}
+                fill={injuryColor}
+                fillOpacity={injuryOpacity}
+                stroke={injuryColor}
+                strokeOpacity={Math.min(1, injuryOpacity * 3)}
+                strokeDasharray="2 3"
+              />
+              <text x={x1 + 4} y={top + 11} fontSize={9} fill={injuryColor} style={{ pointerEvents: "none" }}>
+                {ev.title}
+              </text>
+              <title>{`Injury / illness · ${ev.title}\n${dates}${sev}${part}${notes}\n\nClick to open in Events`}</title>
+            </g>
+          );
+        })}
+        {races.map((r, i) => {
+          const cx = centerPx(r.label);
+          if (cx == null) return null;
+          const color = r.color ?? raceColor;
+          const ev = r.event;
+          const labelText = `🏁 ${ev.title}${ev.race_priority ? ` (${ev.race_priority})` : ""}`;
+          const dist = ev.race_distance ? ` · ${ev.race_distance}` : "";
+          const result = ev.race_result ? `\nResult: ${ev.race_result}` : "";
+          const loc = ev.location ? `\nLocation: ${ev.location}` : "";
+          const notes = ev.description ? `\n\n${ev.description}` : "";
+          return (
+            <g
+              key={`ov-race-${ev.id}-${i}`}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelect(ev.id)}
+            >
+              {/* Wider invisible hover target so the title is easy to surface */}
+              <rect x={cx - 6} y={top} width={12} height={height} fill="transparent" />
+              <line
+                x1={cx}
+                x2={cx}
+                y1={top}
+                y2={top + height}
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="2 2"
+                style={{ pointerEvents: "none" }}
+              />
+              <text
+                x={cx}
+                y={top - 2}
+                fontSize={9}
+                fill={color}
+                textAnchor="middle"
+                style={{ pointerEvents: "none" }}
+              >
+                {labelText}
+              </text>
+              <title>{`Race · ${ev.title}${dist}\n${fmtDate(ev.start_date)}${result}${loc}${notes}\n\nClick to open in Events`}</title>
+            </g>
+          );
+        })}
+      </g>
+    );
+  };
+}
+
+
 
 
 type Granularity = "week" | "month" | "year";
