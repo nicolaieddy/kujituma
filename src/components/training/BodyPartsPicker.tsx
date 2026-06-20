@@ -69,15 +69,15 @@ export function BodyPartsPicker({ value, onChange }: Props) {
         <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
           <Command
             filter={(itemValue, search) => {
-              // itemValue is the key; match against label + aliases too.
               const def = BODY_PART_BY_KEY[itemValue];
               if (!def) return 0;
-              const haystack = [
-                def.label,
-                def.region,
-                ...def.aliases,
-              ].join(" ").toLowerCase();
-              return haystack.includes(search.toLowerCase()) ? 1 : 0;
+              const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
+              const haystack = norm([def.label, def.region, def.key, ...def.aliases].join(" "));
+              const q = norm(search);
+              if (!q) return 1;
+              const tokens = q.split(" ").filter(Boolean);
+              // Every token must appear somewhere — supports "lower leg", "achilles tendon", etc.
+              return tokens.every((t) => haystack.includes(t)) ? 1 : 0;
             }}
           >
             <CommandInput placeholder="Search e.g. 'leg', 'achilles', 'back'…" />
