@@ -415,7 +415,80 @@ export function WeeklyRunningChart() {
     [sessions, aggregates, compareGranularity, compareYears, compareYTD],
   );
 
+  // ── Event overlays (races + injury/illness) ──────────────────────────
+  const races = useMemo(() => events.filter((e) => e.event_type === "race"), [events]);
+  const injuries = useMemo(() => events.filter((e) => e.event_type === "injury_illness"), [events]);
+
+  // For trailing mode: map each event to bucket label(s) in the visible window.
+  const trailingOverlays = useMemo(() => {
+    if (trailingData.length === 0) return { races: [], injuries: [], raceKeys: new Map<string, TrainingEvent>() };
+    const firstKey = trailingData[0].key;
+    const lastKey = trailingData[trailingData.length - 1].key;
+
+    const raceKeys = new Map<string, TrainingEvent>();
+    const raceMarkers: { label: string; event: TrainingEvent }[] = [];
+    for (const r of races) {
+      const d = parseLocalDate(r.start_date);
+      const k = bucketKey(d, granularity);
+      if (k < firstKey || k > lastKey) continue;
+      const bucket = trailingData.find((b) => b.key === k);
+      if (!bucket) continue;
+      raceKeys.set(k, r);
+      raceMarkers.push({ label: bucket.label, event: r });
+    }
+
+    const injuryBands: { x1: string; x2: string; event: TrainingEvent }[] = [];
+    for (const inj of injuries) {
+      const start = parseLocalDate(inj.start_date);
+      const end = inj.end_date ? parseLocalDate(inj.end_date) : start;
+      const sKey = bucketKey(start, granularity);
+      const eKey = bucketKey(end, granularity);
+      if (eKey < firstKey || sKey > lastKey) continue;
+      const startBucket = trailingData.find((b) => b.key >= sKey) ?? trailingData[0];
+      const endBucket = [...trailingData].reverse().find((b) => b.key <= eKey) ?? trailingData[trailingData.length - 1];
+      injuryBands.push({ x1: startBucket.label, x2: endBucket.label, event: inj });
+    }
+    return { races: raceMarkers, injuries: injuryBands, raceKeys };
+  }, [trailingData, races, injuries, granularity]);
+
+  // For compare mode: map events to period index → label. Only current year for injuries.
+  const compareOverlays = useMemo(() => {
+    if (compare.rows.length === 0) return { races: [], injuries: [] };
+    const currentYear = getYear(new Date());
+    const visibleYears = new Set(compare.years);
+    const labelForDate = (d: Date) => {
+      const idx = periodIndex(d, compareGranularity);
+      return periodLabel(idx, compareGranularity);
+    };
+    const inRange = (label: string) => compare.rows.some((r) => r.label === label);
+
+    const raceMarkers: { label: string; event: TrainingEvent; color: string }[] = [];
+    for (const r of races) {
+      const d = parseLocalDate(r.start_date);
+      const y = getYear(d);
+      if (!visibleYears.has(y)) continue;
+      const label = labelForDate(d);
+      if (!inRange(label)) continue;
+      const i = compare.years.indexOf(y);
+      raceMarkers.push({ label, event: r, color: YEAR_COLORS[i % YEAR_COLORS.length] });
+    }
+
+    const injuryBands: { x1: string; x2: string; event: TrainingEvent }[] = [];
+    for (const inj of injuries) {
+      const start = parseLocalDate(inj.start_date);
+      const end = inj.end_date ? parseLocalDate(inj.end_date) : start;
+      if (getYear(start) !== currentYear && getYear(end) !== currentYear) continue;
+      const x1 = labelForDate(start);
+      const x2 = labelForDate(end);
+      if (!inRange(x1) && !inRange(x2)) continue;
+      injuryBands.push({ x1, x2, event: inj });
+    }
+    return { races: raceMarkers, injuries: injuryBands };
+  }, [compare, races, injuries, compareGranularity]);
+
   const unitLabel = granularity === "year" ? "year" : granularity === "month" ? "month" : "week";
+
+
 
   return (
     <Card>
