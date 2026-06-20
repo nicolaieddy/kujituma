@@ -120,47 +120,51 @@ export function GarminMonthlyUploadCard() {
     }
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5 text-primary" />
-          Import Garmin monthly totals
-        </CardTitle>
-        <CardDescription>
-          Upload the <code className="text-xs">Total Distance.csv</code> export from Garmin Connect to backfill months
-          before you started syncing activities. The Trends chart will use whichever number is higher (sessions or
-          Garmin total) for each month so nothing is double-counted.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="flex flex-wrap gap-2">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            multiple
-            className="hidden"
-            onChange={(e) => {
-              const fs = Array.from(e.target.files ?? []);
-              if (fs.length) handleFiles(fs);
-            }}
-          />
-          <Button onClick={() => fileRef.current?.click()} disabled={uploading} size="sm">
-            {uploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
-            {uploading ? "Importing…" : "Upload CSV(s)"}
-          </Button>
-        </div>
+  const latest = existing[0]?.month;
 
-        {existing.length > 0 && (
-          <div className="text-xs text-muted-foreground">
-            {existing.length} month{existing.length === 1 ? "" : "s"} imported · latest{" "}
-            <span className="tabular-nums">
-              {format(new Date(existing[0].month), "MMM yyyy")}
-            </span>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+      <input
+        ref={fileRef}
+        type="file"
+        accept=".csv,text/csv"
+        multiple
+        className="hidden"
+        onChange={(e) => {
+          const fs = Array.from(e.target.files ?? []);
+          if (fs.length) handleFiles(fs);
+        }}
+      />
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              onClick={() => fileRef.current?.click()}
+              disabled={uploading}
+              size="sm"
+              variant="outline"
+              className="h-7 gap-1.5 px-2 text-xs"
+            >
+              {uploading ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FileSpreadsheet className="h-3.5 w-3.5 text-primary" />
+              )}
+              {uploading ? "Importing…" : "Import Garmin CSV"}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">
+            Upload the <code>Total Distance.csv</code> export from Garmin Connect to backfill months before
+            Strava/.FIT syncing. Trends uses whichever monthly total is higher.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+      {existing.length > 0 && (
+        <span className="tabular-nums">
+          {existing.length} mo imported · latest {format(new Date(latest!), "MMM yyyy")}
+        </span>
+      )}
+    </div>
   );
 }
+
