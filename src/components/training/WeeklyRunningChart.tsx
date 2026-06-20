@@ -118,7 +118,10 @@ function makeEventOverlay({
             ? `${fmtDate(ev.start_date)} → ${fmtDate(ev.end_date)}`
             : fmtDate(ev.start_date);
           const sev = ev.severity ? `\nSeverity: ${ev.severity}/10` : "";
-          const part = ev.body_part ? `\nArea: ${ev.body_part}` : "";
+          const partsList = (ev as any).body_parts as Array<{ part: string; side: string; specific?: string }> | undefined;
+          const part = partsList && partsList.length > 0
+            ? `\nArea: ${partsList.map((p) => `${p.side === "left" ? "L " : p.side === "right" ? "R " : ""}${p.part}${p.specific ? ` (${p.specific})` : ""}`).join(", ")}`
+            : ev.body_part ? `\nArea: ${ev.body_part}` : "";
           const notes = ev.description ? `\n\n${ev.description}` : "";
           return (
             <g

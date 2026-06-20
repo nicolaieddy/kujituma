@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
 import { EventUploadDialog } from "./EventUploadDialog";
+import { BodyPartsPicker } from "./BodyPartsPicker";
 import { Separator } from "@/components/ui/separator";
 import {
   STANDARD_DISTANCES,
@@ -54,6 +55,13 @@ import {
   computeMedals,
   MEDAL_META,
 } from "@/lib/racing";
+import {
+  SEVERITY_LABELS,
+  ISSUE_CATEGORY_META,
+  formatBodyParts,
+  type BodyPartEntry,
+  type IssueCategory,
+} from "@/lib/bodyParts";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
@@ -70,6 +78,8 @@ interface FormState {
   end_date: string;
   severity: string;
   body_part: string;
+  body_parts: BodyPartEntry[];
+  issue_category: IssueCategory | "";
   race_distance: string;
   race_distance_custom: string;
   race_result: string;
@@ -87,6 +97,8 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     end_date: "",
     severity: "",
     body_part: "",
+    body_parts: [],
+    issue_category: type === "injury_illness" ? "niggle" : "",
     race_distance: "",
     race_distance_custom: "",
     race_result: "",
@@ -107,6 +119,8 @@ function eventToForm(e: TrainingEvent): FormState {
     end_date: e.end_date ?? "",
     severity: e.severity ? String(e.severity) : "",
     body_part: e.body_part ?? "",
+    body_parts: Array.isArray(e.body_parts) ? e.body_parts : [],
+    issue_category: (e.issue_category as IssueCategory) ?? (e.event_type === "injury_illness" ? "niggle" : ""),
     race_distance: isStd ? (e.race_distance as string) : (e.race_distance ? "__custom__" : ""),
     race_distance_custom: isStd ? "" : (e.race_distance ?? ""),
     race_result: e.race_result ?? "",
@@ -188,6 +202,8 @@ export function TrainingEventsPanel() {
       end_date: form.end_date || null,
       severity: form.severity ? Number(form.severity) : null,
       body_part: form.body_part.trim() || null,
+      body_parts: form.event_type === "injury_illness" ? form.body_parts : [],
+      issue_category: form.event_type === "injury_illness" ? (form.issue_category || null) : null,
       race_distance: resolvedDistance,
       race_result: form.race_result.trim() || null,
       race_priority: form.race_priority || null,
@@ -321,8 +337,15 @@ export function TrainingEventsPanel() {
                           {e.race_priority && (
                             <Badge variant="outline" className="text-[10px]">Priority {e.race_priority}</Badge>
                           )}
+                          {e.issue_category && (
+                            <Badge variant="outline" className="text-[10px]">
+                              {ISSUE_CATEGORY_META[e.issue_category].label}
+                            </Badge>
+                          )}
                           {e.severity && (
-                            <Badge variant="outline" className="text-[10px]">Severity {e.severity}/5</Badge>
+                            <Badge variant="outline" className="text-[10px]">
+                              Sev {e.severity}/5 · {SEVERITY_LABELS[e.severity].short}
+                            </Badge>
                           )}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 tabular-nums">{dateLabel}</div>
@@ -330,7 +353,11 @@ export function TrainingEventsPanel() {
                           <p className="text-sm mt-2 whitespace-pre-wrap">{e.description}</p>
                         )}
                         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-                          {e.body_part && <span>Body part: {e.body_part}</span>}
+                          {e.body_parts && e.body_parts.length > 0 ? (
+                            <span>Body parts: {formatBodyParts(e.body_parts)}</span>
+                          ) : e.body_part ? (
+                            <span>Body part: {e.body_part}</span>
+                          ) : null}
                           {e.race_distance && !isStandardRaceKey(e.race_distance) && (
                             <span>Distance: {e.race_distance}</span>
                           )}
@@ -378,7 +405,14 @@ export function TrainingEventsPanel() {
                 <Label>Type</Label>
                 <Select
                   value={form.event_type}
-                  onValueChange={(v) => setForm({ ...form, event_type: v as TrainingEventType })}
+                  onValueChange={(v) => {
+                    const next = v as TrainingEventType;
+                    setForm({
+                      ...form,
+                      event_type: next,
+                      issue_category: next === "injury_illness" ? (form.issue_category || "niggle") : "",
+                    });
+                  }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
@@ -419,26 +453,59 @@ export function TrainingEventsPanel() {
             </div>
 
             {form.event_type === "injury_illness" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-4 rounded-md border bg-muted/20 p-3">
                 <div className="space-y-1.5">
-                  <Label>Body part / area</Label>
-                  <Input
-                    value={form.body_part}
-                    onChange={(e) => setForm({ ...form, body_part: e.target.value })}
-                    placeholder="e.g. Left calf, Lower back"
-                    maxLength={100}
-                  />
+                  <Label>Category</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map((c) => {
+                      const meta = ISSUE_CATEGORY_META[c];
+                      const active = form.issue_category === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setForm({ ...form, issue_category: c })}
+                          className={cn(
+                            "rounded-md border p-2 text-left transition-colors",
+                            active
+                              ? "border-primary bg-primary/10"
+                              : "border-border hover:border-primary/50",
+                          )}
+                        >
+                          <div className="text-sm font-medium">{meta.label}</div>
+                          <div className="text-[11px] text-muted-foreground leading-tight">
+                            {meta.description}
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
+
                 <div className="space-y-1.5">
-                  <Label>Severity (1-5)</Label>
+                  <Label>Body parts</Label>
+                  <BodyPartsPicker
+                    value={form.body_parts}
+                    onChange={(next) => setForm({ ...form, body_parts: next })}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Add one or more. Try searching "leg", "back", "achilles"…
+                  </p>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Severity</Label>
                   <Select
                     value={form.severity}
                     onValueChange={(v) => setForm({ ...form, severity: v })}
                   >
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="How much is it affecting training?" /></SelectTrigger>
                     <SelectContent>
                       {[1, 2, 3, 4, 5].map((n) => (
-                        <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                        <SelectItem key={n} value={String(n)}>
+                          <span className="font-medium">{n}.</span> {SEVERITY_LABELS[n].short}
+                          <span className="text-muted-foreground"> — {SEVERITY_LABELS[n].help}</span>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
