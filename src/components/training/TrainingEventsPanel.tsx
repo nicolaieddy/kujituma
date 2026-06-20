@@ -85,6 +85,7 @@ interface FormState {
   race_result: string;
   race_priority: "" | "A" | "B" | "C";
   official_time_input: string;
+  strava_url: string;
   location: string;
 }
 
@@ -104,6 +105,7 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     race_result: "",
     race_priority: "",
     official_time_input: "",
+    strava_url: "",
     location: "",
   };
 }
@@ -126,6 +128,7 @@ function eventToForm(e: TrainingEvent): FormState {
     race_result: e.race_result ?? "",
     race_priority: (e.race_priority as any) ?? "",
     official_time_input: formatSecondsToTime(e.official_time_seconds),
+    strava_url: typeof (e.metadata as any)?.strava_url === "string" ? (e.metadata as any).strava_url : "",
     location: e.location ?? "",
   };
 }
@@ -209,6 +212,9 @@ export function TrainingEventsPanel() {
       race_priority: form.race_priority || null,
       official_time_seconds: officialSec,
       location: form.location.trim() || null,
+      metadata: form.event_type === "race" && form.strava_url.trim()
+        ? { strava_url: form.strava_url.trim() }
+        : {},
     });
     // Keep dialog open with the new ID so the user can immediately attach files
     if (!form.id && saved?.data?.id) {
@@ -577,6 +583,19 @@ export function TrainingEventsPanel() {
                       maxLength={200}
                     />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Strava race URL (optional)</Label>
+                  <Input
+                    type="url"
+                    value={form.strava_url}
+                    onChange={(e) => setForm({ ...form, strava_url: e.target.value })}
+                    placeholder="https://www.strava.com/activities/123456789"
+                    maxLength={300}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Paste the Strava activity link for this race. After saving, you can also upload the .fit file below to parse splits, HR, pace and elevation.
+                  </p>
                 </div>
               </>
             )}
