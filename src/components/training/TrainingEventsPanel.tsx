@@ -128,6 +128,7 @@ function eventToForm(e: TrainingEvent): FormState {
     race_result: e.race_result ?? "",
     race_priority: (e.race_priority as any) ?? "",
     official_time_input: formatSecondsToTime(e.official_time_seconds),
+    strava_url: typeof (e.metadata as any)?.strava_url === "string" ? (e.metadata as any).strava_url : "",
     location: e.location ?? "",
   };
 }
