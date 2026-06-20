@@ -105,6 +105,7 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     race_result: "",
     race_priority: "",
     official_time_input: "",
+    strava_url: "",
     location: "",
   };
 }
