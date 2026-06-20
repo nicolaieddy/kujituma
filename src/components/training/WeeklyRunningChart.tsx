@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -678,7 +678,7 @@ export function WeeklyRunningChart() {
     if (times.length === 0) return { minDate: null as Date | null, maxDate: null as Date | null };
     return {
       minDate: new Date(Math.min(...times)),
-      maxDate: new Date(Math.max(times.concat(Date.now()))),
+      maxDate: new Date(Math.max(...times, Date.now())),
     };
   }, [sessions, aggregates]);
 
