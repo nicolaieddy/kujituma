@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Activity, TrendingUp, Trophy, HeartPulse } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Loader2, Activity, TrendingUp, Trophy, HeartPulse, Settings2 } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,9 +17,10 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceLine,
-  ReferenceArea,
+  Customized,
   Legend,
 } from "recharts";
+
 
 import {
   startOfWeek,
