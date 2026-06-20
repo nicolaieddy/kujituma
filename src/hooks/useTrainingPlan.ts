@@ -257,8 +257,19 @@ export function useTrainingPlan(weekStart: string) {
         .single();
       if (error) throw error;
 
-      // Insert goal links
-      const allGoalIds = goal_ids?.length ? goal_ids : rest.goal_id ? [rest.goal_id] : [];
+      // Resolve goal IDs: explicit > provided goal_id > default training goal
+      let allGoalIds = goal_ids?.length ? goal_ids : rest.goal_id ? [rest.goal_id] : [];
+      if (allGoalIds.length === 0) {
+        const { data: prefs } = await supabase
+          .from("workout_preferences")
+          .select("default_goal_id, auto_link_activities")
+          .eq("user_id", user.id)
+          .maybeSingle();
+        if (prefs?.auto_link_activities && prefs.default_goal_id) {
+          allGoalIds = [prefs.default_goal_id];
+        }
+      }
+
       if (allGoalIds.length > 0 && inserted) {
         const { error: linkError } = await supabase
           .from("training_workout_goals")

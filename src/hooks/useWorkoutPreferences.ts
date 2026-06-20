@@ -10,6 +10,10 @@ export interface WorkoutPrefs {
   temperature_unit: "celsius" | "fahrenheit";
   weight_unit: "kg" | "lb";
   power_display: "watts" | "watts_per_kg";
+  default_goal_id: string | null;
+  auto_link_activities: boolean;
+  auto_create_weekly_objective: boolean;
+  weekly_objective_template: string;
 }
 
 const DEFAULTS: WorkoutPrefs = {
@@ -19,6 +23,10 @@ const DEFAULTS: WorkoutPrefs = {
   temperature_unit: "celsius",
   weight_unit: "kg",
   power_display: "watts",
+  default_goal_id: null,
+  auto_link_activities: true,
+  auto_create_weekly_objective: true,
+  weekly_objective_template: "plan_and_volume",
 };
 
 export function useWorkoutPreferences() {
@@ -39,15 +47,21 @@ export function useWorkoutPreferences() {
         console.error("Failed to fetch workout prefs:", error);
         return DEFAULTS;
       }
-      return data ? {
-        id: data.id,
-        distance_unit: data.distance_unit as WorkoutPrefs["distance_unit"],
-        elevation_unit: data.elevation_unit as WorkoutPrefs["elevation_unit"],
-        pace_format: data.pace_format as WorkoutPrefs["pace_format"],
-        temperature_unit: data.temperature_unit as WorkoutPrefs["temperature_unit"],
-        weight_unit: data.weight_unit as WorkoutPrefs["weight_unit"],
-        power_display: data.power_display as WorkoutPrefs["power_display"],
-      } : DEFAULTS;
+      if (!data) return DEFAULTS;
+      const d = data as any;
+      return {
+        id: d.id,
+        distance_unit: d.distance_unit,
+        elevation_unit: d.elevation_unit,
+        pace_format: d.pace_format,
+        temperature_unit: d.temperature_unit,
+        weight_unit: d.weight_unit,
+        power_display: d.power_display,
+        default_goal_id: d.default_goal_id ?? null,
+        auto_link_activities: d.auto_link_activities ?? true,
+        auto_create_weekly_objective: d.auto_create_weekly_objective ?? true,
+        weekly_objective_template: d.weekly_objective_template ?? "plan_and_volume",
+      };
     },
     enabled: !!user,
     staleTime: 1000 * 60 * 30,

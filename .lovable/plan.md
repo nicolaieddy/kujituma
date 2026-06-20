@@ -1,58 +1,74 @@
-## Refactor plan — surgical, balanced
+## Goal
 
-After a sweep of the codebase, here are the 7 highest-impact, lowest-risk wins. Everything below preserves current behavior and visual design. Each item ships as its own focused change so you can stop after any step.
+Stop asking the user to manually link the weekly Training Plan to a goal. Activities and weekly plans should auto-attach to a configurable **default training goal**, and a weekly objective is auto-created against that goal each week. No backfill — forward-only.
 
-### What I found
-- **Zero `useMemo` / `useCallback` / `React.memo`** anywhere in the codebase (0 files). This is the single biggest perf lever — but blanket-adding it is an anti-pattern. I'll only apply it to genuinely hot/heavy components.
-- **A handful of giant files** dragging on readability: `ProfileEditForm` (1198 LOC), `network/ContactDetail` (1157), `DailyCheckInDialog` (1066), `CheckInsFeed` (991), `accountabilityService` (1035), `useAnalytics` (779).
-- **Query keys are stringly-typed and scattered** — same logical key spelled differently across hooks (`"synced_activities"` vs `"synced-activities"`, `"training-plan"` invalidated from 6+ places). This causes silent cache-miss bugs and slows mutation invalidation.
-- **`LandingPage` is eagerly imported** in `App.tsx` while every other route is lazy — adds ~30-50KB to the auth'd-user first paint they never see.
-- **QueryClient defaults** are reasonable (`staleTime: 5min`) but a few hot lists pass no `staleTime`, causing re-fetch on every mount.
+## 1. New settings (DB)
 
-### The 7 changes
+Extend `workout_preferences` with three nullable columns:
 
-**1. Centralized `queryKeys` factory** *(cleanliness + correctness)*
-   Create `src/lib/queryKeys.ts` exporting a typed factory (`qk.weeklyObjectives(userId, weekStart)`, `qk.training.plan()`, etc.). Migrate the ~15 most-invalidated keys. Catches typos at compile time, makes invalidation auditable. **No runtime change, just safer.**
+- `default_goal_id uuid` — the goal new activities + weekly plans attach to
+- `auto_create_weekly_objective boolean default true`
+- `auto_link_activities boolean default true`
+- `weekly_objective_template text default 'plan_and_volume'` — for now just one value; future-proof for other modes
 
-**2. Lazy-load `LandingPage`** *(perf — first paint for logged-in users)*
-   Move to `React.lazy`, drop it from the initial bundle. ~30-50KB saved for the 95% of sessions that aren't first-visit-marketing.
+(Schema-only migration; no data backfill.)
 
-**3. Memoize 4 heavy list/feed components** *(perf — perceived snappiness)*
-   Wrap the row components inside these hot lists in `React.memo` + stabilize their props with `useCallback`:
-   - `CheckInsFeed` row item
-   - `OrganizedGoalsView` goal card
-   - `TrainingWorkoutCard` (rendered in a week grid)
-   - `HabitCompletionTimeline` day cell
-   These are the components currently re-rendering on every parent state tick.
+## 2. New "Training defaults" settings UI
 
-**4. Split `ProfileEditForm` (1198 LOC) into sections** *(cleanliness)*
-   Extract `ProfileBasicsSection`, `ProfileAvatarSection`, `ProfileSocialLinksSection`, `ProfilePreferencesSection`. Pure structural split — same form, same submit, same validation. Improves render isolation as a bonus.
+Add a section inside the existing Training settings (where workout units live) titled **"Training defaults"**:
 
-**5. Split `DailyCheckInDialog` (1066 LOC)** *(cleanliness)*
-   Extract `MoodEnergyStep`, `HabitsStep`, `JournalStep`, `ReviewStep`. Already step-based logically — just hasn't been physically split. Each step renders only when active.
+- Default training goal — searchable dropdown of the user's active goals (with "None" option)
+- Toggle: *Auto-link new activities to this goal*
+- Toggle: *Auto-create a weekly objective for my training plan*
+- Helper text explaining: only applies going forward; you can still override per workout.
 
-**6. Slim `useAnalytics` (779 LOC)** *(cleanliness + perf)*
-   Currently one hook computes every analytics panel. Split into `useLifeBalanceData`, `useMoodEnergyTrends`, `useGoalCompletionStats`, `useHabitStreakLeaderboard`. Panels become independently cached, panels that aren't visible stop blocking the rest, and TanStack can dedupe properly.
+Also expose this as one step in the onboarding wizard ("Pick a default training goal — we'll auto-link your activities and create a weekly objective for you").
 
-**7. Audit & normalize mutation invalidations** *(correctness + perf)*
-   After step 1, sweep every `invalidateQueries` and ensure:
-   - It uses the typed factory.
-   - It invalidates the *minimum* matching prefix (currently several mutations invalidate broad `["training-plan"]` and a half-dozen siblings — kills cache more than needed).
-   - Mutations across the Training domain stop double-invalidating overlapping keys.
+## 3. Auto-link activities (forward-only)
 
-### Explicitly NOT touching
-- `src/integrations/supabase/types.ts` (auto-generated)
-- `components/ui/*` (shadcn primitives)
-- Any RLS, edge functions, or DB schema
-- MCP server tools / public API surface
-- Visual design tokens, fonts, layout
+When a new row lands in `synced_activities` (Strava sync, .FIT upload, Garmin) AND `auto_link_activities = true` AND `default_goal_id` is set:
 
-### Technical notes
-- All steps are additive or pure refactors — no API contract changes.
-- Each step is one commit-sized change; if something feels risky after step N, we stop.
-- I'll verify each step against the build and the preview before moving to the next.
+- After a workout is matched/created from the activity (existing `training_workout_activities` flow), insert a `training_workout_goals(workout_id, goal_id = default_goal_id)` if no goal is linked yet.
+- Done in the existing ingestion edge function / hook — no new infra.
 
-### Order of operations
-Steps 1 → 2 → 7 first (lowest risk, immediate wins), then 3 (perf), then 4 → 5 → 6 (file splits).
+Manual override remains: opening a workout still lets you change/add goals.
 
-Want me to proceed top-to-bottom, or cherry-pick a subset?
+## 4. Auto-create the weekly objective
+
+When the user opens the Training Plan for a week (or on the existing weekly-planning entry point) AND `auto_create_weekly_objective = true` AND `default_goal_id` is set AND no objective for `(default_goal_id, week_start)` exists:
+
+- Create one `weekly_objectives` row tied to `default_goal_id` with a title like:
+  `"Training week of {Mon DD} — {N} sessions / {total_km} km"`
+- Re-compute and update its title/target whenever the plan changes that week (sessions added/removed/edited).
+- Completion criterion: **both plan adherence + volume** (per the user's answer):
+  - `completed_at` set when `sessions_completed / sessions_planned >= 1` **and** `actual_km >= planned_km * 0.9` (90% tolerance for volume).
+  - Store the criterion on the objective so we can render a small "x/N sessions · y/z km" progress block on the objective card.
+
+## 5. UI cleanup on Training Plan card
+
+In `TrainingPlanCard.tsx`:
+
+- Remove the "No goals linked yet" line.
+- Remove the "Link to goal" button entirely.
+- Keep the linked-goal Badge(s) display (now driven by the auto-linked default goal).
+- Per-workout goal editing stays available inside the expanded workout row (existing).
+
+If `default_goal_id` is not set, show a small inline nudge instead: *"Set a default training goal in Settings to auto-link activities."* (link → Training settings).
+
+## 6. Technical notes
+
+- Files touched:
+  - Migration: `workout_preferences` add columns.
+  - `src/hooks/useWorkoutPreferences.ts` — extend interface + defaults.
+  - New `src/components/training/TrainingDefaultsSection.tsx` (settings UI) + wired into Training settings page and onboarding.
+  - `src/hooks/useTrainingPlan.ts` — on plan create/update, upsert weekly objective; helper `ensureWeeklyTrainingObjective(weekStart)`.
+  - Activity ingestion path (Strava/.FIT/Garmin handlers under `supabase/functions/...` and any client-side post-sync hook) — auto-insert `training_workout_goals`.
+  - `src/components/thisweek/TrainingPlanCard.tsx` — remove link UI, add nudge fallback.
+  - Objective completion recompute can live in a small client-side effect that runs when activities sync; no cron needed.
+- Multi-goal support is preserved: `training_workout_goals` is many-to-many, so users can still attach a second goal per workout manually.
+
+## Out of scope
+
+- Retroactive linking of past weeks/activities.
+- Per–activity-type routing rules (single default goal for now).
+- Volume tolerance configurability (hard-coded 90% — easy to expose later).
