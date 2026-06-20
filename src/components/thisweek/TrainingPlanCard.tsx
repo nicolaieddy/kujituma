@@ -54,7 +54,9 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
 
   const { goals } = useGoals();
   const activeGoals = goals.filter(g => g.status === "in_progress" || g.status === "not_started");
+  const { prefs } = useWorkoutPreferences();
   const { data: sleepByDate = {} } = useWeekSleepEntries(weekStart);
+  useEnsureTrainingWeeklyObjective(weekStart);
 
   const displayWorkouts = useMemo(() => getDisplayWorkouts(workouts), [workouts]);
 
