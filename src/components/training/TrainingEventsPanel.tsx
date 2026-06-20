@@ -85,6 +85,7 @@ interface FormState {
   race_result: string;
   race_priority: "" | "A" | "B" | "C";
   official_time_input: string;
+  strava_url: string;
   location: string;
 }
 
