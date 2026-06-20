@@ -8,6 +8,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { type TrainingEvent, type TrainingEventType } from "@/hooks/useTrainingEvents";
 import { parseLocalDate } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
+import { ISSUE_CATEGORY_META, SEVERITY_LABELS, formatBodyParts } from "@/lib/bodyParts";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof AlertTriangle; color: string; dotColor: string }> = {
   injury_illness: {
