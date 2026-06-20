@@ -380,54 +380,56 @@ function reconcileWithAggregates(
   return Array.from(map.values()).sort((a, b) => (a.key < b.key ? -1 : 1));
 }
 
-function trimToTrailing(buckets: Bucket[], g: Granularity, n: number): Bucket[] {
+function trimToTrailing(buckets: Bucket[], g: Granularity, n: number, end?: Date): Bucket[] {
   if (!n) return buckets; // "All"
-  const now = new Date();
+  const anchor = end ?? new Date();
   let start: Date;
+  let stopKey: string | null = null;
   if (n === -1) {
     start = g === "year"
-      ? startOfYear(now)
+      ? startOfYear(anchor)
       : g === "month"
-      ? startOfYear(now)
-      : startOfWeek(startOfYear(now), { weekStartsOn: 1 });
+      ? startOfYear(anchor)
+      : startOfWeek(startOfYear(anchor), { weekStartsOn: 1 });
   } else {
     start =
-      g === "year" ? startOfYear(subYears(now, n - 1))
-      : g === "month" ? startOfMonth(subMonths(now, n - 1))
-      : startOfWeek(subWeeks(now, n - 1), { weekStartsOn: 1 });
+      g === "year" ? startOfYear(subYears(anchor, n - 1))
+      : g === "month" ? startOfMonth(subMonths(anchor, n - 1))
+      : startOfWeek(subWeeks(anchor, n - 1), { weekStartsOn: 1 });
+    stopKey = bucketKey(anchor, g);
   }
   const startKey = bucketKey(start, g);
-  return buckets.filter((b) => b.key >= startKey);
+  return buckets.filter((b) => b.key >= startKey && (stopKey == null || b.key <= stopKey));
 }
 
-function fillGaps(buckets: Bucket[], g: Granularity, n: number): Bucket[] {
+function fillGaps(buckets: Bucket[], g: Granularity, n: number, end?: Date): Bucket[] {
   if (!n) return buckets; // "All"
   const filled: Bucket[] = [];
   const map = new Map(buckets.map((b) => [b.key, b]));
-  const now = new Date();
+  const anchor = end ?? new Date();
   let start: Date;
   let count: number;
   if (n === -1) {
     if (g === "year") {
-      start = startOfYear(now);
+      start = startOfYear(anchor);
       count = 1;
     } else if (g === "month") {
-      start = startOfYear(now);
-      count = getMonth(now) + 1;
+      start = startOfYear(anchor);
+      count = getMonth(anchor) + 1;
     } else {
-      start = startOfWeek(startOfYear(now), { weekStartsOn: 1 });
+      start = startOfWeek(startOfYear(anchor), { weekStartsOn: 1 });
       count = 0;
       let d = start;
-      while (d <= now) {
+      while (d <= anchor) {
         count++;
         d = addWeeks(d, 1);
       }
     }
   } else {
     start =
-      g === "year" ? startOfYear(subYears(now, n - 1))
-      : g === "month" ? startOfMonth(subMonths(now, n - 1))
-      : startOfWeek(subWeeks(now, n - 1), { weekStartsOn: 1 });
+      g === "year" ? startOfYear(subYears(anchor, n - 1))
+      : g === "month" ? startOfMonth(subMonths(anchor, n - 1))
+      : startOfWeek(subWeeks(anchor, n - 1), { weekStartsOn: 1 });
     count = n;
   }
   for (let i = 0; i < count; i++) {
