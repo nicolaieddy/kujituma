@@ -194,6 +194,16 @@ export function GarminMonthlyUploadCard() {
           {existing.length} mo imported · latest {format(new Date(latest!), "MMM yyyy")}
         </span>
       )}
+      {(activityCounts?.strava ?? 0) > 0 && (
+        <span className="tabular-nums text-[10px] text-muted-foreground">
+          {activityCounts!.strava} Strava
+        </span>
+      )}
+      {(activityCounts?.fit_upload ?? 0) > 0 && (
+        <span className="tabular-nums text-[10px] text-muted-foreground">
+          {activityCounts!.fit_upload} .FIT
+        </span>
+      )}
     </div>
   );
 }
