@@ -44,6 +44,7 @@ import { cn } from "@/lib/utils";
 import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
 import { EventUploadDialog } from "./EventUploadDialog";
+import { BodyPartsPicker } from "./BodyPartsPicker";
 import { Separator } from "@/components/ui/separator";
 import {
   STANDARD_DISTANCES,
@@ -54,6 +55,13 @@ import {
   computeMedals,
   MEDAL_META,
 } from "@/lib/racing";
+import {
+  SEVERITY_LABELS,
+  ISSUE_CATEGORY_META,
+  formatBodyParts,
+  type BodyPartEntry,
+  type IssueCategory,
+} from "@/lib/bodyParts";
 
 const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
   injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
