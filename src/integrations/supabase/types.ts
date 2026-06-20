@@ -4077,7 +4077,10 @@ export type Database = {
       }
       workout_preferences: {
         Row: {
+          auto_create_weekly_objective: boolean
+          auto_link_activities: boolean
           created_at: string
+          default_goal_id: string | null
           distance_unit: string
           elevation_unit: string
           id: string
@@ -4086,10 +4089,14 @@ export type Database = {
           temperature_unit: string
           updated_at: string
           user_id: string
+          weekly_objective_template: string
           weight_unit: string
         }
         Insert: {
+          auto_create_weekly_objective?: boolean
+          auto_link_activities?: boolean
           created_at?: string
+          default_goal_id?: string | null
           distance_unit?: string
           elevation_unit?: string
           id?: string
@@ -4098,10 +4105,14 @@ export type Database = {
           temperature_unit?: string
           updated_at?: string
           user_id: string
+          weekly_objective_template?: string
           weight_unit?: string
         }
         Update: {
+          auto_create_weekly_objective?: boolean
+          auto_link_activities?: boolean
           created_at?: string
+          default_goal_id?: string | null
           distance_unit?: string
           elevation_unit?: string
           id?: string
@@ -4110,9 +4121,25 @@ export type Database = {
           temperature_unit?: string
           updated_at?: string
           user_id?: string
+          weekly_objective_template?: string
           weight_unit?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "workout_preferences_default_goal_id_fkey"
+            columns: ["default_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "workout_preferences_default_goal_id_fkey"
+            columns: ["default_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
