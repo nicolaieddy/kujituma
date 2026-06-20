@@ -96,8 +96,15 @@ function TimelineEventCard({
               {event.race_priority && (
                 <Badge variant="outline" className="text-[10px]">Priority {event.race_priority}</Badge>
               )}
+              {event.issue_category && (
+                <Badge variant="outline" className="text-[10px]">
+                  {ISSUE_CATEGORY_META[event.issue_category].label}
+                </Badge>
+              )}
               {event.severity && (
-                <Badge variant="outline" className="text-[10px] border-destructive text-destructive">Severity {event.severity}/5</Badge>
+                <Badge variant="outline" className="text-[10px] border-destructive text-destructive">
+                  Sev {event.severity}/5 · {SEVERITY_LABELS[event.severity].short}
+                </Badge>
               )}
             </div>
 
@@ -108,7 +115,11 @@ function TimelineEventCard({
             )}
 
             <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-2">
-              {event.body_part && <span>Body part: {event.body_part}</span>}
+              {event.body_parts && event.body_parts.length > 0 ? (
+                <span>Body parts: {formatBodyParts(event.body_parts)}</span>
+              ) : event.body_part ? (
+                <span>Body part: {event.body_part}</span>
+              ) : null}
               {event.race_distance && <span>Distance: {event.race_distance}</span>}
               {event.race_result && <span className="font-medium text-foreground">Result: {event.race_result}</span>}
               {event.location && <span>Location: {event.location}</span>}
