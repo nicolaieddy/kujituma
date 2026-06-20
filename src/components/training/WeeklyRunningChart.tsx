@@ -1,7 +1,10 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Activity, TrendingUp, Trophy, HeartPulse } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Label } from "@/components/ui/label";
+import { Loader2, Activity, TrendingUp, Trophy, HeartPulse, Settings2 } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -14,9 +17,10 @@ import {
   Tooltip,
   CartesianGrid,
   ReferenceLine,
-  ReferenceArea,
+  Customized,
   Legend,
 } from "recharts";
+
 
 import {
   startOfWeek,
@@ -39,8 +43,154 @@ import { useMonthlyDistanceAggregates, type MonthlyAggregate } from "@/hooks/use
 import { useTrainingEvents, type TrainingEvent } from "@/hooks/useTrainingEvents";
 import { parseLocalDate } from "@/utils/dateUtils";
 
-const RACE_COLOR = "hsl(45 93% 55%)"; // amber
-const INJURY_COLOR = "hsl(0 72% 51%)"; // red
+const DEFAULT_RACE_COLOR = "#f5b942"; // amber
+const DEFAULT_INJURY_COLOR = "#dc2626"; // red
+const DEFAULT_INJURY_OPACITY = 0.18;
+
+interface OverlayInjury { x1: string; x2: string; event: TrainingEvent }
+interface OverlayRace { label: string; event: TrainingEvent; color?: string }
+
+interface MakeOverlayArgs {
+  injuries: OverlayInjury[];
+  races: OverlayRace[];
+  raceColor: string;
+  injuryColor: string;
+  injuryOpacity: number;
+  onSelect: (id: string) => void;
+}
+
+/**
+ * Custom Recharts overlay that draws injury bands and race markers as raw SVG
+ * with native <title> hover tooltips and onClick to open the event.
+ * Used inside <Customized component={...}> — receives the chart's xAxisMap+offset.
+ */
+function makeEventOverlay({
+  injuries,
+  races,
+  raceColor,
+  injuryColor,
+  injuryOpacity,
+  onSelect,
+}: MakeOverlayArgs) {
+  return function EventOverlay(chartProps: Record<string, unknown>) {
+    const xAxisMap = chartProps.xAxisMap as Record<string, { scale?: (v: string) => number | undefined }> | undefined;
+    const offset = chartProps.offset as { top: number; left: number; width: number; height: number } | undefined;
+    if (!xAxisMap || !offset) return null;
+    const firstKey = Object.keys(xAxisMap)[0];
+    const scale = xAxisMap[firstKey]?.scale as
+      | ((v: string) => number | undefined) & { bandwidth?: () => number }
+      | undefined;
+    if (!scale) return null;
+    const bw = typeof scale.bandwidth === "function" ? scale.bandwidth() : 0;
+    const safe = (v: number | undefined): number | null =>
+      v == null || Number.isNaN(v) ? null : v;
+    const leftPx = (label: string) => safe(scale(label));
+    const rightPx = (label: string) => {
+      const v = safe(scale(label));
+      return v == null ? null : (bw ? v + bw : v);
+    };
+    const centerPx = (label: string) => {
+      const v = safe(scale(label));
+      return v == null ? null : (bw ? v + bw / 2 : v);
+    };
+
+    const top = offset.top;
+    const height = offset.height;
+
+    const fmtDate = (s: string) => {
+      try {
+        return format(parseLocalDate(s), "d MMM yyyy");
+      } catch {
+        return s;
+      }
+    };
+
+    return (
+      <g style={{ pointerEvents: "all" }}>
+        {injuries.map((b, i) => {
+          const x1 = leftPx(b.x1);
+          const x2 = rightPx(b.x2);
+          if (x1 == null || x2 == null) return null;
+          const w = Math.max(2, x2 - x1);
+          const ev = b.event;
+          const dates = ev.end_date
+            ? `${fmtDate(ev.start_date)} → ${fmtDate(ev.end_date)}`
+            : fmtDate(ev.start_date);
+          const sev = ev.severity ? `\nSeverity: ${ev.severity}/10` : "";
+          const part = ev.body_part ? `\nArea: ${ev.body_part}` : "";
+          const notes = ev.description ? `\n\n${ev.description}` : "";
+          return (
+            <g
+              key={`ov-inj-${ev.id}-${i}`}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelect(ev.id)}
+            >
+              <rect
+                x={x1}
+                y={top}
+                width={w}
+                height={height}
+                fill={injuryColor}
+                fillOpacity={injuryOpacity}
+                stroke={injuryColor}
+                strokeOpacity={Math.min(1, injuryOpacity * 3)}
+                strokeDasharray="2 3"
+              />
+              <text x={x1 + 4} y={top + 11} fontSize={9} fill={injuryColor} style={{ pointerEvents: "none" }}>
+                {ev.title}
+              </text>
+              <title>{`Injury / illness · ${ev.title}\n${dates}${sev}${part}${notes}\n\nClick to open in Events`}</title>
+            </g>
+          );
+        })}
+        {races.map((r, i) => {
+          const cx = centerPx(r.label);
+          if (cx == null) return null;
+          const color = r.color ?? raceColor;
+          const ev = r.event;
+          const labelText = `🏁 ${ev.title}${ev.race_priority ? ` (${ev.race_priority})` : ""}`;
+          const dist = ev.race_distance ? ` · ${ev.race_distance}` : "";
+          const result = ev.race_result ? `\nResult: ${ev.race_result}` : "";
+          const loc = ev.location ? `\nLocation: ${ev.location}` : "";
+          const notes = ev.description ? `\n\n${ev.description}` : "";
+          return (
+            <g
+              key={`ov-race-${ev.id}-${i}`}
+              style={{ cursor: "pointer" }}
+              onClick={() => onSelect(ev.id)}
+            >
+              {/* Wider invisible hover target so the title is easy to surface */}
+              <rect x={cx - 6} y={top} width={12} height={height} fill="transparent" />
+              <line
+                x1={cx}
+                x2={cx}
+                y1={top}
+                y2={top + height}
+                stroke={color}
+                strokeWidth={1.5}
+                strokeDasharray="2 2"
+                style={{ pointerEvents: "none" }}
+              />
+              <text
+                x={cx}
+                y={top - 2}
+                fontSize={9}
+                fill={color}
+                textAnchor="middle"
+                style={{ pointerEvents: "none" }}
+              >
+                {labelText}
+              </text>
+              <title>{`Race · ${ev.title}${dist}\n${fmtDate(ev.start_date)}${result}${loc}${notes}\n\nClick to open in Events`}</title>
+            </g>
+          );
+        })}
+      </g>
+    );
+  };
+}
+
+
 
 
 type Granularity = "week" | "month" | "year";
@@ -369,9 +519,28 @@ export function WeeklyRunningChart() {
   const [compareYTD, setCompareYTD] = useState<boolean>(false);
   const [showInjuries, setShowInjuries] = useState<boolean>(false);
   const [showRaces, setShowRaces] = useState<boolean>(true);
+  const [raceColor, setRaceColor] = useState<string>(
+    () => (typeof window !== "undefined" && localStorage.getItem("chartRaceColor")) || DEFAULT_RACE_COLOR,
+  );
+  const [injuryColor, setInjuryColor] = useState<string>(
+    () => (typeof window !== "undefined" && localStorage.getItem("chartInjuryColor")) || DEFAULT_INJURY_COLOR,
+  );
+  const [injuryOpacity, setInjuryOpacity] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_INJURY_OPACITY;
+    const v = Number(localStorage.getItem("chartInjuryOpacity"));
+    return Number.isFinite(v) && v > 0 ? v : DEFAULT_INJURY_OPACITY;
+  });
+  useEffect(() => {
+    localStorage.setItem("chartRaceColor", raceColor);
+    localStorage.setItem("chartInjuryColor", injuryColor);
+    localStorage.setItem("chartInjuryOpacity", String(injuryOpacity));
+  }, [raceColor, injuryColor, injuryOpacity]);
+  const navigate = useNavigate();
+  const openEvent = (id: string) => navigate(`/training?view=events#event-${id}`);
   const { data: sessions = [], isLoading } = useRunningSessions();
   const { data: aggregates = [] } = useMonthlyDistanceAggregates("Running");
   const { data: events = [] } = useTrainingEvents();
+
 
 
   // Reset trailing to a sensible default when granularity changes
@@ -620,9 +789,84 @@ export function WeeklyRunningChart() {
               <HeartPulse className="h-3.5 w-3.5" />
               Injuries
             </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0"
+                  title="Overlay appearance"
+                >
+                  <Settings2 className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-64 space-y-3 p-3">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Overlay appearance
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="race-color" className="text-xs flex items-center gap-1.5">
+                    <Trophy className="h-3.5 w-3.5" style={{ color: raceColor }} />
+                    Race color
+                  </Label>
+                  <input
+                    id="race-color"
+                    type="color"
+                    value={raceColor}
+                    onChange={(e) => setRaceColor(e.target.value)}
+                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent p-0"
+                  />
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <Label htmlFor="injury-color" className="text-xs flex items-center gap-1.5">
+                    <HeartPulse className="h-3.5 w-3.5" style={{ color: injuryColor }} />
+                    Injury color
+                  </Label>
+                  <input
+                    id="injury-color"
+                    type="color"
+                    value={injuryColor}
+                    onChange={(e) => setInjuryColor(e.target.value)}
+                    className="h-7 w-10 cursor-pointer rounded border border-border bg-transparent p-0"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="injury-opacity" className="text-xs">
+                      Injury band opacity
+                    </Label>
+                    <span className="text-[11px] tabular-nums text-muted-foreground">
+                      {Math.round(injuryOpacity * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    id="injury-opacity"
+                    type="range"
+                    min={0.05}
+                    max={0.6}
+                    step={0.01}
+                    value={injuryOpacity}
+                    onChange={(e) => setInjuryOpacity(Number(e.target.value))}
+                    className="w-full accent-primary"
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  onClick={() => {
+                    setRaceColor(DEFAULT_RACE_COLOR);
+                    setInjuryColor(DEFAULT_INJURY_COLOR);
+                    setInjuryOpacity(DEFAULT_INJURY_OPACITY);
+                  }}
+                >
+                  Reset to defaults
+                </button>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </CardHeader>
+
 
 
       <CardContent className="space-y-4">
@@ -681,10 +925,10 @@ export function WeeklyRunningChart() {
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-sm"
-                style={{ background: RACE_COLOR }}
+                style={{ background: raceColor }}
                 aria-hidden
               />
-              <Trophy className="h-3 w-3" style={{ color: RACE_COLOR }} aria-hidden />
+              <Trophy className="h-3 w-3" style={{ color: raceColor }} aria-hidden />
               Races
             </span>
           )}
@@ -692,13 +936,14 @@ export function WeeklyRunningChart() {
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-sm"
-                style={{ background: `${INJURY_COLOR.replace(")", " / 0.18)")}`, border: `1px solid ${INJURY_COLOR}` }}
+                style={{ background: injuryColor, opacity: Math.min(1, injuryOpacity * 4), border: `1px solid ${injuryColor}` }}
                 aria-hidden
               />
-              <HeartPulse className="h-3 w-3" style={{ color: INJURY_COLOR }} aria-hidden />
+              <HeartPulse className="h-3 w-3" style={{ color: injuryColor }} aria-hidden />
               Injury / illness
             </span>
           )}
+
         </div>
 
 
@@ -768,27 +1013,6 @@ export function WeeklyRunningChart() {
                 />
 
 
-                {/* Injury / illness shaded bands (behind bars) */}
-                {showInjuries && trailingOverlays.injuries.map((b, i) => (
-                  <ReferenceArea
-                    key={`inj-${i}`}
-                    x1={b.x1}
-                    x2={b.x2}
-                    fill={INJURY_COLOR}
-                    fillOpacity={0.14}
-                    stroke={INJURY_COLOR}
-                    strokeOpacity={0.4}
-                    strokeDasharray="2 3"
-                    ifOverflow="extendDomain"
-                    label={{
-                      value: b.event.title,
-                      position: "insideTop",
-                      fontSize: 9,
-                      fill: INJURY_COLOR,
-                    }}
-                  />
-                ))}
-
                 <Bar
                   dataKey="total_km"
                   name="total_km"
@@ -798,7 +1022,7 @@ export function WeeklyRunningChart() {
                   {trailingData.map((b) => {
                     const isRace = showRaces && trailingOverlays.raceKeys.has(b.key);
                     return (
-                      <Cell key={b.key} fill={isRace ? RACE_COLOR : "hsl(var(--primary))"} />
+                      <Cell key={b.key} fill={isRace ? raceColor : "hsl(var(--primary))"} />
                     );
                   })}
                 </Bar>
@@ -814,23 +1038,18 @@ export function WeeklyRunningChart() {
                   radius={[4, 4, 0, 0]}
                 />
 
-                {/* Race markers — vertical line + flag label on top */}
-                {showRaces && trailingOverlays.races.map((r, i) => (
-                  <ReferenceLine
-                    key={`race-${i}`}
-                    x={r.label}
-                    stroke={RACE_COLOR}
-                    strokeWidth={1.5}
-                    strokeDasharray="2 2"
-                    ifOverflow="extendDomain"
-                    label={{
-                      value: `🏁 ${r.event.title}${r.event.race_priority ? ` (${r.event.race_priority})` : ""}`,
-                      position: "top",
-                      fontSize: 9,
-                      fill: RACE_COLOR,
-                    }}
-                  />
-                ))}
+                {/* Interactive overlays — races + injury bands with native tooltips + click-through */}
+                <Customized
+                  component={makeEventOverlay({
+                    injuries: showInjuries ? trailingOverlays.injuries : [],
+                    races: showRaces ? trailingOverlays.races.map((r) => ({ ...r, color: raceColor })) : [],
+                    raceColor,
+                    injuryColor,
+                    injuryOpacity,
+                    onSelect: openEvent,
+                  })}
+                />
+
 
               </BarChart>
             </ResponsiveContainer>
@@ -879,39 +1098,18 @@ export function WeeklyRunningChart() {
                   />
                 ))}
 
-                {/* Injury / illness bands (current year only) */}
-                {showInjuries && compareOverlays.injuries.map((b, i) => (
-                  <ReferenceArea
-                    key={`cmp-inj-${i}`}
-                    x1={b.x1}
-                    x2={b.x2}
-                    fill={INJURY_COLOR}
-                    fillOpacity={0.14}
-                    stroke={INJURY_COLOR}
-                    strokeOpacity={0.4}
-                    strokeDasharray="2 3"
-                    ifOverflow="extendDomain"
-                    label={{ value: b.event.title, position: "insideTop", fontSize: 9, fill: INJURY_COLOR }}
-                  />
-                ))}
+                {/* Interactive overlays — current-year injury bands + per-year race markers */}
+                <Customized
+                  component={makeEventOverlay({
+                    injuries: showInjuries ? compareOverlays.injuries : [],
+                    races: showRaces ? compareOverlays.races : [],
+                    raceColor,
+                    injuryColor,
+                    injuryOpacity,
+                    onSelect: openEvent,
+                  })}
+                />
 
-                {/* Race markers tinted to the year they belong to */}
-                {showRaces && compareOverlays.races.map((r, i) => (
-                  <ReferenceLine
-                    key={`cmp-race-${i}`}
-                    x={r.label}
-                    stroke={r.color}
-                    strokeWidth={1.5}
-                    strokeDasharray="2 2"
-                    ifOverflow="extendDomain"
-                    label={{
-                      value: `🏁 ${r.event.title}${r.event.race_priority ? ` (${r.event.race_priority})` : ""}`,
-                      position: "top",
-                      fontSize: 9,
-                      fill: r.color,
-                    }}
-                  />
-                ))}
               </LineChart>
 
             </ResponsiveContainer>

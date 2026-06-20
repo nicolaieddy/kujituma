@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon, List, GitBranch, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -135,6 +135,31 @@ export function TrainingEventsPanel() {
 
   const medals = useMemo(() => computeMedals(events), [events]);
 
+  // Scroll to (and briefly highlight) a specific event when arriving via #event-<id>
+  const scrolledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (isLoading || typeof window === "undefined") return;
+    const hash = window.location.hash;
+    if (!hash.startsWith("#event-")) return;
+    const id = hash.slice("#event-".length);
+    if (!id || scrolledRef.current === id) return;
+    const match = events.find((e) => e.id === id);
+    if (!match) return;
+    // Make sure the right filter shows the target
+    if (filter !== "all" && filter !== match.event_type) setFilter("all");
+    requestAnimationFrame(() => {
+      const el = document.getElementById(`event-${id}`);
+      if (!el) return;
+      scrolledRef.current = id;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary", "ring-offset-2", "rounded-md");
+      setTimeout(() => {
+        el.classList.remove("ring-2", "ring-primary", "ring-offset-2", "rounded-md");
+      }, 2400);
+    });
+  }, [isLoading, events, filter]);
+
+
   const openNew = (type: TrainingEventType = "injury_illness") => {
     setForm(emptyForm(type));
     setDialogOpen(true);
@@ -269,7 +294,7 @@ export function TrainingEventsPanel() {
                 ? `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`
                 : format(start, "d MMM yyyy");
               return (
-                <Card key={e.id} className="p-4 border-l-4" style={{ borderLeftColor: "hsl(var(--primary))" }}>
+                <Card id={`event-${e.id}`} key={e.id} className="p-4 border-l-4 scroll-mt-24" style={{ borderLeftColor: "hsl(var(--primary))" }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0 flex-1">
                       <Icon className={cn("h-5 w-5 mt-0.5 shrink-0", meta.color)} />
