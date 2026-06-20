@@ -66,7 +66,7 @@ export function BodyPartsPicker({ value, onChange }: Props) {
             <ChevronsUpDown className="h-4 w-4 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <PopoverContent className="w-[--radix-popover-trigger-width] p-0 z-[300]" align="start">
           <Command
             filter={(itemValue, search) => {
               const def = BODY_PART_BY_KEY[itemValue];
