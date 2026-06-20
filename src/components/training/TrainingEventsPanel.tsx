@@ -78,6 +78,8 @@ interface FormState {
   end_date: string;
   severity: string;
   body_part: string;
+  body_parts: BodyPartEntry[];
+  issue_category: IssueCategory | "";
   race_distance: string;
   race_distance_custom: string;
   race_result: string;
@@ -95,6 +97,8 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     end_date: "",
     severity: "",
     body_part: "",
+    body_parts: [],
+    issue_category: type === "injury_illness" ? "niggle" : "",
     race_distance: "",
     race_distance_custom: "",
     race_result: "",
@@ -115,6 +119,8 @@ function eventToForm(e: TrainingEvent): FormState {
     end_date: e.end_date ?? "",
     severity: e.severity ? String(e.severity) : "",
     body_part: e.body_part ?? "",
+    body_parts: Array.isArray(e.body_parts) ? e.body_parts : [],
+    issue_category: (e.issue_category as IssueCategory) ?? (e.event_type === "injury_illness" ? "niggle" : ""),
     race_distance: isStd ? (e.race_distance as string) : (e.race_distance ? "__custom__" : ""),
     race_distance_custom: isStd ? "" : (e.race_distance ?? ""),
     race_result: e.race_result ?? "",
