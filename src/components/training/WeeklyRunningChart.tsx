@@ -632,14 +632,8 @@ export function WeeklyRunningChart() {
                   }}
                   labelFormatter={(label) => label}
                 />
-                <Legend
-                  wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
-                  formatter={(value) =>
-                    value === "imported_km"
-                      ? "Garmin backfill (monthly avg / week)"
-                      : "Strava / .FIT sessions"
-                  }
-                />
+
+
                 <Bar
                   dataKey="total_km"
                   name="total_km"
