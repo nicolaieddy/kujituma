@@ -706,10 +706,10 @@ export function WeeklyRunningChart() {
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-sm"
-                style={{ background: RACE_COLOR }}
+                style={{ background: raceColor }}
                 aria-hidden
               />
-              <Trophy className="h-3 w-3" style={{ color: RACE_COLOR }} aria-hidden />
+              <Trophy className="h-3 w-3" style={{ color: raceColor }} aria-hidden />
               Races
             </span>
           )}
@@ -717,13 +717,14 @@ export function WeeklyRunningChart() {
             <span className="inline-flex items-center gap-1.5">
               <span
                 className="inline-block h-3 w-3 rounded-sm"
-                style={{ background: `${INJURY_COLOR.replace(")", " / 0.18)")}`, border: `1px solid ${INJURY_COLOR}` }}
+                style={{ background: injuryColor, opacity: Math.min(1, injuryOpacity * 4), border: `1px solid ${injuryColor}` }}
                 aria-hidden
               />
-              <HeartPulse className="h-3 w-3" style={{ color: INJURY_COLOR }} aria-hidden />
+              <HeartPulse className="h-3 w-3" style={{ color: injuryColor }} aria-hidden />
               Injury / illness
             </span>
           )}
+
         </div>
 
 
