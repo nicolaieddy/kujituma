@@ -584,6 +584,19 @@ export function TrainingEventsPanel() {
                     />
                   </div>
                 </div>
+                <div className="space-y-1.5">
+                  <Label>Strava race URL (optional)</Label>
+                  <Input
+                    type="url"
+                    value={form.strava_url}
+                    onChange={(e) => setForm({ ...form, strava_url: e.target.value })}
+                    placeholder="https://www.strava.com/activities/123456789"
+                    maxLength={300}
+                  />
+                  <p className="text-[11px] text-muted-foreground">
+                    Paste the Strava activity link for this race. After saving, you can also upload the .fit file below to parse splits, HR, pace and elevation.
+                  </p>
+                </div>
               </>
             )}
 
