@@ -498,7 +498,8 @@ function buildCompareSeries(
   }
 
   // For month granularity, reconcile each (year, month) cell with the larger of
-  // (session sum, imported Garmin aggregate). For week compare, leave as-is.
+  // (session sum, imported Garmin aggregate). For week compare, distribute the
+  // monthly aggregate across that month's ISO weeks when sessions are absent.
   if (g === "month") {
     for (const a of aggregates) {
       const d = new Date(a.month + "T12:00:00");
@@ -507,6 +508,37 @@ function buildCompareSeries(
       const slot = getMonth(d);
       const existing = rows[slot][String(y)] as number;
       if (a.distance_km > existing) rows[slot][String(y)] = a.distance_km;
+    }
+  } else {
+    // week compare: dedupe aggregates per month (max across sources), then for
+    // any (year, month) where sessions sum to 0, spread the monthly km evenly
+    // across the ISO weeks whose Monday falls inside that month. This makes
+    // Garmin CSV backfill show up in compare-years mode the same way it does
+    // in the trailing/month views.
+    const perMonth = new Map<string, number>();
+    for (const a of aggregates) {
+      const mk = a.month.slice(0, 7);
+      perMonth.set(mk, Math.max(perMonth.get(mk) ?? 0, a.distance_km));
+    }
+    for (const [mk, km] of perMonth) {
+      const d = new Date(mk + "-01T12:00:00");
+      const y = getYear(d);
+      if (!years.includes(y)) continue;
+      const monthStart = startOfMonth(d);
+      const monthEnd = endOfMonth(d);
+      const weekSlots: number[] = [];
+      let w = startOfWeek(monthStart, { weekStartsOn: 1 });
+      while (w < monthStart) w = addWeeks(w, 1);
+      while (w <= monthEnd) {
+        const slot = getISOWeek(w) - 1;
+        if (slot >= 0 && slot < slots) weekSlots.push(slot);
+        w = addWeeks(w, 1);
+      }
+      if (weekSlots.length === 0) continue;
+      const sessionSum = weekSlots.reduce((s, slot) => s + (rows[slot][String(y)] as number), 0);
+      if (sessionSum > 0) continue;
+      const per = km / weekSlots.length;
+      for (const slot of weekSlots) rows[slot][String(y)] = per;
     }
   }
 
