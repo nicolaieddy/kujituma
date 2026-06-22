@@ -471,13 +471,35 @@ export class WeeklyProgressService {
       return [];
     }
 
-    const objectivesToCreate = originalObjectives.map(obj => ({
+    const potentialObjectives = originalObjectives.map(obj => ({
       user_id: userId,
       goal_id: obj.goal_id,
       text: obj.text,
       week_start: newWeekStart,
       is_completed: false
     }));
+
+    // Idempotency: skip any that already exist in the target week
+    const { data: existingObjectives, error: existingError } = await supabase
+      .from('weekly_objectives')
+      .select('text, goal_id')
+      .eq('user_id', userId)
+      .eq('week_start', newWeekStart);
+
+    if (existingError) throw existingError;
+
+    const existingSet = new Set(
+      (existingObjectives || []).map(o => `${o.text}|${o.goal_id || ''}`)
+    );
+
+    const objectivesToCreate = potentialObjectives.filter(
+      obj => !existingSet.has(`${obj.text}|${obj.goal_id || ''}`)
+    );
+
+    if (objectivesToCreate.length === 0) {
+      console.log('[WeeklyProgressService] All carry-over objectives already exist in target week, skipping insert');
+      return [];
+    }
 
     const { data: newObjectives, error: createError } = await supabase
       .from('weekly_objectives')
@@ -487,6 +509,7 @@ export class WeeklyProgressService {
     if (createError) throw createError;
     return (newObjectives || []) as WeeklyObjective[];
   }
+
 
   /**
    * Carry over objectives to potentially different target weeks
