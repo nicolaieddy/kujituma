@@ -20,6 +20,7 @@ interface CarryOverObjectivesModalProps {
   onConfirmCarryOver: (objectivesWithWeeks: { objectiveId: string; targetWeek: string }[]) => void;
   onDismissObjective?: (objectiveText: string, goalId: string | null) => void;
   onRestoreObjective?: (objectiveText: string, goalId: string | null) => void;
+  onResolveObjective?: (objectiveId: string, resolution: 'completed' | 'deprioritized') => void;
   dismissedObjectives?: DismissedObjective[];
   isCarryingOver: boolean;
   title?: string;
