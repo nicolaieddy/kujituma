@@ -254,29 +254,75 @@ export const CarryOverObjectivesModal = ({
                               )}
                             </div>
                             
-                            {/* Dismiss button */}
-                            {onDismissObjective && (
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        onDismissObjective(objective.text, objective.goal_id);
-                                      }}
-                                    >
-                                      <EyeOff className="h-4 w-4" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent side="left">
-                                    <p>Don't show this again</p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
-                            )}
+                            {/* Retro-resolve: mark done (in original week) or deprioritize */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {onResolveObjective && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-green-600"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onResolveObjective(objective.id, 'completed');
+                                        }}
+                                      >
+                                        <Check className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>Mark done (in original week of {formatLastScheduled(objective.week_start)})</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {onResolveObjective && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-amber-600"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onResolveObjective(objective.id, 'deprioritized');
+                                        }}
+                                      >
+                                        <Ban className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>Deprioritized — won't count as completed</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {onDismissObjective && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onDismissObjective(objective.text, objective.goal_id);
+                                        }}
+                                      >
+                                        <EyeOff className="h-4 w-4" />
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent side="left">
+                                      <p>Hide from suggestions (keeps it incomplete)</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
