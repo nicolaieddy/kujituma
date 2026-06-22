@@ -8,7 +8,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Badge } from "@/components/ui/badge";
 import { CarryOverObjective, WeeklyObjective } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
-import { RotateCcw, Target, ChevronRight, EyeOff, Eye, ChevronDown, Clock } from "lucide-react";
+import { RotateCcw, Target, ChevronRight, EyeOff, Eye, ChevronDown, Clock, Check, Ban } from "lucide-react";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
 import { DismissedObjective } from "@/hooks/useCarryOverObjectives";
 
