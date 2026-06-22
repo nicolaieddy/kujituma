@@ -473,6 +473,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
         }}
         onDismissObjective={dismissObjective}
         onRestoreObjective={restoreObjective}
+        onResolveObjective={resolveObjective}
         dismissedObjectives={dismissedObjectives}
         isCarryingOver={isCarryOverModalCarrying}
         title="Carry Over to Next Week"
