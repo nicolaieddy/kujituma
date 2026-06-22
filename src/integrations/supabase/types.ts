@@ -3944,6 +3944,8 @@ export type Database = {
           id: string
           is_completed: boolean
           order_index: number | null
+          resolution: Database["public"]["Enums"]["objective_resolution"]
+          resolved_at: string | null
           scheduled_day: string | null
           scheduled_time: string | null
           text: string
@@ -3957,6 +3959,8 @@ export type Database = {
           id?: string
           is_completed?: boolean
           order_index?: number | null
+          resolution?: Database["public"]["Enums"]["objective_resolution"]
+          resolved_at?: string | null
           scheduled_day?: string | null
           scheduled_time?: string | null
           text: string
@@ -3970,6 +3974,8 @@ export type Database = {
           id?: string
           is_completed?: boolean
           order_index?: number | null
+          resolution?: Database["public"]["Enums"]["objective_resolution"]
+          resolved_at?: string | null
           scheduled_day?: string | null
           scheduled_time?: string | null
           text?: string
@@ -4538,6 +4544,7 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       goal_value_link_source: "ai" | "user"
+      objective_resolution: "none" | "completed" | "deprioritized" | "abandoned"
       training_event_type: "injury_illness" | "race" | "other"
       value_visibility: "private" | "public"
     }
@@ -4669,6 +4676,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       goal_value_link_source: ["ai", "user"],
+      objective_resolution: ["none", "completed", "deprioritized", "abandoned"],
       training_event_type: ["injury_illness", "race", "other"],
       value_visibility: ["private", "public"],
     },

@@ -118,9 +118,39 @@ export const useCarryOverObjectives = (
     },
   });
 
+  const resolveMutation = useMutation({
+    mutationFn: ({ objectiveId, resolution }: { objectiveId: string; resolution: 'completed' | 'deprioritized' | 'abandoned' }) =>
+      WeeklyProgressService.resolveObjective(objectiveId, resolution),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['incomplete-objectives', user?.id, currentWeekStart] });
+      queryClient.invalidateQueries({ queryKey: ['weekly-objectives'] });
+      queryClient.invalidateQueries({ queryKey: ['all-weekly-objectives'] });
+      toast({
+        title: variables.resolution === 'completed' ? 'Marked as done' : 'Marked as deprioritized',
+        description:
+          variables.resolution === 'completed'
+            ? "Recorded against the original week — past stats now reflect it."
+            : "Won't count as completed; removed from carry-over suggestions.",
+      });
+    },
+    onError: (error) => {
+      console.error('[useCarryOverObjectives] Error resolving objective:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update objective. Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const carryOverObjectives = (objectivesWithWeeks: CarryOverInput[]) => {
     carryOverMutation.mutate(objectivesWithWeeks);
   };
+
+  const resolveObjective = (objectiveId: string, resolution: 'completed' | 'deprioritized' | 'abandoned') => {
+    resolveMutation.mutate({ objectiveId, resolution });
+  };
+
 
   const carryOverObjectivesAsync = (objectivesWithWeeks: CarryOverInput[]) => {
     return carryOverMutation.mutateAsync(objectivesWithWeeks);
@@ -147,5 +177,7 @@ export const useCarryOverObjectives = (
     isLoadingDismissed,
     restoreObjective,
     isRestoring: restoreMutation.isPending,
+    resolveObjective,
+    isResolving: resolveMutation.isPending,
   };
 };

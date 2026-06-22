@@ -333,41 +333,41 @@ export class WeeklyProgressService {
 
   static async getIncompleteObjectivesFromPreviousWeeks(currentWeekStart: string): Promise<WeeklyObjective[]> {
     const userId = authStore.requireUserId();
-    
-    // Step 1: Get all completed objective signatures (text + goal_id)
-    // This is the KEY FIX: if an objective is completed in ANY week, it shouldn't appear in carry-over
-    const { data: completedObjectives, error: completedError } = await supabase
+
+    // Step 1: Get all completed OR resolved (deprioritized/abandoned) signatures.
+    // Any of these should NOT appear as carry-over candidates.
+    const { data: resolvedRows, error: resolvedError } = await supabase
       .from('weekly_objectives')
-      .select('text, goal_id')
+      .select('text, goal_id, is_completed, resolution')
       .eq('user_id', userId)
-      .eq('is_completed', true);
+      .or('is_completed.eq.true,resolution.neq.none');
 
-    if (completedError) throw completedError;
+    if (resolvedError) throw resolvedError;
 
-    // Build set of completed signatures
-    const completedSet = new Set<string>();
-    (completedObjectives || []).forEach(obj => {
+    const resolvedSet = new Set<string>();
+    (resolvedRows || []).forEach(obj => {
       const key = `${obj.text}|${obj.goal_id || ''}`;
-      completedSet.add(key);
+      resolvedSet.add(key);
     });
 
-    // Step 2: Get all incomplete objectives from previous weeks
+    // Step 2: Get incomplete + unresolved objectives from previous weeks
     const { data: incompleteObjectives, error: incompleteError } = await supabase
       .from('weekly_objectives')
       .select('*')
       .eq('user_id', userId)
       .eq('is_completed', false)
+      .eq('resolution', 'none')
       .lt('week_start', currentWeekStart)
       .order('week_start', { ascending: false })
       .order('created_at', { ascending: true });
 
     if (incompleteError) throw incompleteError;
-    
+
     if (!incompleteObjectives || incompleteObjectives.length === 0) {
       return [];
     }
 
-    // Step 3: Get all objectives from current and future weeks to check for already-carried-over items
+    // Step 3: already-carried-over signatures in current/future weeks
     const { data: currentAndFutureObjectives, error: futureError } = await supabase
       .from('weekly_objectives')
       .select('text, goal_id')
@@ -376,7 +376,6 @@ export class WeeklyProgressService {
 
     if (futureError) throw futureError;
 
-    // Get dismissed objectives
     const { data: dismissedObjectives, error: dismissedError } = await supabase
       .from('dismissed_carryover_objectives')
       .select('objective_text, goal_id')
@@ -384,30 +383,51 @@ export class WeeklyProgressService {
 
     if (dismissedError) throw dismissedError;
 
-    // Build a set of "text|goal_id" keys for carried-over objectives
     const carriedOverSet = new Set<string>();
     (currentAndFutureObjectives || []).forEach(obj => {
       const key = `${obj.text}|${obj.goal_id || ''}`;
       carriedOverSet.add(key);
     });
 
-    // Build a set of "text|goal_id" keys for dismissed objectives
     const dismissedSet = new Set<string>();
     (dismissedObjectives || []).forEach(obj => {
       const key = `${obj.objective_text}|${obj.goal_id || ''}`;
       dismissedSet.add(key);
     });
 
-    // Step 4: Filter out objectives that are:
-    // - Already carried over to current/future weeks
-    // - Dismissed objectives
-    // - NEWLY: Objectives where ANY version has been completed (the key bug fix)
-    const filteredObjectives = incompleteObjectives.filter(obj => {
+    return incompleteObjectives.filter(obj => {
       const key = `${obj.text}|${obj.goal_id || ''}`;
-      return !carriedOverSet.has(key) && !dismissedSet.has(key) && !completedSet.has(key);
-    });
+      return !carriedOverSet.has(key) && !dismissedSet.has(key) && !resolvedSet.has(key);
+    }) as WeeklyObjective[];
+  }
 
-    return filteredObjectives as WeeklyObjective[];
+  /**
+   * Retroactively resolve an objective IN ITS ORIGINAL WEEK.
+   * - 'completed' → is_completed=true (counts toward that past week's stats; honest because it happened then)
+   * - 'deprioritized' / 'abandoned' → resolved without counting as completed
+   * No new rows; the week is not changed. Removes the item from carry-over suggestions.
+   */
+  static async resolveObjective(
+    objectiveId: string,
+    resolution: 'completed' | 'deprioritized' | 'abandoned'
+  ): Promise<void> {
+    const userId = authStore.requireUserId();
+
+    const patch: Record<string, unknown> = {
+      resolution,
+      resolved_at: new Date().toISOString(),
+    };
+    if (resolution === 'completed') {
+      patch.is_completed = true;
+    }
+
+    const { error } = await supabase
+      .from('weekly_objectives')
+      .update(patch)
+      .eq('id', objectiveId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
   }
 
   static async dismissObjectiveFromCarryOver(objectiveText: string, goalId: string | null): Promise<void> {
