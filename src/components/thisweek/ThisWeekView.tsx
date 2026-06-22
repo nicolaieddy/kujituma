@@ -124,6 +124,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     dismissObjective,
     dismissedObjectives,
     restoreObjective,
+    resolveObjective,
   } = useCarryOverObjectives(currentWeekStart, goalsForLogging);
 
   const hasIncompleteObjectivesFromPastWeeks = carryOverIncompleteObjectives.length > 0;
