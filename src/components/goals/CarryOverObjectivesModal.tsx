@@ -36,6 +36,7 @@ export const CarryOverObjectivesModal = ({
   onConfirmCarryOver,
   onDismissObjective,
   onRestoreObjective,
+  onResolveObjective,
   dismissedObjectives = [],
   isCarryingOver,
   title = "Carry Over Incomplete Objectives",
