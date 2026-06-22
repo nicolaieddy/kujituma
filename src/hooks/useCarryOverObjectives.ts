@@ -177,5 +177,7 @@ export const useCarryOverObjectives = (
     isLoadingDismissed,
     restoreObjective,
     isRestoring: restoreMutation.isPending,
+    resolveObjective,
+    isResolving: resolveMutation.isPending,
   };
 };
