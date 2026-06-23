@@ -70,6 +70,13 @@ export const TosGate = ({ children }: TosGateProps) => {
     return <>{children}</>;
   }
 
+  // Don't gate on the legal pages themselves — users must be able to read
+  // the Terms of Service and Privacy Policy before accepting them.
+  const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (pathname === '/terms' || pathname === '/privacy') {
+    return <>{children}</>;
+  }
+
   // If we're processing a new signup, skip the modal entirely
   // The ToS was already accepted during the signup flow
   if (isProcessingSignup) {
