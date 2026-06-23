@@ -53,9 +53,10 @@ function statusPercent(s: FileUploadStatus["status"]): number {
   }
 }
 
-export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogProps) {
+export function BulkFitUploadDialog({ open, onOpenChange, initialFiles }: BulkFitUploadDialogProps) {
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const autoStartedRef = useRef(false);
   const {
     uploadMultipleFitFiles,
     overwriteDuplicate,
@@ -65,6 +66,18 @@ export function BulkFitUploadDialog({ open, onOpenChange }: BulkFitUploadDialogP
     progress,
     fileStatuses,
   } = useFitFileUpload();
+
+  // Auto-load + auto-start upload when files are dropped into the parent
+  useEffect(() => {
+    if (open && initialFiles && initialFiles.length > 0 && !autoStartedRef.current) {
+      autoStartedRef.current = true;
+      setSelectedFiles(initialFiles);
+      // Kick off immediately
+      uploadMultipleFitFiles(initialFiles);
+    }
+    if (!open) autoStartedRef.current = false;
+  }, [open, initialFiles, uploadMultipleFitFiles]);
+
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
