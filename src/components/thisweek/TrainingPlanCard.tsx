@@ -345,7 +345,11 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
           />
           <BulkFitUploadDialog
             open={bulkUploadOpen}
-            onOpenChange={setBulkUploadOpen}
+            onOpenChange={(o) => {
+              setBulkUploadOpen(o);
+              if (!o) setDroppedFiles(undefined);
+            }}
+            initialFiles={droppedFiles}
           />
           <ImportCoachPlanDialog
             open={importOpen}
