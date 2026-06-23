@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Copy, Plus, Upload, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Upload, Sparkles, FileArchive } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
 import { useGoals } from "@/hooks/useGoals";
 import { useWorkoutPreferences } from "@/hooks/useWorkoutPreferences";
@@ -33,6 +33,9 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
   const [isOpen, setIsOpen] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [bulkUploadOpen, setBulkUploadOpen] = useState(false);
+  const [droppedFiles, setDroppedFiles] = useState<File[] | undefined>(undefined);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const dragCounterRef = useRef(0);
   const [importOpen, setImportOpen] = useState(false);
   const [sourceImportId, setSourceImportId] = useState<string | null>(null);
   const [editingWorkout, setEditingWorkout] = useState<TrainingPlanWorkout | null>(null);
@@ -140,9 +143,60 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     return ids.map(id => goals.find(g => g.id === id)?.title).filter(Boolean) as string[];
   };
 
+  const ACCEPT_RE = /\.(fit|zip|csv)$/i;
+  const filterAccepted = (files: File[]) => files.filter(f => ACCEPT_RE.test(f.name));
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsDragOver(true);
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    }
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+    const files = filterAccepted(Array.from(e.dataTransfer.files || []));
+    if (files.length === 0) return;
+    setDroppedFiles(files);
+    setBulkUploadOpen(true);
+  };
+
   return (
     <>
-      <Card className="border-border">
+      <Card
+        className="border-border relative"
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {isDragOver && !isReadOnly && (
+          <div className="pointer-events-none absolute inset-0 z-30 rounded-xl border-2 border-dashed border-primary bg-primary/5 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 animate-in fade-in">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
+              <FileArchive className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">Drop to upload</p>
+            <p className="text-xs text-muted-foreground">.fit, .zip activities · .csv sleep — auto-routed by date</p>
+          </div>
+        )}
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -291,7 +345,11 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
           />
           <BulkFitUploadDialog
             open={bulkUploadOpen}
-            onOpenChange={setBulkUploadOpen}
+            onOpenChange={(o) => {
+              setBulkUploadOpen(o);
+              if (!o) setDroppedFiles(undefined);
+            }}
+            initialFiles={droppedFiles}
           />
           <ImportCoachPlanDialog
             open={importOpen}
