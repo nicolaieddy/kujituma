@@ -11,6 +11,8 @@ import { formatDuration } from "@/components/thisweek/trainingPlanUtils";
 interface BulkFitUploadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** When provided, dialog opens with these files pre-selected and auto-starts upload */
+  initialFiles?: File[];
 }
 
 function StatusIcon({ status }: { status: FileUploadStatus["status"] }) {
