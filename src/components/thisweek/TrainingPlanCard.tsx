@@ -143,9 +143,60 @@ export function TrainingPlanCard({ weekStart, isReadOnly = false, goalId }: Trai
     return ids.map(id => goals.find(g => g.id === id)?.title).filter(Boolean) as string[];
   };
 
+  const ACCEPT_RE = /\.(fit|zip|csv)$/i;
+  const filterAccepted = (files: File[]) => files.filter(f => ACCEPT_RE.test(f.name));
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    dragCounterRef.current += 1;
+    setIsDragOver(true);
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    if (!e.dataTransfer.types.includes("Files")) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "copy";
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    e.preventDefault();
+    dragCounterRef.current -= 1;
+    if (dragCounterRef.current <= 0) {
+      dragCounterRef.current = 0;
+      setIsDragOver(false);
+    }
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    if (isReadOnly) return;
+    e.preventDefault();
+    dragCounterRef.current = 0;
+    setIsDragOver(false);
+    const files = filterAccepted(Array.from(e.dataTransfer.files || []));
+    if (files.length === 0) return;
+    setDroppedFiles(files);
+    setBulkUploadOpen(true);
+  };
+
   return (
     <>
-      <Card className="border-border">
+      <Card
+        className="border-border relative"
+        onDragEnter={handleDragEnter}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        {isDragOver && !isReadOnly && (
+          <div className="pointer-events-none absolute inset-0 z-30 rounded-xl border-2 border-dashed border-primary bg-primary/5 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 animate-in fade-in">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/15">
+              <FileArchive className="h-6 w-6 text-primary" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">Drop to upload</p>
+            <p className="text-xs text-muted-foreground">.fit, .zip activities · .csv sleep — auto-routed by date</p>
+          </div>
+        )}
         <Collapsible open={isOpen} onOpenChange={setIsOpen}>
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
