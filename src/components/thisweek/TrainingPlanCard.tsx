@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Copy, Plus, Upload, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Copy, Plus, Upload, Sparkles, FileArchive } from "lucide-react";
 import { useTrainingPlan, type TrainingPlanWorkout, type CreateTrainingWorkoutData } from "@/hooks/useTrainingPlan";
 import { useGoals } from "@/hooks/useGoals";
 import { useWorkoutPreferences } from "@/hooks/useWorkoutPreferences";
