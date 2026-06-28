@@ -23,6 +23,7 @@ function createConfiguredServer(supabase: any, userId: string) {
   registerTrainingWriteTools(mcp, supabase, userId);
   registerTrainingEventTools(mcp, supabase, userId);
   registerNetworkTools(mcp, supabase, userId);
+  registerSocialTools(mcp, supabase, userId);
   registerResources(mcp, supabase, userId);
   registerPrompts(mcp);
 
