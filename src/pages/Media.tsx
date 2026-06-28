@@ -62,6 +62,7 @@ export default function MediaPage() {
       source: c.source,
       archived_url: c.archived_url,
       is_public: false,
+      story_id: null,
       created_at: c.created_at,
       updated_at: c.updated_at,
     } as MediaMention);
