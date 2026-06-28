@@ -196,6 +196,18 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
     setPlatform(defaultPlatform);
   };
 
+  useEffect(() => {
+    if (!open) return;
+    if (initialFiles && initialFiles.length > 1) {
+      handleFiles(initialFiles);
+    } else if (initialFiles && initialFiles.length === 1) {
+      handleSingleFile(initialFiles[0]);
+    } else if (initialFile) {
+      handleSingleFile(initialFile);
+    }
+    /* eslint-disable-next-line */
+  }, [open, initialFile, initialFiles]);
+
   const handleFiles = async (files: File[]) => {
     if (files.length === 1) {
       await handleSingleFile(files[0]);
