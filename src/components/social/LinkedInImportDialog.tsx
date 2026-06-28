@@ -117,6 +117,21 @@ function titleFromSlug(url: string): string {
   }
 }
 
+/** Normalize a LinkedIn URL for idempotent matching: lowercase host, drop query/hash, trim trailing slash. */
+function normalizeLiUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    const path = u.pathname.replace(/\/+$/, "");
+    return `${u.protocol}//${host}${path}`;
+  } catch {
+    return s.replace(/[?#].*$/, "").replace(/\/+$/, "").toLowerCase();
+  }
+}
+
 export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "" }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
