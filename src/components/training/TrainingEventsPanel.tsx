@@ -139,6 +139,7 @@ function eventToForm(e: TrainingEvent): FormState {
     official_time_input: formatSecondsToTime(e.official_time_seconds),
     strava_url: typeof (e.metadata as any)?.strava_url === "string" ? (e.metadata as any).strava_url : "",
     location: e.location ?? "",
+    linked_activity_id: e.linked_activity_id ?? null,
   };
 }
 
