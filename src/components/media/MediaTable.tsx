@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2, X } from "lucide-react";
+import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2, X, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchEmpty } from "@/components/illustrations";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { URL_STATUS_COLOR, MEDIA_TYPES, MEDIA_STATUSES, MEDIA_URL_STATUSES, type MediaMention } from "@/hooks/media/useMedia";
 
 interface Props {
