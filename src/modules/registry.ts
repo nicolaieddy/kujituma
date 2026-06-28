@@ -107,6 +107,30 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
       "network_message_templates",
     ],
   },
+  {
+    id: "social",
+    name: "Social",
+    tagline: "Plan, draft, and track LinkedIn, X, Instagram, and TikTok posts in one pipeline.",
+    description:
+      "An end-to-end content workshop: a kanban pipeline from idea to published, per-platform follower targets with pace bars, editable pillars per platform, and per-post performance snapshots. Imports LinkedIn single-post .xlsx analytics. Replaces a Notion-based system.",
+    coverEmoji: "📣",
+    category: "social",
+    tier: "free",
+    status: "available",
+    surfaces: {
+      pages: ["Dedicated Social page (/social)"],
+      profileSections: ["Per-platform targets, deadlines, and pillars"],
+      integrations: ["LinkedIn single-post .xlsx import"],
+      mcpToolPrefixes: ["social_"],
+    },
+    dataTables: [
+      "social_posts",
+      "social_post_metrics",
+      "social_follower_growth",
+      "social_platform_settings",
+      "social_post_values",
+    ],
+  },
 ];
 
 export const getModule = (id: ModuleId): ModuleDefinition | undefined =>
