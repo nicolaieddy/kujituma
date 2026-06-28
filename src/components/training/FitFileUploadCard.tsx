@@ -1,23 +1,36 @@
-import { useRef, useState } from "react";
-import { Upload, FileUp, Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { useState } from "react";
+import { FileUp, CheckCircle2, XCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { useFitFileUpload, type FitUploadResult } from "@/hooks/useFitFileUpload";
 import { cn } from "@/lib/utils";
 import { SyncRunLogPanel } from "@/components/sync/SyncRunLogPanel";
+import { ImportDropzone } from "@/components/shared/ImportDropzone";
+import { createImportProgress, describeError } from "@/lib/importProgress";
 
 export function FitFileUploadCard() {
-  const fileRef = useRef<HTMLInputElement>(null);
   const { uploadMultipleFitFiles, isUploading, progress } = useFitFileUpload();
   const [results, setResults] = useState<FitUploadResult[]>([]);
 
-  const handleFiles = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const handleFiles = async (files: File[]) => {
     if (files.length === 0) return;
     setResults([]);
-    const res = await uploadMultipleFitFiles(files);
-    setResults(res);
-    if (fileRef.current) fileRef.current.value = "";
+    const p = createImportProgress(`Uploading ${files.length} .fit file${files.length === 1 ? "" : "s"}…`);
+    try {
+      const res = await uploadMultipleFitFiles(files);
+      setResults(res);
+      const ok = res.filter((r) => r.success).length;
+      const failed = res.length - ok;
+      if (failed === 0) {
+        p.success("Upload complete", `${ok} file${ok === 1 ? "" : "s"} imported`);
+      } else if (ok === 0) {
+        p.error("All uploads failed", `${failed} file${failed === 1 ? "" : "s"} couldn't be processed`);
+      } else {
+        p.warning("Upload finished with errors", `${ok} succeeded · ${failed} failed`);
+      }
+    } catch (e) {
+      console.error("[fit-upload]", e);
+      p.error("Upload failed", describeError(e));
+    }
   };
 
   return (
@@ -30,39 +43,20 @@ export function FitFileUploadCard() {
           <div>
             <CardTitle className="text-base">Bulk .FIT Upload</CardTitle>
             <CardDescription>
-              Select multiple .fit files — each will be auto-matched to the correct workout by date
+              Drop multiple .fit files — each is auto-matched to the correct workout by date
             </CardDescription>
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <input
-          ref={fileRef}
-          type="file"
+        <ImportDropzone
           accept=".fit"
           multiple
-          className="hidden"
-          onChange={handleFiles}
-          disabled={isUploading}
+          busy={isUploading}
+          onFiles={handleFiles}
+          label={isUploading ? (progress || "Processing…") : "Drop .fit files or click to browse"}
+          hint="Garmin, Wahoo, Coros, Polar — auto-matched by activity date"
         />
-        <Button
-          variant="outline"
-          className="w-full gap-2"
-          onClick={() => fileRef.current?.click()}
-          disabled={isUploading}
-        >
-          {isUploading ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              {progress || "Processing..."}
-            </>
-          ) : (
-            <>
-              <Upload className="h-4 w-4" />
-              Select .fit files to upload
-            </>
-          )}
-        </Button>
 
         {results.length > 0 && (
           <div className="space-y-1.5 rounded-lg border border-border bg-muted/20 p-3">
