@@ -6,10 +6,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Target, FileText, TrendingUp, TrendingDown, History, Trash2, Link2 } from "lucide-react";
+import { Plus, Pencil, Target, FileText, TrendingUp, TrendingDown, History, Trash2, Link2, Archive } from "lucide-react";
 import { format } from "date-fns";
 import type { SocialPlatform } from "@/lib/social";
-import { useSocialGoals, useDeleteSocialGoal } from "@/hooks/useSocialGoals";
+import { useSocialGoals, useDeleteSocialGoal, useArchiveSocialGoal } from "@/hooks/useSocialGoals";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
 import { useSocialPosts } from "@/hooks/useSocialPosts";
 import {
