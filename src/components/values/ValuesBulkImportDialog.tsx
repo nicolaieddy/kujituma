@@ -71,12 +71,26 @@ export const ValuesBulkImportDialog = ({ open, onOpenChange, onImport }: Props) 
     }
   };
 
-  const handleFile = async (f: File) => {
-    const p = createImportProgress(`Reading ${f.name}…`);
+  const handleFiles = async (files: File[]) => {
+    const p = createImportProgress(
+      files.length === 1 ? `Reading ${files[0].name}…` : `Reading ${files.length} files…`,
+    );
     try {
-      const content = await f.text();
-      setText((cur) => (cur ? cur + "\n" + content : content));
-      p.success("File loaded", `${content.split("\n").filter(Boolean).length} line(s) added`);
+      let totalLines = 0;
+      const parts: string[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        p.update(`Reading ${f.name} (${i + 1}/${files.length})…`);
+        const content = await f.text();
+        parts.push(content);
+        totalLines += content.split("\n").filter(Boolean).length;
+      }
+      const joined = parts.join("\n");
+      setText((cur) => (cur ? cur + "\n" + joined : joined));
+      p.success(
+        files.length === 1 ? "File loaded" : `${files.length} files loaded`,
+        `${totalLines} line(s) added`,
+      );
     } catch (e) {
       p.error("Couldn't read file", describeError(e));
     }
@@ -94,9 +108,10 @@ export const ValuesBulkImportDialog = ({ open, onOpenChange, onImport }: Props) 
           </p>
           <ImportDropzone
             accept=".txt,.csv,.md"
-            onFiles={(fs) => handleFile(fs[0])}
-            label="Drop a .txt / .csv file or click to browse"
-            hint="Or paste directly below"
+            multiple
+            onFiles={handleFiles}
+            label="Drop .txt / .csv files or click to browse"
+            hint="Multiple files supported — content is merged. Or paste directly below."
             className="p-4"
           />
           <Textarea
