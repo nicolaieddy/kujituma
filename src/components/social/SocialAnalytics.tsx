@@ -18,6 +18,7 @@ import { useSocialPosts } from "@/hooks/useSocialPosts";
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { cn } from "@/lib/utils";
 import { CompactNumber } from "./CompactNumber";
+import { AnalyticsGoalsSection } from "./AnalyticsGoalsSection";
 
 const STATUS_TONE = {
   on_track: { label: "On track", icon: TrendingUp, className: "bg-emerald-100 text-emerald-900 border-emerald-200" },
