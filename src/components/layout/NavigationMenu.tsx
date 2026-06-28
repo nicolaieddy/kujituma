@@ -47,6 +47,7 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     if (path.startsWith('/health')) return 'health';
     if (path.startsWith('/training')) return 'training';
     if (path.startsWith('/network')) return 'network';
+    if (path.startsWith('/social')) return 'social';
     if (path.startsWith('/modules')) return 'modules';
     if (path.startsWith('/profile')) return 'profile';
     return 'goals';
