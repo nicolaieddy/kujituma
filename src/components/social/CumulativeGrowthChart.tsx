@@ -171,7 +171,20 @@ export function CumulativeGrowthChart() {
                   tickFormatter={(v) => format(new Date(v), bucket === "month" ? "MMM yy" : "d MMM")}
                   tick={{ fontSize: 11 }}
                 />
-                <YAxis tickFormatter={(v) => formatCompact(Number(v))} tick={{ fontSize: 11 }} />
+                <YAxis
+                  tick={(props: any) => {
+                    const { x, y, payload } = props;
+                    const n = Number(payload.value);
+                    return (
+                      <g transform={`translate(${x},${y})`}>
+                        <text x={-4} y={0} dy={4} textAnchor="end" fontSize={11} fill="hsl(var(--muted-foreground))">
+                          {formatCompact(n)}
+                          <title>{n.toLocaleString()}</title>
+                        </text>
+                      </g>
+                    );
+                  }}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "hsl(var(--popover))",
@@ -182,10 +195,11 @@ export function CumulativeGrowthChart() {
                     format(new Date(l as string), bucket === "month" ? "MMMM yyyy" : "'Week of' d MMM yyyy")
                   }
                   formatter={(value: number, name: string) => [
-                    formatCompact(value),
+                    `${value.toLocaleString()} (${formatCompact(value)})`,
                     PLATFORM_META[name as SocialPlatform]?.label ?? name,
                   ]}
                 />
+
                 <Legend
                   formatter={(name) => PLATFORM_META[name as SocialPlatform]?.label ?? name}
                   wrapperStyle={{ fontSize: 12 }}
