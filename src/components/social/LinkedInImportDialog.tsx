@@ -117,6 +117,21 @@ function titleFromSlug(url: string): string {
   }
 }
 
+/** Normalize a LinkedIn URL for idempotent matching: lowercase host, drop query/hash, trim trailing slash. */
+function normalizeLiUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  const s = String(raw).trim();
+  if (!s) return null;
+  try {
+    const u = new URL(s);
+    const host = u.hostname.toLowerCase().replace(/^www\./, "");
+    const path = u.pathname.replace(/\/+$/, "");
+    return `${u.protocol}//${host}${path}`;
+  } catch {
+    return s.replace(/[?#].*$/, "").replace(/\/+$/, "").toLowerCase();
+  }
+}
+
 export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "" }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
@@ -176,10 +191,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
       setParsed(data);
 
       if (data.postUrl && !defaultPostId) {
-        const match = posts.find((p) => p.live_url && p.live_url.trim() === data.postUrl!.trim());
+        const target = normalizeLiUrl(data.postUrl);
+        const match = posts.find((p) => normalizeLiUrl(p.live_url) === target);
         if (match) {
           setSelectedPostId(match.id);
           setMode("attach");
+          toast.info("Matched an existing post — re-importing will update it");
         } else {
           setMode("create");
           setSelectedPostId(null);
@@ -207,7 +224,23 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     try {
       if (mode === "create") {
         if (!title.trim()) { toast.error("Add a title"); return; }
-        const created = await upsertPost.mutateAsync({
+
+        // Final idempotency guard: re-query by normalized live_url in case the
+        // local posts cache was stale or the URL differs only by query/slash.
+        const target = normalizeLiUrl(parsed.postUrl);
+        let existingId: string | null = null;
+        if (target) {
+          const { data: existing } = await supabase
+            .from("social_posts")
+            .select("id, live_url")
+            .eq("platforms", "{linkedin}" as any)
+            .limit(500);
+          // Fallback: client-side normalize compare (works around array filter quirks)
+          existingId = (existing ?? []).find((r: any) => normalizeLiUrl(r.live_url) === target)?.id ?? null;
+        }
+
+        const saved = await upsertPost.mutateAsync({
+          ...(existingId ? { id: existingId } : {}),
           title: title.trim(),
           body: body || null,
           status: "published",
@@ -218,10 +251,10 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
           trust_check: "not_checked",
           hold: false,
         } as any);
-        postId = created.id;
+        postId = saved.id;
 
         for (const vid of valueIds) {
-          await setPostValue.mutateAsync({ post_id: created.id, value_id: vid, weight: 1 });
+          await setPostValue.mutateAsync({ post_id: saved.id, value_id: vid, weight: 1 });
         }
       }
 
