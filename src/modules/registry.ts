@@ -140,7 +140,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     coverEmoji: "📰",
     category: "productivity",
     tier: "free",
-    status: "available",
+    status: "beta",
     surfaces: {
       pages: ["Dedicated Media page (/media)", "Public press page (/press/:userId)"],
       integrations: ["Wayback archive snapshots"],
