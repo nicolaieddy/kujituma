@@ -8,6 +8,7 @@ import { registerTrainingReadTools, registerTrainingWriteTools } from "./trainin
 import { registerTrainingEventTools } from "./event-tools.ts";
 import { registerNetworkTools } from "./network-tools.ts";
 import { registerSocialTools } from "./social-tools.ts";
+import { registerMediaTools } from "./media-tools.ts";
 
 // ── MCP SERVER FACTORY ─────────────────────────────────────
 
