@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Loader2, FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import { Loader2, FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import { ImportDropzone } from "@/components/shared/ImportDropzone";
+import { createImportProgress, describeError } from "@/lib/importProgress";
 import {
   Dialog,
   DialogContent,
