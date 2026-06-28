@@ -140,6 +140,7 @@ export function TrainingEventsPanel() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [pickingType, setPickingType] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [filter, setFilter] = useState<TrainingEventType | "all">("all");
   const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
@@ -162,7 +163,6 @@ export function TrainingEventsPanel() {
     if (!id || scrolledRef.current === id) return;
     const match = events.find((e) => e.id === id);
     if (!match) return;
-    // Make sure the right filter shows the target
     if (filter !== "all" && filter !== match.event_type) setFilter("all");
     requestAnimationFrame(() => {
       const el = document.getElementById(`event-${id}`);
@@ -177,51 +177,67 @@ export function TrainingEventsPanel() {
   }, [isLoading, events, filter]);
 
 
-  const openNew = (type: TrainingEventType = "injury_illness") => {
-    setForm(emptyForm(type));
+  const openNew = () => {
+    setForm(emptyForm("injury_illness"));
+    setPickingType(true);
     setDialogOpen(true);
+  };
+  const chooseType = (type: TrainingEventType) => {
+    setForm(emptyForm(type));
+    setPickingType(false);
   };
   const openEdit = (e: TrainingEvent) => {
     setForm(eventToForm(e));
+    setPickingType(false);
     setDialogOpen(true);
+  };
+
+  const buildPayload = (state: FormState) => {
+    const resolvedDistance =
+      state.event_type === "race"
+        ? state.race_distance === "__custom__"
+          ? state.race_distance_custom.trim() || null
+          : state.race_distance || null
+        : null;
+    const officialSec =
+      state.event_type === "race" ? parseTimeToSeconds(state.official_time_input) : null;
+    return {
+      id: state.id,
+      event_type: state.event_type,
+      title: state.title.trim(),
+      description: state.description.trim() || null,
+      start_date: state.start_date,
+      end_date: state.end_date || null,
+      severity: state.severity ? Number(state.severity) : null,
+      body_part: state.body_part.trim() || null,
+      body_parts: state.event_type === "injury_illness" ? state.body_parts : [],
+      issue_category: state.event_type === "injury_illness" ? (state.issue_category || null) : null,
+      race_distance: resolvedDistance,
+      race_result: state.race_result.trim() || null,
+      race_priority: state.race_priority || null,
+      official_time_seconds: officialSec,
+      location: state.location.trim() || null,
+      metadata: state.event_type === "race" && state.strava_url.trim()
+        ? { strava_url: state.strava_url.trim() }
+        : {},
+    };
   };
 
   const submit = async () => {
     if (!form.title.trim() || !form.start_date) return;
-    const resolvedDistance =
-      form.event_type === "race"
-        ? form.race_distance === "__custom__"
-          ? form.race_distance_custom.trim() || null
-          : form.race_distance || null
-        : null;
-    const officialSec =
-      form.event_type === "race" ? parseTimeToSeconds(form.official_time_input) : null;
-    const saved = await upsert.mutateAsync({
-      id: form.id,
-      event_type: form.event_type,
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      start_date: form.start_date,
-      end_date: form.end_date || null,
-      severity: form.severity ? Number(form.severity) : null,
-      body_part: form.body_part.trim() || null,
-      body_parts: form.event_type === "injury_illness" ? form.body_parts : [],
-      issue_category: form.event_type === "injury_illness" ? (form.issue_category || null) : null,
-      race_distance: resolvedDistance,
-      race_result: form.race_result.trim() || null,
-      race_priority: form.race_priority || null,
-      official_time_seconds: officialSec,
-      location: form.location.trim() || null,
-      metadata: form.event_type === "race" && form.strava_url.trim()
-        ? { strava_url: form.strava_url.trim() }
-        : {},
-    });
-    // Keep dialog open with the new ID so the user can immediately attach files
-    if (!form.id && saved?.data?.id) {
-      setForm({ ...form, id: saved.data.id });
-    } else {
-      setDialogOpen(false);
-    }
+    await upsert.mutateAsync(buildPayload(form));
+    setDialogOpen(false);
+  };
+
+  // Used by the attachments section so the user can upload before manually saving.
+  const ensureEventId = async (): Promise<string | null> => {
+    if (form.id) return form.id;
+    if (!form.start_date) return null;
+    const titleToUse = form.title.trim() || defaultTitleForType(form.event_type);
+    const saved = await upsert.mutateAsync(buildPayload({ ...form, title: titleToUse }));
+    const newId = (saved as any)?.data?.id ?? null;
+    if (newId) setForm((prev) => ({ ...prev, id: newId, title: titleToUse }));
+    return newId;
   };
 
   return (
