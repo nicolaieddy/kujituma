@@ -296,13 +296,12 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
         console.warn("[social-import-history] log failed", logErr);
       }
 
-      toast.success("Aggregate analytics imported", {
-        description: `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`,
-      });
+      p.success("Aggregate analytics imported", `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`);
       reset();
       onClose();
-    } catch (e: any) {
-      toast.error("Import failed", { description: e.message });
+    } catch (e) {
+      console.error("[aggregate-import] commit", e);
+      p.error("Import failed", describeError(e));
     } finally {
       setImporting(false);
     }
