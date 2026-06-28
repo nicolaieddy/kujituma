@@ -91,7 +91,7 @@ export function CumulativeGrowthChart() {
             <h2 className="text-lg font-semibold">Cumulative follower growth</h2>
             <p className="text-xs text-muted-foreground">
               Stacked by platform · {chartData.length} {bucket === "month" ? "months" : "weeks"} ·
-              <span className="ml-1 font-medium text-foreground">{formatCompact(totalNow)}</span> total in range
+              <CompactNumber value={totalNow} className="ml-1 font-medium text-foreground" /> total in range
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
