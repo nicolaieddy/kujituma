@@ -51,6 +51,11 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
     return [...set].sort((a, b) => b - a);
   }, [mentions]);
 
+  const allTags = useMemo(() => {
+    const set = new Set(mentions.flatMap((m) => m.tags ?? []));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [mentions]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = mentions.filter((m) => {
