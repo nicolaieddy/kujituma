@@ -148,11 +148,29 @@ export default function Social() {
       />
 
       {dragging && (
-        <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center bg-primary/10 backdrop-blur-sm">
-          <div className="rounded-2xl border-2 border-dashed border-primary bg-background/90 px-10 py-8 text-center shadow-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
+          <div className="rounded-2xl border-2 border-dashed border-primary bg-background/95 px-10 py-8 text-center shadow-lg max-w-md">
             <Upload className="h-10 w-10 mx-auto mb-3 text-primary" />
             <div className="text-lg font-semibold">Drop your LinkedIn export</div>
-            <div className="text-sm text-muted-foreground mt-1">.xlsx, .xls or .csv — we'll auto-create the post</div>
+            <div className="text-sm text-muted-foreground mt-1">
+              .xlsx, .xls or .csv — we'll auto-create the post
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <span className="h-px w-8 bg-border" /> or <span className="h-px w-8 bg-border" />
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="mt-3 gap-2"
+              onClick={(e) => {
+                e.stopPropagation();
+                setDragging(false);
+                onPick();
+              }}
+            >
+              <Upload className="h-3.5 w-3.5" /> Choose a file instead
+            </Button>
           </div>
         </div>
       )}
