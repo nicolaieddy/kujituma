@@ -122,6 +122,36 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
           Needs URL
         </Button>
         <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} disabled={loading} />
+        {sort === "relevance" && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-accent disabled:opacity-50"
+                  disabled={loading}
+                  aria-label="How relevance is calculated"
+                >
+                  <Info className="h-4 w-4" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <p className="font-medium">Relevance scoring</p>
+                <ul className="text-xs mt-1.5 space-y-0.5 text-muted-foreground">
+                  <li>Featured mention: +100</li>
+                  <li>Public mention: +25</li>
+                  <li>Published status: +10</li>
+                  <li>Verified URL: +15</li>
+                  <li>Needs URL / dead URL: −10</li>
+                  <li>Has summary: +5</li>
+                  <li>Each tag: +2 (max 10)</li>
+                  <li>Positive sentiment: +5</li>
+                  <li>More recent: higher score</li>
+                </ul>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
           {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
           <span>{loading ? "Loading mentions…" : `${filtered.length} of ${mentions.length}`}</span>
