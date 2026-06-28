@@ -23,10 +23,17 @@ type Bucket = "week" | "month";
 export function CumulativeGrowthChart() {
   const { data: growth = [], isLoading } = useFollowerGrowth();
   const { data: settings = [] } = useSocialPlatformSettings();
+  const { data: goals = [] } = useSocialGoals();
+  const [showGoalLine, setShowGoalLine] = useShowGoalLine();
   const [bucket, setBucket] = useState<Bucket>("month");
   const [importOpen, setImportOpen] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>();
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  const activeFollowerGoals = useMemo(
+    () => goals.filter((g) => g.status === "active" && g.metric === "followers"),
+    [goals],
+  );
 
   const enabledPlatforms = useMemo(() => {
     const set = new Set<SocialPlatform>();
