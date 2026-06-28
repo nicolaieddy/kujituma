@@ -35,6 +35,7 @@ const empty: Omit<MediaMentionInsert, "user_id"> = {
   featured: false,
   source: "manual",
   is_public: false,
+  story_id: null,
 };
 
 export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props) {
