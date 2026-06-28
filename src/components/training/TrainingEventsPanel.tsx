@@ -404,6 +404,11 @@ export function TrainingEventsPanel() {
                           )}
                           {e.race_result && <span>Result: {e.race_result}</span>}
                           {e.location && <span>Location: {e.location}</span>}
+                          {e.linked_activity_id && (
+                            <span className="inline-flex items-center gap-1 text-primary">
+                              <Activity className="h-3 w-3" /> Linked workout
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
