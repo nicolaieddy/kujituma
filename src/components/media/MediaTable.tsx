@@ -21,6 +21,22 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
   const [status, setStatus] = useState<string>("all");
   const [urlStatus, setUrlStatus] = useState<string>("all");
   const [needsUrlOnly, setNeedsUrlOnly] = useState(false);
+  const [sort, setSort] = useState<string>("date-desc");
+
+  const relevanceScore = (m: MediaMention): number => {
+    let s = 0;
+    if (m.featured) s += 100;
+    if (m.is_public) s += 25;
+    if (m.status === "Published") s += 10;
+    if (m.url_status === "verified") s += 15;
+    else if (m.url_status === "needs-url" || m.url_status === "dead") s -= 10;
+    if (m.summary) s += 5;
+    s += Math.min((m.tags?.length ?? 0) * 2, 10);
+    if (m.sentiment === "positive") s += 5;
+    const days = (Date.now() - new Date(m.date).getTime()) / 86400000;
+    s += Math.max(0, 30 - days / 30);
+    return s;
+  };
 
   const years = useMemo(() => {
     const set = new Set(mentions.map((m) => m.year));
