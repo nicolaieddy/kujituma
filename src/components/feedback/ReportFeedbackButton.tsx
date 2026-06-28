@@ -78,7 +78,7 @@ export function ReportFeedbackButton() {
         type="button"
         size="sm"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-50 h-10 rounded-full shadow-lg px-4 gap-2 bg-primary text-primary-foreground hover:opacity-90"
+        className="fixed bottom-24 right-6 z-50 h-10 rounded-full shadow-lg px-4 gap-2 bg-primary text-primary-foreground hover:opacity-90"
         aria-label="Report feedback"
       >
         <MessageSquareWarning className="h-4 w-4" />
