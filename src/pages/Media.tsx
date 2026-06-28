@@ -9,6 +9,7 @@ import { MediaTable } from "@/components/media/MediaTable";
 import { MediaEditorDrawer } from "@/components/media/MediaEditorDrawer";
 import { MediaImportDialog } from "@/components/media/MediaImportDialog";
 import { MediaCandidatesInbox } from "@/components/media/MediaCandidatesInbox";
+import { MediaTimeline } from "@/components/media/MediaTimeline";
 import {
   useMediaMentions, useMediaCandidates, useCreateMention, useUpdateMention, useDeleteMention,
   type MediaMention, type MediaMentionInsert,
