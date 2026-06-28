@@ -207,25 +207,75 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
                   const Icon = item.icon;
                   const isActive = currentSection === item.section;
                   return (
-                    <button
+                    <div
                       key={item.section}
-                      onClick={() => handleNavigation(item.path)}
-                      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm transition-colors ${
-                        isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-foreground hover:bg-muted"
+                      className={`group flex items-center gap-1 rounded-md pr-1 transition-colors ${
+                        isActive ? "bg-primary/10" : "hover:bg-muted"
                       }`}
                     >
-                      <Icon className="h-4 w-4" />
-                      {item.label}
-                    </button>
+                      <button
+                        onClick={() => handleNavigation(item.path)}
+                        className={`flex flex-1 items-center gap-2 rounded-md px-2 py-1.5 text-sm text-left ${
+                          isActive ? "text-primary font-medium" : "text-foreground"
+                        }`}
+                      >
+                        <Icon className="h-4 w-4" />
+                        {item.label}
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          togglePin(item.moduleId);
+                        }}
+                        title="Pin to top bar"
+                        aria-label={`Pin ${item.label} to top bar`}
+                        className="flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-muted-foreground hover:bg-background hover:text-primary transition-colors"
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                        <span className="hidden group-hover:inline">Pin</span>
+                      </button>
+                    </div>
                   );
                 })}
               </div>
             ) : (
               <p className="text-xs text-muted-foreground px-2 py-2">
-                All your modules are pinned. Open Customize to rearrange.
+                All your modules are pinned. Drag pills in the bar to reorder, or unpin below.
               </p>
+            )}
+
+            {pinnedItems.length > 0 && (
+              <>
+                <Separator className="my-2" />
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 mb-1">
+                  Pinned
+                </p>
+                <div className="space-y-0.5">
+                  {pinnedItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={item.section} className="group flex items-center gap-1 rounded-md pr-1 hover:bg-muted">
+                        <div className="flex flex-1 items-center gap-2 px-2 py-1.5 text-sm text-muted-foreground">
+                          <Icon className="h-4 w-4" />
+                          {item.label}
+                        </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            togglePin(item.moduleId);
+                          }}
+                          title="Unpin from top bar"
+                          aria-label={`Unpin ${item.label} from top bar`}
+                          className="flex items-center gap-1 rounded px-1.5 py-1 text-[11px] text-primary hover:bg-background transition-colors"
+                        >
+                          <PinOff className="h-3.5 w-3.5" />
+                          <span className="hidden group-hover:inline">Unpin</span>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </>
             )}
 
             {order.length > 0 && (
