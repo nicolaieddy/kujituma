@@ -72,7 +72,7 @@ export function ActivityLinkPicker({ value, onChange, anchorDate }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover open={open} onOpenChange={setOpen} modal={true}>
         <PopoverTrigger asChild>
           <Button
             type="button"
