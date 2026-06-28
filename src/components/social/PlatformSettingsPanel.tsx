@@ -93,50 +93,24 @@ export function PlatformSettingsPanel() {
 
 
 
-            <div className="grid sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Current followers</Label>
-                <CurrentFollowersInput
-                  platform={platform}
-                  initial={s?.current_followers_cached ?? null}
-                  onLog={(n) =>
-                    logFollowers.mutate({
-                      platform,
-                      date: getLocalDateString(),
-                      total_followers: n,
-                    })
-                  }
-                  pending={logFollowers.isPending}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Follower target</Label>
-                <Input
-                  type="number"
-                  defaultValue={s?.follower_target ?? ""}
-                  onBlur={(e) => {
-                    const v = e.target.value === "" ? null : Number(e.target.value);
-                    if (v !== (s?.follower_target ?? null)) {
-                      upsert.mutate({ platform, follower_target: v });
-                    }
-                  }}
-                  placeholder="e.g. 30000"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Target deadline</Label>
-                <Input
-                  type="date"
-                  defaultValue={s?.target_deadline ?? ""}
-                  onBlur={(e) => {
-                    const v = e.target.value || null;
-                    if (v !== (s?.target_deadline ?? null)) {
-                      upsert.mutate({ platform, target_deadline: v });
-                    }
-                  }}
-                />
-              </div>
+            <div className="space-y-1.5 max-w-xs">
+              <Label className="text-xs">Current followers</Label>
+              <CurrentFollowersInput
+                platform={platform}
+                initial={s?.current_followers_cached ?? null}
+                onLog={(n) =>
+                  logFollowers.mutate({
+                    platform,
+                    date: getLocalDateString(),
+                    total_followers: n,
+                  })
+                }
+                pending={logFollowers.isPending}
+              />
+              <p className="text-[11px] text-muted-foreground">Log a count to keep your trend line current. Goals use this data to compute pace.</p>
             </div>
+
+            <GoalsCard platform={platform} />
 
             <PillarsEditor
               pillars={s?.pillars ?? []}
