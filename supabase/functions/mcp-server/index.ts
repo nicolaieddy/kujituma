@@ -7,6 +7,7 @@ import { registerResources, registerPrompts } from "./resources-prompts.ts";
 import { registerTrainingReadTools, registerTrainingWriteTools } from "./training-tools.ts";
 import { registerTrainingEventTools } from "./event-tools.ts";
 import { registerNetworkTools } from "./network-tools.ts";
+import { registerSocialTools } from "./social-tools.ts";
 
 // ── MCP SERVER FACTORY ─────────────────────────────────────
 
