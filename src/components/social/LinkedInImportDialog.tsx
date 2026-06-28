@@ -356,11 +356,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         {!parsed && (
           <ImportDropzone
             accept=".xlsx"
+            multiple
             busy={parsing}
             selected={file}
-            onFiles={(fs) => handleFile(fs[0])}
-            label="Drop your .xlsx export or click to browse"
-            hint="LinkedIn 'Single Post Analytics' export"
+            onFiles={(fs) => fs.length === 1 ? handleFile(fs[0]) : handleMultiFiles(fs)}
+            label="Drop your .xlsx exports or click to browse"
+            hint="LinkedIn 'Single Post Analytics' exports — drop multiple to auto-import each"
           />
         )}
 
