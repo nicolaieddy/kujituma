@@ -56,6 +56,7 @@ const Sleep = lazy(() => import("./pages/Sleep"));
 const Health = lazy(() => import("./pages/Health"));
 const Training = lazy(() => import("./pages/Training"));
 const Network = lazy(() => import("./pages/Network"));
+const Social = lazy(() => import("./pages/Social"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Install = lazy(() => import("./pages/Install"));
 // Rituals content is now integrated into Analytics page
