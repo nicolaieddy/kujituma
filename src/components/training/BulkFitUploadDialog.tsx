@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Upload, Loader2, CheckCircle2, XCircle, AlertTriangle, FileArchive, Moon } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, AlertTriangle, FileArchive, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { useFitFileUpload, type FileUploadStatus } from "@/hooks/useFitFileUpload";
 import { cn } from "@/lib/utils";
 import { formatDuration } from "@/components/thisweek/trainingPlanUtils";
+import { ImportDropzone } from "@/components/shared/ImportDropzone";
 
 interface BulkFitUploadDialogProps {
   open: boolean;
