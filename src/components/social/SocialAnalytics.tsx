@@ -1,162 +1,503 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { format, subDays, startOfYear, startOfWeek, startOfMonth } from "date-fns";
+import {
+  ResponsiveContainer, ComposedChart, Area, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
+} from "recharts";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Minus, CheckCircle2 } from "lucide-react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, ReferenceLine } from "recharts";
-import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
-  PLATFORM_META,
-  SOCIAL_PLATFORMS,
-  computePace,
-  formatCompact,
-  formatEngagementRate,
-  type SocialPlatform,
+  PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, type SocialPlatform,
 } from "@/lib/social";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
+import { useDailyAccountMetrics } from "@/hooks/useDailyAccountMetrics";
 import { useSocialPosts } from "@/hooks/useSocialPosts";
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
-import { cn } from "@/lib/utils";
+import { useSocialGoals } from "@/hooks/useSocialGoals";
+import { useShowGoalLine } from "@/hooks/useShowGoalLine";
 import { CompactNumber } from "./CompactNumber";
 import { AnalyticsGoalsSection } from "./AnalyticsGoalsSection";
+import type { DateRange } from "react-day-picker";
 
-const STATUS_TONE = {
-  on_track: { label: "On track", icon: TrendingUp, className: "bg-emerald-100 text-emerald-900 border-emerald-200" },
-  ahead:    { label: "Ahead",    icon: TrendingUp, className: "bg-emerald-100 text-emerald-900 border-emerald-200" },
-  behind:   { label: "Behind",   icon: TrendingDown, className: "bg-amber-100 text-amber-900 border-amber-200" },
-  complete: { label: "Complete", icon: CheckCircle2, className: "bg-primary/15 text-primary border-primary/30" },
-  no_target:{ label: "No target",icon: Minus, className: "bg-muted text-muted-foreground border-border" },
-} as const;
+type PresetKey = "7d" | "30d" | "90d" | "ytd" | "custom";
+type PlatformFilter = "all" | SocialPlatform;
+type Bucket = "day" | "week" | "month";
+
+const PRESETS: { key: PresetKey; label: string }[] = [
+  { key: "7d", label: "7d" },
+  { key: "30d", label: "30d" },
+  { key: "90d", label: "90d" },
+  { key: "ytd", label: "YTD" },
+  { key: "custom", label: "Custom" },
+];
+
+function rangeFromPreset(preset: PresetKey, custom?: DateRange): { from: Date; to: Date } {
+  const to = new Date();
+  if (preset === "custom" && custom?.from) {
+    return { from: custom.from, to: custom.to ?? to };
+  }
+  switch (preset) {
+    case "7d":  return { from: subDays(to, 7),  to };
+    case "30d": return { from: subDays(to, 30), to };
+    case "90d": return { from: subDays(to, 90), to };
+    case "ytd": return { from: startOfYear(to), to };
+    default:    return { from: subDays(to, 30), to };
+  }
+}
+
+function bucketForRange(days: number): Bucket {
+  if (days <= 31) return "day";
+  if (days <= 120) return "week";
+  return "month";
+}
+
+function bucketKey(iso: string, bucket: Bucket): string {
+  const d = new Date(iso);
+  if (bucket === "day") return iso.slice(0, 10);
+  if (bucket === "week") return startOfWeek(d, { weekStartsOn: 1 }).toISOString().slice(0, 10);
+  return startOfMonth(d).toISOString().slice(0, 10);
+}
+
+function inRange(iso: string, from: Date, to: Date) {
+  const t = new Date(iso).getTime();
+  return t >= from.setHours(0,0,0,0) && t <= to.setHours(23,59,59,999);
+}
 
 export function SocialAnalytics() {
   const { data: settings = [] } = useSocialPlatformSettings();
-  const { data: allGrowth = [] } = useFollowerGrowth();
+  const { data: growth = [] } = useFollowerGrowth();
+  const { data: dailyMetrics = [] } = useDailyAccountMetrics();
   const { data: posts = [] } = useSocialPosts();
   const { data: latest = {} } = useLatestMetricsByPost();
+  const { data: goals = [] } = useSocialGoals();
+  const [showGoalLine, setShowGoalLine] = useShowGoalLine();
 
-  const enabled = settings.filter((s) => s.enabled);
+  const [preset, setPreset] = useState<PresetKey>("30d");
+  const [custom, setCustom] = useState<DateRange | undefined>();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
 
-  const growthByPlatform = useMemo(() => {
-    const map: Record<SocialPlatform, typeof allGrowth> = {} as any;
-    for (const g of allGrowth) {
-      (map[g.platform] ??= [] as any).push(g);
+  const enabled = settings.filter((s) => s.enabled).map((s) => s.platform);
+  const enabledPlatforms: SocialPlatform[] = useMemo(() => {
+    // Include any platform that has data, even if not "enabled" in settings, so users see history.
+    const set = new Set<SocialPlatform>(enabled);
+    for (const g of growth) set.add(g.platform);
+    for (const m of dailyMetrics) set.add(m.platform);
+    return SOCIAL_PLATFORMS.filter((p) => set.has(p));
+  }, [enabled, growth, dailyMetrics]);
+
+  const visiblePlatforms = platformFilter === "all" ? enabledPlatforms : [platformFilter];
+
+  const { from, to } = rangeFromPreset(preset, custom);
+  const days = Math.max(1, Math.round((+to - +from) / 86_400_000));
+  const bucket = bucketForRange(days);
+
+  // ───────── Followers stacked series ─────────
+  const followerSeries = useMemo(() => {
+    // Carry-forward last known value per platform across periods.
+    const perPlatform: Record<string, Map<string, number>> = {};
+    for (const g of growth) {
+      if (!visiblePlatforms.includes(g.platform)) continue;
+      const k = bucketKey(g.date, bucket);
+      perPlatform[g.platform] ??= new Map();
+      // last write wins → keep latest in period
+      perPlatform[g.platform].set(k, g.total_followers);
     }
-    return map;
-  }, [allGrowth]);
+    const allKeys = new Set<string>();
+    for (const p of Object.keys(perPlatform)) for (const k of perPlatform[p].keys()) allKeys.add(k);
+    // Only keys within range
+    const keys = Array.from(allKeys).filter((k) => inRange(k, new Date(from), new Date(to))).sort();
+    const lastSeen: Record<string, number> = {};
+    return keys.map((k) => {
+      const row: Record<string, any> = { period: k };
+      let total = 0;
+      for (const p of visiblePlatforms) {
+        const v = perPlatform[p]?.get(k);
+        if (v != null) lastSeen[p] = v;
+        const val = lastSeen[p] ?? 0;
+        row[p] = val;
+        total += val;
+      }
+      row.__total = total;
+      // Goal projection lines
+      const periodMs = new Date(k).getTime();
+      for (const g of goals) {
+        if (g.status !== "active" || g.metric !== "followers") continue;
+        if (!visiblePlatforms.includes(g.platform)) continue;
+        const s = new Date(g.start_date).getTime();
+        const e = new Date(g.target_date).getTime();
+        if (periodMs < s || periodMs > e || e === s) continue;
+        const pct = (periodMs - s) / (e - s);
+        row[`goal_${g.id}`] = Math.round(g.start_value + pct * (g.target_value - g.start_value));
+      }
+      return row;
+    });
+  }, [growth, visiblePlatforms, bucket, from, to, goals]);
 
+  // ───────── Impressions stacked series ─────────
+  const impressionsSeries = useMemo(() => {
+    const perPlatform: Record<string, Map<string, number>> = {};
+    for (const m of dailyMetrics) {
+      if (!visiblePlatforms.includes(m.platform)) continue;
+      if (!inRange(m.date, new Date(from), new Date(to))) continue;
+      const k = bucketKey(m.date, bucket);
+      perPlatform[m.platform] ??= new Map();
+      const prev = perPlatform[m.platform].get(k) ?? 0;
+      perPlatform[m.platform].set(k, prev + (m.impressions ?? 0));
+    }
+    const keys = new Set<string>();
+    for (const p of Object.keys(perPlatform)) for (const k of perPlatform[p].keys()) keys.add(k);
+    return Array.from(keys).sort().map((k) => {
+      const row: Record<string, any> = { period: k };
+      let total = 0;
+      for (const p of visiblePlatforms) {
+        const v = perPlatform[p]?.get(k) ?? 0;
+        row[p] = v;
+        total += v;
+      }
+      row.__total = total;
+      return row;
+    });
+  }, [dailyMetrics, visiblePlatforms, bucket, from, to]);
+
+  // Which visible platforms have zero impressions data this period?
+  const platformsMissingImpressions = useMemo(() => {
+    const has: Record<string, boolean> = {};
+    for (const m of dailyMetrics) {
+      if (!inRange(m.date, new Date(from), new Date(to))) continue;
+      if ((m.impressions ?? 0) > 0) has[m.platform] = true;
+    }
+    return visiblePlatforms.filter((p) => !has[p]);
+  }, [dailyMetrics, visiblePlatforms, from, to]);
+
+  // ───────── KPIs ─────────
+  const kpis = useMemo(() => {
+    const last = followerSeries[followerSeries.length - 1];
+    const first = followerSeries[0];
+    const totalFollowers = last?.__total ?? 0;
+    const followersDelta = (last?.__total ?? 0) - (first?.__total ?? 0);
+
+    let totalImpr = 0;
+    let totalEng = 0;
+    for (const m of dailyMetrics) {
+      if (!visiblePlatforms.includes(m.platform)) continue;
+      if (!inRange(m.date, new Date(from), new Date(to))) continue;
+      totalImpr += m.impressions ?? 0;
+      totalEng += m.engagements ?? 0;
+    }
+    const engRate = totalImpr > 0 ? totalEng / totalImpr : null;
+
+    const postsInRange = posts.filter((p) =>
+      p.status === "published" && p.publish_date &&
+      inRange(p.publish_date, new Date(from), new Date(to)) &&
+      (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)),
+    ).length;
+
+    return { totalFollowers, followersDelta, totalImpr, totalEng, engRate, postsInRange };
+  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter]);
+
+  // ───────── Per-platform breakdown rows ─────────
+  const breakdown = useMemo(() => {
+    return enabledPlatforms.map((p) => {
+      const g = growth.filter((x) => x.platform === p);
+      const inWindow = g.filter((x) => inRange(x.date, new Date(from), new Date(to)));
+      const before = g.filter((x) => new Date(x.date) <= from).pop();
+      const latestRow = (inWindow[inWindow.length - 1] ?? g[g.length - 1]);
+      const baseFollowers = before?.total_followers ?? inWindow[0]?.total_followers ?? null;
+      const nowFollowers = latestRow?.total_followers ?? baseFollowers;
+      const dFollowers = nowFollowers != null && baseFollowers != null ? nowFollowers - baseFollowers : 0;
+
+      let impr = 0, eng = 0;
+      for (const m of dailyMetrics) {
+        if (m.platform !== p) continue;
+        if (!inRange(m.date, new Date(from), new Date(to))) continue;
+        impr += m.impressions ?? 0;
+        eng += m.engagements ?? 0;
+      }
+      const postsCount = posts.filter((post) =>
+        post.status === "published" && post.publish_date &&
+        inRange(post.publish_date, new Date(from), new Date(to)) &&
+        (post.platforms ?? []).includes(p),
+      ).length;
+      return {
+        platform: p,
+        followers: nowFollowers,
+        dFollowers,
+        impressions: impr,
+        engagements: eng,
+        engRate: impr > 0 ? eng / impr : null,
+        posts: postsCount,
+      };
+    });
+  }, [enabledPlatforms, growth, dailyMetrics, posts, from, to]);
+
+  // ───────── Top posts ─────────
   const topPosts = useMemo(() => {
     return posts
+      .filter((p) => platformFilter === "all" || (p.platforms ?? []).includes(platformFilter))
+      .filter((p) => !p.publish_date || inRange(p.publish_date, new Date(from), new Date(to)))
       .map((p) => ({ post: p, metric: latest[p.id] }))
       .filter((x) => x.metric && (x.metric.engagement_rate ?? 0) > 0)
       .sort((a, b) => (b.metric!.engagement_rate ?? 0) - (a.metric!.engagement_rate ?? 0))
       .slice(0, 10);
-  }, [posts, latest]);
+  }, [posts, latest, platformFilter, from, to]);
+
+  const rangeLabel = `${format(from, "d MMM")} – ${format(to, "d MMM yyyy")}`;
+  const activeFollowerGoals = goals.filter((g) =>
+    g.status === "active" && g.metric === "followers" && visiblePlatforms.includes(g.platform),
+  );
 
   return (
     <div className="space-y-6">
-      <AnalyticsGoalsSection />
-      <div className="grid gap-4 md:grid-cols-2">
-        {enabled.length === 0 && (
-          <Card className="p-6 md:col-span-2 text-sm text-muted-foreground">
-            Enable platforms in <strong>Setup</strong> to see follower targets and pace.
-          </Card>
-        )}
+      {/* ───── Period + Platform filter ───── */}
+      <Card className="p-3 flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-1 bg-muted rounded-md p-0.5">
+          {PRESETS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => { setPreset(p.key); if (p.key === "custom") setPickerOpen(true); }}
+              className={cn(
+                "px-3 py-1 text-xs rounded-sm font-medium transition-colors",
+                preset === p.key ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {p.label}
+            </button>
+          ))}
+          <Popover open={pickerOpen} onOpenChange={(o) => { setPickerOpen(o); if (o) setPreset("custom"); }}>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "px-2 py-1 text-xs rounded-sm transition-colors flex items-center gap-1",
+                  preset === "custom" && custom?.from ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="start" className="w-auto p-0">
+              <Calendar
+                mode="range"
+                selected={custom}
+                onSelect={(r) => { setCustom(r); setPreset("custom"); }}
+                numberOfMonths={2}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+              <div className="flex items-center justify-between border-t p-2">
+                <Button size="sm" variant="ghost" onClick={() => setCustom(undefined)} className="gap-1.5" disabled={!custom?.from}>
+                  <X className="h-3 w-3" /> Clear
+                </Button>
+                <Button size="sm" onClick={() => setPickerOpen(false)}>Done</Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
 
-        {enabled.map((s) => {
-          const series = growthByPlatform[s.platform] ?? [];
-          const current = s.current_followers_cached ?? (series.length > 0 ? series[series.length - 1].total_followers : null);
-          const thirtyDaysAgo = Date.now() - 30 * 86_400_000;
-          const olderEntries = series.filter((g) => new Date(g.date).getTime() <= thirtyDaysAgo);
-          const baseline = olderEntries.length > 0 ? olderEntries[olderEntries.length - 1].total_followers : (series[0]?.total_followers ?? current);
-          const netNew30d = current != null && baseline != null ? current - baseline : 0;
-          const pace = computePace({
-            current,
-            target: s.follower_target,
-            deadline: s.target_deadline,
-            netNew30d,
-          });
-          const tone = STATUS_TONE[pace.status];
-          const ToneIcon = tone.icon;
-          const Icon = PLATFORM_META[s.platform].icon;
-          return (
-            <Card key={s.platform} className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Icon className={cn("h-5 w-5", PLATFORM_META[s.platform].color)} />
-                  <h3 className="font-semibold">{PLATFORM_META[s.platform].label}</h3>
-                </div>
-                <Badge variant="outline" className={cn("gap-1 border", tone.className)}>
-                  <ToneIcon className="h-3 w-3" /> {tone.label}
-                </Badge>
-              </div>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div>
-                  <div className="text-2xl font-semibold tabular-nums"><CompactNumber value={current} /></div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Current</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-semibold tabular-nums"><CompactNumber value={s.follower_target} /></div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Target</div>
-                </div>
-                <div>
-                  <div className={cn("text-2xl font-semibold tabular-nums", netNew30d > 0 ? "text-emerald-600" : netNew30d < 0 ? "text-destructive" : "")}>
-                    <CompactNumber value={netNew30d} prefix={netNew30d > 0 ? "+" : ""} />
-                  </div>
-                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">30 days</div>
-                </div>
-              </div>
-              {pace.target != null && pace.current != null && (
-                <div className="space-y-1">
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${Math.min(100, ((pace.current ?? 0) / pace.target) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[11px] text-muted-foreground tabular-nums">
-                    <span>
-                      {pace.daysToDeadline != null
-                        ? `${pace.daysToDeadline}d to ${s.target_deadline ? format(new Date(s.target_deadline), "d MMM yyyy") : "—"}`
-                        : "—"}
-                    </span>
-                    <span>
-                      {pace.perDayNeeded != null ? `need ${pace.perDayNeeded.toFixed(1)}/day` : "—"} ·{" "}
-                      doing {pace.perDayActual.toFixed(1)}/day
-                    </span>
-                  </div>
-                </div>
-              )}
-              {series.length > 1 && (
-                <div className="h-32">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={series.map((g) => ({ ...g, ts: new Date(g.date).getTime() }))}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="date" hide />
-                      <YAxis domain={["auto", "auto"]} hide />
-                      <Tooltip
-                        contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
-                        labelFormatter={(l) => format(new Date(l as string), "d MMM yyyy")}
-                        formatter={(v: number) => [`${v.toLocaleString()} (${formatCompact(v)})`, "Followers"]}
-                      />
-                      {s.follower_target != null && (
-                        <ReferenceLine y={s.follower_target} stroke="hsl(var(--primary))" strokeDasharray="3 3" />
-                      )}
-                      <Line type="monotone" dataKey="total_followers" stroke={PLATFORM_META[s.platform].hex} strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </Card>
-          );
-        })}
+        <div className="text-xs text-muted-foreground tabular-nums">{rangeLabel}</div>
+
+        <div className="ml-auto flex flex-wrap items-center gap-1">
+          <PlatformChip active={platformFilter === "all"} onClick={() => setPlatformFilter("all")}>
+            All
+          </PlatformChip>
+          {enabledPlatforms.map((p) => {
+            const Icon = PLATFORM_META[p].icon;
+            return (
+              <PlatformChip key={p} active={platformFilter === p} onClick={() => setPlatformFilter(p)}>
+                <Icon className={cn("h-3 w-3", PLATFORM_META[p].color)} />
+                {PLATFORM_META[p].label}
+              </PlatformChip>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* ───── KPI strip ───── */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard
+          label="Total followers"
+          value={<CompactNumber value={kpis.totalFollowers} />}
+          delta={kpis.followersDelta}
+          sub={kpis.followersDelta !== 0 ? `${kpis.followersDelta > 0 ? "+" : ""}${kpis.followersDelta.toLocaleString()} in range` : "no change in range"}
+        />
+        <KpiCard
+          label="Total impressions"
+          value={<CompactNumber value={kpis.totalImpr} />}
+          sub={`across ${visiblePlatforms.length} platform${visiblePlatforms.length === 1 ? "" : "s"}`}
+        />
+        <KpiCard
+          label="Engagement rate"
+          value={kpis.engRate != null ? formatEngagementRate(kpis.engRate) : "—"}
+          sub={`${kpis.totalEng.toLocaleString()} engagements`}
+        />
+        <KpiCard
+          label="Posts published"
+          value={kpis.postsInRange.toString()}
+          sub="in range"
+        />
       </div>
 
+      {/* ───── Followers stacked area ───── */}
+      <Card className="p-4 space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h3 className="font-semibold">Followers over time</h3>
+            <p className="text-xs text-muted-foreground">Stacked by platform · total = top of stack</p>
+          </div>
+          {activeFollowerGoals.length > 0 && (
+            <div className="flex items-center gap-1.5">
+              <Switch id="show-goal-line" checked={showGoalLine} onCheckedChange={setShowGoalLine} />
+              <Label htmlFor="show-goal-line" className="text-xs text-muted-foreground cursor-pointer">Goal line</Label>
+            </div>
+          )}
+        </div>
+        {followerSeries.length === 0 ? (
+          <EmptyState text="No follower history in this range. Log counts in Setup or import an aggregate export." />
+        ) : (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={followerSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="period" tickFormatter={(v) => format(new Date(v), bucket === "month" ? "MMM yy" : "d MMM")} tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={(v) => formatCompact(Number(v))} tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                  labelFormatter={(l) => format(new Date(l as string), bucket === "month" ? "MMMM yyyy" : bucket === "week" ? "'Week of' d MMM" : "d MMM yyyy")}
+                  formatter={(value: number, name: string) => {
+                    if (typeof name === "string" && name.startsWith("goal_")) {
+                      const g = activeFollowerGoals.find((x) => x.id === name.slice(5));
+                      return [value.toLocaleString(), g ? `${PLATFORM_META[g.platform].label} goal` : "Goal"];
+                    }
+                    return [value.toLocaleString(), PLATFORM_META[name as SocialPlatform]?.label ?? name];
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} formatter={(n) => {
+                  if (typeof n === "string" && n.startsWith("goal_")) {
+                    const g = activeFollowerGoals.find((x) => x.id === n.slice(5));
+                    return g ? `${PLATFORM_META[g.platform].label} goal pace` : "Goal pace";
+                  }
+                  return PLATFORM_META[n as SocialPlatform]?.label ?? n;
+                }} />
+                {visiblePlatforms.map((p) => (
+                  <Area key={p} type="monotone" dataKey={p} stackId="f" stroke={PLATFORM_META[p].hex} fill={PLATFORM_META[p].hex} fillOpacity={0.65} />
+                ))}
+                {showGoalLine && activeFollowerGoals.map((g) => (
+                  <Line key={g.id} type="linear" dataKey={`goal_${g.id}`} stroke={PLATFORM_META[g.platform].hex} strokeDasharray="5 4" strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
+                ))}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </Card>
+
+      {/* ───── Impressions stacked area ───── */}
+      <Card className="p-4 space-y-3">
+        <div>
+          <h3 className="font-semibold">Impressions over time</h3>
+          <p className="text-xs text-muted-foreground">From imported account-level analytics</p>
+        </div>
+        {impressionsSeries.length === 0 ? (
+          <EmptyState text="No impressions data in this range. Use Import aggregate analytics on the Setup tab." />
+        ) : (
+          <div className="h-72">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={impressionsSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="period" tickFormatter={(v) => format(new Date(v), bucket === "month" ? "MMM yy" : "d MMM")} tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={(v) => formatCompact(Number(v))} tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
+                  labelFormatter={(l) => format(new Date(l as string), bucket === "month" ? "MMMM yyyy" : bucket === "week" ? "'Week of' d MMM" : "d MMM yyyy")}
+                  formatter={(value: number, name: string) => [value.toLocaleString(), PLATFORM_META[name as SocialPlatform]?.label ?? name]}
+                />
+                <Legend wrapperStyle={{ fontSize: 12 }} formatter={(n) => PLATFORM_META[n as SocialPlatform]?.label ?? n} />
+                {visiblePlatforms.map((p) => (
+                  <Area key={p} type="monotone" dataKey={p} stackId="i" stroke={PLATFORM_META[p].hex} fill={PLATFORM_META[p].hex} fillOpacity={0.55} />
+                ))}
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+        {platformsMissingImpressions.length > 0 && (
+          <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/30 p-2 text-[11px] text-muted-foreground">
+            <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+            <div>
+              <strong className="text-foreground">No impressions data for </strong>
+              {platformsMissingImpressions.map((p) => PLATFORM_META[p].label).join(", ")}
+              {" in this range — those bands show as zero. Import aggregate analytics on the Setup tab to fill them in."}
+            </div>
+          </div>
+        )}
+      </Card>
+
+      {/* ───── Per-platform breakdown ───── */}
+      <Card className="p-4 space-y-3">
+        <h3 className="font-semibold">Platform breakdown</h3>
+        {breakdown.length === 0 ? (
+          <EmptyState text="Enable a platform in Setup to see breakdown." />
+        ) : (
+          <div className="overflow-x-auto -mx-4">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[11px] uppercase tracking-wide text-muted-foreground border-b">
+                  <th className="text-left font-medium px-4 py-2">Platform</th>
+                  <th className="text-right font-medium px-2 py-2">Followers</th>
+                  <th className="text-right font-medium px-2 py-2">Δ</th>
+                  <th className="text-right font-medium px-2 py-2">Impressions</th>
+                  <th className="text-right font-medium px-2 py-2">Engagements</th>
+                  <th className="text-right font-medium px-2 py-2">Eng. rate</th>
+                  <th className="text-right font-medium px-4 py-2">Posts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {breakdown.map((r) => {
+                  const Icon = PLATFORM_META[r.platform].icon;
+                  return (
+                    <tr key={r.platform} className="border-b last:border-0 hover:bg-muted/30">
+                      <td className="px-4 py-2">
+                        <button
+                          type="button"
+                          onClick={() => setPlatformFilter(r.platform)}
+                          className="flex items-center gap-2 hover:text-primary"
+                        >
+                          <Icon className={cn("h-4 w-4", PLATFORM_META[r.platform].color)} />
+                          <span className="font-medium">{PLATFORM_META[r.platform].label}</span>
+                        </button>
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums"><CompactNumber value={r.followers} /></td>
+                      <td className={cn("px-2 py-2 text-right tabular-nums text-xs", r.dFollowers > 0 ? "text-emerald-600" : r.dFollowers < 0 ? "text-destructive" : "text-muted-foreground")}>
+                        {r.dFollowers > 0 ? "+" : ""}{r.dFollowers.toLocaleString()}
+                      </td>
+                      <td className="px-2 py-2 text-right tabular-nums">{r.impressions > 0 ? <CompactNumber value={r.impressions} /> : <span className="text-muted-foreground">—</span>}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{r.engagements > 0 ? <CompactNumber value={r.engagements} /> : <span className="text-muted-foreground">—</span>}</td>
+                      <td className="px-2 py-2 text-right tabular-nums">{r.engRate != null ? formatEngagementRate(r.engRate) : <span className="text-muted-foreground">—</span>}</td>
+                      <td className="px-4 py-2 text-right tabular-nums">{r.posts || <span className="text-muted-foreground">0</span>}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* ───── Goals progress ───── */}
+      <AnalyticsGoalsSection />
+
+      {/* ───── Top posts ───── */}
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Top posts by engagement rate</h3>
         {topPosts.length === 0 ? (
-          <div className="text-sm text-muted-foreground py-4 text-center">
-            No metrics logged yet. Open a post to add a snapshot or import a LinkedIn .xlsx.
-          </div>
+          <EmptyState text="No posts with metrics in this range." />
         ) : (
           <div className="divide-y divide-border">
             {topPosts.map(({ post, metric }) => {
@@ -183,6 +524,46 @@ export function SocialAnalytics() {
           </div>
         )}
       </Card>
+    </div>
+  );
+}
+
+function PlatformChip({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+        active ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:text-foreground hover:border-foreground/30",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+function KpiCard({ label, value, sub, delta }: { label: string; value: React.ReactNode; sub?: string; delta?: number }) {
+  const TrendIcon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
+  const trendClass = delta == null || delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive";
+  return (
+    <Card className="p-4 space-y-1">
+      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className="text-2xl font-semibold tabular-nums">{value}</div>
+      {sub && (
+        <div className={cn("text-[11px] flex items-center gap-1", trendClass)}>
+          {delta != null && <TrendIcon className="h-3 w-3" />}
+          <span>{sub}</span>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="h-32 flex items-center justify-center text-sm text-muted-foreground text-center px-4">
+      {text}
     </div>
   );
 }

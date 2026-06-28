@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, TrendingUp, Upload } from "lucide-react";
+import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PipelineBoard } from "@/components/social/PipelineBoard";
@@ -7,7 +7,7 @@ import { PlatformSettingsPanel } from "@/components/social/PlatformSettingsPanel
 import { SocialAnalytics } from "@/components/social/SocialAnalytics";
 import { SocialCalendar } from "@/components/social/SocialCalendar";
 import { PostEditorDrawer } from "@/components/social/PostEditorDrawer";
-import { CumulativeGrowthChart } from "@/components/social/CumulativeGrowthChart";
+
 import { LinkedInImportDialog } from "@/components/social/LinkedInImportDialog";
 import { AggregateImportDialog } from "@/components/social/AggregateImportDialog";
 import { ImportSummaryDialog, type ImportRow } from "@/components/social/ImportSummaryDialog";
@@ -16,7 +16,7 @@ import { GoalProgressStrip } from "@/components/social/GoalProgressStrip";
 import { groupFilesByKind } from "@/lib/social/analyticsSniffer";
 import { cn } from "@/lib/utils";
 
-type View = "pipeline" | "calendar" | "analytics" | "growth" | "setup";
+type View = "pipeline" | "calendar" | "analytics" | "setup";
 
 const ACCEPTED = ".xlsx,.xls,.csv";
 
@@ -163,7 +163,7 @@ export default function Social() {
           { id: "pipeline", label: "Pipeline", icon: LayoutGrid },
           { id: "calendar", label: "Calendar", icon: CalendarIcon },
           { id: "analytics", label: "Analytics", icon: BarChart3 },
-          { id: "growth", label: "Growth", icon: TrendingUp },
+          
           { id: "setup", label: "Setup", icon: SettingsIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
@@ -184,7 +184,7 @@ export default function Social() {
       {view === "pipeline" && <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />}
       {view === "calendar" && <SocialCalendar onOpenPost={openEditor} />}
       {view === "analytics" && <SocialAnalytics />}
-      {view === "growth" && <CumulativeGrowthChart />}
+      
       {view === "setup" && <PlatformSettingsPanel />}
 
       <PostEditorDrawer
