@@ -21,7 +21,6 @@ export default function Social() {
   const [creating, setCreating] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
-  const [dragging, setDragging] = useState(false);
 
   const openEditor = (id: string) => setEditingId(id);
   const openCreate = () => setCreating(true);
@@ -39,52 +38,16 @@ export default function Social() {
     setImportFile(null);
   };
 
-  // Page-level drag & drop
-  useEffect(() => {
-    let depth = 0;
-    const onDragEnter = (e: DragEvent) => {
-      if (!e.dataTransfer?.types?.includes("Files")) return;
-      depth++;
-      setDragging(true);
-    };
-    const onDragLeave = () => {
-      depth = Math.max(0, depth - 1);
-      if (depth === 0) setDragging(false);
-    };
-    const onDragOver = (e: DragEvent) => {
-      if (e.dataTransfer?.types?.includes("Files")) e.preventDefault();
-    };
-    const onDrop = (e: DragEvent) => {
-      depth = 0;
-      setDragging(false);
-      const f = e.dataTransfer?.files?.[0];
-      if (!f) return;
-      e.preventDefault();
-      if (!isSpreadsheet(f)) return;
-      openImport(f);
-    };
-    window.addEventListener("dragenter", onDragEnter);
-    window.addEventListener("dragleave", onDragLeave);
-    window.addEventListener("dragover", onDragOver);
-    window.addEventListener("drop", onDrop);
-    return () => {
-      window.removeEventListener("dragenter", onDragEnter);
-      window.removeEventListener("dragleave", onDragLeave);
-      window.removeEventListener("dragover", onDragOver);
-      window.removeEventListener("drop", onDrop);
-    };
-  }, []);
-
-  const onPick = useCallback(() => {
+  const onPick = () => {
     const input = document.createElement("input");
     input.type = "file";
-    input.accept = ACCEPTED.join(",");
+    input.accept = ACCEPTED;
     input.onchange = () => {
       const f = input.files?.[0];
       if (f) openImport(f);
     };
     input.click();
-  }, []);
+  };
 
   return (
     <div className="container max-w-6xl mx-auto px-4 py-6 space-y-6 relative">
@@ -144,33 +107,12 @@ export default function Social() {
         initialFile={importFile}
       />
 
-      {dragging && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary/10 backdrop-blur-sm">
-          <div className="rounded-2xl border-2 border-dashed border-primary bg-background/95 px-10 py-8 text-center shadow-lg max-w-md">
-            <Upload className="h-10 w-10 mx-auto mb-3 text-primary" />
-            <div className="text-lg font-semibold">Drop your LinkedIn export</div>
-            <div className="text-sm text-muted-foreground mt-1">
-              .xlsx, .xls or .csv — we'll auto-create the post
-            </div>
-            <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <span className="h-px w-8 bg-border" /> or <span className="h-px w-8 bg-border" />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="mt-3 gap-2"
-              onClick={(e) => {
-                e.stopPropagation();
-                setDragging(false);
-                onPick();
-              }}
-            >
-              <Upload className="h-3.5 w-3.5" /> Choose a file instead
-            </Button>
-          </div>
-        </div>
-      )}
+      <PageDropOverlay
+        accept={ACCEPTED}
+        onFiles={(fs) => openImport(fs[0])}
+        label="Drop your LinkedIn export"
+        hint=".xlsx, .xls or .csv — we'll auto-create the post"
+      />
     </div>
   );
 }
