@@ -45,6 +45,7 @@ import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
 import { EventUploadDialog } from "./EventUploadDialog";
 import { BodyPartsPicker } from "./BodyPartsPicker";
+import { ActivityLinkPicker } from "./ActivityLinkPicker";
 import { Separator } from "@/components/ui/separator";
 import {
   STANDARD_DISTANCES,
