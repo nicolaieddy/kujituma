@@ -450,7 +450,8 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
             accept=".xlsx"
             busy={parsing}
             selected={file}
-            onFiles={(fs) => handleFile(fs[0])}
+            onFiles={handleFiles}
+            multiple
             label="Drop your .xlsx export or click to browse"
             hint="LinkedIn aggregate export (DISCOVERY, ENGAGEMENT, FOLLOWERS sheets)"
           />
