@@ -80,9 +80,18 @@ export function CumulativeGrowthChart() {
         if (v != null) lastSeen[p] = v;
         row[p] = lastSeen[p] ?? 0;
       }
+      // Inject projection values per active follower goal at this period midpoint.
+      const periodMs = new Date(k).getTime();
+      for (const goal of activeFollowerGoals) {
+        const startMs = new Date(goal.start_date).getTime();
+        const endMs = new Date(goal.target_date).getTime();
+        if (periodMs < startMs || periodMs > endMs || endMs === startMs) continue;
+        const pct = (periodMs - startMs) / (endMs - startMs);
+        row[`goal_${goal.id}`] = Math.round(goal.start_value + pct * (goal.target_value - goal.start_value));
+      }
       return row;
     });
-  }, [filteredGrowth, bucket, enabledPlatforms]);
+  }, [filteredGrowth, bucket, enabledPlatforms, activeFollowerGoals]);
 
   const totalNow = useMemo(() => {
     const last = chartData[chartData.length - 1];
