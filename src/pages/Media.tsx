@@ -94,6 +94,7 @@ export default function MediaPage() {
             <Inbox className="h-3.5 w-3.5 mr-1.5" /> Inbox
             {pendingCount > 0 && <Badge variant="default" className="ml-2 h-5 px-1.5">{pendingCount}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="timeline"><GitBranch className="h-3.5 w-3.5 mr-1.5" /> Timeline</TabsTrigger>
           <TabsTrigger value="share"><Share2 className="h-3.5 w-3.5 mr-1.5" /> Public page</TabsTrigger>
         </TabsList>
 
