@@ -73,10 +73,11 @@ export default function MediaPage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl space-y-5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Newspaper className="h-5 w-5" />
           <h1 className="text-2xl font-semibold">Media</h1>
-          <Badge variant="secondary" className="ml-2">{mentions.length} mentions</Badge>
+          <BetaBadge size="md" />
+          <Badge variant="secondary" className="ml-1">{mentions.length} mentions</Badge>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setImportOpen(true)}>
