@@ -57,8 +57,9 @@ function buildMentionPatch(input: any, opts: { defaultSource?: string } = {}) {
   if (input.outlet !== undefined) patch.outlet = String(input.outlet ?? "");
   if (input.date !== undefined && input.date !== null && input.date !== "") {
     patch.date = String(input.date);
-    const y = new Date(String(input.date)).getUTCFullYear();
-    if (!Number.isNaN(y)) patch.year = y;
+    // NOTE: media_mentions.year is a GENERATED column derived from date.
+    // Do NOT include it in INSERT/UPDATE — Postgres rejects with
+    // "cannot insert a non-DEFAULT value into column 'year'".
   }
   if (input.url !== undefined) {
     patch.url = normalizeUrl(input.url);
