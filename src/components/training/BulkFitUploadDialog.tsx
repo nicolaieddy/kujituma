@@ -152,29 +152,19 @@ export function BulkFitUploadDialog({ open, onOpenChange, initialFiles }: BulkFi
         </DialogHeader>
 
         <div className="space-y-4">
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".fit,.zip,.csv"
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-            disabled={isUploading}
-          />
-
           {!hasResults && (
             <>
-              <Button
-                variant="outline"
-                className="w-full gap-2"
-                onClick={() => fileRef.current?.click()}
-                disabled={isUploading}
-              >
-                <Upload className="h-4 w-4" />
-                {selectedFiles.length > 0
-                  ? `${selectedFiles.length} file${selectedFiles.length > 1 ? "s" : ""} selected`
-                  : "Select .fit / .zip / .csv files"}
-              </Button>
+              <ImportDropzone
+                accept=".fit,.zip,.csv"
+                multiple
+                busy={isUploading}
+                selected={selectedFiles}
+                onClear={() => setSelectedFiles([])}
+                onFiles={(fs) => setSelectedFiles(fs)}
+                label="Drop .fit / .zip / .csv files or click to browse"
+                hint="Activities and sleep CSVs are auto-routed by file type"
+              />
+
 
               {selectedFiles.length > 0 && (
                 <div className="space-y-1 rounded-lg border border-border bg-muted/20 p-3 max-h-40 overflow-y-auto">
