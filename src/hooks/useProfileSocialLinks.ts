@@ -32,7 +32,7 @@ export function useProfileSocialLinks() {
       const { data, error } = await (supabase as any)
         .from("profiles")
         .select("linkedin_url, twitter_url, instagram_url, tiktok_url, youtube_url")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .maybeSingle();
       if (error) throw error;
       return (data ?? {}) as ProfileSocialLinks;
@@ -53,7 +53,7 @@ export function useUpdateProfileSocialLink() {
       const { error } = await (supabase as any)
         .from("profiles")
         .update({ [field]: value })
-        .eq("user_id", user.id);
+        .eq("id", user.id);
       if (error) throw error;
       return { field, value };
     },
