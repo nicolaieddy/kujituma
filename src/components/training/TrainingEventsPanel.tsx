@@ -227,6 +227,10 @@ export function TrainingEventsPanel() {
       race_priority: state.race_priority || null,
       official_time_seconds: officialSec,
       location: state.location.trim() || null,
+      linked_activity_id:
+        (state.event_type === "injury_illness" || state.event_type === "race")
+          ? state.linked_activity_id
+          : null,
       metadata: state.event_type === "race" && state.strava_url.trim()
         ? { strava_url: state.strava_url.trim() }
         : {},
