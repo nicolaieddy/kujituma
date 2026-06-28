@@ -528,10 +528,10 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, value, sub }: { label: string; value: number | null; sub?: string }) {
   return (
     <div className="rounded-md border border-border p-2">
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
+      <div className="text-lg font-semibold tabular-nums"><CompactNumber value={value} /></div>
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
       {sub && <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>}
     </div>
