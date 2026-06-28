@@ -164,7 +164,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const reset = () => {
     setFile(null); setParsed(null);
     setSelectedPostId(defaultPostId); setAsOf(getLocalDateString());
-    setMode("attach"); setTitle(""); setBody(""); setPillars([]); setValueIds([]);
+    setTitle(""); setBody(""); setPillars([]); setValueIds([]);
   };
 
   const scrapeViaFirecrawl = async (url: string) => {
@@ -213,11 +213,9 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         const match = posts.find((p) => normalizeLiUrl(p.live_url) === target);
         if (match) {
           setSelectedPostId(match.id);
-          setMode("attach");
           toast.success("Matched an existing post — re-importing will update it", { id: tid });
         } else {
-          setMode("create");
-          setSelectedPostId(null);
+          setSelectedPostId(NEW_POST);
           toast.success("Parsed export — fetching post details…", { id: tid });
           scrapeViaFirecrawl(data.postUrl);
         }
@@ -242,12 +240,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
 
   const commit = async () => {
     if (!parsed) return;
-    let postId = selectedPostId;
+    let postId = selectedPostId === NEW_POST ? null : selectedPostId;
     let action: "created" | "updated" = "updated";
-    const tid = toast.loading(mode === "create" ? "Creating post & saving metrics…" : "Saving metrics snapshot…");
+    const tid = toast.loading(postId ? "Saving metrics snapshot…" : "Creating post & saving metrics…");
 
     try {
-      if (mode === "create") {
+      if (!postId) {
         if (!title.trim()) { toast.error("Add a title before importing", { id: tid }); return; }
 
         // Final idempotency guard: re-query by normalized live_url in case the
@@ -283,8 +281,6 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         for (const vid of valueIds) {
           await setPostValue.mutateAsync({ post_id: saved.id, value_id: vid, weight: 1 });
         }
-      } else {
-        action = "updated";
       }
 
       if (!postId) { toast.error("Pick a post to attach this snapshot to", { id: tid }); return; }
@@ -343,7 +339,8 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   };
 
   const busy = upsertMetric.isPending || upsertPost.isPending;
-  const canCommit = !!parsed && (mode === "attach" ? !!selectedPostId : !!title.trim()) && !busy;
+  const isCreating = selectedPostId === NEW_POST;
+  const canCommit = !!parsed && (isCreating ? !!title.trim() : !!selectedPostId) && !busy;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
@@ -351,8 +348,8 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         <DialogHeader className="min-w-0">
           <DialogTitle>Import LinkedIn .xlsx</DialogTitle>
           <DialogDescription className="break-words">
-            Drop a "Single Post Analytics" export. We'll create the post if it doesn't exist, mark it Published,
-            attach the metrics, and add it to the calendar.
+            Drop a "Single Post Analytics" export. We'll match it to an existing post or create a new one,
+            then attach the metrics and add it to the calendar.
           </DialogDescription>
         </DialogHeader>
 
@@ -391,40 +388,32 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
               </div>
             </Card>
 
-            {/* Mode toggle */}
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "create" ? "default" : "outline"}
-                onClick={() => setMode("create")}
+            <div className="space-y-1.5">
+              <Label>Post target</Label>
+              <Select
+                value={selectedPostId ?? NEW_POST}
+                onValueChange={(v) => setSelectedPostId(v === NEW_POST ? NEW_POST : v || null)}
               >
-                <Sparkles className="h-3.5 w-3.5 mr-1" /> Auto-create post
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                variant={mode === "attach" ? "default" : "outline"}
-                onClick={() => setMode("attach")}
-              >
-                Attach to existing
-              </Button>
-              {mode === "create" && parsed.postUrl && (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="ml-auto"
-                  disabled={scraping}
-                  onClick={() => scrapeViaFirecrawl(parsed.postUrl!)}
-                >
-                  {scraping ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
-                  Re-fetch from LinkedIn
-                </Button>
-              )}
+                <SelectTrigger>
+                  <SelectValue placeholder="Pick a post" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NEW_POST}>Create new post</SelectItem>
+                  {posts.filter((p) => p.platforms.includes("linkedin")).map((p) => (
+                    <SelectItem key={p.id} value={p.id}>{p.title || "Untitled"}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                {isCreating
+                  ? "No existing post matched — a new LinkedIn post record will be created."
+                  : selectedPostId
+                    ? `Metrics will be attached to the existing post selected above.`
+                    : "Select an existing post or choose 'Create new post'."}
+              </p>
             </div>
 
-            {mode === "create" ? (
+            {isCreating && (
               <div className="space-y-3">
                 <div className="space-y-1.5">
                   <Label>Title</Label>
@@ -499,18 +488,6 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
                   </Badge>
                 )}
               </div>
-            ) : (
-              <div className="space-y-1.5">
-                <Label>Attach to post</Label>
-                <Select value={selectedPostId ?? ""} onValueChange={(v) => setSelectedPostId(v || null)}>
-                  <SelectTrigger><SelectValue placeholder="Pick a post" /></SelectTrigger>
-                  <SelectContent>
-                    {posts.filter((p) => p.platforms.includes("linkedin")).map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.title || "Untitled"}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
             )}
 
             <div className="space-y-1.5">
@@ -524,7 +501,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
           <Button variant="ghost" onClick={() => { reset(); onClose(); }}>Cancel</Button>
           <Button onClick={commit} disabled={!canCommit}>
             {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            {mode === "create" ? "Create & import" : "Import snapshot"}
+            Create & import
           </Button>
         </DialogFooter>
       </DialogContent>
