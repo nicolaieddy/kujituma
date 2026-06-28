@@ -4960,6 +4960,7 @@ export type Database = {
         Args: { _user1_id: string; _user2_id: string }
         Returns: boolean
       }
+      backfill_missing_profiles: { Args: never; Returns: number }
       create_mcp_api_token: { Args: { p_name: string }; Returns: string }
       create_notification: {
         Args: {
