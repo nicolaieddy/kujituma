@@ -26,6 +26,7 @@ export interface TrainingEvent {
   race_priority: "A" | "B" | "C" | null;
   official_time_seconds: number | null;
   location: string | null;
+  linked_activity_id: string | null;
   metadata: Record<string, unknown>;
   created_at: string;
   updated_at: string;
