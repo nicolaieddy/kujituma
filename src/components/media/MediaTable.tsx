@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2 } from "lucide-react";
+import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
