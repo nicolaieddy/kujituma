@@ -54,6 +54,7 @@ export function SocialAnalytics() {
 
   return (
     <div className="space-y-6">
+      <AnalyticsGoalsSection />
       <div className="grid gap-4 md:grid-cols-2">
         {enabled.length === 0 && (
           <Card className="p-6 md:col-span-2 text-sm text-muted-foreground">
