@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Newspaper, Plus, Upload, Inbox, LayoutDashboard, Share2, Copy } from "lucide-react";
+import { Newspaper, Plus, Upload, Inbox, LayoutDashboard, Share2, Copy, GitBranch } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
