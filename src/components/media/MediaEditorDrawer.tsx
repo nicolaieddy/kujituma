@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { X, ExternalLink } from "lucide-react";
 import {
   MEDIA_TYPES, MEDIA_STATUSES, MEDIA_URL_STATUSES, MEDIA_SENTIMENTS,
+  useMediaStories,
   type MediaMention, type MediaMentionInsert,
 } from "@/hooks/media/useMedia";
 
@@ -34,9 +35,11 @@ const empty: Omit<MediaMentionInsert, "user_id"> = {
   featured: false,
   source: "manual",
   is_public: false,
+  story_id: null,
 };
 
 export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props) {
+  const { data: stories = [] } = useMediaStories();
   const [form, setForm] = useState<Omit<MediaMentionInsert, "user_id">>(empty);
   const [tagInput, setTagInput] = useState("");
   const [saving, setSaving] = useState(false);
@@ -58,6 +61,7 @@ export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props
         source: mention.source,
         is_public: mention.is_public,
         archived_url: mention.archived_url,
+        story_id: mention.story_id ?? null,
       });
     } else {
       setForm(empty);
@@ -151,6 +155,21 @@ export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props
               placeholder="Add a tag and press Enter"
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
             />
+          </Field>
+          <Field label="Story / Announcement">
+            <Select
+              value={(form.story_id as string | null) ?? "none"}
+              onValueChange={(v) => set("story_id", v === "none" ? null : v)}
+            >
+              <SelectTrigger><SelectValue placeholder="Not grouped" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Not grouped</SelectItem>
+                {stories.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">Group multiple articles covering the same announcement. Create stories from the Timeline tab.</p>
           </Field>
           <div className="grid grid-cols-2 gap-3">
             <ToggleRow label="Featured" checked={form.featured ?? false} onChange={(v) => set("featured", v)} />
