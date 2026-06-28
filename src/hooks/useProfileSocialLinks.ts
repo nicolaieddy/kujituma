@@ -53,7 +53,7 @@ export function useUpdateProfileSocialLink() {
       const { error } = await (supabase as any)
         .from("profiles")
         .update({ [field]: value })
-        .eq("user_id", user.id);
+        .eq("id", user.id);
       if (error) throw error;
       return { field, value };
     },
