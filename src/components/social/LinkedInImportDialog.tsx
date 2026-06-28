@@ -32,6 +32,7 @@ interface Props {
   defaultPostId?: string | null;
   defaultUrl?: string;
   initialFile?: File | null;
+  initialFiles?: File[] | null;
 }
 
 interface Parsed {
@@ -135,7 +136,7 @@ function normalizeLiUrl(raw: string | null | undefined): string | null {
   }
 }
 
-export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null }: Props) {
+export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null, initialFiles = null }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
   const { values = [] } = useValues();
@@ -366,7 +367,17 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     setValueIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
 
   useEffect(() => { if (!open) reset(); /* eslint-disable-next-line */ }, [open]);
-  useEffect(() => { if (open && initialFile) { handleFile(initialFile); } /* eslint-disable-next-line */ }, [open, initialFile]);
+  useEffect(() => {
+    if (!open) return;
+    if (initialFiles && initialFiles.length > 1) {
+      handleMultiFiles(initialFiles);
+    } else if (initialFiles && initialFiles.length === 1) {
+      handleFile(initialFiles[0]);
+    } else if (initialFile) {
+      handleFile(initialFile);
+    }
+    /* eslint-disable-next-line */
+  }, [open, initialFile, initialFiles]);
 
   const commit = async () => {
     if (!parsed) return;
