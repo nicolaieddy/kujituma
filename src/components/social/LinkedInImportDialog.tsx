@@ -347,10 +347,10 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto overflow-x-hidden">
+        <DialogHeader className="min-w-0">
           <DialogTitle>Import LinkedIn .xlsx</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-words">
             Drop a "Single Post Analytics" export. We'll create the post if it doesn't exist, mark it Published,
             attach the metrics, and add it to the calendar.
           </DialogDescription>
@@ -368,22 +368,23 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         )}
 
         {parsed && (
-          <div className="space-y-3">
-            <Card className="p-3 bg-muted/30 space-y-1">
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileSpreadsheet className="h-4 w-4" /> {file?.name}
+          <div className="space-y-3 min-w-0">
+            <Card className="p-3 bg-muted/30 space-y-1 min-w-0">
+              <div className="flex items-center gap-2 text-sm font-medium min-w-0">
+                <FileSpreadsheet className="h-4 w-4 shrink-0" />
+                <span className="truncate">{file?.name}</span>
               </div>
               {parsed.postUrl && (
-                <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
-                  <Link2 className="h-3 w-3" /> {parsed.postUrl}
+                <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1 min-w-0">
+                  <Link2 className="h-3 w-3 shrink-0" /> <span className="truncate">{parsed.postUrl}</span>
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-2 text-xs mt-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-3 gap-y-1 text-xs mt-2">
                 {(["impressions","reach","reactions","comments","reposts","saves","sends","link_clicks","profile_views","followers_gained"] as const).map((k) => (
                   parsed[k] != null && (
-                    <div key={k} className="flex justify-between border-b border-dashed border-border/50">
-                      <span className="text-muted-foreground">{k}</span>
-                      <span className="tabular-nums">{parsed[k]}</span>
+                    <div key={k} className="flex justify-between gap-2 border-b border-dashed border-border/50 min-w-0">
+                      <span className="text-muted-foreground truncate">{k}</span>
+                      <span className="tabular-nums shrink-0">{parsed[k]}</span>
                     </div>
                   )
                 ))}
