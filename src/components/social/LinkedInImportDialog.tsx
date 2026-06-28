@@ -504,6 +504,17 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         id: tid,
         description: `${created} created · ${updated} updated · 1 metrics snapshot saved`,
       });
+      const metricSummary = [
+        parsed.impressions != null ? `${parsed.impressions} impressions` : null,
+        parsed.reactions != null ? `${parsed.reactions} reactions` : null,
+        parsed.comments != null ? `${parsed.comments} comments` : null,
+      ].filter(Boolean).join(" · ");
+      onComplete?.([{
+        file: file?.name ?? "LinkedIn export",
+        kind: "single_post",
+        status: action === "created" ? "created" : "matched",
+        detail: [title || "Existing post", metricSummary].filter(Boolean).join(" — "),
+      }]);
       reset();
       onClose();
     } catch (e: any) {
