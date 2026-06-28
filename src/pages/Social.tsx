@@ -182,7 +182,12 @@ export default function Social() {
         ))}
       </div>
 
-      {view === "pipeline" && <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />}
+      {view === "pipeline" && (
+        <div className="space-y-4">
+          <ThisWeekQueue onOpenPost={openEditor} />
+          <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />
+        </div>
+      )}
       {view === "calendar" && <SocialCalendar onOpenPost={openEditor} />}
       {view === "analytics" && <SocialAnalytics />}
       
