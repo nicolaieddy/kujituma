@@ -281,6 +281,15 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
                 </RequireModule>
               }
             />
+            <Route
+              path="/media"
+              element={
+                <RequireModule id="media">
+                  <Media />
+                </RequireModule>
+              }
+            />
+            <Route path="/press/:userId" element={<PublicPress />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<ProfileEntry />} />
