@@ -61,6 +61,7 @@ export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props
         source: mention.source,
         is_public: mention.is_public,
         archived_url: mention.archived_url,
+        story_id: mention.story_id ?? null,
       });
     } else {
       setForm(empty);
