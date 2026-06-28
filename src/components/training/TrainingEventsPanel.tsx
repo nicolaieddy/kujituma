@@ -63,11 +63,17 @@ import {
   type IssueCategory,
 } from "@/lib/bodyParts";
 
-const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
-  injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
-  race: { label: "Race", icon: Trophy, color: "text-amber-500" },
-  other: { label: "Other", icon: Flag, color: "text-primary" },
+const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string; description: string }> = {
+  injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive", description: "Niggle, injury, or sickness affecting training" },
+  race: { label: "Race", icon: Trophy, color: "text-amber-500", description: "Race result, distance, official time" },
+  other: { label: "Other", icon: Flag, color: "text-primary", description: "Milestone, travel, gear change, anything else" },
 };
+
+function defaultTitleForType(t: TrainingEventType): string {
+  if (t === "injury_illness") return "Untitled injury";
+  if (t === "race") return "Untitled race";
+  return "Untitled event";
+}
 
 interface FormState {
   id?: string;
