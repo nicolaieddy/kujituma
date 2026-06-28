@@ -69,16 +69,19 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
   return (
     <Card className="p-4 space-y-3">
       <div className="flex flex-wrap gap-2 items-center">
-        <Input placeholder="Search title, outlet, summary, tags…" value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
-        <FilterSelect value={year} onChange={setYear} options={[["all", "All years"], ...years.map((y) => [String(y), String(y)] as [string, string])]} />
-        <FilterSelect value={type} onChange={setType} options={[["all", "All types"], ...MEDIA_TYPES.map((t) => [t, t] as [string, string])]} />
-        <FilterSelect value={status} onChange={setStatus} options={[["all", "All statuses"], ...MEDIA_STATUSES.map((s) => [s, s] as [string, string])]} />
-        <FilterSelect value={urlStatus} onChange={setUrlStatus} options={[["all", "All link states"], ...MEDIA_URL_STATUSES.map((u) => [u, u] as [string, string])]} />
-        <Button variant={needsUrlOnly ? "default" : "outline"} size="sm" onClick={() => setNeedsUrlOnly((v) => !v)}>
+        <Input placeholder="Search title, outlet, summary, tags…" value={search} onChange={(e) => setSearch(e.target.value)} disabled={loading} className="max-w-xs" />
+        <FilterSelect value={year} onChange={setYear} options={[["all", "All years"], ...years.map((y) => [String(y), String(y)] as [string, string])]} disabled={loading} />
+        <FilterSelect value={type} onChange={setType} options={[["all", "All types"], ...MEDIA_TYPES.map((t) => [t, t] as [string, string])]} disabled={loading} />
+        <FilterSelect value={status} onChange={setStatus} options={[["all", "All statuses"], ...MEDIA_STATUSES.map((s) => [s, s] as [string, string])]} disabled={loading} />
+        <FilterSelect value={urlStatus} onChange={setUrlStatus} options={[["all", "All link states"], ...MEDIA_URL_STATUSES.map((u) => [u, u] as [string, string])]} disabled={loading} />
+        <Button variant={needsUrlOnly ? "default" : "outline"} size="sm" onClick={() => setNeedsUrlOnly((v) => !v)} disabled={loading}>
           Needs URL
         </Button>
-        <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} />
-        <div className="ml-auto text-xs text-muted-foreground">{filtered.length} of {mentions.length}</div>
+        <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} disabled={loading} />
+        <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          {loading && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+          <span>{loading ? "Loading mentions…" : `${filtered.length} of ${mentions.length}`}</span>
+        </div>
       </div>
 
       <div className="rounded-md border">
@@ -95,44 +98,76 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.map((m) => (
-              <TableRow key={m.id} className="cursor-pointer" onClick={() => onEdit(m)}>
-                <TableCell className="text-xs whitespace-nowrap">{m.date}</TableCell>
-                <TableCell>
-                  <div className="font-medium flex items-center gap-2">
-                    {m.featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
-                    {m.is_public ? <Globe className="h-3 w-3 text-emerald-600" /> : <Lock className="h-3 w-3 text-muted-foreground" />}
-                    <span className="line-clamp-1">{m.title}</span>
-                  </div>
-                  {m.tags?.length ? (
-                    <div className="mt-1 flex flex-wrap gap-1">
-                      {m.tags.slice(0, 4).map((t) => <Badge key={t} variant="secondary" className="text-[10px] py-0">{t}</Badge>)}
-                    </div>
-                  ) : null}
-                </TableCell>
-                <TableCell className="text-sm">{m.outlet}</TableCell>
-                <TableCell><Badge variant="outline" className="text-xs">{m.type}</Badge></TableCell>
-                <TableCell><Badge variant="outline" className="text-xs">{m.status}</Badge></TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded border ${URL_STATUS_COLOR[m.url_status]}`}>{m.url_status}</span>
-                    {m.url ? (
-                      <a href={m.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-muted-foreground hover:text-foreground">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    ) : null}
-                  </div>
-                </TableCell>
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <div className="flex gap-1 justify-end">
-                    <Button size="icon" variant="ghost" onClick={() => onEdit(m)}><Pencil className="h-3.5 w-3.5" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => onDelete(m)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-            {filtered.length === 0 && (
-              <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground text-sm">No mentions match these filters.</TableCell></TableRow>
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <TableRow key={`skel-${i}`}>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell>
+                    <Skeleton className="h-4 w-40" />
+                    <Skeleton className="h-3 w-24 mt-2" />
+                  </TableCell>
+                  <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                  <TableCell><Skeleton className="h-4 w-14" /></TableCell>
+                  <TableCell><div className="flex justify-end gap-1"><Skeleton className="h-8 w-8" /><Skeleton className="h-8 w-8" /></div></TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <>
+                {filtered.map((m) => (
+                  <TableRow key={m.id} className="cursor-pointer" onClick={() => onEdit(m)}>
+                    <TableCell className="text-xs whitespace-nowrap">{m.date}</TableCell>
+                    <TableCell>
+                      <div className="font-medium flex items-center gap-2">
+                        {m.featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
+                        {m.is_public ? <Globe className="h-3 w-3 text-emerald-600" /> : <Lock className="h-3 w-3 text-muted-foreground" />}
+                        <span className="line-clamp-1">{m.title}</span>
+                      </div>
+                      {m.tags?.length ? (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {m.tags.slice(0, 4).map((t) => <Badge key={t} variant="secondary" className="text-[10px] py-0">{t}</Badge>)}
+                        </div>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="text-sm">{m.outlet}</TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{m.type}</Badge></TableCell>
+                    <TableCell><Badge variant="outline" className="text-xs">{m.status}</Badge></TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${URL_STATUS_COLOR[m.url_status]}`}>{m.url_status}</span>
+                        {m.url ? (
+                          <a href={m.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-muted-foreground hover:text-foreground">
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </a>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <div className="flex gap-1 justify-end">
+                        <Button size="icon" variant="ghost" onClick={() => onEdit(m)}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => onDelete(m)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {filtered.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={7} className="p-0">
+                      <EmptyState
+                        illustration={<SearchEmpty className="h-20 w-32" />}
+                        title={mentions.length === 0 ? "No mentions yet" : "No mentions match these filters"}
+                        description={
+                          mentions.length === 0
+                            ? "Add your first mention to start building your press portfolio."
+                            : "Try adjusting your search, filters, or sort order to see more results."
+                        }
+                        size="md"
+                      />
+                    </TableCell>
+                  </TableRow>
+                )}
+              </>
             )}
           </TableBody>
         </Table>
