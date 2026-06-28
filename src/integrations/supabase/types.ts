@@ -1904,11 +1904,16 @@ export type Database = {
       media_mentions: {
         Row: {
           archived_url: string | null
+          article_type_tag: string | null
           created_at: string
           date: string
+          date_added: string | null
           featured: boolean
           id: string
           is_public: boolean
+          last_checked: string | null
+          news_announcement_group: string | null
+          nicolai_mention_type: string | null
           outlet: string
           sentiment: Database["public"]["Enums"]["media_sentiment"] | null
           source: Database["public"]["Enums"]["media_source"]
@@ -1922,15 +1927,21 @@ export type Database = {
           url: string | null
           url_status: Database["public"]["Enums"]["media_url_status"]
           user_id: string
+          verification_notes: string | null
           year: number | null
         }
         Insert: {
           archived_url?: string | null
+          article_type_tag?: string | null
           created_at?: string
           date: string
+          date_added?: string | null
           featured?: boolean
           id?: string
           is_public?: boolean
+          last_checked?: string | null
+          news_announcement_group?: string | null
+          nicolai_mention_type?: string | null
           outlet?: string
           sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
           source?: Database["public"]["Enums"]["media_source"]
@@ -1944,15 +1955,21 @@ export type Database = {
           url?: string | null
           url_status?: Database["public"]["Enums"]["media_url_status"]
           user_id: string
+          verification_notes?: string | null
           year?: number | null
         }
         Update: {
           archived_url?: string | null
+          article_type_tag?: string | null
           created_at?: string
           date?: string
+          date_added?: string | null
           featured?: boolean
           id?: string
           is_public?: boolean
+          last_checked?: string | null
+          news_announcement_group?: string | null
+          nicolai_mention_type?: string | null
           outlet?: string
           sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
           source?: Database["public"]["Enums"]["media_source"]
@@ -1966,6 +1983,7 @@ export type Database = {
           url?: string | null
           url_status?: Database["public"]["Enums"]["media_url_status"]
           user_id?: string
+          verification_notes?: string | null
           year?: number | null
         }
         Relationships: [
@@ -5233,7 +5251,12 @@ export type Database = {
       goal_value_link_source: "ai" | "user"
       media_review_status: "pending" | "approved" | "rejected"
       media_sentiment: "positive" | "neutral" | "negative"
-      media_source: "manual" | "google-alert" | "mcp-agent" | "import"
+      media_source:
+        | "manual"
+        | "google-alert"
+        | "mcp-agent"
+        | "import"
+        | "web-scan"
       media_status: "Published" | "Upcoming" | "Draft"
       media_type:
         | "Article"
@@ -5245,6 +5268,8 @@ export type Database = {
         | "Interview"
         | "Quote"
         | "Social"
+        | "Profile"
+        | "Event / Speaking"
       media_url_status: "verified" | "verify" | "needs-url" | "no-url" | "dead"
       objective_resolution: "none" | "completed" | "deprioritized" | "abandoned"
       social_platform: "linkedin" | "x" | "instagram" | "tiktok"
@@ -5389,7 +5414,13 @@ export const Constants = {
       goal_value_link_source: ["ai", "user"],
       media_review_status: ["pending", "approved", "rejected"],
       media_sentiment: ["positive", "neutral", "negative"],
-      media_source: ["manual", "google-alert", "mcp-agent", "import"],
+      media_source: [
+        "manual",
+        "google-alert",
+        "mcp-agent",
+        "import",
+        "web-scan",
+      ],
       media_status: ["Published", "Upcoming", "Draft"],
       media_type: [
         "Article",
@@ -5401,6 +5432,8 @@ export const Constants = {
         "Interview",
         "Quote",
         "Social",
+        "Profile",
+        "Event / Speaking",
       ],
       media_url_status: ["verified", "verify", "needs-url", "no-url", "dead"],
       objective_resolution: ["none", "completed", "deprioritized", "abandoned"],
