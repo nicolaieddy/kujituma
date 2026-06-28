@@ -196,7 +196,7 @@ export function MetricsTab({ post }: { post: SocialPost }) {
                     return (
                       <div key={key} className="flex justify-between border-b border-dashed border-border/50 pb-0.5">
                         <span className="text-muted-foreground">{label}</span>
-                        <span className="tabular-nums font-medium">{formatCompact(v)}</span>
+                        <CompactNumber value={v} className="tabular-nums font-medium" />
                       </div>
                     );
                   })}
