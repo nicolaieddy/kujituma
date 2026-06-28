@@ -29,6 +29,7 @@ export const URL_STATUS_COLOR: Record<string, string> = {
 
 const mentionsKey = (userId?: string) => ["media_mentions", userId] as const;
 const candidatesKey = (userId?: string) => ["media_candidates", userId] as const;
+const storiesKey = (userId?: string) => ["media_stories", userId] as const;
 
 export function useMediaMentions() {
   const { user } = useAuth();
