@@ -184,7 +184,7 @@ export default function Social() {
       {view === "pipeline" && <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />}
       {view === "calendar" && <SocialCalendar onOpenPost={openEditor} />}
       {view === "analytics" && <SocialAnalytics />}
-      {view === "growth" && <CumulativeGrowthChart />}
+      
       {view === "setup" && <PlatformSettingsPanel />}
 
       <PostEditorDrawer
