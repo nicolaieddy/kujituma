@@ -50,7 +50,7 @@ export function useUpdateProfileSocialLink() {
       if (!user) throw new Error("Not authenticated");
       const field = PLATFORM_TO_PROFILE_FIELD[input.platform];
       const value = input.url?.trim() ? input.url.trim() : null;
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("profiles")
         .update({ [field]: value })
         .eq("user_id", user.id);
