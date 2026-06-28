@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Check, Plus, Trash2, Sparkles } from "lucide-react";
+import { BetaBadge } from "@/components/shared/BetaBadge";
 import { toast } from "sonner";
 
 const tierLabel = (m: ModuleDefinition) => {
@@ -84,6 +85,11 @@ export default function Modules() {
               onClick={() => setDetail(m)}
             >
               <CardHeader>
+                {m.status === "beta" && (
+                  <div className="mb-1">
+                    <BetaBadge />
+                  </div>
+                )}
                 <div className="flex items-start justify-between gap-2">
                   <div className="text-4xl">{m.coverEmoji}</div>
                   <Badge variant={isInstalled ? "default" : "secondary"}>

@@ -116,7 +116,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     coverEmoji: "📣",
     category: "social",
     tier: "free",
-    status: "available",
+    status: "beta",
     surfaces: {
       pages: ["Dedicated Social page (/social)"],
       profileSections: ["Per-platform targets, deadlines, and pillars"],
@@ -140,7 +140,7 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
     coverEmoji: "📰",
     category: "productivity",
     tier: "free",
-    status: "available",
+    status: "beta",
     surfaces: {
       pages: ["Dedicated Media page (/media)", "Public press page (/press/:userId)"],
       integrations: ["Wayback archive snapshots"],

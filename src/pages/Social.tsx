@@ -16,6 +16,7 @@ import { PageDropOverlay } from "@/components/shared/PageDropOverlay";
 import { GoalProgressStrip } from "@/components/social/GoalProgressStrip";
 import { groupFilesByKind } from "@/lib/social/analyticsSniffer";
 import { cn } from "@/lib/utils";
+import { BetaBadge } from "@/components/shared/BetaBadge";
 
 type View = "pipeline" | "calendar" | "analytics" | "setup";
 
@@ -143,9 +144,10 @@ export default function Social() {
   return (
     <div className="container max-w-6xl mx-auto px-4 py-6 space-y-6 relative">
       <header className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Megaphone className="h-6 w-6 text-primary" />
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Social</h1>
+          <BetaBadge size="md" />
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={onPick} variant="outline" className="gap-2">
