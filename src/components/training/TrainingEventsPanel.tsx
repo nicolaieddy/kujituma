@@ -434,7 +434,7 @@ export function TrainingEventsPanel() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0 gap-0">
           {pickingType ? (
             <div className="p-6 space-y-5">
               <DialogHeader>
