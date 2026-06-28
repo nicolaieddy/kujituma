@@ -94,6 +94,7 @@ interface FormState {
   official_time_input: string;
   strava_url: string;
   location: string;
+  linked_activity_id: string | null;
 }
 
 function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
