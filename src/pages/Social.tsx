@@ -7,7 +7,7 @@ import { PlatformSettingsPanel } from "@/components/social/PlatformSettingsPanel
 import { SocialAnalytics } from "@/components/social/SocialAnalytics";
 import { SocialCalendar } from "@/components/social/SocialCalendar";
 import { PostEditorDrawer } from "@/components/social/PostEditorDrawer";
-import { CumulativeGrowthChart } from "@/components/social/CumulativeGrowthChart";
+
 import { LinkedInImportDialog } from "@/components/social/LinkedInImportDialog";
 import { AggregateImportDialog } from "@/components/social/AggregateImportDialog";
 import { ImportSummaryDialog, type ImportRow } from "@/components/social/ImportSummaryDialog";
