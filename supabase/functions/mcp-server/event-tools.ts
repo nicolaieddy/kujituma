@@ -150,6 +150,10 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         race_result: { type: "string" },
         race_priority: { type: "string" },
         location: { type: "string" },
+        linked_activity_id: {
+          type: "string",
+          description: "UUID of a synced_activities row to link. Pass empty string to clear.",
+        },
       },
       required: ["id"],
     },
