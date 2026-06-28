@@ -178,7 +178,7 @@ function parseWorkbook(buffer: ArrayBuffer, platform: SocialPlatform): ParsedAgg
   return out;
 }
 
-export function AggregateImportDialog({ open, onClose, defaultPlatform = "linkedin" }: Props) {
+export function AggregateImportDialog({ open, onClose, defaultPlatform = "linkedin", initialFile = null, initialFiles = null }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const upsertDaily = useBulkUpsertDailyMetrics();
