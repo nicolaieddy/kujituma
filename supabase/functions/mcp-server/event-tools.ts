@@ -136,7 +136,12 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         end_date: { type: "string", description: "Pass empty string to clear" },
         description: { type: "string" },
         severity: { type: "number" },
-        body_part: { type: "string" },
+        body_part: { type: "string", description: "Legacy free-text. Prefer `body_parts`." },
+        body_parts: BODY_PART_SCHEMA,
+        issue_category: {
+          type: "string",
+          description: "Injury/illness only: 'niggle' | 'injury' | 'illness'. Pass empty string to clear.",
+        },
         race_distance: { type: "string" },
         race_result: { type: "string" },
         race_priority: { type: "string" },
@@ -151,6 +156,20 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
       }
       if (args.end_date !== undefined) upd.end_date = args.end_date === "" ? null : args.end_date;
       if (args.severity !== undefined) upd.severity = args.severity;
+
+      if (args.issue_category !== undefined) {
+        if (args.issue_category === "" || args.issue_category === null) {
+          upd.issue_category = null;
+        } else if (!(ISSUE_CATEGORIES as readonly string[]).includes(args.issue_category)) {
+          return { content: [{ type: "text" as const, text: `issue_category must be one of: ${ISSUE_CATEGORIES.join(", ")}` }] };
+        } else {
+          upd.issue_category = args.issue_category;
+        }
+      }
+      if (args.body_parts !== undefined) {
+        const parts = sanitizeBodyParts(args.body_parts);
+        upd.body_parts = parts ?? [];
+      }
 
       const { data, error } = await supabase
         .from("training_events")
