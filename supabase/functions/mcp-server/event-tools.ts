@@ -52,14 +52,6 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         limit: { type: "number", description: "Default 100" },
       },
     },
-      type: "object",
-      properties: {
-        event_type: { type: "string", description: "Filter: injury_illness | race | other" },
-        from_date: { type: "string", description: "YYYY-MM-DD lower bound on start_date" },
-        to_date: { type: "string", description: "YYYY-MM-DD upper bound on start_date" },
-        limit: { type: "number", description: "Default 100" },
-      },
-    },
     handler: async ({ event_type, from_date, to_date, limit }: { event_type?: string; from_date?: string; to_date?: string; limit?: number }) => {
       let q = supabase
         .from("training_events")
