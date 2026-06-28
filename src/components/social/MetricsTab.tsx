@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { PLATFORM_META, formatCompact, formatEngagementRate, type SocialPlatform } from "@/lib/social";
+import { CompactNumber } from "./CompactNumber";
 import { getLocalDateString } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
 import {
