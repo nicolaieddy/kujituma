@@ -2957,6 +2957,48 @@ export type Database = {
         }
         Relationships: []
       }
+      social_daily_account_metrics: {
+        Row: {
+          created_at: string
+          date: string
+          engagements: number | null
+          id: string
+          impressions: number | null
+          members_reached: number | null
+          new_followers: number | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          source: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          engagements?: number | null
+          id?: string
+          impressions?: number | null
+          members_reached?: number | null
+          new_followers?: number | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          source?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          engagements?: number | null
+          id?: string
+          impressions?: number | null
+          members_reached?: number | null
+          new_followers?: number | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          source?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       social_follower_growth: {
         Row: {
           created_at: string
