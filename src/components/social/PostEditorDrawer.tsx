@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   PLATFORM_META,
   STATUS_META,
-  STATUS_ORDER,
+  BOARD_ORDER,
   TRUST_CHECK_META,
   type SocialPlatform,
   type SocialStatus,
@@ -220,7 +220,7 @@ export function PostEditorDrawer({ open, postId, onClose }: Props) {
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v as SocialStatus })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {STATUS_ORDER.map((s) => (
+                    {BOARD_ORDER.map((s) => (
                       <SelectItem key={s} value={s}>{STATUS_META[s].label}</SelectItem>
                     ))}
                   </SelectContent>

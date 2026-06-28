@@ -24,6 +24,14 @@ export const STATUS_META: Record<SocialStatus, { label: string; order: number; t
 
 export const STATUS_ORDER: SocialStatus[] = ["idea", "drafting", "in_review", "ready", "scheduled", "published"];
 
+/** Statuses shown as kanban columns. Legacy 'in_review' and 'ready' are folded into 'drafting' on display. */
+export type BoardStatus = "idea" | "drafting" | "scheduled" | "published";
+export const BOARD_ORDER: BoardStatus[] = ["idea", "drafting", "scheduled", "published"];
+export function toBoardStatus(s: SocialStatus): BoardStatus {
+  if (s === "in_review" || s === "ready") return "drafting";
+  return s as BoardStatus;
+}
+
 export const TRUST_CHECK_META: Record<SocialTrustCheck, { label: string; tone: string }> = {
   passes:      { label: "Passes",      tone: "bg-emerald-100 text-emerald-900" },
   needs_work:  { label: "Needs work",  tone: "bg-amber-100 text-amber-900" },
