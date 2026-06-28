@@ -29,6 +29,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
   const [urlStatus, setUrlStatus] = useState<string>("all");
   const [needsUrlOnly, setNeedsUrlOnly] = useState(false);
   const [sort, setSort] = useState<string>("date-desc");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const relevanceScore = (m: MediaMention): number => {
     let s = 0;
