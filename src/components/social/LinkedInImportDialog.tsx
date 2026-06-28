@@ -32,6 +32,7 @@ interface Props {
   defaultPostId?: string | null;
   defaultUrl?: string;
   initialFile?: File | null;
+  initialFiles?: File[] | null;
 }
 
 interface Parsed {
