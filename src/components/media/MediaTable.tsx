@@ -58,13 +58,56 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
       if (urlStatus !== "all" && m.url_status !== urlStatus) return false;
       return true;
     });
-    const sorted = [...list];
+  const sorted = [...list];
     if (sort === "date-desc") sorted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     else if (sort === "date-asc") sorted.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
     else if (sort === "updated-desc") sorted.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
     else if (sort === "relevance") sorted.sort((a, b) => relevanceScore(b) - relevanceScore(a));
     return sorted;
   }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, sort]);
+
+  const sortLabels: Record<string, string> = {
+    "date-desc": "Newest first",
+    "date-asc": "Oldest first",
+    "updated-desc": "Recently updated",
+    "relevance": "Relevance",
+  };
+
+  const activeFilters = useMemo(() => {
+    const pills: { key: string; label: string; onRemove: () => void }[] = [];
+    if (search.trim()) {
+      pills.push({ key: "search", label: `Search: ${search.trim()}`, onRemove: () => setSearch("") });
+    }
+    if (year !== "all") {
+      pills.push({ key: "year", label: `Year: ${year}`, onRemove: () => setYear("all") });
+    }
+    if (type !== "all") {
+      pills.push({ key: "type", label: `Type: ${type}`, onRemove: () => setType("all") });
+    }
+    if (status !== "all") {
+      pills.push({ key: "status", label: `Status: ${status}`, onRemove: () => setStatus("all") });
+    }
+    if (urlStatus !== "all") {
+      pills.push({ key: "urlStatus", label: `Link: ${urlStatus}`, onRemove: () => setUrlStatus("all") });
+    }
+    if (needsUrlOnly) {
+      pills.push({ key: "needsUrl", label: "Needs URL", onRemove: () => setNeedsUrlOnly(false) });
+    }
+    if (sort !== "date-desc") {
+      pills.push({ key: "sort", label: `Sort: ${sortLabels[sort]}`, onRemove: () => setSort("date-desc") });
+    }
+    return pills;
+  }, [search, year, type, status, urlStatus, needsUrlOnly, sort]);
+
+  const clearAll = () => {
+    setSearch("");
+    setYear("all");
+    setType("all");
+    setStatus("all");
+    setUrlStatus("all");
+    setNeedsUrlOnly(false);
+    setSort("date-desc");
+  };
 
   return (
     <Card className="p-4 space-y-3">
