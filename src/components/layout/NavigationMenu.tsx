@@ -97,31 +97,83 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
   const pinnedItems = pinned.map((id) => MODULE_BY_ID[id]).filter(Boolean);
   const overflowItems = overflow.map((id) => MODULE_BY_ID[id]).filter(Boolean);
 
-  // Mobile: show everything as a flat list (no overflow needed in sheet)
+  // Mobile: sectioned list with larger tap targets and inline pin/unpin
   if (isMobile) {
-    const flat: CoreNavItem[] = [
-      ...CORE_ITEMS,
-      ...order.map((id) => MODULE_BY_ID[id]).filter(Boolean),
-      { path: "/modules", label: "Modules", icon: Blocks, section: "modules" },
-      ...(isAdmin ? [{ path: "/admin", label: "Admin", icon: Shield, section: "admin" }] : []),
-    ];
-    return (
-      <>
-        {flat.map(({ path, label, icon: Icon, section }) => (
+    const renderRow = (
+      item: CoreNavItem,
+      opts?: { moduleId?: ModuleId; isPinned?: boolean },
+    ) => {
+      const Icon = item.icon;
+      const isActive = currentSection === item.section;
+      return (
+        <div
+          key={item.section}
+          className={`group flex items-center gap-2 rounded-lg ${
+            isActive ? "bg-accent" : ""
+          }`}
+        >
           <button
-            key={section}
-            onClick={() => handleNavigation(path)}
-            className={`flex items-center w-full text-left py-3 px-4 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-all duration-200 ${
-              currentSection === section ? "text-foreground font-medium bg-accent" : ""
+            onClick={() => handleNavigation(item.path)}
+            className={`flex flex-1 items-center min-h-[48px] text-left py-3 px-4 rounded-lg transition-colors ${
+              isActive
+                ? "text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent active:bg-accent"
             }`}
           >
-            <Icon className="h-4 w-4 mr-3" />
-            {label}
+            <Icon className="h-5 w-5 mr-3" />
+            <span className="text-base">{item.label}</span>
           </button>
-        ))}
-      </>
+          {opts?.moduleId && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                togglePin(opts.moduleId!);
+              }}
+              aria-label={opts.isPinned ? `Unpin ${item.label}` : `Pin ${item.label}`}
+              className={`mr-2 flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                opts.isPinned
+                  ? "text-primary hover:bg-primary/10"
+                  : "text-muted-foreground hover:bg-accent"
+              }`}
+            >
+              {opts.isPinned ? <Pin className="h-4 w-4" /> : <PinOff className="h-4 w-4" />}
+            </button>
+          )}
+        </div>
+      );
+    };
+
+    const SectionHeader = ({ children }: { children: React.ReactNode }) => (
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground px-4 pt-4 pb-1">
+        {children}
+      </p>
+    );
+
+    return (
+      <div className="flex flex-col gap-0.5">
+        {CORE_ITEMS.map((i) => renderRow(i))}
+
+        {pinnedItems.length > 0 && (
+          <>
+            <SectionHeader>Pinned modules</SectionHeader>
+            {pinnedItems.map((i) => renderRow(i, { moduleId: i.moduleId, isPinned: true }))}
+          </>
+        )}
+
+        {overflowItems.length > 0 && (
+          <>
+            <SectionHeader>More modules</SectionHeader>
+            {overflowItems.map((i) => renderRow(i, { moduleId: i.moduleId, isPinned: false }))}
+          </>
+        )}
+
+        <SectionHeader>Manage</SectionHeader>
+        {renderRow({ path: "/modules", label: "Modules", icon: Blocks, section: "modules" })}
+        {isAdmin && renderRow({ path: "/admin", label: "Admin", icon: Shield, section: "admin" })}
+      </div>
     );
   }
+
 
   const customizerEntries: Record<string, ModuleNavEntry> = Object.fromEntries(
     MODULE_ITEMS.map((m) => [m.moduleId, { id: m.moduleId, label: m.label, icon: m.icon }]),
