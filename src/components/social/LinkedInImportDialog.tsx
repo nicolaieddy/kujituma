@@ -407,7 +407,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
                               on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
                             }`}
                           >
-                            {v.name}
+                            {v.label}
                           </button>
                         );
                       })}
