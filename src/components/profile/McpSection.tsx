@@ -340,6 +340,13 @@ export function McpSection() {
               { name: "add_media_candidate", desc: "Agent-add to the review inbox (mcp-agent source)" },
               { name: "add_media", desc: "Owner-add directly to canonical mentions" },
               { name: "update_media", desc: "Update fields on an existing mention" },
+              { name: "upsert_media_mention", desc: "Create/update a mention; idempotent by normalized URL" },
+              { name: "bulk_upsert_media_mentions", desc: "Bulk import rows (xlsx/CSV); returns inserted/updated/skipped" },
+              { name: "list_media_mentions", desc: "Rich filters: year, date range, outlet, tag, group, sort" },
+              { name: "get_media_mention", desc: "Fetch one mention by id or URL" },
+              { name: "set_media_featured", desc: "Toggle featured flag for press page" },
+              { name: "delete_media_mention", desc: "Delete a mention by id" },
+              { name: "get_media_summary", desc: "Counts by year/type/outlet + multi-outlet announcements" },
             ].map((tool) => (
               <div
                 key={tool.name}
