@@ -650,6 +650,17 @@ export function TrainingEventsPanel() {
                         </div>
                       </div>
                       <div className="space-y-1.5">
+                        <Label>Linked workout <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                        <ActivityLinkPicker
+                          value={form.linked_activity_id}
+                          onChange={(id) => setForm({ ...form, linked_activity_id: id })}
+                          anchorDate={form.start_date}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Pull metrics from the synced activity for this race.
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
                         <Label>Strava URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
                         <Input
                           type="url"
