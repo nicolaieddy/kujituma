@@ -17,6 +17,7 @@ import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
 import { useSocialPosts } from "@/hooks/useSocialPosts";
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { cn } from "@/lib/utils";
+import { CompactNumber } from "./CompactNumber";
 
 const STATUS_TONE = {
   on_track: { label: "On track", icon: TrendingUp, className: "bg-emerald-100 text-emerald-900 border-emerald-200" },
@@ -88,16 +89,16 @@ export function SocialAnalytics() {
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <div className="text-2xl font-semibold tabular-nums">{formatCompact(current)}</div>
+                  <div className="text-2xl font-semibold tabular-nums"><CompactNumber value={current} /></div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Current</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold tabular-nums">{formatCompact(s.follower_target)}</div>
+                  <div className="text-2xl font-semibold tabular-nums"><CompactNumber value={s.follower_target} /></div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Target</div>
                 </div>
                 <div>
                   <div className={cn("text-2xl font-semibold tabular-nums", netNew30d > 0 ? "text-emerald-600" : netNew30d < 0 ? "text-destructive" : "")}>
-                    {netNew30d > 0 ? "+" : ""}{formatCompact(netNew30d)}
+                    <CompactNumber value={netNew30d} prefix={netNew30d > 0 ? "+" : ""} />
                   </div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">30 days</div>
                 </div>
@@ -133,7 +134,7 @@ export function SocialAnalytics() {
                       <Tooltip
                         contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
                         labelFormatter={(l) => format(new Date(l as string), "d MMM yyyy")}
-                        formatter={(v: number) => [formatCompact(v), "Followers"]}
+                        formatter={(v: number) => [`${v.toLocaleString()} (${formatCompact(v)})`, "Followers"]}
                       />
                       {s.follower_target != null && (
                         <ReferenceLine y={s.follower_target} stroke="hsl(var(--primary))" strokeDasharray="3 3" />
@@ -165,7 +166,7 @@ export function SocialAnalytics() {
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
                       <Icon className={cn("h-3 w-3", PLATFORM_META[metric!.platform].color)} />
                       {format(new Date(metric!.metrics_as_of), "d MMM yyyy")}
-                      {metric!.impressions != null && <span>· {formatCompact(metric!.impressions)} impressions</span>}
+                      {metric!.impressions != null && <span>· <CompactNumber value={metric!.impressions} /> impressions</span>}
                     </div>
                   </div>
                   <div className="text-right tabular-nums">

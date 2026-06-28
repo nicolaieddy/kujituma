@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { PLATFORM_META, SOCIAL_PLATFORMS, type SocialPlatform, formatCompact } from "@/lib/social";
+import { CompactNumber } from "./CompactNumber";
 import { useBulkUpsertDailyMetrics } from "@/hooks/useDailyAccountMetrics";
 import { useUpsertPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useLogSocialImport } from "@/hooks/useSocialImportHistory";
@@ -504,9 +505,9 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
               <div className="text-[11px] text-muted-foreground">Range: {parsed.rangeLabel}</div>
             )}
             <div className="grid grid-cols-3 gap-2 text-center">
-              <Stat label="Followers" value={formatCompact(parsed.currentFollowers)} sub={parsed.followersAsOf ?? undefined} />
-              <Stat label="Impressions" value={formatCompact(parsed.totalImpressions)} />
-              <Stat label="Reach" value={formatCompact(parsed.totalReach)} />
+              <Stat label="Followers" value={parsed.currentFollowers} sub={parsed.followersAsOf ?? undefined} />
+              <Stat label="Impressions" value={parsed.totalImpressions} />
+              <Stat label="Reach" value={parsed.totalReach} />
             </div>
             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
@@ -527,10 +528,10 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   );
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({ label, value, sub }: { label: string; value: number | null; sub?: string }) {
   return (
     <div className="rounded-md border border-border p-2">
-      <div className="text-lg font-semibold tabular-nums">{value}</div>
+      <div className="text-lg font-semibold tabular-nums"><CompactNumber value={value} /></div>
       <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</div>
       {sub && <div className="text-[10px] text-muted-foreground mt-0.5">{sub}</div>}
     </div>
