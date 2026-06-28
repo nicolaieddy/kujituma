@@ -115,6 +115,7 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     official_time_input: "",
     strava_url: "",
     location: "",
+    linked_activity_id: null,
   };
 }
 
