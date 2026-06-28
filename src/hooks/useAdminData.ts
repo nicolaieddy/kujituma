@@ -36,6 +36,13 @@ interface AdminUser {
   total_keypresses?: number;
   tos_accepted_at?: string;
   tos_version?: string;
+  goals_active?: number;
+  goals_completed?: number;
+  habits_count?: number;
+  check_ins_total?: number;
+  country?: string;
+  city?: string;
+  phone_verified?: boolean;
 }
 
 interface MonthlyData {

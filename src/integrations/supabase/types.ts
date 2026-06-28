@@ -5032,12 +5032,19 @@ export type Database = {
         Args: never
         Returns: {
           avatar_url: string
+          check_ins_total: number
+          city: string
+          country: string
           created_at: string
           days_active: number
           email: string
           full_name: string
+          goals_active: number
+          goals_completed: number
+          habits_count: number
           id: string
           last_active_at: string
+          phone_verified: boolean
           posts_count: number
           role: string
           tos_accepted_at: string
