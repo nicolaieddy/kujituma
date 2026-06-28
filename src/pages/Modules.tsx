@@ -19,6 +19,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Check, Plus, Trash2, Sparkles } from "lucide-react";
+import { BetaBadge } from "@/components/shared/BetaBadge";
 import { toast } from "sonner";
 
 const tierLabel = (m: ModuleDefinition) => {
