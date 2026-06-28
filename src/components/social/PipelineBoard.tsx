@@ -359,6 +359,14 @@ function SortableCard({
   );
 }
 
+function validateScheduleValue(value: string): { valid: boolean; error: string | null } {
+  if (!value) return { valid: false, error: "Pick a date and time" };
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return { valid: false, error: "Invalid date or time" };
+  if (d.getTime() < Date.now() - 60_000) return { valid: false, error: "Must be in the future" };
+  return { valid: true, error: null };
+}
+
 function PendingScheduleCard({
   post, value, onChange, onConfirm, onCancel,
 }: {
@@ -369,14 +377,22 @@ function PendingScheduleCard({
   onCancel: () => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [touched, setTouched] = useState(false);
   useEffect(() => {
-    // Auto-focus the picker so the user can confirm immediately.
     const t = setTimeout(() => inputRef.current?.focus(), 30);
     return () => clearTimeout(t);
   }, []);
 
+  const { valid, error } = validateScheduleValue(value);
+  const showError = !valid && touched;
+
   return (
-    <Card className="p-2.5 border-l-2 border-l-violet-500 bg-card ring-2 ring-violet-500/30 animate-in fade-in-50 zoom-in-95">
+    <Card
+      className={cn(
+        "p-2.5 border-l-2 bg-card ring-2 animate-in fade-in-50 zoom-in-95",
+        showError ? "border-l-destructive ring-destructive/30" : "border-l-violet-500 ring-violet-500/30",
+      )}
+    >
       <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground mb-1.5">
         <CalendarClock className="h-3 w-3" />
         <span>When should this go out?</span>
@@ -388,18 +404,38 @@ function PendingScheduleCard({
         ref={inputRef}
         type="datetime-local"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => { setTouched(true); onChange(e.target.value); }}
+        onBlur={() => setTouched(true)}
+        aria-invalid={showError}
+        aria-describedby={showError ? `sched-err-${post.id}` : undefined}
         onKeyDown={(e) => {
-          if (e.key === "Enter") { e.preventDefault(); onConfirm(); }
+          if (e.key === "Enter") {
+            e.preventDefault();
+            setTouched(true);
+            if (valid) onConfirm();
+          }
           if (e.key === "Escape") { e.preventDefault(); onCancel(); }
         }}
-        className="h-8 text-xs"
+        className={cn(
+          "h-8 text-xs",
+          showError && "border-destructive focus-visible:ring-destructive",
+        )}
       />
+      {showError && (
+        <p id={`sched-err-${post.id}`} className="mt-1 text-[11px] text-destructive">
+          {error}
+        </p>
+      )}
       <div className="flex items-center justify-end gap-1.5 mt-2">
         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs gap-1" onClick={onCancel}>
           <X className="h-3 w-3" /> Cancel
         </Button>
-        <Button size="sm" className="h-7 px-2 text-xs gap-1" onClick={onConfirm}>
+        <Button
+          size="sm"
+          className="h-7 px-2 text-xs gap-1"
+          onClick={() => { setTouched(true); if (valid) onConfirm(); }}
+          disabled={!valid}
+        >
           <Check className="h-3 w-3" /> Schedule
         </Button>
       </div>
