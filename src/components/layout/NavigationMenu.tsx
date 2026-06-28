@@ -11,6 +11,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { ModuleNavCustomizer, type ModuleNavEntry } from "./ModuleNavCustomizer";
 import { useState } from "react";
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, horizontalListSortingStrategy,
+  arrayMove, sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface NavigationMenuProps {
   onItemClick?: () => void;
@@ -140,10 +149,41 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
   const overflowHasActive = overflowItems.some((i) => i.section === currentSection);
   const needsMoreMenu = overflowItems.length > 0 || order.length > 0;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handlePinnedDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = pinned.indexOf(active.id as ModuleId);
+    const newIndex = pinned.indexOf(over.id as ModuleId);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const nextPinned = arrayMove(pinned, oldIndex, newIndex);
+    reorder([...nextPinned, ...overflow]);
+  };
+
   return (
     <nav className="flex items-center space-x-1">
       {CORE_ITEMS.map(renderPill)}
-      {pinnedItems.map(renderPill)}
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePinnedDragEnd}>
+        <SortableContext items={pinned} strategy={horizontalListSortingStrategy}>
+          <div className="flex items-center space-x-1">
+            {pinnedItems.map((item) => (
+              <SortablePill
+                key={item.section}
+                id={item.moduleId}
+                item={item}
+                isActive={currentSection === item.section}
+                onClick={() => handleNavigation(item.path)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
 
       {needsMoreMenu && (
         <Popover open={moreOpen} onOpenChange={setMoreOpen}>
@@ -217,3 +257,43 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     </nav>
   );
 };
+
+function SortablePill({
+  id,
+  item,
+  isActive,
+  onClick,
+}: {
+  id: ModuleId;
+  item: ModuleNavItem;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
+  const Icon = item.icon;
+  return (
+    <button
+      ref={setNodeRef}
+      style={style}
+      onClick={onClick}
+      {...attributes}
+      {...listeners}
+      className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm leading-none transition-colors duration-200 touch-none ${
+        isDragging ? "cursor-grabbing shadow-md ring-1 ring-primary/30" : "cursor-grab"
+      } ${
+        isActive
+          ? "bg-primary/10 text-primary font-medium"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+      }`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${isActive ? "text-primary" : ""}`} />
+      {item.label}
+    </button>
+  );
+}
+
