@@ -194,12 +194,20 @@ export default function Social() {
         open={singlePostOpen}
         onClose={closeSinglePost}
         initialFiles={singlePostFiles}
+        onComplete={handleDialogComplete}
       />
 
       <AggregateImportDialog
         open={aggregateOpen}
         onClose={closeAggregate}
         initialFiles={aggregateFiles}
+        onComplete={handleDialogComplete}
+      />
+
+      <ImportSummaryDialog
+        open={summaryOpen}
+        rows={summaryRows}
+        onClose={() => { setSummaryOpen(false); setSummaryRows([]); }}
       />
 
       <PageDropOverlay
