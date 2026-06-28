@@ -89,6 +89,10 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         race_result: { type: "string" },
         race_priority: { type: "string", description: "A | B | C" },
         location: { type: "string" },
+        linked_activity_id: {
+          type: "string",
+          description: "Optional UUID of a synced_activities row to link this event to (workout where the injury occurred, or the activity recording for a race).",
+        },
       },
       required: ["event_type", "title", "start_date"],
     },
