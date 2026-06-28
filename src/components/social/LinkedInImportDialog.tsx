@@ -30,6 +30,7 @@ interface Props {
   onClose: () => void;
   defaultPostId?: string | null;
   defaultUrl?: string;
+  initialFile?: File | null;
 }
 
 interface Parsed {
