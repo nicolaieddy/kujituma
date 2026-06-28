@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "sonner";
 import { PLATFORM_META, SOCIAL_PLATFORMS, type SocialPlatform, formatCompact } from "@/lib/social";
+import { CompactNumber } from "./CompactNumber";
 import { useBulkUpsertDailyMetrics } from "@/hooks/useDailyAccountMetrics";
 import { useUpsertPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useLogSocialImport } from "@/hooks/useSocialImportHistory";
