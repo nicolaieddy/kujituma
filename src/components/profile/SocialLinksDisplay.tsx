@@ -69,6 +69,13 @@ const getPlatformName = (platformId: string): string => {
 };
 
 export const SocialLinksDisplay = ({ socialLinks, linkOrder = [], size = 'md' }: SocialLinksDisplayProps) => {
+  const { data: settings = [] } = useSocialPlatformSettings();
+  const trackedSet = useMemo(() => {
+    const set = new Set<SocialPlatform>();
+    for (const s of settings) if (s.enabled) set.add(s.platform);
+    return set;
+  }, [settings]);
+
   // Get ordered list of active platforms
   const orderedPlatforms = useMemo(() => {
     const activePlatforms = Object.entries(socialLinks)
@@ -76,7 +83,6 @@ export const SocialLinksDisplay = ({ socialLinks, linkOrder = [], size = 'md' }:
       .map(([id]) => id);
     
     const safeOrder = linkOrder || [];
-    // Sort by linkOrder, putting unknown items at the end
     return activePlatforms.sort((a, b) => {
       const indexA = safeOrder.indexOf(a);
       const indexB = safeOrder.indexOf(b);
@@ -92,26 +98,40 @@ export const SocialLinksDisplay = ({ socialLinks, linkOrder = [], size = 'md' }:
   const iconSize = size === 'sm' ? 'h-4 w-4' : 'h-5 w-5';
   const buttonSize = size === 'sm' ? 'h-8 w-8' : 'h-9 w-9';
   
-  // Removed nested TooltipProvider - using App-level provider to prevent stack overflow on iOS Safari
   return (
     <div className="flex flex-wrap gap-1">
-      {orderedPlatforms.map((platformId) => (
-        <Tooltip key={platformId}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`${buttonSize} hover:bg-accent`}
-              onClick={() => window.open(getHref(platformId, socialLinks[platformId]), '_blank', 'noopener,noreferrer')}
-            >
-              <SocialIcon platformId={platformId} className={iconSize} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>{getPlatformName(platformId)}</p>
-          </TooltipContent>
-        </Tooltip>
-      ))}
+      {orderedPlatforms.map((platformId) => {
+        const trackedPlatform = PROFILE_FIELD_TO_PLATFORM[platformId];
+        const isTracked = trackedPlatform ? trackedSet.has(trackedPlatform) : false;
+        const platformName = getPlatformName(platformId);
+        return (
+          <Tooltip key={platformId}>
+            <TooltipTrigger asChild>
+              <div className="relative">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`${buttonSize} hover:bg-accent`}
+                  onClick={() => window.open(getHref(platformId, socialLinks[platformId]), '_blank', 'noopener,noreferrer')}
+                >
+                  <SocialIcon platformId={platformId} className={iconSize} />
+                </Button>
+                {isTracked && (
+                  <span
+                    className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white ring-2 ring-background"
+                    aria-label="Tracked in Social analytics"
+                  >
+                    <Activity className="h-2 w-2" strokeWidth={3} />
+                  </span>
+                )}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>{platformName}{isTracked ? " · tracked in Social analytics" : ""}</p>
+            </TooltipContent>
+          </Tooltip>
+        );
+      })}
     </div>
   );
 };
