@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2 } from "lucide-react";
+import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -58,13 +58,56 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
       if (urlStatus !== "all" && m.url_status !== urlStatus) return false;
       return true;
     });
-    const sorted = [...list];
+  const sorted = [...list];
     if (sort === "date-desc") sorted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     else if (sort === "date-asc") sorted.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
     else if (sort === "updated-desc") sorted.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
     else if (sort === "relevance") sorted.sort((a, b) => relevanceScore(b) - relevanceScore(a));
     return sorted;
   }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, sort]);
+
+  const sortLabels: Record<string, string> = {
+    "date-desc": "Newest first",
+    "date-asc": "Oldest first",
+    "updated-desc": "Recently updated",
+    "relevance": "Relevance",
+  };
+
+  const activeFilters = useMemo(() => {
+    const pills: { key: string; label: string; onRemove: () => void }[] = [];
+    if (search.trim()) {
+      pills.push({ key: "search", label: `Search: ${search.trim()}`, onRemove: () => setSearch("") });
+    }
+    if (year !== "all") {
+      pills.push({ key: "year", label: `Year: ${year}`, onRemove: () => setYear("all") });
+    }
+    if (type !== "all") {
+      pills.push({ key: "type", label: `Type: ${type}`, onRemove: () => setType("all") });
+    }
+    if (status !== "all") {
+      pills.push({ key: "status", label: `Status: ${status}`, onRemove: () => setStatus("all") });
+    }
+    if (urlStatus !== "all") {
+      pills.push({ key: "urlStatus", label: `Link: ${urlStatus}`, onRemove: () => setUrlStatus("all") });
+    }
+    if (needsUrlOnly) {
+      pills.push({ key: "needsUrl", label: "Needs URL", onRemove: () => setNeedsUrlOnly(false) });
+    }
+    if (sort !== "date-desc") {
+      pills.push({ key: "sort", label: `Sort: ${sortLabels[sort]}`, onRemove: () => setSort("date-desc") });
+    }
+    return pills;
+  }, [search, year, type, status, urlStatus, needsUrlOnly, sort]);
+
+  const clearAll = () => {
+    setSearch("");
+    setYear("all");
+    setType("all");
+    setStatus("all");
+    setUrlStatus("all");
+    setNeedsUrlOnly(false);
+    setSort("date-desc");
+  };
 
   return (
     <Card className="p-4 space-y-3">
@@ -83,6 +126,29 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
           <span>{loading ? "Loading mentions…" : `${filtered.length} of ${mentions.length}`}</span>
         </div>
       </div>
+
+      {activeFilters.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground">Active:</span>
+          {activeFilters.map((pill) => (
+            <Badge key={pill.key} variant="secondary" className="gap-1 pr-1 pl-2.5 py-1 text-xs font-medium">
+              {pill.label}
+              <button
+                type="button"
+                onClick={pill.onRemove}
+                disabled={loading}
+                aria-label={`Remove ${pill.label}`}
+                className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-secondary-foreground/10 disabled:opacity-50"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground" onClick={clearAll} disabled={loading}>
+            Clear all
+          </Button>
+        </div>
+      )}
 
       <div className="rounded-md border">
         <Table>
