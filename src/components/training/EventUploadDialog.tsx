@@ -299,6 +299,8 @@ export function EventUploadDialog({ open, onOpenChange }: Props) {
             start_date: e.start_date,
             end_date: e.end_date || null,
             body_part: e.body_part || null,
+            body_parts: e.body_parts && e.body_parts.length > 0 ? e.body_parts : [],
+            issue_category: e.issue_category ?? null,
             severity: e.severity ?? null,
             race_distance: e.race_distance || null,
             race_result: e.race_result || null,
