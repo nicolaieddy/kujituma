@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2, X, Info } from "lucide-react";
+import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2, X, Info, Check, ChevronDown, Tag } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { SearchEmpty } from "@/components/illustrations";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
 import { URL_STATUS_COLOR, MEDIA_TYPES, MEDIA_STATUSES, MEDIA_URL_STATUSES, type MediaMention } from "@/hooks/media/useMedia";
 
 interface Props {
@@ -27,6 +29,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
   const [urlStatus, setUrlStatus] = useState<string>("all");
   const [needsUrlOnly, setNeedsUrlOnly] = useState(false);
   const [sort, setSort] = useState<string>("date-desc");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
   const relevanceScore = (m: MediaMention): number => {
     let s = 0;
@@ -48,6 +51,11 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
     return [...set].sort((a, b) => b - a);
   }, [mentions]);
 
+  const allTags = useMemo(() => {
+    const set = new Set(mentions.flatMap((m) => m.tags ?? []));
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [mentions]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const list = mentions.filter((m) => {
@@ -57,15 +65,16 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
       if (status !== "all" && m.status !== status) return false;
       if (needsUrlOnly && m.url_status !== "needs-url") return false;
       if (urlStatus !== "all" && m.url_status !== urlStatus) return false;
+      if (selectedTags.length > 0 && !selectedTags.every((t) => m.tags?.includes(t))) return false;
       return true;
     });
-  const sorted = [...list];
+    const sorted = [...list];
     if (sort === "date-desc") sorted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     else if (sort === "date-asc") sorted.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
     else if (sort === "updated-desc") sorted.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
     else if (sort === "relevance") sorted.sort((a, b) => relevanceScore(b) - relevanceScore(a));
     return sorted;
-  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, sort]);
+  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, selectedTags, sort]);
 
   const sortLabels: Record<string, string> = {
     "date-desc": "Newest first",
@@ -94,11 +103,14 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
     if (needsUrlOnly) {
       pills.push({ key: "needsUrl", label: "Needs URL", onRemove: () => setNeedsUrlOnly(false) });
     }
+    selectedTags.forEach((tag) => {
+      pills.push({ key: `tag-${tag}`, label: `Tag: ${tag}`, onRemove: () => setSelectedTags((prev) => prev.filter((t) => t !== tag)) });
+    });
     if (sort !== "date-desc") {
       pills.push({ key: "sort", label: `Sort: ${sortLabels[sort]}`, onRemove: () => setSort("date-desc") });
     }
     return pills;
-  }, [search, year, type, status, urlStatus, needsUrlOnly, sort]);
+  }, [search, year, type, status, urlStatus, needsUrlOnly, selectedTags, sort]);
 
   const clearAll = () => {
     setSearch("");
@@ -107,6 +119,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
     setStatus("all");
     setUrlStatus("all");
     setNeedsUrlOnly(false);
+    setSelectedTags([]);
     setSort("date-desc");
   };
 
@@ -121,6 +134,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
         <Button variant={needsUrlOnly ? "default" : "outline"} size="sm" onClick={() => setNeedsUrlOnly((v) => !v)} disabled={loading}>
           Needs URL
         </Button>
+        <TagFilter tags={allTags} selected={selectedTags} onChange={setSelectedTags} disabled={loading} />
         <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} disabled={loading} />
         {sort === "relevance" && (
           <TooltipProvider>
@@ -279,5 +293,59 @@ function FilterSelect({ value, onChange, options, disabled }: { value: string; o
       <SelectTrigger className="h-9 w-auto min-w-[120px]"><SelectValue /></SelectTrigger>
       <SelectContent>{options.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
     </Select>
+  );
+}
+
+function TagFilter({ tags, selected, onChange, disabled }: { tags: string[]; selected: string[]; onChange: (tags: string[]) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const toggle = (tag: string) => {
+    const next = selected.includes(tag) ? selected.filter((t) => t !== tag) : [...selected, tag];
+    onChange(next);
+  };
+  const clear = () => onChange([]);
+  const label = selected.length === 0 ? "All tags" : `${selected.length} tag${selected.length === 1 ? "" : "s"}`;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" disabled={disabled} className="h-9 gap-1.5 px-3">
+          <Tag className="h-3.5 w-3.5" />
+          <span>{label}</span>
+          <ChevronDown className="h-3 w-3 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-60 p-0" align="start">
+        <div className="p-3 border-b">
+          <div className="text-sm font-medium">Filter by tags</div>
+          <div className="text-xs text-muted-foreground">Select multiple tags to narrow results.</div>
+        </div>
+        {tags.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground text-center">No tags available.</div>
+        ) : (
+          <div className="max-h-60 overflow-y-auto p-2">
+            {tags.map((tag) => (
+              <label
+                key={tag}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-accent"
+              >
+                <Checkbox
+                  checked={selected.includes(tag)}
+                  onCheckedChange={() => toggle(tag)}
+                />
+                <span className="text-sm">{tag}</span>
+                {selected.includes(tag) && <Check className="h-3 w-3 ml-auto text-primary" />}
+              </label>
+            ))}
+          </div>
+        )}
+        {selected.length > 0 && (
+          <div className="p-2 border-t">
+            <Button variant="ghost" size="sm" className="w-full h-8 text-xs" onClick={clear}>
+              Clear tag filters
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }
