@@ -20,7 +20,7 @@ export default function Social() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
-  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importFiles, setImportFiles] = useState<File[]>([]);
 
   const openEditor = (id: string) => setEditingId(id);
   const openCreate = () => setCreating(true);
@@ -29,22 +29,23 @@ export default function Social() {
     setCreating(false);
   };
 
-  const openImport = (file: File | null = null) => {
-    setImportFile(file);
+  const openImport = (files: File[] = []) => {
+    setImportFiles(files);
     setImportOpen(true);
   };
   const closeImport = () => {
     setImportOpen(false);
-    setImportFile(null);
+    setImportFiles([]);
   };
 
   const onPick = () => {
     const input = document.createElement("input");
     input.type = "file";
     input.accept = ACCEPTED;
+    input.multiple = true;
     input.onchange = () => {
-      const f = input.files?.[0];
-      if (f) openImport(f);
+      const fs = Array.from(input.files ?? []);
+      if (fs.length) openImport(fs);
     };
     input.click();
   };
@@ -58,7 +59,7 @@ export default function Social() {
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={onPick} variant="outline" className="gap-2">
-            <Upload className="h-4 w-4" /> Import LinkedIn export
+            <Upload className="h-4 w-4" /> Import post analytics
           </Button>
           <Button onClick={openCreate} className="gap-2">
             <Plus className="h-4 w-4" /> New post
