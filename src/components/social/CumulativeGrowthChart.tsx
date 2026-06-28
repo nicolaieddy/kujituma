@@ -194,7 +194,7 @@ export function CumulativeGrowthChart() {
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis
                   dataKey="period"
@@ -224,14 +224,29 @@ export function CumulativeGrowthChart() {
                   labelFormatter={(l) =>
                     format(new Date(l as string), bucket === "month" ? "MMMM yyyy" : "'Week of' d MMM yyyy")
                   }
-                  formatter={(value: number, name: string) => [
-                    `${value.toLocaleString()} (${formatCompact(value)})`,
-                    PLATFORM_META[name as SocialPlatform]?.label ?? name,
-                  ]}
+                  formatter={(value: number, name: string) => {
+                    if (typeof name === "string" && name.startsWith("goal_")) {
+                      const goalId = name.slice(5);
+                      const goal = activeFollowerGoals.find((g) => g.id === goalId);
+                      const label = goal ? `${PLATFORM_META[goal.platform].label} goal` : "Goal";
+                      return [`${value.toLocaleString()} (${formatCompact(value)})`, label];
+                    }
+                    return [
+                      `${value.toLocaleString()} (${formatCompact(value)})`,
+                      PLATFORM_META[name as SocialPlatform]?.label ?? name,
+                    ];
+                  }}
                 />
 
                 <Legend
-                  formatter={(name) => PLATFORM_META[name as SocialPlatform]?.label ?? name}
+                  formatter={(name) => {
+                    if (typeof name === "string" && name.startsWith("goal_")) {
+                      const goalId = name.slice(5);
+                      const goal = activeFollowerGoals.find((g) => g.id === goalId);
+                      return goal ? `${PLATFORM_META[goal.platform].label} goal pace` : "Goal pace";
+                    }
+                    return PLATFORM_META[name as SocialPlatform]?.label ?? name;
+                  }}
                   wrapperStyle={{ fontSize: 12 }}
                 />
                 {enabledPlatforms.map((p) => (
@@ -243,7 +258,20 @@ export function CumulativeGrowthChart() {
                     radius={[0, 0, 0, 0]}
                   />
                 ))}
-              </BarChart>
+                {showGoalLine && activeFollowerGoals.map((g) => (
+                  <Line
+                    key={g.id}
+                    type="linear"
+                    dataKey={`goal_${g.id}`}
+                    stroke={PLATFORM_META[g.platform].hex}
+                    strokeDasharray="5 4"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                ))}
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}
