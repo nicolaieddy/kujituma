@@ -34,6 +34,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   defaultPlatform?: SocialPlatform;
+  initialFile?: File | null;
+  initialFiles?: File[] | null;
 }
 
 interface ParsedAggregate {
