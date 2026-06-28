@@ -1,7 +1,17 @@
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Activity } from "lucide-react";
 import { SocialIcon, SOCIAL_PLATFORMS } from "./SocialLinkPicker";
+import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
+import type { SocialPlatform } from "@/lib/social";
+
+const PROFILE_FIELD_TO_PLATFORM: Record<string, SocialPlatform> = {
+  linkedin_url: "linkedin",
+  twitter_url: "x",
+  instagram_url: "instagram",
+  tiktok_url: "tiktok",
+};
 
 interface SocialLinksDisplayProps {
   socialLinks: Record<string, string>;
