@@ -356,30 +356,15 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         </DialogHeader>
 
         {!parsed && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="w-full border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/50 transition-colors"
-          >
-            {parsing ? (
-              <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
-            ) : (
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            )}
-            <div className="text-sm font-medium">{file ? file.name : "Click to choose .xlsx"}</div>
-          </button>
+          <ImportDropzone
+            accept=".xlsx"
+            busy={parsing}
+            selected={file}
+            onFiles={(fs) => handleFile(fs[0])}
+            label="Drop your .xlsx export or click to browse"
+            hint="LinkedIn 'Single Post Analytics' export"
+          />
         )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
-            if (inputRef.current) inputRef.current.value = "";
-          }}
-        />
 
         {parsed && (
           <div className="space-y-3">
