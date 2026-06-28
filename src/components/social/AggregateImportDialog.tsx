@@ -505,9 +505,9 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
               <div className="text-[11px] text-muted-foreground">Range: {parsed.rangeLabel}</div>
             )}
             <div className="grid grid-cols-3 gap-2 text-center">
-              <Stat label="Followers" value={formatCompact(parsed.currentFollowers)} sub={parsed.followersAsOf ?? undefined} />
-              <Stat label="Impressions" value={formatCompact(parsed.totalImpressions)} />
-              <Stat label="Reach" value={formatCompact(parsed.totalReach)} />
+              <Stat label="Followers" value={parsed.currentFollowers} sub={parsed.followersAsOf ?? undefined} />
+              <Stat label="Impressions" value={parsed.totalImpressions} />
+              <Stat label="Reach" value={parsed.totalReach} />
             </div>
             <div className="text-[11px] text-muted-foreground flex items-center gap-1.5">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
