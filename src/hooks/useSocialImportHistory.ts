@@ -50,7 +50,7 @@ export function useLogSocialImport() {
       if (!user) throw new Error("Not authenticated");
       const { data, error } = await supabase
         .from("social_import_history")
-        .insert([{ ...input, user_id: user.id }])
+        .insert([{ ...input, summary: (input.summary ?? null) as any, user_id: user.id }])
         .select()
         .single();
       if (error) throw error;
