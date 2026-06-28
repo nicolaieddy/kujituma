@@ -24,6 +24,7 @@ export function GoalsCard({ platform }: { platform: SocialPlatform }) {
   const { data: growth = [] } = useFollowerGrowth();
   const { data: posts = [] } = useSocialPosts();
   const del = useDeleteSocialGoal();
+  const archive = useArchiveSocialGoal();
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
