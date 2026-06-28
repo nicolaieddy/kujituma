@@ -1,0 +1,1 @@
+ALTER TABLE public.training_events ADD COLUMN IF NOT EXISTS linked_activity_id uuid REFERENCES public.synced_activities(id) ON DELETE SET NULL; CREATE INDEX IF NOT EXISTS idx_training_events_linked_activity_id ON public.training_events(linked_activity_id);

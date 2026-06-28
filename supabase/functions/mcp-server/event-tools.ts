@@ -42,7 +42,7 @@ function sanitizeBodyParts(raw: unknown): Array<{ part: string; side: string; sp
 export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("list_training_events", {
     description:
-      "List the user's key training events (injuries/illness, races, milestones). Returns full rows including `body_parts` (structured array) and `issue_category` ('niggle' | 'injury' | 'illness') for injury/illness events. Optional filters by type or date range.",
+      "List the user's key training events (injuries/illness, races, milestones). Returns full rows including `body_parts` (structured array), `issue_category` ('niggle' | 'injury' | 'illness'), and `linked_activity_id` (optional FK to `synced_activities.id` — the workout this injury occurred in or that this race was run as). Optional filters by type or date range.",
     inputSchema: {
       type: "object",
       properties: {
@@ -89,6 +89,10 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         race_result: { type: "string" },
         race_priority: { type: "string", description: "A | B | C" },
         location: { type: "string" },
+        linked_activity_id: {
+          type: "string",
+          description: "Optional UUID of a synced_activities row to link this event to (workout where the injury occurred, or the activity recording for a race).",
+        },
       },
       required: ["event_type", "title", "start_date"],
     },
@@ -102,7 +106,7 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         title: args.title,
         start_date: args.start_date,
       };
-      for (const k of ["end_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location"]) {
+      for (const k of ["end_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location", "linked_activity_id"]) {
         if (args[k] !== undefined && args[k] !== "") insert[k] = args[k];
       }
       if (args.severity !== undefined) insert.severity = args.severity;
@@ -146,12 +150,16 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         race_result: { type: "string" },
         race_priority: { type: "string" },
         location: { type: "string" },
+        linked_activity_id: {
+          type: "string",
+          description: "UUID of a synced_activities row to link. Pass empty string to clear.",
+        },
       },
       required: ["id"],
     },
     handler: async (args: any) => {
       const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      for (const k of ["event_type", "title", "start_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location"]) {
+      for (const k of ["event_type", "title", "start_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location", "linked_activity_id"]) {
         if (args[k] !== undefined) upd[k] = args[k] === "" ? null : args[k];
       }
       if (args.end_date !== undefined) upd.end_date = args.end_date === "" ? null : args.end_date;

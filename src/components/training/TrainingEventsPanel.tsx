@@ -45,6 +45,7 @@ import { TrainingEventsTimeline } from "./TrainingEventsTimeline";
 import { EventAttachmentsSection } from "./EventAttachmentsSection";
 import { EventUploadDialog } from "./EventUploadDialog";
 import { BodyPartsPicker } from "./BodyPartsPicker";
+import { ActivityLinkPicker } from "./ActivityLinkPicker";
 import { Separator } from "@/components/ui/separator";
 import {
   STANDARD_DISTANCES,
@@ -93,6 +94,7 @@ interface FormState {
   official_time_input: string;
   strava_url: string;
   location: string;
+  linked_activity_id: string | null;
 }
 
 function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
@@ -113,6 +115,7 @@ function emptyForm(type: TrainingEventType = "injury_illness"): FormState {
     official_time_input: "",
     strava_url: "",
     location: "",
+    linked_activity_id: null,
   };
 }
 
@@ -136,6 +139,7 @@ function eventToForm(e: TrainingEvent): FormState {
     official_time_input: formatSecondsToTime(e.official_time_seconds),
     strava_url: typeof (e.metadata as any)?.strava_url === "string" ? (e.metadata as any).strava_url : "",
     location: e.location ?? "",
+    linked_activity_id: e.linked_activity_id ?? null,
   };
 }
 
@@ -223,6 +227,10 @@ export function TrainingEventsPanel() {
       race_priority: state.race_priority || null,
       official_time_seconds: officialSec,
       location: state.location.trim() || null,
+      linked_activity_id:
+        (state.event_type === "injury_illness" || state.event_type === "race")
+          ? state.linked_activity_id
+          : null,
       metadata: state.event_type === "race" && state.strava_url.trim()
         ? { strava_url: state.strava_url.trim() }
         : {},
@@ -396,6 +404,11 @@ export function TrainingEventsPanel() {
                           )}
                           {e.race_result && <span>Result: {e.race_result}</span>}
                           {e.location && <span>Location: {e.location}</span>}
+                          {e.linked_activity_id && (
+                            <span className="inline-flex items-center gap-1 text-primary">
+                              <Activity className="h-3 w-3" /> Linked workout
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -564,6 +577,18 @@ export function TrainingEventsPanel() {
                           onChange={(next) => setForm({ ...form, body_parts: next })}
                         />
                       </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Linked workout <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                        <ActivityLinkPicker
+                          value={form.linked_activity_id}
+                          onChange={(id) => setForm({ ...form, linked_activity_id: id })}
+                          anchorDate={form.start_date}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Link the activity where this happened, if known.
+                        </p>
+                      </div>
                     </div>
                   )}
 
@@ -628,6 +653,17 @@ export function TrainingEventsPanel() {
                             maxLength={200}
                           />
                         </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Linked workout <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                        <ActivityLinkPicker
+                          value={form.linked_activity_id}
+                          onChange={(id) => setForm({ ...form, linked_activity_id: id })}
+                          anchorDate={form.start_date}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Pull metrics from the synced activity for this race.
+                        </p>
                       </div>
                       <div className="space-y-1.5">
                         <Label>Strava URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
