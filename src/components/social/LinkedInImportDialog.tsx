@@ -134,7 +134,7 @@ function normalizeLiUrl(raw: string | null | undefined): string | null {
   }
 }
 
-export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "" }: Props) {
+export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
   const { values = [] } = useValues();
