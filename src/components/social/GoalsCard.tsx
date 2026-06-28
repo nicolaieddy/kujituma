@@ -72,16 +72,26 @@ export function GoalsCard({ platform }: { platform: SocialPlatform }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 text-sm font-medium">
           <Target className="h-4 w-4 text-muted-foreground" /> Goals
         </div>
-        {archivedGoals.length > 0 && (
-          <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setShowHistory((v) => !v)}>
-            <History className="h-3 w-3" />
-            {showHistory ? "Hide" : "Show"} previous ({archivedGoals.length})
+        <div className="flex items-center gap-1">
+          {archivedGoals.length > 0 && (
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setShowHistory((v) => !v)}>
+              <History className="h-3 w-3" />
+              {showHistory ? "Hide" : "Show"} previous ({archivedGoals.length})
+            </Button>
+          )}
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 gap-1 text-xs"
+            onClick={() => openNew(activeGoals.find(g => g.metric === "followers") ? "posts_published" : "followers")}
+          >
+            <Plus className="h-3 w-3" /> New goal
           </Button>
-        )}
+        </div>
       </div>
 
       <div className="grid gap-2 sm:grid-cols-2">
@@ -93,16 +103,18 @@ export function GoalsCard({ platform }: { platform: SocialPlatform }) {
                 key={metric}
                 type="button"
                 onClick={() => openNew(metric)}
-                className="group flex items-center justify-between gap-2 rounded-md border border-dashed bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40"
+                className="group flex items-center justify-between gap-2 rounded-md border border-dashed bg-muted/20 p-3 text-left transition-colors hover:bg-muted/40 hover:border-primary/50"
               >
                 <div className="flex items-center gap-2">
                   {metric === "followers" ? <TrendingUp className="h-4 w-4 text-muted-foreground" /> : <FileText className="h-4 w-4 text-muted-foreground" />}
                   <div>
                     <div className="text-sm font-medium">{METRIC_META[metric].label}</div>
-                    <div className="text-[11px] text-muted-foreground">No active goal</div>
+                    <div className="text-[11px] text-muted-foreground">No active goal — click to set one</div>
                   </div>
                 </div>
-                <span className="text-xs text-primary opacity-0 transition-opacity group-hover:opacity-100">+ Add</span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                  <Plus className="h-3 w-3" /> Set goal
+                </span>
               </button>
             );
           }
