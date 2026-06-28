@@ -118,6 +118,11 @@ export default function MediaPage() {
           <MediaCandidatesInbox onEditApprove={handleEditCandidate} />
         </TabsContent>
 
+        <TabsContent value="timeline" className="mt-4">
+          <MediaTimeline onEditMention={(m) => { setEditing(m); setEditorOpen(true); }} />
+        </TabsContent>
+
+
         <TabsContent value="share" className="mt-4 space-y-3">
           <div className="rounded-md border p-4 space-y-3">
             <div>
