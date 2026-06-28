@@ -11,6 +11,15 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Separator } from "@/components/ui/separator";
 import { ModuleNavCustomizer, type ModuleNavEntry } from "./ModuleNavCustomizer";
 import { useState } from "react";
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext, useSortable, horizontalListSortingStrategy,
+  arrayMove, sortableKeyboardCoordinates,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface NavigationMenuProps {
   onItemClick?: () => void;
