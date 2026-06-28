@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { getLocalDateString } from "@/utils/dateUtils";
 import { useUpsertMetricSnapshot } from "@/hooks/useSocialMetrics";
 import { useSocialPosts, useUpsertSocialPost } from "@/hooks/useSocialPosts";
+import { useLogSocialImport } from "@/hooks/useSocialImportHistory";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useValues } from "@/hooks/useValues";
 import { useSetSocialPostValue } from "@/hooks/useSocialPostValues";
@@ -139,6 +140,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const upsertMetric = useUpsertMetricSnapshot();
   const upsertPost = useUpsertSocialPost();
   const setPostValue = useSetSocialPostValue();
+  const logImport = useLogSocialImport();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -220,6 +222,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const commit = async () => {
     if (!parsed) return;
     let postId = selectedPostId;
+    let action: "created" | "updated" = "updated";
 
     try {
       if (mode === "create") {
@@ -235,9 +238,9 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             .select("id, live_url")
             .eq("platforms", "{linkedin}" as any)
             .limit(500);
-          // Fallback: client-side normalize compare (works around array filter quirks)
           existingId = (existing ?? []).find((r: any) => normalizeLiUrl(r.live_url) === target)?.id ?? null;
         }
+        action = existingId ? "updated" : "created";
 
         const saved = await upsertPost.mutateAsync({
           ...(existingId ? { id: existingId } : {}),
@@ -256,6 +259,8 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         for (const vid of valueIds) {
           await setPostValue.mutateAsync({ post_id: saved.id, value_id: vid, weight: 1 });
         }
+      } else {
+        action = "updated";
       }
 
       if (!postId) { toast.error("Pick a post to attach this snapshot to"); return; }
@@ -276,7 +281,33 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         link_clicks: parsed.link_clicks,
       });
 
-      toast.success(mode === "create" ? "Post created & analytics imported" : "Snapshot imported");
+      // Log to import history
+      try {
+        await logImport.mutateAsync({
+          platform: "linkedin",
+          kind: "linkedin_single_post",
+          action,
+          post_id: postId,
+          post_url: parsed.postUrl,
+          file_name: file?.name ?? null,
+          summary: {
+            impressions: parsed.impressions,
+            reactions: parsed.reactions,
+            comments: parsed.comments,
+            reposts: parsed.reposts,
+            reach: parsed.reach,
+            metrics_as_of: asOf,
+          },
+        });
+      } catch (logErr) {
+        console.warn("[social-import-history] log failed", logErr);
+      }
+
+      const created = action === "created" ? 1 : 0;
+      const updated = action === "updated" ? 1 : 0;
+      toast.success("LinkedIn import complete", {
+        description: `${created} created · ${updated} updated · 1 metrics snapshot saved`,
+      });
       reset();
       onClose();
     } catch (e: any) {

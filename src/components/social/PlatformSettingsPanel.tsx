@@ -12,6 +12,7 @@ import { useSocialPlatformSettings, useUpsertPlatformSettings } from "@/hooks/us
 import { useLogFollowerCount } from "@/hooks/useFollowerGrowth";
 import { getLocalDateString } from "@/utils/dateUtils";
 import { AggregateImportDialog } from "./AggregateImportDialog";
+import { ImportHistoryPanel } from "./ImportHistoryPanel";
 
 export function PlatformSettingsPanel() {
   const { data: settings = [], isLoading } = useSocialPlatformSettings();
@@ -115,6 +116,8 @@ export function PlatformSettingsPanel() {
           </Card>
         );
       })}
+
+      <ImportHistoryPanel />
 
       <AggregateImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>

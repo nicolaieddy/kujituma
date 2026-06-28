@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { PLATFORM_META, SOCIAL_PLATFORMS, type SocialPlatform, formatCompact } from "@/lib/social";
 import { useBulkUpsertDailyMetrics } from "@/hooks/useDailyAccountMetrics";
 import { useUpsertPlatformSettings } from "@/hooks/useSocialPlatformSettings";
+import { useLogSocialImport } from "@/hooks/useSocialImportHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
@@ -178,6 +179,7 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const qc = useQueryClient();
   const upsertDaily = useBulkUpsertDailyMetrics();
   const upsertSettings = useUpsertPlatformSettings();
+  const logImport = useLogSocialImport();
   const inputRef = useRef<HTMLInputElement>(null);
   const [platform, setPlatform] = useState<SocialPlatform>(defaultPlatform);
   const [file, setFile] = useState<File | null>(null);
@@ -264,6 +266,26 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
       qc.invalidateQueries({ queryKey: ["social-follower-growth"] });
       qc.invalidateQueries({ queryKey: ["social-platform-settings"] });
       qc.invalidateQueries({ queryKey: ["social-daily-account-metrics"] });
+
+      // Log to import history (best-effort)
+      try {
+        await logImport.mutateAsync({
+          platform: parsed.platform,
+          kind: "linkedin_aggregate",
+          action: "updated",
+          post_id: null,
+          post_url: null,
+          file_name: file?.name ?? null,
+          summary: {
+            daily_rows: parsed.daily.length,
+            follower_entries: parsed.followerTotals.length,
+            current_followers: parsed.currentFollowers,
+            range: parsed.rangeLabel,
+          },
+        });
+      } catch (logErr) {
+        console.warn("[social-import-history] log failed", logErr);
+      }
 
       toast.success("Aggregate analytics imported", {
         description: `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`,
