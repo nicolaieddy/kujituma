@@ -257,3 +257,43 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
     </nav>
   );
 };
+
+function SortablePill({
+  id,
+  item,
+  isActive,
+  onClick,
+}: {
+  id: ModuleId;
+  item: ModuleNavItem;
+  isActive: boolean;
+  onClick: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : undefined,
+  };
+  const Icon = item.icon;
+  return (
+    <button
+      ref={setNodeRef}
+      style={style}
+      onClick={onClick}
+      {...attributes}
+      {...listeners}
+      className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm leading-none transition-colors duration-200 touch-none ${
+        isDragging ? "cursor-grabbing shadow-md ring-1 ring-primary/30" : "cursor-grab"
+      } ${
+        isActive
+          ? "bg-primary/10 text-primary font-medium"
+          : "text-muted-foreground hover:text-foreground hover:bg-muted"
+      }`}
+    >
+      <Icon className={`h-3.5 w-3.5 ${isActive ? "text-primary" : ""}`} />
+      {item.label}
+    </button>
+  );
+}
+
