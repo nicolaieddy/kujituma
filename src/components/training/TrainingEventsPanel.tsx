@@ -434,7 +434,7 @@ export function TrainingEventsPanel() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto p-0 gap-0">
           {pickingType ? (
             <div className="p-6 space-y-5">
               <DialogHeader>
@@ -487,7 +487,7 @@ export function TrainingEventsPanel() {
                 <DialogDescription className="sr-only">Track key moments that affect your training.</DialogDescription>
               </DialogHeader>
 
-              <div className="px-6 py-4 grid lg:grid-cols-[1fr,300px] gap-6">
+              <div className="px-6 py-4 space-y-4">
                 <div className="space-y-4 min-w-0">
                   <div className="space-y-1.5">
                     <Label>Title</Label>
@@ -699,12 +699,13 @@ export function TrainingEventsPanel() {
                       maxLength={2000}
                     />
                   </div>
-                </div>
 
-                <div className="lg:border-l lg:pl-6 min-w-0">
-                  <EventAttachmentsSection eventId={form.id ?? null} ensureEventId={ensureEventId} />
+                  <div className="pt-2 border-t">
+                    <EventAttachmentsSection eventId={form.id ?? null} ensureEventId={ensureEventId} />
+                  </div>
                 </div>
               </div>
+
 
               <DialogFooter className="px-6 py-4 border-t bg-muted/30">
                 <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
