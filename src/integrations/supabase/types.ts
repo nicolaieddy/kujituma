@@ -1913,6 +1913,7 @@ export type Database = {
           sentiment: Database["public"]["Enums"]["media_sentiment"] | null
           source: Database["public"]["Enums"]["media_source"]
           status: Database["public"]["Enums"]["media_status"]
+          story_id: string | null
           summary: string | null
           tags: string[]
           title: string
@@ -1934,6 +1935,7 @@ export type Database = {
           sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
           source?: Database["public"]["Enums"]["media_source"]
           status?: Database["public"]["Enums"]["media_status"]
+          story_id?: string | null
           summary?: string | null
           tags?: string[]
           title: string
@@ -1955,6 +1957,7 @@ export type Database = {
           sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
           source?: Database["public"]["Enums"]["media_source"]
           status?: Database["public"]["Enums"]["media_status"]
+          story_id?: string | null
           summary?: string | null
           tags?: string[]
           title?: string
@@ -1964,6 +1967,56 @@ export type Database = {
           url_status?: Database["public"]["Enums"]["media_url_status"]
           user_id?: string
           year?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_mentions_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "media_stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_stories: {
+        Row: {
+          announcement_date: string
+          cover_url: string | null
+          created_at: string
+          featured: boolean
+          id: string
+          is_public: boolean
+          summary: string | null
+          tags: string[]
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_date?: string
+          cover_url?: string | null
+          created_at?: string
+          featured?: boolean
+          id?: string
+          is_public?: boolean
+          summary?: string | null
+          tags?: string[]
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          announcement_date?: string
+          cover_url?: string | null
+          created_at?: string
+          featured?: boolean
+          id?: string
+          is_public?: boolean
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
