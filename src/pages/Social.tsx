@@ -105,13 +105,13 @@ export default function Social() {
       <LinkedInImportDialog
         open={importOpen}
         onClose={closeImport}
-        initialFile={importFile}
+        initialFiles={importFiles}
       />
 
       <PageDropOverlay
         accept={ACCEPTED}
-        onFiles={(fs) => openImport(fs[0])}
-        label="Drop your LinkedIn export"
+        onFiles={(fs) => openImport(fs)}
+        label="Drop your post analytics export"
         hint=".xlsx, .xls or .csv — we'll auto-create the post"
       />
     </div>
