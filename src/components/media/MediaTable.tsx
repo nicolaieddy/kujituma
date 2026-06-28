@@ -18,7 +18,7 @@ interface Props {
   loading?: boolean;
 }
 
-export function MediaTable({ mentions, onEdit, onDelete }: Props) {
+export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Props) {
   const [search, setSearch] = useState("");
   const [year, setYear] = useState<string>("all");
   const [type, setType] = useState<string>("all");
