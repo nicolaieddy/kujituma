@@ -16,7 +16,7 @@ import { GoalProgressStrip } from "@/components/social/GoalProgressStrip";
 import { groupFilesByKind } from "@/lib/social/analyticsSniffer";
 import { cn } from "@/lib/utils";
 
-type View = "pipeline" | "calendar" | "analytics" | "growth" | "setup";
+type View = "pipeline" | "calendar" | "analytics" | "setup";
 
 const ACCEPTED = ".xlsx,.xls,.csv";
 
