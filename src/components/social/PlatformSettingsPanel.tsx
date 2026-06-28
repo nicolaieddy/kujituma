@@ -115,6 +115,8 @@ export function PlatformSettingsPanel() {
           </Card>
         );
       })}
+
+      <AggregateImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
 }
