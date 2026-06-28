@@ -32,6 +32,12 @@ export default function Social() {
   const [aggregateFiles, setAggregateFiles] = useState<File[]>([]);
   const [queuedSinglePost, setQueuedSinglePost] = useState<File[] | null>(null);
 
+  // Summary collected across the routed dialogs (+ any unsupported files from sniffer).
+  const [summaryRows, setSummaryRows] = useState<ImportRow[]>([]);
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  // When a mixed batch is queued we wait until both dialogs finish before showing summary.
+  const [pendingDialogs, setPendingDialogs] = useState(0);
+
   const openEditor = (id: string) => setEditingId(id);
   const openCreate = () => setCreating(true);
   const closeEditor = () => {
