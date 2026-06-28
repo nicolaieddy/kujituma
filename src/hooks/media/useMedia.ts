@@ -72,9 +72,6 @@ function invalidateAll(qc: ReturnType<typeof useQueryClient>, userId?: string) {
   qc.invalidateQueries({ queryKey: candidatesKey(userId) });
   qc.invalidateQueries({ queryKey: storiesKey(userId) });
 }
-  qc.invalidateQueries({ queryKey: mentionsKey(userId) });
-  qc.invalidateQueries({ queryKey: candidatesKey(userId) });
-}
 
 async function tryArchive(url: string | null | undefined): Promise<string | null> {
   if (!url) return null;
