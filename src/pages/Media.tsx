@@ -15,6 +15,7 @@ import {
   type MediaMention, type MediaMentionInsert,
 } from "@/hooks/media/useMedia";
 import { useAuth } from "@/contexts/AuthContext";
+import { BetaBadge } from "@/components/shared/BetaBadge";
 
 export default function MediaPage() {
   const { user } = useAuth();
