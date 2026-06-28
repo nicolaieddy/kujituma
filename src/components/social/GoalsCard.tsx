@@ -6,10 +6,10 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Pencil, Target, FileText, TrendingUp, TrendingDown, History, Trash2, Link2 } from "lucide-react";
+import { Plus, Pencil, Target, FileText, TrendingUp, TrendingDown, History, Trash2, Link2, Archive } from "lucide-react";
 import { format } from "date-fns";
 import type { SocialPlatform } from "@/lib/social";
-import { useSocialGoals, useDeleteSocialGoal } from "@/hooks/useSocialGoals";
+import { useSocialGoals, useDeleteSocialGoal, useArchiveSocialGoal } from "@/hooks/useSocialGoals";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
 import { useSocialPosts } from "@/hooks/useSocialPosts";
 import {
@@ -24,6 +24,7 @@ export function GoalsCard({ platform }: { platform: SocialPlatform }) {
   const { data: growth = [] } = useFollowerGrowth();
   const { data: posts = [] } = useSocialPosts();
   const del = useDeleteSocialGoal();
+  const archive = useArchiveSocialGoal();
 
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -165,6 +166,7 @@ export function GoalsCard({ platform }: { platform: SocialPlatform }) {
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => openEdit(goal.id)}>
                     <Pencil className="h-3 w-3" /> Edit
                   </Button>
+                  <ArchiveButton onConfirm={() => archive.mutate(goal.id)} />
                   <DeleteButton onConfirm={() => del.mutate(goal.id)} />
                 </div>
               </div>
@@ -224,6 +226,36 @@ function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm}>Delete</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+function ArchiveButton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs gap-1 text-muted-foreground"
+          title="Archive goal"
+        >
+          <Archive className="h-3 w-3" /> Archive
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Stop tracking this goal?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The goal moves to your history and stops showing on charts and progress strips.
+            You can set a new active goal for this metric anytime.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Archive</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
