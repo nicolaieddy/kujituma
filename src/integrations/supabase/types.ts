@@ -4379,6 +4379,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_nav_preferences: {
+        Row: {
+          module_order: string[]
+          module_pinned: string[]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          module_order?: string[]
+          module_pinned?: string[]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          module_order?: string[]
+          module_pinned?: string[]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
