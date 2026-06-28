@@ -39,6 +39,7 @@ const empty: Omit<MediaMentionInsert, "user_id"> = {
 };
 
 export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props) {
+  const { data: stories = [] } = useMediaStories();
   const [form, setForm] = useState<Omit<MediaMentionInsert, "user_id">>(empty);
   const [tagInput, setTagInput] = useState("");
   const [saving, setSaving] = useState(false);
