@@ -21,6 +21,22 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
   const [status, setStatus] = useState<string>("all");
   const [urlStatus, setUrlStatus] = useState<string>("all");
   const [needsUrlOnly, setNeedsUrlOnly] = useState(false);
+  const [sort, setSort] = useState<string>("date-desc");
+
+  const relevanceScore = (m: MediaMention): number => {
+    let s = 0;
+    if (m.featured) s += 100;
+    if (m.is_public) s += 25;
+    if (m.status === "Published") s += 10;
+    if (m.url_status === "verified") s += 15;
+    else if (m.url_status === "needs-url" || m.url_status === "dead") s -= 10;
+    if (m.summary) s += 5;
+    s += Math.min((m.tags?.length ?? 0) * 2, 10);
+    if (m.sentiment === "positive") s += 5;
+    const days = (Date.now() - new Date(m.date).getTime()) / 86400000;
+    s += Math.max(0, 30 - days / 30);
+    return s;
+  };
 
   const years = useMemo(() => {
     const set = new Set(mentions.map((m) => m.year));
@@ -29,7 +45,7 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return mentions.filter((m) => {
+    const list = mentions.filter((m) => {
       if (q && !(m.title.toLowerCase().includes(q) || (m.outlet ?? "").toLowerCase().includes(q) || (m.summary ?? "").toLowerCase().includes(q) || m.tags?.some((t) => t.toLowerCase().includes(q)))) return false;
       if (year !== "all" && String(m.year) !== year) return false;
       if (type !== "all" && m.type !== type) return false;
@@ -38,7 +54,13 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
       if (urlStatus !== "all" && m.url_status !== urlStatus) return false;
       return true;
     });
-  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly]);
+    const sorted = [...list];
+    if (sort === "date-desc") sorted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+    else if (sort === "date-asc") sorted.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+    else if (sort === "updated-desc") sorted.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    else if (sort === "relevance") sorted.sort((a, b) => relevanceScore(b) - relevanceScore(a));
+    return sorted;
+  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, sort]);
 
   return (
     <Card className="p-4 space-y-3">
@@ -51,6 +73,7 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
         <Button variant={needsUrlOnly ? "default" : "outline"} size="sm" onClick={() => setNeedsUrlOnly((v) => !v)}>
           Needs URL
         </Button>
+        <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} />
         <div className="ml-auto text-xs text-muted-foreground">{filtered.length} of {mentions.length}</div>
       </div>
 
