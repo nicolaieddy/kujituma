@@ -106,7 +106,7 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         title: args.title,
         start_date: args.start_date,
       };
-      for (const k of ["end_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location"]) {
+      for (const k of ["end_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location", "linked_activity_id"]) {
         if (args[k] !== undefined && args[k] !== "") insert[k] = args[k];
       }
       if (args.severity !== undefined) insert.severity = args.severity;
