@@ -60,9 +60,26 @@ export const ValuesBulkImportDialog = ({ open, onOpenChange, onImport }: Props) 
 
   const handleImport = () => {
     if (parsed.length === 0) return;
-    onImport(parsed);
-    setText("");
-    onOpenChange(false);
+    const p = createImportProgress(`Importing ${parsed.length} value${parsed.length === 1 ? "" : "s"}…`);
+    try {
+      onImport(parsed);
+      p.success("Values imported", `${parsed.length} added`);
+      setText("");
+      onOpenChange(false);
+    } catch (e) {
+      p.error("Import failed", describeError(e));
+    }
+  };
+
+  const handleFile = async (f: File) => {
+    const p = createImportProgress(`Reading ${f.name}…`);
+    try {
+      const content = await f.text();
+      setText((cur) => (cur ? cur + "\n" + content : content));
+      p.success("File loaded", `${content.split("\n").filter(Boolean).length} line(s) added`);
+    } catch (e) {
+      p.error("Couldn't read file", describeError(e));
+    }
   };
 
   return (
