@@ -13,11 +13,7 @@ import { cn } from "@/lib/utils";
 
 type View = "pipeline" | "calendar" | "analytics" | "growth" | "setup";
 
-const ACCEPTED = [".xlsx", ".xls", ".csv"];
-const isSpreadsheet = (f: File) => {
-  const name = f.name.toLowerCase();
-  return ACCEPTED.some((ext) => name.endsWith(ext));
-};
+const ACCEPTED = ".xlsx,.xls,.csv";
 
 export default function Social() {
   const [view, setView] = useState<View>("pipeline");
