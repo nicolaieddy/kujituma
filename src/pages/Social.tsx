@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, TrendingUp, Upload } from "lucide-react";
+import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PipelineBoard } from "@/components/social/PipelineBoard";
