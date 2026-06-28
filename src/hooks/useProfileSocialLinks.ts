@@ -29,7 +29,7 @@ export function useProfileSocialLinks() {
     queryKey: [...KEY, user?.id],
     queryFn: async (): Promise<ProfileSocialLinks> => {
       if (!user) return {};
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("profiles")
         .select("linkedin_url, twitter_url, instagram_url, tiktok_url, youtube_url")
         .eq("user_id", user.id)
