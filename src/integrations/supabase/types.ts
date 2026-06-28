@@ -3437,6 +3437,7 @@ export type Database = {
           event_type: Database["public"]["Enums"]["training_event_type"]
           id: string
           issue_category: string | null
+          linked_activity_id: string | null
           location: string | null
           metadata: Json
           official_time_seconds: number | null
@@ -3458,6 +3459,7 @@ export type Database = {
           event_type: Database["public"]["Enums"]["training_event_type"]
           id?: string
           issue_category?: string | null
+          linked_activity_id?: string | null
           location?: string | null
           metadata?: Json
           official_time_seconds?: number | null
@@ -3479,6 +3481,7 @@ export type Database = {
           event_type?: Database["public"]["Enums"]["training_event_type"]
           id?: string
           issue_category?: string | null
+          linked_activity_id?: string | null
           location?: string | null
           metadata?: Json
           official_time_seconds?: number | null
@@ -3491,7 +3494,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "training_events_linked_activity_id_fkey"
+            columns: ["linked_activity_id"]
+            isOneToOne: false
+            referencedRelation: "synced_activities"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       training_plan_imports: {
         Row: {
