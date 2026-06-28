@@ -103,11 +103,14 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
     if (needsUrlOnly) {
       pills.push({ key: "needsUrl", label: "Needs URL", onRemove: () => setNeedsUrlOnly(false) });
     }
+    selectedTags.forEach((tag) => {
+      pills.push({ key: `tag-${tag}`, label: `Tag: ${tag}`, onRemove: () => setSelectedTags((prev) => prev.filter((t) => t !== tag)) });
+    });
     if (sort !== "date-desc") {
       pills.push({ key: "sort", label: `Sort: ${sortLabels[sort]}`, onRemove: () => setSort("date-desc") });
     }
     return pills;
-  }, [search, year, type, status, urlStatus, needsUrlOnly, sort]);
+  }, [search, year, type, status, urlStatus, needsUrlOnly, selectedTags, sort]);
 
   const clearAll = () => {
     setSearch("");
@@ -116,6 +119,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
     setStatus("all");
     setUrlStatus("all");
     setNeedsUrlOnly(false);
+    setSelectedTags([]);
     setSort("date-desc");
   };
 
