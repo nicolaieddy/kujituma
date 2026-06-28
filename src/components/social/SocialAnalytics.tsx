@@ -166,7 +166,7 @@ export function SocialAnalytics() {
                     <div className="text-[11px] text-muted-foreground flex items-center gap-2 mt-0.5">
                       <Icon className={cn("h-3 w-3", PLATFORM_META[metric!.platform].color)} />
                       {format(new Date(metric!.metrics_as_of), "d MMM yyyy")}
-                      {metric!.impressions != null && <span>· {formatCompact(metric!.impressions)} impressions</span>}
+                      {metric!.impressions != null && <span>· <CompactNumber value={metric!.impressions} /> impressions</span>}
                     </div>
                   </div>
                   <div className="text-right tabular-nums">
