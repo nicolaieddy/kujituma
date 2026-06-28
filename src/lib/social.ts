@@ -38,10 +38,19 @@ export function formatEngagementRate(rate: number | null | undefined): string {
 export function formatCompact(n: number | null | undefined): string {
   if (n == null) return "—";
   const abs = Math.abs(n);
-  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return String(n);
+  // Full figure (with thousands separator) up to 1,000 — every digit visible.
+  if (abs < 1_000) return n.toLocaleString();
+  // 1K–1M: 2-decimal K for finer granularity (e.g. 6.23K instead of 6.2K).
+  if (abs < 1_000_000) {
+    const v = n / 1_000;
+    // Drop trailing zeros so 6.00K → 6K, 6.20K → 6.2K, 6.23K stays.
+    return `${parseFloat(v.toFixed(2))}K`;
+  }
+  // 1M+: 2-decimal M.
+  const v = n / 1_000_000;
+  return `${parseFloat(v.toFixed(2))}M`;
 }
+
 
 export interface PaceComputation {
   current: number | null;
