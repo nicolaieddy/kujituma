@@ -1,17 +1,21 @@
 import { useMemo, useState } from "react";
-import { ExternalLink, Star, Trash2, Pencil, Globe, Lock } from "lucide-react";
+import { ExternalLink, Star, Trash2, Pencil, Globe, Lock, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card } from "@/components/ui/card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { SearchEmpty } from "@/components/illustrations";
 import { URL_STATUS_COLOR, MEDIA_TYPES, MEDIA_STATUSES, MEDIA_URL_STATUSES, type MediaMention } from "@/hooks/media/useMedia";
 
 interface Props {
   mentions: MediaMention[];
   onEdit: (m: MediaMention) => void;
   onDelete: (m: MediaMention) => void;
+  loading?: boolean;
 }
 
 export function MediaTable({ mentions, onEdit, onDelete }: Props) {
