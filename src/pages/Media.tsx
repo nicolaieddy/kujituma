@@ -92,7 +92,6 @@ export default function MediaPage() {
       <Tabs defaultValue="dashboard">
         <TabsList>
           <TabsTrigger value="dashboard"><LayoutDashboard className="h-3.5 w-3.5 mr-1.5" /> Dashboard</TabsTrigger>
-          <TabsTrigger value="mentions">All mentions</TabsTrigger>
           <TabsTrigger value="inbox">
             <Inbox className="h-3.5 w-3.5 mr-1.5" /> Inbox
             {pendingCount > 0 && <Badge variant="default" className="ml-2 h-5 px-1.5">{pendingCount}</Badge>}
@@ -101,21 +100,22 @@ export default function MediaPage() {
           <TabsTrigger value="share"><Share2 className="h-3.5 w-3.5 mr-1.5" /> Public page</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="mt-4">
+        <TabsContent value="dashboard" className="mt-4 space-y-6">
           <MediaDashboard mentions={mentions} pendingCount={pendingCount} />
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold">All mentions</h2>
+            <MediaTable
+              mentions={mentions}
+              onEdit={(m) => { setEditing(m); setEditorOpen(true); }}
+              onDelete={async (m) => {
+                if (!confirm(`Delete "${m.title}"?`)) return;
+                try { await del.mutateAsync(m.id); toast.success("Deleted"); }
+                catch (e: any) { toast.error(e?.message ?? "Delete failed"); }
+              }}
+            />
+          </div>
         </TabsContent>
 
-        <TabsContent value="mentions" className="mt-4">
-          <MediaTable
-            mentions={mentions}
-            onEdit={(m) => { setEditing(m); setEditorOpen(true); }}
-            onDelete={async (m) => {
-              if (!confirm(`Delete "${m.title}"?`)) return;
-              try { await del.mutateAsync(m.id); toast.success("Deleted"); }
-              catch (e: any) { toast.error(e?.message ?? "Delete failed"); }
-            }}
-          />
-        </TabsContent>
 
         <TabsContent value="inbox" className="mt-4">
           <MediaCandidatesInbox onEditApprove={handleEditCandidate} />
