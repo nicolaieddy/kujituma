@@ -166,6 +166,7 @@ export function GoalsCard({ platform }: { platform: SocialPlatform }) {
                   <Button variant="ghost" size="sm" className="h-7 px-2 text-xs gap-1" onClick={() => openEdit(goal.id)}>
                     <Pencil className="h-3 w-3" /> Edit
                   </Button>
+                  <ArchiveButton onConfirm={() => archive.mutate(goal.id)} />
                   <DeleteButton onConfirm={() => del.mutate(goal.id)} />
                 </div>
               </div>
