@@ -103,6 +103,7 @@ export function GarminMonthlyUploadCard() {
   async function handleFiles(files: File[]) {
     if (!user || files.length === 0) return;
     setUploading(true);
+    const p = createImportProgress(`Parsing ${files.length} CSV${files.length === 1 ? "" : "s"}…`);
     try {
       const allRows: ParsedRow[] = [];
       let failedFiles = 0;
@@ -116,7 +117,7 @@ export function GarminMonthlyUploadCard() {
         }
       }
       if (allRows.length === 0) {
-        toast.error("No running rows found across the selected files.");
+        p.error("No running rows found", "Check that you uploaded the 'Total Distance.csv' from Garmin.");
         return;
       }
       // Dedupe by month — keep the largest value if multiple files cover the same month
@@ -132,18 +133,22 @@ export function GarminMonthlyUploadCard() {
         distance_km,
         source: "garmin_csv",
       }));
+      p.update(`Saving ${payload.length} month${payload.length === 1 ? "" : "s"}…`);
       const { error } = await supabase
         .from("monthly_distance_aggregates")
         .upsert(payload, { onConflict: "user_id,month,sport,source" });
       if (error) throw error;
-      toast.success(
-        `Imported ${payload.length} months from ${files.length} file${files.length === 1 ? "" : "s"}` +
-          (failedFiles ? ` · ${failedFiles} failed` : ""),
-      );
+      const desc = `${payload.length} month${payload.length === 1 ? "" : "s"} from ${files.length} file${files.length === 1 ? "" : "s"}` +
+        (failedFiles ? ` · ${failedFiles} failed` : "");
+      if (failedFiles > 0) {
+        p.warning("Import finished with errors", desc);
+      } else {
+        p.success("Garmin CSV imported", desc);
+      }
       qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates"] });
       qc.invalidateQueries({ queryKey: ["monthly-distance-aggregates-all"] });
-    } catch (e: unknown) {
-      toast.error(e instanceof Error ? e.message : "Upload failed");
+    } catch (e) {
+      p.error("Upload failed", describeError(e));
     } finally {
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
