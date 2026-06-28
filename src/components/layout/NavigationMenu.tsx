@@ -1,5 +1,5 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import { Target, UserPlus, BarChart3, Shield, Blocks, Moon, Stethoscope, Dumbbell, Users } from "lucide-react";
+import { Target, UserPlus, BarChart3, Shield, Blocks, Moon, Stethoscope, Dumbbell, Users, Megaphone } from "lucide-react";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useInstalledModules } from "@/hooks/useInstalledModules";
 import type { ModuleId } from "@/modules/types";
