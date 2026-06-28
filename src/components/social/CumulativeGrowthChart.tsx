@@ -3,14 +3,18 @@ import { format, startOfMonth, startOfWeek } from "date-fns";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, ComposedChart, Line } from "recharts";
 import { Upload, CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, type SocialPlatform } from "@/lib/social";
 import { CompactNumber } from "./CompactNumber";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
+import { useSocialGoals } from "@/hooks/useSocialGoals";
+import { useShowGoalLine } from "@/hooks/useShowGoalLine";
 import { AggregateImportDialog } from "./AggregateImportDialog";
 import type { DateRange } from "react-day-picker";
 
@@ -19,10 +23,17 @@ type Bucket = "week" | "month";
 export function CumulativeGrowthChart() {
   const { data: growth = [], isLoading } = useFollowerGrowth();
   const { data: settings = [] } = useSocialPlatformSettings();
+  const { data: goals = [] } = useSocialGoals();
+  const [showGoalLine, setShowGoalLine] = useShowGoalLine();
   const [bucket, setBucket] = useState<Bucket>("month");
   const [importOpen, setImportOpen] = useState(false);
   const [range, setRange] = useState<DateRange | undefined>();
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  const activeFollowerGoals = useMemo(
+    () => goals.filter((g) => g.status === "active" && g.metric === "followers"),
+    [goals],
+  );
 
   const enabledPlatforms = useMemo(() => {
     const set = new Set<SocialPlatform>();
@@ -69,9 +80,18 @@ export function CumulativeGrowthChart() {
         if (v != null) lastSeen[p] = v;
         row[p] = lastSeen[p] ?? 0;
       }
+      // Inject projection values per active follower goal at this period midpoint.
+      const periodMs = new Date(k).getTime();
+      for (const goal of activeFollowerGoals) {
+        const startMs = new Date(goal.start_date).getTime();
+        const endMs = new Date(goal.target_date).getTime();
+        if (periodMs < startMs || periodMs > endMs || endMs === startMs) continue;
+        const pct = (periodMs - startMs) / (endMs - startMs);
+        row[`goal_${goal.id}`] = Math.round(goal.start_value + pct * (goal.target_value - goal.start_value));
+      }
       return row;
     });
-  }, [filteredGrowth, bucket, enabledPlatforms]);
+  }, [filteredGrowth, bucket, enabledPlatforms, activeFollowerGoals]);
 
   const totalNow = useMemo(() => {
     const last = chartData[chartData.length - 1];
@@ -147,6 +167,15 @@ export function CumulativeGrowthChart() {
               </PopoverContent>
             </Popover>
 
+            {activeFollowerGoals.length > 0 && (
+              <div className="flex items-center gap-1.5 pl-1">
+                <Switch id="growth-show-goal-line" checked={showGoalLine} onCheckedChange={setShowGoalLine} />
+                <Label htmlFor="growth-show-goal-line" className="text-xs text-muted-foreground cursor-pointer">
+                  Goal line
+                </Label>
+              </div>
+            )}
+
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
               <Upload className="h-3.5 w-3.5" /> Import aggregate
             </Button>
@@ -165,7 +194,7 @@ export function CumulativeGrowthChart() {
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+              <ComposedChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis
                   dataKey="period"
@@ -195,14 +224,29 @@ export function CumulativeGrowthChart() {
                   labelFormatter={(l) =>
                     format(new Date(l as string), bucket === "month" ? "MMMM yyyy" : "'Week of' d MMM yyyy")
                   }
-                  formatter={(value: number, name: string) => [
-                    `${value.toLocaleString()} (${formatCompact(value)})`,
-                    PLATFORM_META[name as SocialPlatform]?.label ?? name,
-                  ]}
+                  formatter={(value: number, name: string) => {
+                    if (typeof name === "string" && name.startsWith("goal_")) {
+                      const goalId = name.slice(5);
+                      const goal = activeFollowerGoals.find((g) => g.id === goalId);
+                      const label = goal ? `${PLATFORM_META[goal.platform].label} goal` : "Goal";
+                      return [`${value.toLocaleString()} (${formatCompact(value)})`, label];
+                    }
+                    return [
+                      `${value.toLocaleString()} (${formatCompact(value)})`,
+                      PLATFORM_META[name as SocialPlatform]?.label ?? name,
+                    ];
+                  }}
                 />
 
                 <Legend
-                  formatter={(name) => PLATFORM_META[name as SocialPlatform]?.label ?? name}
+                  formatter={(name) => {
+                    if (typeof name === "string" && name.startsWith("goal_")) {
+                      const goalId = name.slice(5);
+                      const goal = activeFollowerGoals.find((g) => g.id === goalId);
+                      return goal ? `${PLATFORM_META[goal.platform].label} goal pace` : "Goal pace";
+                    }
+                    return PLATFORM_META[name as SocialPlatform]?.label ?? name;
+                  }}
                   wrapperStyle={{ fontSize: 12 }}
                 />
                 {enabledPlatforms.map((p) => (
@@ -214,7 +258,20 @@ export function CumulativeGrowthChart() {
                     radius={[0, 0, 0, 0]}
                   />
                 ))}
-              </BarChart>
+                {showGoalLine && activeFollowerGoals.map((g) => (
+                  <Line
+                    key={g.id}
+                    type="linear"
+                    dataKey={`goal_${g.id}`}
+                    stroke={PLATFORM_META[g.platform].hex}
+                    strokeDasharray="5 4"
+                    strokeWidth={2}
+                    dot={false}
+                    connectNulls
+                    isAnimationActive={false}
+                  />
+                ))}
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         )}

@@ -18,6 +18,7 @@ import { useSocialPosts } from "@/hooks/useSocialPosts";
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { cn } from "@/lib/utils";
 import { CompactNumber } from "./CompactNumber";
+import { AnalyticsGoalsSection } from "./AnalyticsGoalsSection";
 
 const STATUS_TONE = {
   on_track: { label: "On track", icon: TrendingUp, className: "bg-emerald-100 text-emerald-900 border-emerald-200" },
@@ -53,6 +54,7 @@ export function SocialAnalytics() {
 
   return (
     <div className="space-y-6">
+      <AnalyticsGoalsSection />
       <div className="grid gap-4 md:grid-cols-2">
         {enabled.length === 0 && (
           <Card className="p-6 md:col-span-2 text-sm text-muted-foreground">
