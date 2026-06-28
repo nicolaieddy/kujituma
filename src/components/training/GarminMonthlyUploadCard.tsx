@@ -6,7 +6,7 @@ import { Loader2, FileSpreadsheet } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { createImportProgress, describeError } from "@/lib/importProgress";
 import { format } from "date-fns";
 
 interface ParsedRow { month: string; sport: string; distance_km: number }
