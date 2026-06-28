@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { PLATFORM_META, SOCIAL_PLATFORMS, type SocialPlatform, formatCompact } from "@/lib/social";
 import { useBulkUpsertDailyMetrics } from "@/hooks/useDailyAccountMetrics";
 import { useUpsertPlatformSettings } from "@/hooks/useSocialPlatformSettings";
+import { useLogSocialImport } from "@/hooks/useSocialImportHistory";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
