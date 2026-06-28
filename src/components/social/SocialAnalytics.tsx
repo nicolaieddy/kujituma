@@ -134,7 +134,7 @@ export function SocialAnalytics() {
                       <Tooltip
                         contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
                         labelFormatter={(l) => format(new Date(l as string), "d MMM yyyy")}
-                        formatter={(v: number) => [formatCompact(v), "Followers"]}
+                        formatter={(v: number) => [`${v.toLocaleString()} (${formatCompact(v)})`, "Followers"]}
                       />
                       {s.follower_target != null && (
                         <ReferenceLine y={s.follower_target} stroke="hsl(var(--primary))" strokeDasharray="3 3" />
