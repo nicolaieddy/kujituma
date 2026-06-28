@@ -19,7 +19,7 @@ import { toast } from "sonner";
 import {
   PLATFORM_META,
   STATUS_META,
-  STATUS_ORDER,
+  BOARD_ORDER,
   TRUST_CHECK_META,
   type SocialPlatform,
   type SocialStatus,
