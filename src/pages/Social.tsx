@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus } from "lucide-react";
+import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PipelineBoard } from "@/components/social/PipelineBoard";
 import { PlatformSettingsPanel } from "@/components/social/PlatformSettingsPanel";
 import { SocialAnalytics } from "@/components/social/SocialAnalytics";
 import { SocialCalendar } from "@/components/social/SocialCalendar";
 import { PostEditorDrawer } from "@/components/social/PostEditorDrawer";
+import { CumulativeGrowthChart } from "@/components/social/CumulativeGrowthChart";
 import { cn } from "@/lib/utils";
 
-type View = "pipeline" | "calendar" | "analytics" | "setup";
+type View = "pipeline" | "calendar" | "analytics" | "growth" | "setup";
 
 export default function Social() {
   const [view, setView] = useState<View>("pipeline");
@@ -39,6 +40,7 @@ export default function Social() {
           { id: "pipeline", label: "Pipeline", icon: LayoutGrid },
           { id: "calendar", label: "Calendar", icon: CalendarIcon },
           { id: "analytics", label: "Analytics", icon: BarChart3 },
+          { id: "growth", label: "Growth", icon: TrendingUp },
           { id: "setup", label: "Setup", icon: SettingsIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
@@ -59,6 +61,7 @@ export default function Social() {
       {view === "pipeline" && <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />}
       {view === "calendar" && <SocialCalendar onOpenPost={openEditor} />}
       {view === "analytics" && <SocialAnalytics />}
+      {view === "growth" && <CumulativeGrowthChart />}
       {view === "setup" && <PlatformSettingsPanel />}
 
       <PostEditorDrawer
