@@ -1,14 +1,15 @@
 import { useState } from "react";
-import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus } from "lucide-react";
+import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PipelineBoard } from "@/components/social/PipelineBoard";
 import { PlatformSettingsPanel } from "@/components/social/PlatformSettingsPanel";
 import { SocialAnalytics } from "@/components/social/SocialAnalytics";
 import { SocialCalendar } from "@/components/social/SocialCalendar";
 import { PostEditorDrawer } from "@/components/social/PostEditorDrawer";
+import { CumulativeGrowthChart } from "@/components/social/CumulativeGrowthChart";
 import { cn } from "@/lib/utils";
 
-type View = "pipeline" | "calendar" | "analytics" | "setup";
+type View = "pipeline" | "calendar" | "analytics" | "growth" | "setup";
 
 export default function Social() {
   const [view, setView] = useState<View>("pipeline");
