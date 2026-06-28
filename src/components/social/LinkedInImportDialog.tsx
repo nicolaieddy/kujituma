@@ -191,10 +191,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
       setParsed(data);
 
       if (data.postUrl && !defaultPostId) {
-        const match = posts.find((p) => p.live_url && p.live_url.trim() === data.postUrl!.trim());
+        const target = normalizeLiUrl(data.postUrl);
+        const match = posts.find((p) => normalizeLiUrl(p.live_url) === target);
         if (match) {
           setSelectedPostId(match.id);
           setMode("attach");
+          toast.info("Matched an existing post — re-importing will update it");
         } else {
           setMode("create");
           setSelectedPostId(null);
