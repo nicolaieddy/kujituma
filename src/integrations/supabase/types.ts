@@ -3305,6 +3305,7 @@ export type Database = {
           media: string[]
           pillars: string[]
           platforms: Database["public"]["Enums"]["social_platform"][]
+          publish_at: string | null
           publish_date: string | null
           retro: string | null
           review_notes: string | null
@@ -3325,6 +3326,7 @@ export type Database = {
           media?: string[]
           pillars?: string[]
           platforms?: Database["public"]["Enums"]["social_platform"][]
+          publish_at?: string | null
           publish_date?: string | null
           retro?: string | null
           review_notes?: string | null
@@ -3345,6 +3347,7 @@ export type Database = {
           media?: string[]
           pillars?: string[]
           platforms?: Database["public"]["Enums"]["social_platform"][]
+          publish_at?: string | null
           publish_date?: string | null
           retro?: string | null
           review_notes?: string | null
