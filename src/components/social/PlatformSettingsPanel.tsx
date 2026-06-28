@@ -117,6 +117,8 @@ export function PlatformSettingsPanel() {
         );
       })}
 
+      <ImportHistoryPanel />
+
       <AggregateImportDialog open={importOpen} onClose={() => setImportOpen(false)} />
     </div>
   );
