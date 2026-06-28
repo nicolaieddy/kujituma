@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { Loader2, FileSpreadsheet, CheckCircle2 } from "lucide-react";
 import { ImportDropzone } from "@/components/shared/ImportDropzone";
