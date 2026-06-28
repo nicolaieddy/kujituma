@@ -12,6 +12,7 @@ import { LinkedInImportDialog } from "@/components/social/LinkedInImportDialog";
 import { AggregateImportDialog } from "@/components/social/AggregateImportDialog";
 import { ImportSummaryDialog, type ImportRow } from "@/components/social/ImportSummaryDialog";
 import { PageDropOverlay } from "@/components/shared/PageDropOverlay";
+import { GoalProgressStrip } from "@/components/social/GoalProgressStrip";
 import { groupFilesByKind } from "@/lib/social/analyticsSniffer";
 import { cn } from "@/lib/utils";
 
