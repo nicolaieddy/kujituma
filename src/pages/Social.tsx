@@ -110,9 +110,10 @@ export default function Social() {
 
       <PageDropOverlay
         accept={ACCEPTED}
+        multiple
         onFiles={(fs) => openImport(fs)}
-        label="Drop your post analytics export"
-        hint=".xlsx, .xls or .csv — we'll auto-create the post"
+        label="Drop your post analytics exports"
+        hint=".xlsx, .xls or .csv — multiple files supported, each auto-imports"
       />
     </div>
   );
