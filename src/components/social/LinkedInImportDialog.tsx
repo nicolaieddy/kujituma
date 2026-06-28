@@ -1,15 +1,21 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Loader2, FileSpreadsheet } from "lucide-react";
+import { Upload, Loader2, FileSpreadsheet, Sparkles, CheckCircle2, Link2 } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { getLocalDateString } from "@/utils/dateUtils";
 import { useUpsertMetricSnapshot } from "@/hooks/useSocialMetrics";
-import { useSocialPosts } from "@/hooks/useSocialPosts";
+import { useSocialPosts, useUpsertSocialPost } from "@/hooks/useSocialPosts";
+import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
+import { useValues } from "@/hooks/useValues";
+import { useSetSocialPostValue } from "@/hooks/useSocialPostValues";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Select,
   SelectContent,
@@ -75,12 +81,18 @@ function parseWorkbook(buffer: ArrayBuffer): Parsed {
     } else if (field === "postDate") {
       if (val instanceof Date) out.postDate = val.toISOString().slice(0, 10);
       else if (typeof val === "number") {
-        // Excel serial date
         const d = XLSX.SSF.parse_date_code(val);
         if (d) out.postDate = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
       } else if (typeof val === "string") {
-        const d = new Date(val);
-        if (!isNaN(d.getTime())) out.postDate = d.toISOString().slice(0, 10);
+        const s = val.trim();
+        const mdy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+        if (mdy) {
+          const yy = mdy[3].length === 2 ? 2000 + Number(mdy[3]) : Number(mdy[3]);
+          out.postDate = `${yy}-${String(Number(mdy[1])).padStart(2, "0")}-${String(Number(mdy[2])).padStart(2, "0")}`;
+        } else {
+          const d = new Date(s);
+          if (!isNaN(d.getTime())) out.postDate = d.toISOString().slice(0, 10);
+        }
       }
     } else {
       const n = typeof val === "number" ? val : Number(String(val ?? "").replace(/,/g, ""));
@@ -90,21 +102,69 @@ function parseWorkbook(buffer: ArrayBuffer): Parsed {
   return out;
 }
 
+function titleFromSlug(url: string): string {
+  try {
+    const u = new URL(url);
+    const slugSeg = u.pathname.split("/").filter(Boolean).pop() ?? "";
+    // strip trailing id/hash
+    const slug = slugSeg.replace(/-(activity|ugcPost)?-?\d{6,}.*$/i, "").replace(/-[A-Za-z0-9_-]{4,8}$/i, "");
+    const words = slug.split("-").filter(Boolean);
+    if (!words.length) return "LinkedIn post";
+    const sentence = words.join(" ");
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+  } catch {
+    return "LinkedIn post";
+  }
+}
+
 export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "" }: Props) {
   const { data: posts = [] } = useSocialPosts();
-  const upsert = useUpsertMetricSnapshot();
+  const { data: settings = [] } = useSocialPlatformSettings();
+  const { values = [] } = useValues();
+  const upsertMetric = useUpsertMetricSnapshot();
+  const upsertPost = useUpsertSocialPost();
+  const setPostValue = useSetSocialPostValue();
   const inputRef = useRef<HTMLInputElement>(null);
+
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<Parsed | null>(null);
   const [parsing, setParsing] = useState(false);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(defaultPostId);
   const [asOf, setAsOf] = useState<string>(getLocalDateString());
 
+  // Auto-create state
+  const [mode, setMode] = useState<"attach" | "create">("attach");
+  const [scraping, setScraping] = useState(false);
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [pillars, setPillars] = useState<string[]>([]);
+  const [valueIds, setValueIds] = useState<string[]>([]);
+
+  const liPillars = settings.find((s) => s.platform === "linkedin")?.pillars ?? [];
+
   const reset = () => {
-    setFile(null);
-    setParsed(null);
-    setSelectedPostId(defaultPostId);
-    setAsOf(getLocalDateString());
+    setFile(null); setParsed(null);
+    setSelectedPostId(defaultPostId); setAsOf(getLocalDateString());
+    setMode("attach"); setTitle(""); setBody(""); setPillars([]); setValueIds([]);
+  };
+
+  const scrapeViaFirecrawl = async (url: string) => {
+    setScraping(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("scrape-linkedin-post", { body: { url } });
+      if (error) throw error;
+      const t = (data?.title as string) || "";
+      const b = (data?.body as string) || "";
+      setTitle(t || titleFromSlug(url));
+      setBody(b);
+      if (!t && !b) toast.warning("Couldn't read post body — used URL slug as title");
+    } catch (e: any) {
+      console.error("[scrape-linkedin-post]", e);
+      setTitle(titleFromSlug(url));
+      toast.warning("Couldn't reach Firecrawl — using URL slug as title", { description: e.message });
+    } finally {
+      setScraping(false);
+    }
   };
 
   const handleFile = async (f: File) => {
@@ -115,10 +175,16 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
       const data = parseWorkbook(buffer);
       setParsed(data);
 
-      // Auto-match by URL
       if (data.postUrl && !defaultPostId) {
         const match = posts.find((p) => p.live_url && p.live_url.trim() === data.postUrl!.trim());
-        if (match) setSelectedPostId(match.id);
+        if (match) {
+          setSelectedPostId(match.id);
+          setMode("attach");
+        } else {
+          setMode("create");
+          setSelectedPostId(null);
+          scrapeViaFirecrawl(data.postUrl);
+        }
       }
     } catch (e: any) {
       toast.error("Couldn't parse file", { description: e.message });
@@ -127,38 +193,75 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     }
   };
 
+  const togglePillar = (p: string) =>
+    setPillars((cur) => cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]);
+  const toggleValue = (id: string) =>
+    setValueIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
+
+  useEffect(() => { if (!open) reset(); /* eslint-disable-next-line */ }, [open]);
+
   const commit = async () => {
-    if (!parsed || !selectedPostId) {
-      toast.error("Pick a post to attach this snapshot to");
-      return;
+    if (!parsed) return;
+    let postId = selectedPostId;
+
+    try {
+      if (mode === "create") {
+        if (!title.trim()) { toast.error("Add a title"); return; }
+        const created = await upsertPost.mutateAsync({
+          title: title.trim(),
+          body: body || null,
+          status: "published",
+          platforms: ["linkedin"],
+          pillars,
+          publish_date: parsed.postDate ?? getLocalDateString(),
+          live_url: parsed.postUrl,
+          trust_check: "not_checked",
+          hold: false,
+        } as any);
+        postId = created.id;
+
+        for (const vid of valueIds) {
+          await setPostValue.mutateAsync({ post_id: created.id, value_id: vid, weight: 1 });
+        }
+      }
+
+      if (!postId) { toast.error("Pick a post to attach this snapshot to"); return; }
+
+      await upsertMetric.mutateAsync({
+        post_id: postId,
+        platform: "linkedin",
+        metrics_as_of: asOf,
+        impressions: parsed.impressions,
+        reactions: parsed.reactions,
+        comments: parsed.comments,
+        reposts: parsed.reposts,
+        reach: parsed.reach,
+        profile_views: parsed.profile_views,
+        followers_gained: parsed.followers_gained,
+        saves: parsed.saves,
+        sends: parsed.sends,
+        link_clicks: parsed.link_clicks,
+      });
+
+      toast.success(mode === "create" ? "Post created & analytics imported" : "Snapshot imported");
+      reset();
+      onClose();
+    } catch (e: any) {
+      toast.error("Import failed", { description: e.message });
     }
-    await upsert.mutateAsync({
-      post_id: selectedPostId,
-      platform: "linkedin",
-      metrics_as_of: asOf,
-      impressions: parsed.impressions,
-      reactions: parsed.reactions,
-      comments: parsed.comments,
-      reposts: parsed.reposts,
-      reach: parsed.reach,
-      profile_views: parsed.profile_views,
-      followers_gained: parsed.followers_gained,
-      saves: parsed.saves,
-      sends: parsed.sends,
-      link_clicks: parsed.link_clicks,
-    });
-    toast.success("LinkedIn snapshot imported");
-    reset();
-    onClose();
   };
+
+  const busy = upsertMetric.isPending || upsertPost.isPending;
+  const canCommit = !!parsed && (mode === "attach" ? !!selectedPostId : !!title.trim()) && !busy;
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Import LinkedIn .xlsx</DialogTitle>
           <DialogDescription>
-            Download "Single Post Analytics" from LinkedIn and drop the .xlsx here.
+            Drop a "Single Post Analytics" export. We'll create the post if it doesn't exist, mark it Published,
+            attach the metrics, and add it to the calendar.
           </DialogDescription>
         </DialogHeader>
 
@@ -173,9 +276,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             ) : (
               <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
             )}
-            <div className="text-sm font-medium">
-              {file ? file.name : "Click to choose .xlsx"}
-            </div>
+            <div className="text-sm font-medium">{file ? file.name : "Click to choose .xlsx"}</div>
           </button>
         )}
         <input
@@ -197,10 +298,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
                 <FileSpreadsheet className="h-4 w-4" /> {file?.name}
               </div>
               {parsed.postUrl && (
-                <div className="text-[11px] text-muted-foreground truncate">URL: {parsed.postUrl}</div>
+                <div className="text-[11px] text-muted-foreground truncate flex items-center gap-1">
+                  <Link2 className="h-3 w-3" /> {parsed.postUrl}
+                </div>
               )}
               <div className="grid grid-cols-3 gap-2 text-xs mt-2">
-                {(["impressions", "reach", "reactions", "comments", "reposts", "saves", "sends", "link_clicks", "profile_views", "followers_gained"] as const).map((k) => (
+                {(["impressions","reach","reactions","comments","reposts","saves","sends","link_clicks","profile_views","followers_gained"] as const).map((k) => (
                   parsed[k] != null && (
                     <div key={k} className="flex justify-between border-b border-dashed border-border/50">
                       <span className="text-muted-foreground">{k}</span>
@@ -211,24 +314,127 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
               </div>
             </Card>
 
-            <div className="space-y-1.5">
-              <Label>Attach to post</Label>
-              <Select value={selectedPostId ?? ""} onValueChange={(v) => setSelectedPostId(v || null)}>
-                <SelectTrigger><SelectValue placeholder="Pick a post" /></SelectTrigger>
-                <SelectContent>
-                  {posts.filter((p) => p.platforms.includes("linkedin")).map((p) => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.title || "Untitled"}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {parsed.postUrl && !selectedPostId && (
-                <p className="text-[11px] text-amber-700">
-                  No post matched URL — pick one above, or close and add a Live URL to the post first.
-                </p>
+            {/* Mode toggle */}
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "create" ? "default" : "outline"}
+                onClick={() => setMode("create")}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1" /> Auto-create post
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={mode === "attach" ? "default" : "outline"}
+                onClick={() => setMode("attach")}
+              >
+                Attach to existing
+              </Button>
+              {mode === "create" && parsed.postUrl && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="ml-auto"
+                  disabled={scraping}
+                  onClick={() => scrapeViaFirecrawl(parsed.postUrl!)}
+                >
+                  {scraping ? <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" /> : <Sparkles className="h-3.5 w-3.5 mr-1" />}
+                  Re-fetch from LinkedIn
+                </Button>
               )}
             </div>
+
+            {mode === "create" ? (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Title</Label>
+                  <Input
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder={scraping ? "Fetching from LinkedIn…" : "Post title"}
+                    disabled={scraping}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Body</Label>
+                  <Textarea
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    placeholder={scraping ? "Fetching…" : "Post body (optional)"}
+                    rows={4}
+                    disabled={scraping}
+                  />
+                </div>
+
+                {liPillars.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label>Pillars</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {liPillars.map((p) => {
+                        const on = pillars.includes(p);
+                        return (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => togglePillar(p)}
+                            className={`px-2 py-1 rounded-full text-[11px] border transition-colors ${
+                              on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {values.length > 0 && (
+                  <div className="space-y-1.5">
+                    <Label>Values</Label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {values.map((v) => {
+                        const on = valueIds.includes(v.id);
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => toggleValue(v.id)}
+                            className={`px-2 py-1 rounded-full text-[11px] border transition-colors ${
+                              on ? "bg-primary text-primary-foreground border-primary" : "border-border hover:bg-muted"
+                            }`}
+                          >
+                            {v.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {parsed.postDate && (
+                  <Badge variant="outline" className="text-[11px]">
+                    <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
+                    Publish date: {parsed.postDate}
+                  </Badge>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Attach to post</Label>
+                <Select value={selectedPostId ?? ""} onValueChange={(v) => setSelectedPostId(v || null)}>
+                  <SelectTrigger><SelectValue placeholder="Pick a post" /></SelectTrigger>
+                  <SelectContent>
+                    {posts.filter((p) => p.platforms.includes("linkedin")).map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.title || "Untitled"}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>As-of date</Label>
@@ -239,9 +445,9 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => { reset(); onClose(); }}>Cancel</Button>
-          <Button onClick={commit} disabled={!parsed || !selectedPostId || upsert.isPending}>
-            {upsert.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-            Import snapshot
+          <Button onClick={commit} disabled={!canCommit}>
+            {busy && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            {mode === "create" ? "Create & import" : "Import snapshot"}
           </Button>
         </DialogFooter>
       </DialogContent>
