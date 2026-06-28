@@ -54,30 +54,39 @@ function formatSize(bytes: number | null) {
 }
 
 interface Props {
-  eventId: string;
+  eventId: string | null;
+  ensureEventId?: () => Promise<string | null>;
 }
 
-export function EventAttachmentsSection({ eventId }: Props) {
+export function EventAttachmentsSection({ eventId, ensureEventId }: Props) {
   const upload = useUploadEventAttachment();
   const del = useDeleteEventAttachment();
   const reExtract = useReExtractAttachment();
 
-  // Poll while any attachment is still processing
-  const { data: attachments = [], isLoading } = useEventAttachments(eventId);
+  const { data: attachments = [], isLoading } = useEventAttachments(eventId ?? undefined);
   const anyProcessing = attachments.some((a) => a.extraction_status === "processing" || a.extraction_status === "pending");
-  // Re-fetch via stale time trick — TanStack will refetch on window focus already; add a setInterval-based poll
-  // (kept inside the component via plain effect)
-  usePollWhile(anyProcessing, eventId);
+  usePollWhile(anyProcessing, eventId ?? "");
 
   const fileInput = useRef<HTMLInputElement>(null);
   const [confirmDelete, setConfirmDelete] = useState<TrainingEventAttachment | null>(null);
   const [openingId, setOpeningId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [resolving, setResolving] = useState(false);
 
   const handleFiles = async (files: FileList | null) => {
-    if (!files) return;
+    if (!files || files.length === 0) return;
+    let id = eventId;
+    if (!id && ensureEventId) {
+      setResolving(true);
+      try {
+        id = await ensureEventId();
+      } finally {
+        setResolving(false);
+      }
+    }
+    if (!id) return;
     for (let i = 0; i < files.length; i++) {
-      await upload.mutateAsync({ eventId, file: files[i] }).catch(() => {});
+      await upload.mutateAsync({ eventId: id, file: files[i] }).catch(() => {});
     }
     if (fileInput.current) fileInput.current.value = "";
   };
