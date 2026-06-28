@@ -4,6 +4,40 @@ type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
 const EVENT_TYPES = ["injury_illness", "race", "other"] as const;
+const ISSUE_CATEGORIES = ["niggle", "injury", "illness"] as const;
+const BODY_SIDES = ["left", "right", "both", "na"] as const;
+
+const BODY_PART_SCHEMA = {
+  type: "array",
+  description:
+    "Structured body parts affected (injury/illness only). Each entry: { part: canonical key like 'calf_shin' | 'knee' | 'hamstring' | 'quad' | 'groin' | 'hip_glute' | 'foot' | 'ankle' | 'lower_back' | 'upper_body' | 'head' | 'other', side: 'left' | 'right' | 'both' | 'na', specific?: free-text refinement }.",
+  items: {
+    type: "object",
+    properties: {
+      part: { type: "string" },
+      side: { type: "string", description: "left | right | both | na" },
+      specific: { type: "string" },
+    },
+    required: ["part", "side"],
+  },
+};
+
+function sanitizeBodyParts(raw: unknown): Array<{ part: string; side: string; specific?: string }> | null {
+  if (!Array.isArray(raw)) return null;
+  const out: Array<{ part: string; side: string; specific?: string }> = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") continue;
+    const part = (entry as any).part;
+    const side = (entry as any).side;
+    if (typeof part !== "string" || !part.trim()) continue;
+    const normalizedSide = typeof side === "string" && (BODY_SIDES as readonly string[]).includes(side) ? side : "na";
+    const item: { part: string; side: string; specific?: string } = { part: part.trim(), side: normalizedSide };
+    const specific = (entry as any).specific;
+    if (typeof specific === "string" && specific.trim()) item.specific = specific.trim();
+    out.push(item);
+  }
+  return out;
+}
 
 export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("list_training_events", {
