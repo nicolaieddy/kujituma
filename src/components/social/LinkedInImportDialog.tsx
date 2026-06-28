@@ -219,6 +219,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     setValueIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
 
   useEffect(() => { if (!open) reset(); /* eslint-disable-next-line */ }, [open]);
+  useEffect(() => { if (open && initialFile) { handleFile(initialFile); } /* eslint-disable-next-line */ }, [open, initialFile]);
 
   const commit = async () => {
     if (!parsed) return;
