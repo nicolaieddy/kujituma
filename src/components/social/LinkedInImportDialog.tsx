@@ -151,13 +151,13 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const [selectedPostId, setSelectedPostId] = useState<string | null>(defaultPostId);
   const [asOf, setAsOf] = useState<string>(getLocalDateString());
 
-  // Auto-create state
-  const [mode, setMode] = useState<"attach" | "create">("attach");
   const [scraping, setScraping] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pillars, setPillars] = useState<string[]>([]);
   const [valueIds, setValueIds] = useState<string[]>([]);
+
+  const NEW_POST = "__new__";
 
   const liPillars = settings.find((s) => s.platform === "linkedin")?.pillars ?? [];
 
