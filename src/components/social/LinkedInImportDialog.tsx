@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Loader2, FileSpreadsheet, Sparkles, CheckCircle2, Link2 } from "lucide-react";
+import { Loader2, FileSpreadsheet, CheckCircle2, Link2 } from "lucide-react";
 import { ImportDropzone } from "@/components/shared/ImportDropzone";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
