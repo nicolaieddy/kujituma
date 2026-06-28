@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { getLocalDateString } from "@/utils/dateUtils";
 import { useUpsertMetricSnapshot } from "@/hooks/useSocialMetrics";
 import { useSocialPosts, useUpsertSocialPost } from "@/hooks/useSocialPosts";
+import { useLogSocialImport } from "@/hooks/useSocialImportHistory";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useValues } from "@/hooks/useValues";
 import { useSetSocialPostValue } from "@/hooks/useSocialPostValues";
