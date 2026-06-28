@@ -214,6 +214,7 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const commit = async () => {
     if (!parsed || !user) return;
     setImporting(true);
+    const p = createImportProgress("Importing aggregate analytics…");
     try {
       // 1) Daily account metrics
       const dailyRows = parsed.daily.map((d) => ({
