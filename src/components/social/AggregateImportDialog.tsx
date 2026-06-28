@@ -197,12 +197,15 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const handleFile = async (f: File) => {
     setFile(f);
     setParsing(true);
+    const p = createImportProgress(`Parsing ${f.name}…`);
     try {
       const buffer = await f.arrayBuffer();
       const data = parseWorkbook(buffer, platform);
       setParsed(data);
-    } catch (e: any) {
-      toast.error("Couldn't parse file", { description: e.message });
+      p.success("Export parsed", `${data.daily.length} daily rows · ${data.followerTotals.length} follower entries`);
+    } catch (e) {
+      console.error("[aggregate-import] parse", e);
+      p.error("Couldn't parse file", describeError(e));
     } finally {
       setParsing(false);
     }
