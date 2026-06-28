@@ -114,11 +114,11 @@ export function EventAttachmentsSection({ eventId, ensureEventId }: Props) {
           size="sm"
           variant="outline"
           onClick={() => fileInput.current?.click()}
-          disabled={upload.isPending}
+          disabled={upload.isPending || resolving}
           className="gap-2"
         >
-          {upload.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-          {upload.isPending ? "Uploading…" : "Upload"}
+          {upload.isPending || resolving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+          {resolving ? "Preparing…" : upload.isPending ? "Uploading…" : "Upload"}
         </Button>
         <input
           ref={fileInput}
