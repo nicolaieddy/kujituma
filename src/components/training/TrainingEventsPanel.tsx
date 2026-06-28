@@ -600,14 +600,16 @@ export function TrainingEventsPanel() {
               </>
             )}
 
-            <div className="space-y-1.5">
-              <Label>Location (optional)</Label>
-              <Input
-                value={form.location}
-                onChange={(e) => setForm({ ...form, location: e.target.value })}
-                maxLength={200}
-              />
-            </div>
+            {form.event_type !== "injury_illness" && (
+              <div className="space-y-1.5">
+                <Label>Location (optional)</Label>
+                <Input
+                  value={form.location}
+                  onChange={(e) => setForm({ ...form, location: e.target.value })}
+                  maxLength={200}
+                />
+              </div>
+            )}
 
             <div className="space-y-1.5">
               <Label>Notes</Label>
