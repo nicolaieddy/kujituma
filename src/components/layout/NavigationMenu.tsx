@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   Target, UserPlus, BarChart3, Shield, Blocks, Moon, Stethoscope, Dumbbell,
-  Users, Megaphone, Newspaper, ChevronDown, Settings2,
+  Users, Megaphone, Newspaper, ChevronDown, Settings2, Pin, PinOff,
 } from "lucide-react";
 import { useAdminStatus } from "@/hooks/useAdminStatus";
 import { useInstalledModules } from "@/hooks/useInstalledModules";
