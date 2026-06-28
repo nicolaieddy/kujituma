@@ -1,0 +1,1 @@
+ALTER VIEW public.social_post_latest_metrics SET (security_invoker = on);

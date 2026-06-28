@@ -7,6 +7,7 @@ import { registerResources, registerPrompts } from "./resources-prompts.ts";
 import { registerTrainingReadTools, registerTrainingWriteTools } from "./training-tools.ts";
 import { registerTrainingEventTools } from "./event-tools.ts";
 import { registerNetworkTools } from "./network-tools.ts";
+import { registerSocialTools } from "./social-tools.ts";
 
 // ── MCP SERVER FACTORY ─────────────────────────────────────
 
@@ -22,6 +23,7 @@ function createConfiguredServer(supabase: any, userId: string) {
   registerTrainingWriteTools(mcp, supabase, userId);
   registerTrainingEventTools(mcp, supabase, userId);
   registerNetworkTools(mcp, supabase, userId);
+  registerSocialTools(mcp, supabase, userId);
   registerResources(mcp, supabase, userId);
   registerPrompts(mcp);
 

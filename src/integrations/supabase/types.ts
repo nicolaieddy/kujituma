@@ -2957,6 +2957,269 @@ export type Database = {
         }
         Relationships: []
       }
+      social_follower_growth: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          net_new: number | null
+          note: string | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          total_followers: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          net_new?: number | null
+          note?: string | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          total_followers: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          net_new?: number | null
+          note?: string | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          total_followers?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_platform_settings: {
+        Row: {
+          created_at: string
+          current_followers_cached: number | null
+          enabled: boolean
+          follower_target: number | null
+          id: string
+          notes: string | null
+          pillars: string[]
+          platform: Database["public"]["Enums"]["social_platform"]
+          target_deadline: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_followers_cached?: number | null
+          enabled?: boolean
+          follower_target?: number | null
+          id?: string
+          notes?: string | null
+          pillars?: string[]
+          platform: Database["public"]["Enums"]["social_platform"]
+          target_deadline?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_followers_cached?: number | null
+          enabled?: boolean
+          follower_target?: number | null
+          id?: string
+          notes?: string | null
+          pillars?: string[]
+          platform?: Database["public"]["Enums"]["social_platform"]
+          target_deadline?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      social_post_metrics: {
+        Row: {
+          comments: number | null
+          created_at: string
+          engagement_rate: number | null
+          followers_gained: number | null
+          id: string
+          impressions: number | null
+          link_clicks: number | null
+          metrics_as_of: string
+          platform: Database["public"]["Enums"]["social_platform"]
+          post_id: string
+          profile_views: number | null
+          reach: number | null
+          reactions: number | null
+          reposts: number | null
+          saves: number | null
+          sends: number | null
+          user_id: string
+        }
+        Insert: {
+          comments?: number | null
+          created_at?: string
+          engagement_rate?: number | null
+          followers_gained?: number | null
+          id?: string
+          impressions?: number | null
+          link_clicks?: number | null
+          metrics_as_of: string
+          platform: Database["public"]["Enums"]["social_platform"]
+          post_id: string
+          profile_views?: number | null
+          reach?: number | null
+          reactions?: number | null
+          reposts?: number | null
+          saves?: number | null
+          sends?: number | null
+          user_id: string
+        }
+        Update: {
+          comments?: number | null
+          created_at?: string
+          engagement_rate?: number | null
+          followers_gained?: number | null
+          id?: string
+          impressions?: number | null
+          link_clicks?: number | null
+          metrics_as_of?: string
+          platform?: Database["public"]["Enums"]["social_platform"]
+          post_id?: string
+          profile_views?: number | null
+          reach?: number | null
+          reactions?: number | null
+          reposts?: number | null
+          saves?: number | null
+          sends?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_post_values: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+          value_id: string
+          weight: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+          value_id: string
+          weight?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+          value_id?: string
+          weight?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_values_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "social_post_values_value_id_fkey"
+            columns: ["value_id"]
+            isOneToOne: false
+            referencedRelation: "user_values"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      social_posts: {
+        Row: {
+          body: string | null
+          created_at: string
+          goal_id: string | null
+          hold: boolean
+          id: string
+          live_url: string | null
+          media: string[]
+          pillars: string[]
+          platforms: Database["public"]["Enums"]["social_platform"][]
+          publish_date: string | null
+          retro: string | null
+          review_notes: string | null
+          reviewer_id: string | null
+          status: Database["public"]["Enums"]["social_status"]
+          title: string
+          trust_check: Database["public"]["Enums"]["social_trust_check"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          goal_id?: string | null
+          hold?: boolean
+          id?: string
+          live_url?: string | null
+          media?: string[]
+          pillars?: string[]
+          platforms?: Database["public"]["Enums"]["social_platform"][]
+          publish_date?: string | null
+          retro?: string | null
+          review_notes?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["social_status"]
+          title?: string
+          trust_check?: Database["public"]["Enums"]["social_trust_check"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          goal_id?: string | null
+          hold?: boolean
+          id?: string
+          live_url?: string | null
+          media?: string[]
+          pillars?: string[]
+          platforms?: Database["public"]["Enums"]["social_platform"][]
+          publish_date?: string | null
+          retro?: string | null
+          review_notes?: string | null
+          reviewer_id?: string | null
+          status?: Database["public"]["Enums"]["social_status"]
+          title?: string
+          trust_check?: Database["public"]["Enums"]["social_trust_check"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_posts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "social_posts_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       strava_connections: {
         Row: {
           access_token: string
@@ -4282,6 +4545,36 @@ export type Database = {
         }
         Relationships: []
       }
+      social_post_latest_metrics: {
+        Row: {
+          comments: number | null
+          created_at: string | null
+          engagement_rate: number | null
+          followers_gained: number | null
+          id: string | null
+          impressions: number | null
+          link_clicks: number | null
+          metrics_as_of: string | null
+          platform: Database["public"]["Enums"]["social_platform"] | null
+          post_id: string | null
+          profile_views: number | null
+          reach: number | null
+          reactions: number | null
+          reposts: number | null
+          saves: number | null
+          sends: number | null
+          user_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_post_metrics_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_get_user_ai_features: {
@@ -4556,6 +4849,15 @@ export type Database = {
       app_role: "admin" | "moderator" | "user"
       goal_value_link_source: "ai" | "user"
       objective_resolution: "none" | "completed" | "deprioritized" | "abandoned"
+      social_platform: "linkedin" | "x" | "instagram" | "tiktok"
+      social_status:
+        | "idea"
+        | "drafting"
+        | "in_review"
+        | "ready"
+        | "scheduled"
+        | "published"
+      social_trust_check: "passes" | "needs_work" | "not_checked"
       training_event_type: "injury_illness" | "race" | "other"
       value_visibility: "private" | "public"
     }
@@ -4688,6 +4990,16 @@ export const Constants = {
       app_role: ["admin", "moderator", "user"],
       goal_value_link_source: ["ai", "user"],
       objective_resolution: ["none", "completed", "deprioritized", "abandoned"],
+      social_platform: ["linkedin", "x", "instagram", "tiktok"],
+      social_status: [
+        "idea",
+        "drafting",
+        "in_review",
+        "ready",
+        "scheduled",
+        "published",
+      ],
+      social_trust_check: ["passes", "needs_work", "not_checked"],
       training_event_type: ["injury_illness", "race", "other"],
       value_visibility: ["private", "public"],
     },
