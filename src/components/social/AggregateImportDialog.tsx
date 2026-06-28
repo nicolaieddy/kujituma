@@ -30,12 +30,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 
+import type { ImportRow } from "./ImportSummaryDialog";
+
 interface Props {
   open: boolean;
   onClose: () => void;
   defaultPlatform?: SocialPlatform;
   initialFile?: File | null;
   initialFiles?: File[] | null;
+  onComplete?: (rows: ImportRow[]) => void;
 }
 
 interface ParsedAggregate {
@@ -178,7 +181,7 @@ function parseWorkbook(buffer: ArrayBuffer, platform: SocialPlatform): ParsedAgg
   return out;
 }
 
-export function AggregateImportDialog({ open, onClose, defaultPlatform = "linkedin", initialFile = null, initialFiles = null }: Props) {
+export function AggregateImportDialog({ open, onClose, defaultPlatform = "linkedin", initialFile = null, initialFiles = null, onComplete }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const upsertDaily = useBulkUpsertDailyMetrics();
@@ -216,6 +219,7 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
     // Multi-file: parse + commit each sequentially with aggregated toast
     if (!user) return;
     const p = createImportProgress(`Importing ${files.length} aggregate exports…`);
+    const rows: ImportRow[] = [];
     let okCount = 0;
     let failCount = 0;
     let totalDaily = 0;
@@ -231,9 +235,21 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
           okCount++;
           totalDaily += data.daily.length;
           totalFollowers += data.followerTotals.length;
-        } catch (err) {
+          rows.push({
+            file: f.name,
+            kind: "aggregate",
+            status: "imported",
+            detail: `${data.daily.length} daily rows · ${data.followerTotals.length} follower entries${data.currentFollowers != null ? ` · ${data.currentFollowers} total followers` : ""}`,
+          });
+        } catch (err: any) {
           console.error("[aggregate-import] file failed", f.name, err);
           failCount++;
+          rows.push({
+            file: f.name,
+            kind: "aggregate",
+            status: "failed",
+            detail: err?.message ?? String(err),
+          });
         }
       }
       qc.invalidateQueries({ queryKey: ["social-follower-growth"] });
@@ -245,10 +261,12 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
       } else {
         p.error("No files imported", desc);
       }
+      onComplete?.(rows);
       reset();
       onClose();
     } catch (e) {
       p.error("Import failed", describeError(e));
+      if (rows.length) onComplete?.(rows);
     }
   };
 
@@ -426,6 +444,12 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
       }
 
       p.success("Aggregate analytics imported", `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`);
+      onComplete?.([{
+        file: file?.name ?? "Aggregate export",
+        kind: "aggregate",
+        status: "imported",
+        detail: `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries${parsed.currentFollowers != null ? ` · ${parsed.currentFollowers} total followers` : ""}`,
+      }]);
       reset();
       onClose();
     } catch (e) {

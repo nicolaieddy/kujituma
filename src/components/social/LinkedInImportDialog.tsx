@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import type { ImportRow } from "./ImportSummaryDialog";
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -33,6 +35,7 @@ interface Props {
   defaultUrl?: string;
   initialFile?: File | null;
   initialFiles?: File[] | null;
+  onComplete?: (rows: ImportRow[]) => void;
 }
 
 interface Parsed {
@@ -136,7 +139,7 @@ function normalizeLiUrl(raw: string | null | undefined): string | null {
   }
 }
 
-export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null, initialFiles = null }: Props) {
+export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null, initialFiles = null, onComplete }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
   const { values = [] } = useValues();
@@ -234,6 +237,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   /** Auto-process many files: parse, match-or-create, attach metrics. No prompts. */
   const handleMultiFiles = async (files: File[]) => {
     const tid = toast.loading(`Importing ${files.length} LinkedIn exports…`);
+    const rows: ImportRow[] = [];
     let created = 0, updated = 0, failed = 0;
     const today = getLocalDateString();
     try {
@@ -245,6 +249,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
           const data = parseWorkbook(buffer);
           if (!data.postUrl && data.impressions == null && data.reactions == null) {
             failed++;
+            rows.push({
+              file: f.name,
+              kind: "single_post",
+              status: "failed",
+              detail: "No LinkedIn metrics found in file",
+            });
             continue;
           }
 
@@ -267,6 +277,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             }
           }
 
+          let finalTitle = "";
           if (!postId) {
             // Auto-create — scrape title/body
             action = "created";
@@ -283,7 +294,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             } catch (err) {
               console.warn("[linkedin-multi] scrape failed", err);
             }
-            const finalTitle = scrapedTitle || (data.postUrl ? titleFromSlug(data.postUrl) : "LinkedIn post");
+            finalTitle = scrapedTitle || (data.postUrl ? titleFromSlug(data.postUrl) : "LinkedIn post");
             const saved = await upsertPost.mutateAsync({
               title: finalTitle,
               body: scrapedBody || null,
@@ -298,6 +309,8 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             postId = saved.id;
             created++;
           } else {
+            const matchedPost = posts.find((p) => p.id === postId);
+            finalTitle = matchedPost?.title || "Existing LinkedIn post";
             updated++;
           }
 
@@ -315,6 +328,18 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             saves: data.saves,
             sends: data.sends,
             link_clicks: data.link_clicks,
+          });
+
+          const metricSummary = [
+            data.impressions != null ? `${data.impressions} impressions` : null,
+            data.reactions != null ? `${data.reactions} reactions` : null,
+            data.comments != null ? `${data.comments} comments` : null,
+          ].filter(Boolean).join(" · ");
+          rows.push({
+            file: f.name,
+            kind: "single_post",
+            status: action === "created" ? "created" : "matched",
+            detail: [finalTitle, metricSummary].filter(Boolean).join(" — "),
           });
 
           try {
@@ -337,27 +362,35 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
           } catch (logErr) {
             console.warn("[linkedin-multi] log failed", logErr);
           }
-        } catch (err) {
+        } catch (err: any) {
           console.error("[linkedin-multi] file failed", f.name, err);
           failed++;
+          rows.push({
+            file: f.name,
+            kind: "single_post",
+            status: "failed",
+            detail: err?.message ?? String(err),
+          });
         }
       }
 
       const ok = created + updated;
-      const desc = `${created} created · ${updated} updated${failed ? ` · ${failed} failed` : ""}`;
+      const desc = `${created} created · ${updated} matched${failed ? ` · ${failed} failed` : ""}`;
       if (ok > 0) {
         toast.success(`Imported ${ok} of ${files.length} LinkedIn exports`, {
           id: tid,
           description: desc,
-          duration: 4000,
+          duration: 3000,
         });
       } else {
         toast.error("No files imported", { id: tid, description: desc });
       }
+      onComplete?.(rows);
       reset();
       onClose();
     } catch (e: any) {
       toast.error("Multi-import failed", { id: tid, description: e?.message ?? String(e) });
+      if (rows.length) onComplete?.(rows);
     }
   };
 
@@ -471,6 +504,17 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         id: tid,
         description: `${created} created · ${updated} updated · 1 metrics snapshot saved`,
       });
+      const metricSummary = [
+        parsed.impressions != null ? `${parsed.impressions} impressions` : null,
+        parsed.reactions != null ? `${parsed.reactions} reactions` : null,
+        parsed.comments != null ? `${parsed.comments} comments` : null,
+      ].filter(Boolean).join(" · ");
+      onComplete?.([{
+        file: file?.name ?? "LinkedIn export",
+        kind: "single_post",
+        status: action === "created" ? "created" : "matched",
+        detail: [title || "Existing post", metricSummary].filter(Boolean).join(" — "),
+      }]);
       reset();
       onClose();
     } catch (e: any) {
