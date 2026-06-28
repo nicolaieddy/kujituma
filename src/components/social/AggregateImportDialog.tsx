@@ -225,10 +225,14 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
         new_followers: d.new_followers ?? null,
         source: "linkedin_aggregate_xlsx",
       }));
-      if (dailyRows.length > 0) await upsertDaily.mutateAsync(dailyRows);
+      if (dailyRows.length > 0) {
+        p.update(`Saving ${dailyRows.length} daily rows…`);
+        await upsertDaily.mutateAsync(dailyRows);
+      }
 
       // 2) Follower totals — reconstructed series
       if (parsed.followerTotals.length > 0) {
+        p.update(`Saving ${parsed.followerTotals.length} follower entries…`);
         const chunks: any[][] = [];
         const payload = parsed.followerTotals.map((r) => ({
           user_id: user.id,
