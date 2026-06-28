@@ -26,6 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import type { ImportRow } from "./ImportSummaryDialog";
+
 interface Props {
   open: boolean;
   onClose: () => void;
@@ -33,6 +35,7 @@ interface Props {
   defaultUrl?: string;
   initialFile?: File | null;
   initialFiles?: File[] | null;
+  onComplete?: (rows: ImportRow[]) => void;
 }
 
 interface Parsed {
