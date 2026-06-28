@@ -140,6 +140,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const upsertMetric = useUpsertMetricSnapshot();
   const upsertPost = useUpsertSocialPost();
   const setPostValue = useSetSocialPostValue();
+  const logImport = useLogSocialImport();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
