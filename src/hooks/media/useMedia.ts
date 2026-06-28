@@ -204,3 +204,68 @@ export function useBulkInsertMentions() {
     onSuccess: () => invalidateAll(qc, user?.id),
   });
 }
+
+export function useMediaStories() {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: storiesKey(user?.id),
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("media_stories")
+        .select("*")
+        .eq("user_id", user!.id)
+        .order("announcement_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as MediaStory[];
+    },
+  });
+}
+
+export function useCreateStory() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: Omit<MediaStoryInsert, "user_id">) => {
+      if (!user?.id) throw new Error("Not authenticated");
+      const { data, error } = await supabase
+        .from("media_stories")
+        .insert({ ...input, user_id: user.id })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => invalidateAll(qc, user?.id),
+  });
+}
+
+export function useUpdateStory() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: string; patch: MediaStoryUpdate }) => {
+      const { data, error } = await supabase
+        .from("media_stories")
+        .update(patch)
+        .eq("id", id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => invalidateAll(qc, user?.id),
+  });
+}
+
+export function useDeleteStory() {
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("media_stories").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => invalidateAll(qc, user?.id),
+  });
+}
