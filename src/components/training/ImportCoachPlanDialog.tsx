@@ -3,14 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import { Loader2, FileText, Image as ImageIcon, FileUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { toast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { ImportDropzone } from "@/components/shared/ImportDropzone";
+import { createImportProgress, describeError } from "@/lib/importProgress";
 
 interface ImportCoachPlanDialogProps {
   open: boolean;
@@ -40,6 +40,7 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
   const submit = async () => {
     if (!user) return;
     setBusy(true);
+    const p = createImportProgress(mode === "text" ? "Parsing pasted plan…" : `Uploading ${file?.name ?? "file"}…`);
     try {
       let filePath: string | undefined;
       let mimeType: string | undefined;
@@ -47,12 +48,12 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
 
       if (mode !== "text") {
         if (!file) {
-          toast({ title: "Pick a file first", variant: "destructive" });
+          p.error("Pick a file first");
           setBusy(false);
           return;
         }
         if (file.size > 20 * 1024 * 1024) {
-          toast({ title: "File too large", description: "Max 20 MB.", variant: "destructive" });
+          p.error("File too large", "Max 20 MB.");
           setBusy(false);
           return;
         }
@@ -64,8 +65,9 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           .from("coach-plans")
           .upload(filePath, file, { contentType: file.type });
         if (upErr) throw upErr;
+        p.update("Parsing plan…");
       } else if (!text.trim()) {
-        toast({ title: "Paste the plan text first", variant: "destructive" });
+        p.error("Paste the plan text first");
         setBusy(false);
         return;
       }
@@ -90,10 +92,7 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
         replaced > 0 ? `${replaced} replaced` : null,
         matched > 0 ? `${matched} matched to activities` : null,
       ].filter(Boolean);
-      toast({
-        title: "Plan imported",
-        description: `${bits.join(" · ")} for ${weekStart}.`,
-      });
+      p.success("Plan imported", `${bits.join(" · ")} for ${weekStart}.`);
       queryClient.invalidateQueries({ queryKey: ["training-plan", user.id, weekStart] });
       queryClient.invalidateQueries({ queryKey: ["training-workout-goals"] });
       queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
@@ -101,13 +100,9 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
       queryClient.invalidateQueries({ queryKey: ["training-plan-imports", user.id] });
       reset();
       onOpenChange(false);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      toast({
-        title: "Import failed",
-        description: e?.message || "Could not parse the plan.",
-        variant: "destructive",
-      });
+      p.error("Import failed", describeError(e) || "Could not parse the plan.");
     } finally {
       setBusy(false);
     }
@@ -141,23 +136,27 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           </TabsContent>
 
           <TabsContent value="image" className="space-y-2">
-            <Input
-              type="file"
+            <ImportDropzone
               accept="image/png,image/jpeg,image/webp,image/heic"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              selected={file}
+              onClear={() => setFile(null)}
+              onFiles={(fs) => setFile(fs[0])}
+              busy={busy}
+              label="Drop a screenshot or click to browse"
+              hint="PNG, JPG, WEBP, or HEIC — max 20 MB"
             />
-            <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP. Max 20 MB.</p>
-            {file && <p className="text-xs text-muted-foreground">Selected: {file.name}</p>}
           </TabsContent>
 
           <TabsContent value="document" className="space-y-2">
-            <Input
-              type="file"
-              accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            <ImportDropzone
+              accept=".pdf,.doc,.docx,.txt,.md"
+              selected={file}
+              onClear={() => setFile(null)}
+              onFiles={(fs) => setFile(fs[0])}
+              busy={busy}
+              label="Drop a document or click to browse"
+              hint="PDF works best — max 20 MB"
             />
-            <p className="text-xs text-muted-foreground">PDF works best. Max 20 MB.</p>
-            {file && <p className="text-xs text-muted-foreground">Selected: {file.name}</p>}
           </TabsContent>
         </Tabs>
 

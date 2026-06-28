@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { ImportDropzone } from "@/components/shared/ImportDropzone";
+import { createImportProgress, describeError } from "@/lib/importProgress";
 import type { CreateValueInput } from "@/types/values";
 
 interface Props {
@@ -58,9 +60,26 @@ export const ValuesBulkImportDialog = ({ open, onOpenChange, onImport }: Props) 
 
   const handleImport = () => {
     if (parsed.length === 0) return;
-    onImport(parsed);
-    setText("");
-    onOpenChange(false);
+    const p = createImportProgress(`Importing ${parsed.length} value${parsed.length === 1 ? "" : "s"}…`);
+    try {
+      onImport(parsed);
+      p.success("Values imported", `${parsed.length} added`);
+      setText("");
+      onOpenChange(false);
+    } catch (e) {
+      p.error("Import failed", describeError(e));
+    }
+  };
+
+  const handleFile = async (f: File) => {
+    const p = createImportProgress(`Reading ${f.name}…`);
+    try {
+      const content = await f.text();
+      setText((cur) => (cur ? cur + "\n" + content : content));
+      p.success("File loaded", `${content.split("\n").filter(Boolean).length} line(s) added`);
+    } catch (e) {
+      p.error("Couldn't read file", describeError(e));
+    }
   };
 
   return (
@@ -73,6 +92,13 @@ export const ValuesBulkImportDialog = ({ open, onOpenChange, onImport }: Props) 
           <p className="text-sm text-muted-foreground">
             Paste your "I feel…" list — one value per line. Bullets and dashes are stripped automatically.
           </p>
+          <ImportDropzone
+            accept=".txt,.csv,.md"
+            onFiles={(fs) => handleFile(fs[0])}
+            label="Drop a .txt / .csv file or click to browse"
+            hint="Or paste directly below"
+            className="p-4"
+          />
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}

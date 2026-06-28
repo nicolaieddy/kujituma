@@ -1,6 +1,8 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import * as XLSX from "xlsx";
-import { Upload, Loader2, FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import { Loader2, FileSpreadsheet, CheckCircle2 } from "lucide-react";
+import { ImportDropzone } from "@/components/shared/ImportDropzone";
+import { createImportProgress, describeError } from "@/lib/importProgress";
 import {
   Dialog,
   DialogContent,
@@ -180,7 +182,6 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const upsertDaily = useBulkUpsertDailyMetrics();
   const upsertSettings = useUpsertPlatformSettings();
   const logImport = useLogSocialImport();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [platform, setPlatform] = useState<SocialPlatform>(defaultPlatform);
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedAggregate | null>(null);
@@ -196,12 +197,15 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const handleFile = async (f: File) => {
     setFile(f);
     setParsing(true);
+    const p = createImportProgress(`Parsing ${f.name}…`);
     try {
       const buffer = await f.arrayBuffer();
       const data = parseWorkbook(buffer, platform);
       setParsed(data);
-    } catch (e: any) {
-      toast.error("Couldn't parse file", { description: e.message });
+      p.success("Export parsed", `${data.daily.length} daily rows · ${data.followerTotals.length} follower entries`);
+    } catch (e) {
+      console.error("[aggregate-import] parse", e);
+      p.error("Couldn't parse file", describeError(e));
     } finally {
       setParsing(false);
     }
@@ -210,6 +214,7 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const commit = async () => {
     if (!parsed || !user) return;
     setImporting(true);
+    const p = createImportProgress("Importing aggregate analytics…");
     try {
       // 1) Daily account metrics
       const dailyRows = parsed.daily.map((d) => ({
@@ -220,10 +225,14 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
         new_followers: d.new_followers ?? null,
         source: "linkedin_aggregate_xlsx",
       }));
-      if (dailyRows.length > 0) await upsertDaily.mutateAsync(dailyRows);
+      if (dailyRows.length > 0) {
+        p.update(`Saving ${dailyRows.length} daily rows…`);
+        await upsertDaily.mutateAsync(dailyRows);
+      }
 
       // 2) Follower totals — reconstructed series
       if (parsed.followerTotals.length > 0) {
+        p.update(`Saving ${parsed.followerTotals.length} follower entries…`);
         const chunks: any[][] = [];
         const payload = parsed.followerTotals.map((r) => ({
           user_id: user.id,
@@ -287,13 +296,12 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
         console.warn("[social-import-history] log failed", logErr);
       }
 
-      toast.success("Aggregate analytics imported", {
-        description: `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`,
-      });
+      p.success("Aggregate analytics imported", `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`);
       reset();
       onClose();
-    } catch (e: any) {
-      toast.error("Import failed", { description: e.message });
+    } catch (e) {
+      console.error("[aggregate-import] commit", e);
+      p.error("Import failed", describeError(e));
     } finally {
       setImporting(false);
     }
@@ -323,33 +331,15 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
         </div>
 
         {!parsed && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="w-full border-2 border-dashed border-border rounded-lg p-8 text-center hover:bg-muted/50 transition-colors"
-          >
-            {parsing ? (
-              <Loader2 className="h-8 w-8 mx-auto mb-2 animate-spin text-muted-foreground" />
-            ) : (
-              <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
-            )}
-            <div className="text-sm font-medium">{file ? file.name : "Click to choose .xlsx"}</div>
-            <div className="text-[11px] text-muted-foreground mt-1">
-              Supports LinkedIn aggregate exports (DISCOVERY, ENGAGEMENT, FOLLOWERS sheets).
-            </div>
-          </button>
+          <ImportDropzone
+            accept=".xlsx"
+            busy={parsing}
+            selected={file}
+            onFiles={(fs) => handleFile(fs[0])}
+            label="Drop your .xlsx export or click to browse"
+            hint="LinkedIn aggregate export (DISCOVERY, ENGAGEMENT, FOLLOWERS sheets)"
+          />
         )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".xlsx"
-          className="hidden"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (f) handleFile(f);
-            if (inputRef.current) inputRef.current.value = "";
-          }}
-        />
 
         {parsed && (
           <Card className="p-3 space-y-3">
