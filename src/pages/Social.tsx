@@ -51,19 +51,32 @@ export default function Social() {
     const tid = toast.loading(`Detecting ${files.length} file${files.length === 1 ? "" : "s"}…`);
     const groups = await groupFilesByKind(files);
 
-    if (groups.unknown.length > 0 && groups.singlePost.length === 0 && groups.aggregate.length === 0) {
-      toast.error("Unrecognised file format", {
-        id: tid,
-        description: `We couldn't tell what ${groups.unknown[0].name} is. Supported today: LinkedIn 'Single Post Analytics' and 'Aggregate Analytics' .xlsx exports.`,
-      });
+    // Reset summary state for this batch and seed unsupported rows immediately.
+    const unsupportedRows: ImportRow[] = groups.unknown.map((f) => ({
+      file: f.name,
+      kind: "unsupported",
+      status: "unsupported",
+      detail: "Not a recognised LinkedIn analytics export — see supported formats below.",
+    }));
+    setSummaryRows(unsupportedRows);
+
+    // No parseable files at all → open summary directly (acts as the unsupported-format dialog).
+    if (groups.singlePost.length === 0 && groups.aggregate.length === 0) {
+      toast.dismiss(tid);
+      setPendingDialogs(0);
+      setSummaryOpen(true);
       return;
     }
 
     const parts: string[] = [];
     if (groups.singlePost.length) parts.push(`${groups.singlePost.length} post analytics`);
     if (groups.aggregate.length) parts.push(`${groups.aggregate.length} aggregate`);
-    if (groups.unknown.length) parts.push(`${groups.unknown.length} unknown (skipped)`);
+    if (groups.unknown.length) parts.push(`${groups.unknown.length} unsupported`);
     toast.success(`Detected ${parts.join(" · ")}`, { id: tid, duration: 2500 });
+
+    // Count how many child dialogs will report back so we know when to show summary.
+    const dialogCount = (groups.aggregate.length > 0 ? 1 : 0) + (groups.singlePost.length > 0 ? 1 : 0);
+    setPendingDialogs(dialogCount);
 
     // Aggregate runs first (no per-file UI needed); single-post may need a preview
     // when it's a single new post, so we queue it for after the aggregate closes.
@@ -82,6 +95,18 @@ export default function Social() {
       setSinglePostFiles(groups.singlePost);
       setSinglePostOpen(true);
     }
+  };
+
+  const handleDialogComplete = (rows: ImportRow[]) => {
+    setSummaryRows((prev) => [...prev, ...rows]);
+    setPendingDialogs((n) => {
+      const next = Math.max(0, n - 1);
+      // If no queued dialogs remain, surface the summary on the next tick.
+      if (next === 0 && !queuedSinglePost) {
+        setTimeout(() => setSummaryOpen(true), 50);
+      }
+      return next;
+    });
   };
 
   const closeAggregate = () => {
