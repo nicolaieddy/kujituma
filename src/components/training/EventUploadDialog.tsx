@@ -89,6 +89,8 @@ interface Proposal {
     start_date: string;
     end_date?: string | null;
     body_part?: string | null;
+    body_parts?: BodyPartEntry[] | null;
+    issue_category?: IssueCategory | null;
     severity?: number | null;
     race_distance?: string | null;
     race_result?: string | null;
