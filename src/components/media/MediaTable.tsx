@@ -134,6 +134,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
         <Button variant={needsUrlOnly ? "default" : "outline"} size="sm" onClick={() => setNeedsUrlOnly((v) => !v)} disabled={loading}>
           Needs URL
         </Button>
+        <TagFilter tags={allTags} selected={selectedTags} onChange={setSelectedTags} disabled={loading} />
         <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} disabled={loading} />
         {sort === "relevance" && (
           <TooltipProvider>
