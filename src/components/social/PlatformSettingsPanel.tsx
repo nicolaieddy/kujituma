@@ -17,6 +17,7 @@ export function PlatformSettingsPanel() {
   const { data: settings = [], isLoading } = useSocialPlatformSettings();
   const upsert = useUpsertPlatformSettings();
   const logFollowers = useLogFollowerCount();
+  const [importOpen, setImportOpen] = useState(false);
 
   const byPlatform = Object.fromEntries(settings.map((s) => [s.platform, s]));
 
@@ -26,11 +27,16 @@ export function PlatformSettingsPanel() {
 
   return (
     <div className="space-y-4">
-      <Card className="p-4 bg-muted/30">
-        <p className="text-sm text-muted-foreground">
-          Choose which platforms to track, set follower targets and deadlines, and define the
-          content pillars you want to publish against on each platform.
-        </p>
+      <Card className="p-4 bg-muted/30 flex flex-wrap items-start justify-between gap-3">
+        <div className="max-w-xl">
+          <p className="text-sm text-muted-foreground">
+            Choose which platforms to track, set follower targets and deadlines, and define the
+            content pillars you want to publish against on each platform.
+          </p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportOpen(true)}>
+          <FileSpreadsheet className="h-3.5 w-3.5" /> Import aggregate analytics
+        </Button>
       </Card>
 
       {SOCIAL_PLATFORMS.map((platform) => {
