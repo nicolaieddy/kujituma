@@ -40,6 +40,7 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
   const submit = async () => {
     if (!user) return;
     setBusy(true);
+    const p = createImportProgress(mode === "text" ? "Parsing pasted plan…" : `Uploading ${file?.name ?? "file"}…`);
     try {
       let filePath: string | undefined;
       let mimeType: string | undefined;
@@ -47,12 +48,12 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
 
       if (mode !== "text") {
         if (!file) {
-          toast({ title: "Pick a file first", variant: "destructive" });
+          p.error("Pick a file first");
           setBusy(false);
           return;
         }
         if (file.size > 20 * 1024 * 1024) {
-          toast({ title: "File too large", description: "Max 20 MB.", variant: "destructive" });
+          p.error("File too large", "Max 20 MB.");
           setBusy(false);
           return;
         }
@@ -64,8 +65,9 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           .from("coach-plans")
           .upload(filePath, file, { contentType: file.type });
         if (upErr) throw upErr;
+        p.update("Parsing plan…");
       } else if (!text.trim()) {
-        toast({ title: "Paste the plan text first", variant: "destructive" });
+        p.error("Paste the plan text first");
         setBusy(false);
         return;
       }
@@ -90,10 +92,7 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
         replaced > 0 ? `${replaced} replaced` : null,
         matched > 0 ? `${matched} matched to activities` : null,
       ].filter(Boolean);
-      toast({
-        title: "Plan imported",
-        description: `${bits.join(" · ")} for ${weekStart}.`,
-      });
+      p.success("Plan imported", `${bits.join(" · ")} for ${weekStart}.`);
       queryClient.invalidateQueries({ queryKey: ["training-plan", user.id, weekStart] });
       queryClient.invalidateQueries({ queryKey: ["training-workout-goals"] });
       queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
@@ -101,13 +100,9 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
       queryClient.invalidateQueries({ queryKey: ["training-plan-imports", user.id] });
       reset();
       onOpenChange(false);
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      toast({
-        title: "Import failed",
-        description: e?.message || "Could not parse the plan.",
-        variant: "destructive",
-      });
+      p.error("Import failed", describeError(e) || "Could not parse the plan.");
     } finally {
       setBusy(false);
     }
