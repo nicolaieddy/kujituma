@@ -3,6 +3,7 @@ import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PipelineBoard } from "@/components/social/PipelineBoard";
+import { ThisWeekQueue } from "@/components/social/ThisWeekQueue";
 import { PlatformSettingsPanel } from "@/components/social/PlatformSettingsPanel";
 import { SocialAnalytics } from "@/components/social/SocialAnalytics";
 import { SocialCalendar } from "@/components/social/SocialCalendar";
@@ -181,7 +182,12 @@ export default function Social() {
         ))}
       </div>
 
-      {view === "pipeline" && <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />}
+      {view === "pipeline" && (
+        <div className="space-y-4">
+          <ThisWeekQueue onOpenPost={openEditor} />
+          <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />
+        </div>
+      )}
       {view === "calendar" && <SocialCalendar onOpenPost={openEditor} />}
       {view === "analytics" && <SocialAnalytics />}
       
