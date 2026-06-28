@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as XLSX from "xlsx";
 import { Loader2, FileSpreadsheet, CheckCircle2 } from "lucide-react";
 import { ImportDropzone } from "@/components/shared/ImportDropzone";
@@ -34,6 +34,8 @@ interface Props {
   open: boolean;
   onClose: () => void;
   defaultPlatform?: SocialPlatform;
+  initialFile?: File | null;
+  initialFiles?: File[] | null;
 }
 
 interface ParsedAggregate {
@@ -176,7 +178,7 @@ function parseWorkbook(buffer: ArrayBuffer, platform: SocialPlatform): ParsedAgg
   return out;
 }
 
-export function AggregateImportDialog({ open, onClose, defaultPlatform = "linkedin" }: Props) {
+export function AggregateImportDialog({ open, onClose, defaultPlatform = "linkedin", initialFile = null, initialFiles = null }: Props) {
   const { user } = useAuth();
   const qc = useQueryClient();
   const upsertDaily = useBulkUpsertDailyMetrics();
@@ -193,6 +195,18 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
     setParsed(null);
     setPlatform(defaultPlatform);
   };
+
+  useEffect(() => {
+    if (!open) return;
+    if (initialFiles && initialFiles.length > 1) {
+      handleFiles(initialFiles);
+    } else if (initialFiles && initialFiles.length === 1) {
+      handleSingleFile(initialFiles[0]);
+    } else if (initialFile) {
+      handleSingleFile(initialFile);
+    }
+    /* eslint-disable-next-line */
+  }, [open, initialFile, initialFiles]);
 
   const handleFiles = async (files: File[]) => {
     if (files.length === 1) {

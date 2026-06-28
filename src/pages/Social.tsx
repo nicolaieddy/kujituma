@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Megaphone, LayoutGrid, BarChart3, Settings as SettingsIcon, Calendar as CalendarIcon, Plus, TrendingUp, Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { PipelineBoard } from "@/components/social/PipelineBoard";
 import { PlatformSettingsPanel } from "@/components/social/PlatformSettingsPanel";
@@ -8,7 +9,9 @@ import { SocialCalendar } from "@/components/social/SocialCalendar";
 import { PostEditorDrawer } from "@/components/social/PostEditorDrawer";
 import { CumulativeGrowthChart } from "@/components/social/CumulativeGrowthChart";
 import { LinkedInImportDialog } from "@/components/social/LinkedInImportDialog";
+import { AggregateImportDialog } from "@/components/social/AggregateImportDialog";
 import { PageDropOverlay } from "@/components/shared/PageDropOverlay";
+import { groupFilesByKind } from "@/lib/social/analyticsSniffer";
 import { cn } from "@/lib/utils";
 
 type View = "pipeline" | "calendar" | "analytics" | "growth" | "setup";
@@ -19,8 +22,14 @@ export default function Social() {
   const [view, setView] = useState<View>("pipeline");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
-  const [importFiles, setImportFiles] = useState<File[]>([]);
+
+  // Two routed dialogs — only one ever opens at a time per drop, but mixed batches
+  // queue: aggregate runs first, then single-post when its dialog closes.
+  const [singlePostOpen, setSinglePostOpen] = useState(false);
+  const [singlePostFiles, setSinglePostFiles] = useState<File[]>([]);
+  const [aggregateOpen, setAggregateOpen] = useState(false);
+  const [aggregateFiles, setAggregateFiles] = useState<File[]>([]);
+  const [queuedSinglePost, setQueuedSinglePost] = useState<File[] | null>(null);
 
   const openEditor = (id: string) => setEditingId(id);
   const openCreate = () => setCreating(true);
@@ -29,13 +38,60 @@ export default function Social() {
     setCreating(false);
   };
 
-  const openImport = (files: File[] = []) => {
-    setImportFiles(files);
-    setImportOpen(true);
+  /** Sniff dropped/picked files and route each group to the matching dialog. */
+  const routeImport = async (files: File[]) => {
+    if (!files.length) return;
+    const tid = toast.loading(`Detecting ${files.length} file${files.length === 1 ? "" : "s"}…`);
+    const groups = await groupFilesByKind(files);
+
+    if (groups.unknown.length > 0 && groups.singlePost.length === 0 && groups.aggregate.length === 0) {
+      toast.error("Unrecognised file format", {
+        id: tid,
+        description: `We couldn't tell what ${groups.unknown[0].name} is. Supported today: LinkedIn 'Single Post Analytics' and 'Aggregate Analytics' .xlsx exports.`,
+      });
+      return;
+    }
+
+    const parts: string[] = [];
+    if (groups.singlePost.length) parts.push(`${groups.singlePost.length} post analytics`);
+    if (groups.aggregate.length) parts.push(`${groups.aggregate.length} aggregate`);
+    if (groups.unknown.length) parts.push(`${groups.unknown.length} unknown (skipped)`);
+    toast.success(`Detected ${parts.join(" · ")}`, { id: tid, duration: 2500 });
+
+    // Aggregate runs first (no per-file UI needed); single-post may need a preview
+    // when it's a single new post, so we queue it for after the aggregate closes.
+    if (groups.aggregate.length > 0 && groups.singlePost.length > 0) {
+      setQueuedSinglePost(groups.singlePost);
+      setAggregateFiles(groups.aggregate);
+      setAggregateOpen(true);
+      return;
+    }
+    if (groups.aggregate.length > 0) {
+      setAggregateFiles(groups.aggregate);
+      setAggregateOpen(true);
+      return;
+    }
+    if (groups.singlePost.length > 0) {
+      setSinglePostFiles(groups.singlePost);
+      setSinglePostOpen(true);
+    }
   };
-  const closeImport = () => {
-    setImportOpen(false);
-    setImportFiles([]);
+
+  const closeAggregate = () => {
+    setAggregateOpen(false);
+    setAggregateFiles([]);
+    // If we have queued single-post files from a mixed drop, open them now.
+    if (queuedSinglePost && queuedSinglePost.length > 0) {
+      const next = queuedSinglePost;
+      setQueuedSinglePost(null);
+      setSinglePostFiles(next);
+      setSinglePostOpen(true);
+    }
+  };
+
+  const closeSinglePost = () => {
+    setSinglePostOpen(false);
+    setSinglePostFiles([]);
   };
 
   const onPick = () => {
@@ -45,7 +101,7 @@ export default function Social() {
     input.multiple = true;
     input.onchange = () => {
       const fs = Array.from(input.files ?? []);
-      if (fs.length) openImport(fs);
+      if (fs.length) routeImport(fs);
     };
     input.click();
   };
@@ -103,17 +159,23 @@ export default function Social() {
       />
 
       <LinkedInImportDialog
-        open={importOpen}
-        onClose={closeImport}
-        initialFiles={importFiles}
+        open={singlePostOpen}
+        onClose={closeSinglePost}
+        initialFiles={singlePostFiles}
+      />
+
+      <AggregateImportDialog
+        open={aggregateOpen}
+        onClose={closeAggregate}
+        initialFiles={aggregateFiles}
       />
 
       <PageDropOverlay
         accept={ACCEPTED}
         multiple
-        onFiles={(fs) => openImport(fs)}
+        onFiles={(fs) => routeImport(fs)}
         label="Drop your post analytics exports"
-        hint=".xlsx, .xls or .csv — multiple files supported, each auto-imports"
+        hint=".xlsx, .xls or .csv — we detect the type and route to the right importer"
       />
     </div>
   );
