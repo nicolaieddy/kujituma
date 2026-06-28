@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon, List, GitBranch, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Activity, Trophy, Flag, AlertTriangle, Calendar as CalendarIcon, List, GitBranch, Upload, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -63,11 +63,17 @@ import {
   type IssueCategory,
 } from "@/lib/bodyParts";
 
-const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string }> = {
-  injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive" },
-  race: { label: "Race", icon: Trophy, color: "text-amber-500" },
-  other: { label: "Other", icon: Flag, color: "text-primary" },
+const TYPE_META: Record<TrainingEventType, { label: string; icon: typeof Activity; color: string; description: string }> = {
+  injury_illness: { label: "Injury / Illness", icon: AlertTriangle, color: "text-destructive", description: "Niggle, injury, or sickness affecting training" },
+  race: { label: "Race", icon: Trophy, color: "text-amber-500", description: "Race result, distance, official time" },
+  other: { label: "Other", icon: Flag, color: "text-primary", description: "Milestone, travel, gear change, anything else" },
 };
+
+function defaultTitleForType(t: TrainingEventType): string {
+  if (t === "injury_illness") return "Untitled injury";
+  if (t === "race") return "Untitled race";
+  return "Untitled event";
+}
 
 interface FormState {
   id?: string;
@@ -140,6 +146,7 @@ export function TrainingEventsPanel() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [pickingType, setPickingType] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [filter, setFilter] = useState<TrainingEventType | "all">("all");
   const [viewMode, setViewMode] = useState<"list" | "timeline">("list");
@@ -162,7 +169,6 @@ export function TrainingEventsPanel() {
     if (!id || scrolledRef.current === id) return;
     const match = events.find((e) => e.id === id);
     if (!match) return;
-    // Make sure the right filter shows the target
     if (filter !== "all" && filter !== match.event_type) setFilter("all");
     requestAnimationFrame(() => {
       const el = document.getElementById(`event-${id}`);
@@ -177,51 +183,67 @@ export function TrainingEventsPanel() {
   }, [isLoading, events, filter]);
 
 
-  const openNew = (type: TrainingEventType = "injury_illness") => {
-    setForm(emptyForm(type));
+  const openNew = () => {
+    setForm(emptyForm("injury_illness"));
+    setPickingType(true);
     setDialogOpen(true);
+  };
+  const chooseType = (type: TrainingEventType) => {
+    setForm(emptyForm(type));
+    setPickingType(false);
   };
   const openEdit = (e: TrainingEvent) => {
     setForm(eventToForm(e));
+    setPickingType(false);
     setDialogOpen(true);
+  };
+
+  const buildPayload = (state: FormState) => {
+    const resolvedDistance =
+      state.event_type === "race"
+        ? state.race_distance === "__custom__"
+          ? state.race_distance_custom.trim() || null
+          : state.race_distance || null
+        : null;
+    const officialSec =
+      state.event_type === "race" ? parseTimeToSeconds(state.official_time_input) : null;
+    return {
+      id: state.id,
+      event_type: state.event_type,
+      title: state.title.trim(),
+      description: state.description.trim() || null,
+      start_date: state.start_date,
+      end_date: state.end_date || null,
+      severity: state.severity ? Number(state.severity) : null,
+      body_part: state.body_part.trim() || null,
+      body_parts: state.event_type === "injury_illness" ? state.body_parts : [],
+      issue_category: state.event_type === "injury_illness" ? (state.issue_category || null) : null,
+      race_distance: resolvedDistance,
+      race_result: state.race_result.trim() || null,
+      race_priority: state.race_priority || null,
+      official_time_seconds: officialSec,
+      location: state.location.trim() || null,
+      metadata: state.event_type === "race" && state.strava_url.trim()
+        ? { strava_url: state.strava_url.trim() }
+        : {},
+    };
   };
 
   const submit = async () => {
     if (!form.title.trim() || !form.start_date) return;
-    const resolvedDistance =
-      form.event_type === "race"
-        ? form.race_distance === "__custom__"
-          ? form.race_distance_custom.trim() || null
-          : form.race_distance || null
-        : null;
-    const officialSec =
-      form.event_type === "race" ? parseTimeToSeconds(form.official_time_input) : null;
-    const saved = await upsert.mutateAsync({
-      id: form.id,
-      event_type: form.event_type,
-      title: form.title.trim(),
-      description: form.description.trim() || null,
-      start_date: form.start_date,
-      end_date: form.end_date || null,
-      severity: form.severity ? Number(form.severity) : null,
-      body_part: form.body_part.trim() || null,
-      body_parts: form.event_type === "injury_illness" ? form.body_parts : [],
-      issue_category: form.event_type === "injury_illness" ? (form.issue_category || null) : null,
-      race_distance: resolvedDistance,
-      race_result: form.race_result.trim() || null,
-      race_priority: form.race_priority || null,
-      official_time_seconds: officialSec,
-      location: form.location.trim() || null,
-      metadata: form.event_type === "race" && form.strava_url.trim()
-        ? { strava_url: form.strava_url.trim() }
-        : {},
-    });
-    // Keep dialog open with the new ID so the user can immediately attach files
-    if (!form.id && saved?.data?.id) {
-      setForm({ ...form, id: saved.data.id });
-    } else {
-      setDialogOpen(false);
-    }
+    await upsert.mutateAsync(buildPayload(form));
+    setDialogOpen(false);
+  };
+
+  // Used by the attachments section so the user can upload before manually saving.
+  const ensureEventId = async (): Promise<string | null> => {
+    if (form.id) return form.id;
+    if (!form.start_date) return null;
+    const titleToUse = form.title.trim() || defaultTitleForType(form.event_type);
+    const saved = await upsert.mutateAsync(buildPayload({ ...form, title: titleToUse }));
+    const newId = (saved as any)?.data?.id ?? null;
+    if (newId) setForm((prev) => ({ ...prev, id: newId, title: titleToUse }));
+    return newId;
   };
 
   return (
@@ -399,250 +421,266 @@ export function TrainingEventsPanel() {
       )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{form.id ? "Edit event" : "Add event"}</DialogTitle>
-            <DialogDescription>Track key moments that affect your training.</DialogDescription>
-          </DialogHeader>
-
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Type</Label>
-                <Select
-                  value={form.event_type}
-                  onValueChange={(v) => {
-                    const next = v as TrainingEventType;
-                    setForm({
-                      ...form,
-                      event_type: next,
-                      issue_category: next === "injury_illness" ? (form.issue_category || "niggle") : "",
-                    });
-                  }}
-                >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="injury_illness">Injury / Illness</SelectItem>
-                    <SelectItem value="race">Race</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Title</Label>
-                <Input
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="e.g. Left calf strain"
-                  maxLength={200}
-                />
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0 gap-0">
+          {pickingType ? (
+            <div className="p-6 space-y-5">
+              <DialogHeader>
+                <DialogTitle>What kind of event?</DialogTitle>
+                <DialogDescription>Pick one to get the right fields.</DialogDescription>
+              </DialogHeader>
+              <div className="grid sm:grid-cols-3 gap-3">
+                {(Object.keys(TYPE_META) as TrainingEventType[]).map((t) => {
+                  const meta = TYPE_META[t];
+                  const Icon = meta.icon;
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => chooseType(t)}
+                      className="rounded-lg border border-border p-4 text-left transition-all hover:border-primary hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    >
+                      <Icon className={cn("h-6 w-6 mb-2", meta.color)} />
+                      <div className="font-semibold">{meta.label}</div>
+                      <div className="text-xs text-muted-foreground mt-1 leading-snug">{meta.description}</div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label>Start date</Label>
-                <Input
-                  type="date"
-                  value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label>End date (optional)</Label>
-                <Input
-                  type="date"
-                  value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {form.event_type === "injury_illness" && (
-              <div className="space-y-4 rounded-md border bg-muted/20 p-3">
-                <div className="space-y-1.5">
-                  <Label>Category</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map((c) => {
-                      const meta = ISSUE_CATEGORY_META[c];
-                      const active = form.issue_category === c;
-                      return (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setForm({ ...form, issue_category: c })}
-                          className={cn(
-                            "rounded-md border p-2 text-left transition-colors",
-                            active
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:border-primary/50",
-                          )}
-                        >
-                          <div className="text-sm font-medium">{meta.label}</div>
-                          <div className="text-[11px] text-muted-foreground leading-tight">
-                            {meta.description}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Body parts</Label>
-                  <BodyPartsPicker
-                    value={form.body_parts}
-                    onChange={(next) => setForm({ ...form, body_parts: next })}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Add one or more. Try searching "leg", "back", "achilles"…
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <Label>Severity</Label>
-                  <Select
-                    value={form.severity}
-                    onValueChange={(v) => setForm({ ...form, severity: v })}
-                  >
-                    <SelectTrigger><SelectValue placeholder="How much is it affecting training?" /></SelectTrigger>
-                    <SelectContent>
-                      {[1, 2, 3, 4, 5].map((n) => (
-                        <SelectItem key={n} value={String(n)}>
-                          <span className="font-medium">{n}.</span> {SEVERITY_LABELS[n].short}
-                          <span className="text-muted-foreground"> — {SEVERITY_LABELS[n].help}</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
-
-            {form.event_type === "race" && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label>Distance</Label>
-                    <Select
-                      value={form.race_distance || undefined}
-                      onValueChange={(v) => setForm({ ...form, race_distance: v })}
+          ) : (
+            <>
+              <DialogHeader className="px-6 pt-6 pb-3 border-b">
+                <div className="flex items-center gap-2">
+                  {!form.id && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7 -ml-1"
+                      onClick={() => setPickingType(true)}
+                      aria-label="Change type"
                     >
-                      <SelectTrigger><SelectValue placeholder="Select distance" /></SelectTrigger>
-                      <SelectContent>
-                        {STANDARD_DISTANCES.map((s) => (
-                          <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
-                        ))}
-                        <SelectItem value="__custom__">Other (custom)</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {form.race_distance === "__custom__" && (
-                      <Input
-                        className="mt-2"
-                        value={form.race_distance_custom}
-                        onChange={(e) => setForm({ ...form, race_distance_custom: e.target.value })}
-                        placeholder="e.g. 15K, Ultra 50K"
-                        maxLength={100}
-                      />
-                    )}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Priority</Label>
-                    <Select
-                      value={form.race_priority}
-                      onValueChange={(v) => setForm({ ...form, race_priority: v as any })}
-                    >
-                      <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A">A — Peak</SelectItem>
-                        <SelectItem value="B">B — Important</SelectItem>
-                        <SelectItem value="C">C — Training</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {(() => {
+                    const Icon = TYPE_META[form.event_type].icon;
+                    return <Icon className={cn("h-5 w-5", TYPE_META[form.event_type].color)} />;
+                  })()}
+                  <DialogTitle>
+                    {form.id ? "Edit" : "New"} {TYPE_META[form.event_type].label.toLowerCase()}
+                  </DialogTitle>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <DialogDescription className="sr-only">Track key moments that affect your training.</DialogDescription>
+              </DialogHeader>
+
+              <div className="px-6 py-4 grid lg:grid-cols-[1fr,300px] gap-6">
+                <div className="space-y-4 min-w-0">
                   <div className="space-y-1.5">
-                    <Label>Official time</Label>
+                    <Label>Title</Label>
                     <Input
-                      value={form.official_time_input}
-                      onChange={(e) => setForm({ ...form, official_time_input: e.target.value })}
-                      placeholder="hh:mm:ss or mm:ss"
-                      inputMode="numeric"
-                    />
-                    <p className="text-[11px] text-muted-foreground">
-                      Chip/gun time — used to rank PB, silver, bronze across same-distance races.
-                    </p>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Result note (optional)</Label>
-                    <Input
-                      value={form.race_result}
-                      onChange={(e) => setForm({ ...form, race_result: e.target.value })}
-                      placeholder="e.g. 5th overall, AG winner"
+                      value={form.title}
+                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      placeholder={
+                        form.event_type === "race" ? "e.g. Stockholm Marathon"
+                          : form.event_type === "injury_illness" ? "e.g. Left calf strain"
+                          : "e.g. New shoes, altitude camp"
+                      }
                       maxLength={200}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Start date</Label>
+                      <Input
+                        type="date"
+                        value={form.start_date}
+                        onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>End date <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Input
+                        type="date"
+                        value={form.end_date}
+                        onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  {form.event_type === "injury_illness" && (
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <Label>Category</Label>
+                        <div className="grid grid-cols-3 gap-2">
+                          {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map((c) => {
+                            const meta = ISSUE_CATEGORY_META[c];
+                            const active = form.issue_category === c;
+                            return (
+                              <button
+                                key={c}
+                                type="button"
+                                onClick={() => setForm({ ...form, issue_category: c })}
+                                className={cn(
+                                  "rounded-md border p-2 text-left transition-colors",
+                                  active
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50",
+                                )}
+                              >
+                                <div className="text-sm font-medium">{meta.label}</div>
+                                <div className="text-[11px] text-muted-foreground leading-tight">
+                                  {meta.description}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Severity</Label>
+                        <Select
+                          value={form.severity}
+                          onValueChange={(v) => setForm({ ...form, severity: v })}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Impact on training" /></SelectTrigger>
+                          <SelectContent>
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <SelectItem key={n} value={String(n)}>
+                                <span className="font-medium">{n}.</span> {SEVERITY_LABELS[n].short}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Body parts</Label>
+                        <BodyPartsPicker
+                          value={form.body_parts}
+                          onChange={(next) => setForm({ ...form, body_parts: next })}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {form.event_type === "race" && (
+                    <>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>Distance</Label>
+                          <Select
+                            value={form.race_distance || undefined}
+                            onValueChange={(v) => setForm({ ...form, race_distance: v })}
+                          >
+                            <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
+                            <SelectContent>
+                              {STANDARD_DISTANCES.map((s) => (
+                                <SelectItem key={s.key} value={s.key}>{s.label}</SelectItem>
+                              ))}
+                              <SelectItem value="__custom__">Other (custom)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          {form.race_distance === "__custom__" && (
+                            <Input
+                              className="mt-2"
+                              value={form.race_distance_custom}
+                              onChange={(e) => setForm({ ...form, race_distance_custom: e.target.value })}
+                              placeholder="e.g. 15K, Ultra 50K"
+                              maxLength={100}
+                            />
+                          )}
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Priority</Label>
+                          <Select
+                            value={form.race_priority}
+                            onValueChange={(v) => setForm({ ...form, race_priority: v as any })}
+                          >
+                            <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="A">A — Peak</SelectItem>
+                              <SelectItem value="B">B — Important</SelectItem>
+                              <SelectItem value="C">C — Training</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label>Official time</Label>
+                          <Input
+                            value={form.official_time_input}
+                            onChange={(e) => setForm({ ...form, official_time_input: e.target.value })}
+                            placeholder="hh:mm:ss"
+                            inputMode="numeric"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label>Result <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                          <Input
+                            value={form.race_result}
+                            onChange={(e) => setForm({ ...form, race_result: e.target.value })}
+                            placeholder="e.g. 5th overall"
+                            maxLength={200}
+                          />
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label>Strava URL <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                        <Input
+                          type="url"
+                          value={form.strava_url}
+                          onChange={(e) => setForm({ ...form, strava_url: e.target.value })}
+                          placeholder="https://www.strava.com/activities/123456789"
+                          maxLength={300}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {form.event_type !== "injury_illness" && (
+                    <div className="space-y-1.5">
+                      <Label>Location <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                      <Input
+                        value={form.location}
+                        onChange={(e) => setForm({ ...form, location: e.target.value })}
+                        maxLength={200}
+                      />
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <Label>Notes</Label>
+                    <Textarea
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      rows={3}
+                      placeholder="Context, how it happened, recovery plan, race conditions…"
+                      maxLength={2000}
                     />
                   </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Strava race URL (optional)</Label>
-                  <Input
-                    type="url"
-                    value={form.strava_url}
-                    onChange={(e) => setForm({ ...form, strava_url: e.target.value })}
-                    placeholder="https://www.strava.com/activities/123456789"
-                    maxLength={300}
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Paste the Strava activity link for this race. After saving, you can also upload the .fit file below to parse splits, HR, pace and elevation.
-                  </p>
+
+                <div className="lg:border-l lg:pl-6 min-w-0">
+                  <EventAttachmentsSection eventId={form.id ?? null} ensureEventId={ensureEventId} />
                 </div>
-              </>
-            )}
-
-            {form.event_type !== "injury_illness" && (
-              <div className="space-y-1.5">
-                <Label>Location (optional)</Label>
-                <Input
-                  value={form.location}
-                  onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  maxLength={200}
-                />
               </div>
-            )}
 
-            <div className="space-y-1.5">
-              <Label>Notes</Label>
-              <Textarea
-                value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
-                rows={4}
-                placeholder="Context, how it happened, recovery plan, race conditions…"
-                maxLength={2000}
-              />
-            </div>
-
-            {form.id && (
-              <>
-                <Separator />
-                <EventAttachmentsSection eventId={form.id} />
-              </>
-            )}
-            {!form.id && (
-              <p className="text-xs text-muted-foreground italic">
-                Save the event first, then attach .fit files, doctor's notes, or photos.
-              </p>
-            )}
-          </div>
-
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={submit} disabled={!form.title.trim() || upsert.isPending}>
-              {upsert.isPending ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
+              <DialogFooter className="px-6 py-4 border-t bg-muted/30">
+                <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                <Button onClick={submit} disabled={!form.title.trim() || upsert.isPending}>
+                  {upsert.isPending ? "Saving…" : form.id ? "Save changes" : "Save event"}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
+
 
       <EventUploadDialog open={uploadOpen} onOpenChange={setUploadOpen} />
 
