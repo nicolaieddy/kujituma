@@ -106,6 +106,7 @@ export default function MediaPage() {
             <h2 className="text-lg font-semibold">All mentions</h2>
             <MediaTable
               mentions={mentions}
+              loading={mentionsLoading}
               onEdit={(m) => { setEditing(m); setEditorOpen(true); }}
               onDelete={async (m) => {
                 if (!confirm(`Delete "${m.title}"?`)) return;
