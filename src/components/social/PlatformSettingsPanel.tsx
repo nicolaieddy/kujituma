@@ -18,11 +18,17 @@ import { ImportHistoryPanel } from "./ImportHistoryPanel";
 
 export function PlatformSettingsPanel() {
   const { data: settings = [], isLoading } = useSocialPlatformSettings();
+  const { data: profileLinks = {} } = useProfileSocialLinks();
+  const { data: growth = [] } = useFollowerGrowth();
   const upsert = useUpsertPlatformSettings();
   const logFollowers = useLogFollowerCount();
   const [importOpen, setImportOpen] = useState(false);
 
   const byPlatform = Object.fromEntries(settings.map((s) => [s.platform, s]));
+  const hasDataByPlatform = growth.reduce<Record<string, boolean>>((acc, g) => {
+    acc[g.platform] = true;
+    return acc;
+  }, {});
 
   if (isLoading) {
     return <Card className="p-6 text-sm text-muted-foreground">Loading…</Card>;
@@ -31,10 +37,11 @@ export function PlatformSettingsPanel() {
   return (
     <div className="space-y-4">
       <Card className="p-4 bg-muted/30 flex flex-wrap items-start justify-between gap-3">
-        <div className="max-w-xl">
+        <div className="max-w-xl space-y-1">
           <p className="text-sm text-muted-foreground">
-            Choose which platforms to track, set follower targets and deadlines, and define the
-            content pillars you want to publish against on each platform.
+            Link the accounts you want to track. These are the same social links shown on your{" "}
+            <Link to="/profile" className="underline underline-offset-2 hover:text-foreground">profile</Link>
+            {" "}— editing either side keeps both in sync.
           </p>
         </div>
         <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setImportOpen(true)}>
