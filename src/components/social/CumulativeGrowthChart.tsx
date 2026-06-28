@@ -167,6 +167,15 @@ export function CumulativeGrowthChart() {
               </PopoverContent>
             </Popover>
 
+            {activeFollowerGoals.length > 0 && (
+              <div className="flex items-center gap-1.5 pl-1">
+                <Switch id="growth-show-goal-line" checked={showGoalLine} onCheckedChange={setShowGoalLine} />
+                <Label htmlFor="growth-show-goal-line" className="text-xs text-muted-foreground cursor-pointer">
+                  Goal line
+                </Label>
+              </div>
+            )}
+
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setImportOpen(true)}>
               <Upload className="h-3.5 w-3.5" /> Import aggregate
             </Button>
