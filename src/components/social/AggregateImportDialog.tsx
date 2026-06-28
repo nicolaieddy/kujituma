@@ -219,6 +219,7 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
     // Multi-file: parse + commit each sequentially with aggregated toast
     if (!user) return;
     const p = createImportProgress(`Importing ${files.length} aggregate exports…`);
+    const rows: ImportRow[] = [];
     let okCount = 0;
     let failCount = 0;
     let totalDaily = 0;
@@ -234,9 +235,21 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
           okCount++;
           totalDaily += data.daily.length;
           totalFollowers += data.followerTotals.length;
-        } catch (err) {
+          rows.push({
+            file: f.name,
+            kind: "aggregate",
+            status: "imported",
+            detail: `${data.daily.length} daily rows · ${data.followerTotals.length} follower entries${data.currentFollowers != null ? ` · ${data.currentFollowers} total followers` : ""}`,
+          });
+        } catch (err: any) {
           console.error("[aggregate-import] file failed", f.name, err);
           failCount++;
+          rows.push({
+            file: f.name,
+            kind: "aggregate",
+            status: "failed",
+            detail: err?.message ?? String(err),
+          });
         }
       }
       qc.invalidateQueries({ queryKey: ["social-follower-growth"] });
@@ -248,10 +261,12 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
       } else {
         p.error("No files imported", desc);
       }
+      onComplete?.(rows);
       reset();
       onClose();
     } catch (e) {
       p.error("Import failed", describeError(e));
+      if (rows.length) onComplete?.(rows);
     }
   };
 
