@@ -7,6 +7,9 @@ export type MediaMention = Database["public"]["Tables"]["media_mentions"]["Row"]
 export type MediaCandidate = Database["public"]["Tables"]["media_candidates"]["Row"];
 export type MediaMentionInsert = Database["public"]["Tables"]["media_mentions"]["Insert"];
 export type MediaMentionUpdate = Database["public"]["Tables"]["media_mentions"]["Update"];
+export type MediaStory = Database["public"]["Tables"]["media_stories"]["Row"];
+export type MediaStoryInsert = Database["public"]["Tables"]["media_stories"]["Insert"];
+export type MediaStoryUpdate = Database["public"]["Tables"]["media_stories"]["Update"];
 
 export const MEDIA_TYPES = [
   "Article", "Video", "Article + Video", "Podcast", "Panel / Speaking",
