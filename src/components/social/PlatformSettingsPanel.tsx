@@ -15,6 +15,7 @@ import { useProfileSocialLinks, useUpdateProfileSocialLink, PLATFORM_TO_PROFILE_
 import { getLocalDateString } from "@/utils/dateUtils";
 import { AggregateImportDialog } from "./AggregateImportDialog";
 import { ImportHistoryPanel } from "./ImportHistoryPanel";
+import { GoalsCard } from "./GoalsCard";
 
 export function PlatformSettingsPanel() {
   const { data: settings = [], isLoading } = useSocialPlatformSettings();
