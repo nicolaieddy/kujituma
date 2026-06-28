@@ -230,6 +230,136 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     }
   };
 
+  /** Auto-process many files: parse, match-or-create, attach metrics. No prompts. */
+  const handleMultiFiles = async (files: File[]) => {
+    const tid = toast.loading(`Importing ${files.length} LinkedIn exports…`);
+    let created = 0, updated = 0, failed = 0;
+    const today = getLocalDateString();
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        toast.loading(`Processing ${f.name} (${i + 1}/${files.length})…`, { id: tid });
+        try {
+          const buffer = await f.arrayBuffer();
+          const data = parseWorkbook(buffer);
+          if (!data.postUrl && data.impressions == null && data.reactions == null) {
+            failed++;
+            continue;
+          }
+
+          // Resolve target post: existing match by URL, or create new
+          let postId: string | null = null;
+          let action: "created" | "updated" = "updated";
+          const target = normalizeLiUrl(data.postUrl);
+
+          if (target) {
+            const localMatch = posts.find((p) => normalizeLiUrl(p.live_url) === target);
+            if (localMatch) {
+              postId = localMatch.id;
+            } else {
+              const { data: existing } = await supabase
+                .from("social_posts")
+                .select("id, live_url")
+                .eq("platforms", "{linkedin}" as any)
+                .limit(500);
+              postId = (existing ?? []).find((r: any) => normalizeLiUrl(r.live_url) === target)?.id ?? null;
+            }
+          }
+
+          if (!postId) {
+            // Auto-create — scrape title/body
+            action = "created";
+            let scrapedTitle = "";
+            let scrapedBody = "";
+            try {
+              if (data.postUrl) {
+                const { data: scraped } = await supabase.functions.invoke("scrape-linkedin-post", {
+                  body: { url: data.postUrl },
+                });
+                scrapedTitle = (scraped?.title as string) || "";
+                scrapedBody = (scraped?.body as string) || "";
+              }
+            } catch (err) {
+              console.warn("[linkedin-multi] scrape failed", err);
+            }
+            const finalTitle = scrapedTitle || (data.postUrl ? titleFromSlug(data.postUrl) : "LinkedIn post");
+            const saved = await upsertPost.mutateAsync({
+              title: finalTitle,
+              body: scrapedBody || null,
+              status: "published",
+              platforms: ["linkedin"],
+              pillars: [],
+              publish_date: data.postDate ?? today,
+              live_url: data.postUrl,
+              trust_check: "not_checked",
+              hold: false,
+            } as any);
+            postId = saved.id;
+            created++;
+          } else {
+            updated++;
+          }
+
+          await upsertMetric.mutateAsync({
+            post_id: postId!,
+            platform: "linkedin",
+            metrics_as_of: today,
+            impressions: data.impressions,
+            reactions: data.reactions,
+            comments: data.comments,
+            reposts: data.reposts,
+            reach: data.reach,
+            profile_views: data.profile_views,
+            followers_gained: data.followers_gained,
+            saves: data.saves,
+            sends: data.sends,
+            link_clicks: data.link_clicks,
+          });
+
+          try {
+            await logImport.mutateAsync({
+              platform: "linkedin",
+              kind: "linkedin_single_post",
+              action,
+              post_id: postId,
+              post_url: data.postUrl,
+              file_name: f.name,
+              summary: {
+                impressions: data.impressions,
+                reactions: data.reactions,
+                comments: data.comments,
+                reposts: data.reposts,
+                reach: data.reach,
+                metrics_as_of: today,
+              },
+            });
+          } catch (logErr) {
+            console.warn("[linkedin-multi] log failed", logErr);
+          }
+        } catch (err) {
+          console.error("[linkedin-multi] file failed", f.name, err);
+          failed++;
+        }
+      }
+
+      const ok = created + updated;
+      const desc = `${created} created · ${updated} updated${failed ? ` · ${failed} failed` : ""}`;
+      if (ok > 0) {
+        toast.success(`Imported ${ok} of ${files.length} LinkedIn exports`, {
+          id: tid,
+          description: desc,
+          duration: 4000,
+        });
+      } else {
+        toast.error("No files imported", { id: tid, description: desc });
+      }
+      reset();
+      onClose();
+    } catch (e: any) {
+      toast.error("Multi-import failed", { id: tid, description: e?.message ?? String(e) });
+    }
+  };
+
   const togglePillar = (p: string) =>
     setPillars((cur) => cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]);
   const toggleValue = (id: string) =>
