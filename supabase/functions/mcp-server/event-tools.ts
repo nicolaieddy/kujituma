@@ -41,8 +41,17 @@ function sanitizeBodyParts(raw: unknown): Array<{ part: string; side: string; sp
 
 export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("list_training_events", {
-    description: "List the user's key training events (injuries/illness, races, milestones). Optional filters by type or date range.",
+    description:
+      "List the user's key training events (injuries/illness, races, milestones). Returns full rows including `body_parts` (structured array) and `issue_category` ('niggle' | 'injury' | 'illness') for injury/illness events. Optional filters by type or date range.",
     inputSchema: {
+      type: "object",
+      properties: {
+        event_type: { type: "string", description: "Filter: injury_illness | race | other" },
+        from_date: { type: "string", description: "YYYY-MM-DD lower bound on start_date" },
+        to_date: { type: "string", description: "YYYY-MM-DD upper bound on start_date" },
+        limit: { type: "number", description: "Default 100" },
+      },
+    },
       type: "object",
       properties: {
         event_type: { type: "string", description: "Filter: injury_illness | race | other" },
