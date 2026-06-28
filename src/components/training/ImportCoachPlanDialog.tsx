@@ -40,59 +40,90 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
   const submit = async () => {
     if (!user) return;
     setBusy(true);
-    const p = createImportProgress(mode === "text" ? "Parsing pasted plan…" : `Uploading ${file?.name ?? "file"}…`);
+    const fileCount = files.length;
+    const initial =
+      mode === "text"
+        ? "Parsing pasted plan…"
+        : fileCount > 1
+          ? `Importing ${fileCount} files…`
+          : `Uploading ${files[0]?.name ?? "file"}…`;
+    const p = createImportProgress(initial);
     try {
-      let filePath: string | undefined;
-      let mimeType: string | undefined;
-      let fileName: string | undefined;
-
-      if (mode !== "text") {
-        if (!file) {
+      if (mode === "text") {
+        if (!text.trim()) {
+          p.error("Paste the plan text first");
+          setBusy(false);
+          return;
+        }
+        await invokeParse({ text, replaceFlag: replace });
+        p.success("Plan imported", `For ${weekStart}.`);
+      } else {
+        if (fileCount === 0) {
           p.error("Pick a file first");
           setBusy(false);
           return;
         }
-        if (file.size > 20 * 1024 * 1024) {
-          p.error("File too large", "Max 20 MB.");
+        // Validate sizes first
+        for (const f of files) {
+          if (f.size > 20 * 1024 * 1024) {
+            p.error("File too large", `${f.name} exceeds 20 MB.`);
+            setBusy(false);
+            return;
+          }
+        }
+
+        let totalCreated = 0, totalReplaced = 0, totalMatched = 0, okFiles = 0, failedFiles = 0;
+        for (let i = 0; i < fileCount; i++) {
+          const f = files[i];
+          p.update(
+            fileCount > 1
+              ? `Uploading ${f.name} (${i + 1}/${fileCount})…`
+              : `Uploading ${f.name}…`,
+          );
+          try {
+            const ext = f.name.split(".").pop() || "bin";
+            const filePath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
+            const { error: upErr } = await supabase.storage
+              .from("coach-plans")
+              .upload(filePath, f, { contentType: f.type });
+            if (upErr) throw upErr;
+            p.update(fileCount > 1 ? `Parsing ${f.name} (${i + 1}/${fileCount})…` : "Parsing plan…");
+            // Only the first file should "replace" — subsequent files append
+            const result = await invokeParse({
+              filePath,
+              fileName: f.name,
+              mimeType: f.type,
+              replaceFlag: i === 0 ? replace : false,
+            });
+            totalCreated += result?.created ?? 0;
+            totalReplaced += result?.replaced ?? 0;
+            totalMatched += result?.auto_matched ?? 0;
+            okFiles++;
+          } catch (err) {
+            console.error("[coach-plan] file failed", f.name, err);
+            failedFiles++;
+          }
+        }
+
+        const bits = [
+          `${totalCreated} workouts added`,
+          totalReplaced > 0 ? `${totalReplaced} replaced` : null,
+          totalMatched > 0 ? `${totalMatched} matched to activities` : null,
+          failedFiles > 0 ? `${failedFiles} files failed` : null,
+        ].filter(Boolean);
+
+        if (okFiles > 0) {
+          p.success(
+            fileCount > 1 ? `${okFiles} of ${fileCount} files imported` : "Plan imported",
+            `${bits.join(" · ")} for ${weekStart}.`,
+          );
+        } else {
+          p.error("No files imported", bits.join(" · ") || "All files failed.");
           setBusy(false);
           return;
         }
-        const ext = file.name.split(".").pop() || "bin";
-        filePath = `${user.id}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
-        fileName = file.name;
-        mimeType = file.type;
-        const { error: upErr } = await supabase.storage
-          .from("coach-plans")
-          .upload(filePath, file, { contentType: file.type });
-        if (upErr) throw upErr;
-        p.update("Parsing plan…");
-      } else if (!text.trim()) {
-        p.error("Paste the plan text first");
-        setBusy(false);
-        return;
       }
 
-      const { data, error } = await supabase.functions.invoke("parse-coach-plan", {
-        body: {
-          week_start: weekStart,
-          source_type: mode,
-          text: mode === "text" ? text : undefined,
-          file_path: filePath,
-          file_name: fileName,
-          mime_type: mimeType,
-          replace,
-        },
-      });
-      if (error) throw error;
-
-      const replaced = data?.replaced ?? 0;
-      const matched = data?.auto_matched ?? 0;
-      const bits = [
-        `${data?.created ?? 0} workouts added`,
-        replaced > 0 ? `${replaced} replaced` : null,
-        matched > 0 ? `${matched} matched to activities` : null,
-      ].filter(Boolean);
-      p.success("Plan imported", `${bits.join(" · ")} for ${weekStart}.`);
       queryClient.invalidateQueries({ queryKey: ["training-plan", user.id, weekStart] });
       queryClient.invalidateQueries({ queryKey: ["training-workout-goals"] });
       queryClient.invalidateQueries({ queryKey: ["training-workout-activities"] });
@@ -106,6 +137,28 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
     } finally {
       setBusy(false);
     }
+  };
+
+  const invokeParse = async (args: {
+    text?: string;
+    filePath?: string;
+    fileName?: string;
+    mimeType?: string;
+    replaceFlag: boolean;
+  }) => {
+    const { data, error } = await supabase.functions.invoke("parse-coach-plan", {
+      body: {
+        week_start: weekStart,
+        source_type: mode,
+        text: args.text,
+        file_path: args.filePath,
+        file_name: args.fileName,
+        mime_type: args.mimeType,
+        replace: args.replaceFlag,
+      },
+    });
+    if (error) throw error;
+    return data as { created?: number; replaced?: number; auto_matched?: number } | null;
   };
 
   return (
