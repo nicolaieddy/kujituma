@@ -243,25 +243,28 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     if (!parsed) return;
     let postId = selectedPostId;
     let action: "created" | "updated" = "updated";
+    const tid = toast.loading(mode === "create" ? "Creating post & saving metrics…" : "Saving metrics snapshot…");
 
     try {
       if (mode === "create") {
-        if (!title.trim()) { toast.error("Add a title"); return; }
+        if (!title.trim()) { toast.error("Add a title before importing", { id: tid }); return; }
 
         // Final idempotency guard: re-query by normalized live_url in case the
         // local posts cache was stale or the URL differs only by query/slash.
         const target = normalizeLiUrl(parsed.postUrl);
         let existingId: string | null = null;
         if (target) {
-          const { data: existing } = await supabase
+          const { data: existing, error: lookupErr } = await supabase
             .from("social_posts")
             .select("id, live_url")
             .eq("platforms", "{linkedin}" as any)
             .limit(500);
+          if (lookupErr) throw new Error(`Couldn't check for duplicates: ${lookupErr.message}`);
           existingId = (existing ?? []).find((r: any) => normalizeLiUrl(r.live_url) === target)?.id ?? null;
         }
         action = existingId ? "updated" : "created";
 
+        toast.loading(existingId ? "Updating existing post…" : "Creating post…", { id: tid });
         const saved = await upsertPost.mutateAsync({
           ...(existingId ? { id: existingId } : {}),
           title: title.trim(),
@@ -283,8 +286,9 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         action = "updated";
       }
 
-      if (!postId) { toast.error("Pick a post to attach this snapshot to"); return; }
+      if (!postId) { toast.error("Pick a post to attach this snapshot to", { id: tid }); return; }
 
+      toast.loading("Saving metrics snapshot…", { id: tid });
       await upsertMetric.mutateAsync({
         post_id: postId,
         platform: "linkedin",
@@ -326,12 +330,14 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
       const created = action === "created" ? 1 : 0;
       const updated = action === "updated" ? 1 : 0;
       toast.success("LinkedIn import complete", {
+        id: tid,
         description: `${created} created · ${updated} updated · 1 metrics snapshot saved`,
       });
       reset();
       onClose();
     } catch (e: any) {
-      toast.error("Import failed", { description: e.message });
+      console.error("[linkedin-import] commit", e);
+      toast.error("Import failed", { id: tid, description: e?.message ?? String(e) });
     }
   };
 
