@@ -89,16 +89,16 @@ export function SocialAnalytics() {
               </div>
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div>
-                  <div className="text-2xl font-semibold tabular-nums">{formatCompact(current)}</div>
+                  <div className="text-2xl font-semibold tabular-nums"><CompactNumber value={current} /></div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Current</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-semibold tabular-nums">{formatCompact(s.follower_target)}</div>
+                  <div className="text-2xl font-semibold tabular-nums"><CompactNumber value={s.follower_target} /></div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Target</div>
                 </div>
                 <div>
                   <div className={cn("text-2xl font-semibold tabular-nums", netNew30d > 0 ? "text-emerald-600" : netNew30d < 0 ? "text-destructive" : "")}>
-                    {netNew30d > 0 ? "+" : ""}{formatCompact(netNew30d)}
+                    <CompactNumber value={netNew30d} prefix={netNew30d > 0 ? "+" : ""} />
                   </div>
                   <div className="text-[10px] uppercase tracking-wide text-muted-foreground">30 days</div>
                 </div>
