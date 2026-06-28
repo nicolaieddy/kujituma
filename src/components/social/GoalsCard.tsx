@@ -231,3 +231,33 @@ function DeleteButton({ onConfirm }: { onConfirm: () => void }) {
     </AlertDialog>
   );
 }
+
+function ArchiveButton({ onConfirm }: { onConfirm: () => void }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs gap-1 text-muted-foreground"
+          title="Archive goal"
+        >
+          <Archive className="h-3 w-3" /> Archive
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Stop tracking this goal?</AlertDialogTitle>
+          <AlertDialogDescription>
+            The goal moves to your history and stops showing on charts and progress strips.
+            You can set a new active goal for this metric anytime.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={onConfirm}>Archive</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
