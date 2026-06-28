@@ -295,3 +295,57 @@ function FilterSelect({ value, onChange, options, disabled }: { value: string; o
     </Select>
   );
 }
+
+function TagFilter({ tags, selected, onChange, disabled }: { tags: string[]; selected: string[]; onChange: (tags: string[]) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const toggle = (tag: string) => {
+    const next = selected.includes(tag) ? selected.filter((t) => t !== tag) : [...selected, tag];
+    onChange(next);
+  };
+  const clear = () => onChange([]);
+  const label = selected.length === 0 ? "All tags" : `${selected.length} tag${selected.length === 1 ? "" : "s"}`;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" disabled={disabled} className="h-9 gap-1.5 px-3">
+          <Tag className="h-3.5 w-3.5" />
+          <span>{label}</span>
+          <ChevronDown className="h-3 w-3 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-60 p-0" align="start">
+        <div className="p-3 border-b">
+          <div className="text-sm font-medium">Filter by tags</div>
+          <div className="text-xs text-muted-foreground">Select multiple tags to narrow results.</div>
+        </div>
+        {tags.length === 0 ? (
+          <div className="p-4 text-sm text-muted-foreground text-center">No tags available.</div>
+        ) : (
+          <div className="max-h-60 overflow-y-auto p-2">
+            {tags.map((tag) => (
+              <label
+                key={tag}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-accent"
+              >
+                <Checkbox
+                  checked={selected.includes(tag)}
+                  onCheckedChange={() => toggle(tag)}
+                />
+                <span className="text-sm">{tag}</span>
+                {selected.includes(tag) && <Check className="h-3 w-3 ml-auto text-primary" />}
+              </label>
+            ))}
+          </div>
+        )}
+        {selected.length > 0 && (
+          <div className="p-2 border-t">
+            <Button variant="ghost" size="sm" className="w-full h-8 text-xs" onClick={clear}>
+              Clear tag filters
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
