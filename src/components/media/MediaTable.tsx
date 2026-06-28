@@ -73,6 +73,7 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
         <Button variant={needsUrlOnly ? "default" : "outline"} size="sm" onClick={() => setNeedsUrlOnly((v) => !v)}>
           Needs URL
         </Button>
+        <FilterSelect value={sort} onChange={setSort} options={[["date-desc", "Newest first"], ["date-asc", "Oldest first"], ["updated-desc", "Recently updated"], ["relevance", "Relevance"]]} />
         <div className="ml-auto text-xs text-muted-foreground">{filtered.length} of {mentions.length}</div>
       </div>
 
