@@ -19,7 +19,7 @@ import { BetaBadge } from "@/components/shared/BetaBadge";
 
 export default function MediaPage() {
   const { user } = useAuth();
-  const { data: mentions = [] } = useMediaMentions();
+  const { data: mentions = [], isLoading: mentionsLoading } = useMediaMentions();
   const { data: candidates = [] } = useMediaCandidates();
   const create = useCreateMention();
   const update = useUpdateMention();
