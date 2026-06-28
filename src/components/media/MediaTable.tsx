@@ -51,10 +51,24 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
       if (type !== "all" && m.type !== type) return false;
       if (status !== "all" && m.status !== status) return false;
       if (needsUrlOnly && m.url_status !== "needs-url") return false;
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = mentions.filter((m) => {
+      if (q && !(m.title.toLowerCase().includes(q) || (m.outlet ?? "").toLowerCase().includes(q) || (m.summary ?? "").toLowerCase().includes(q) || m.tags?.some((t) => t.toLowerCase().includes(q)))) return false;
+      if (year !== "all" && String(m.year) !== year) return false;
+      if (type !== "all" && m.type !== type) return false;
+      if (status !== "all" && m.status !== status) return false;
+      if (needsUrlOnly && m.url_status !== "needs-url") return false;
       if (urlStatus !== "all" && m.url_status !== urlStatus) return false;
       return true;
     });
-  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly]);
+    const sorted = [...list];
+    if (sort === "date-desc") sorted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
+    else if (sort === "date-asc") sorted.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
+    else if (sort === "updated-desc") sorted.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
+    else if (sort === "relevance") sorted.sort((a, b) => relevanceScore(b) - relevanceScore(a));
+    return sorted;
+  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, sort]);
 
   return (
     <Card className="p-4 space-y-3">
