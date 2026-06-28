@@ -156,6 +156,8 @@ export default function Social() {
         </div>
       </header>
 
+      <GoalProgressStrip onJumpToSetup={() => setView("setup")} />
+
       <div className="flex gap-2 bg-muted rounded-lg p-1 w-fit flex-wrap">
         {([
           { id: "pipeline", label: "Pipeline", icon: LayoutGrid },
