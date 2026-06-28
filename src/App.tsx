@@ -8,6 +8,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { HabitsProvider } from "@/components/habits/HabitsProvider";
 import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { ReportFeedbackButton } from "@/components/feedback/ReportFeedbackButton";
 import { RoutableErrorBoundary } from "@/components/errors/RoutableErrorBoundary";
 import { TosGate } from "@/components/auth/TosGate";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -340,6 +341,7 @@ const App = () => {
                   <AppContent queryClient={queryClient} />
                 </RoutableErrorBoundary>
                 <InstallPrompt />
+                <ReportFeedbackButton />
               </HabitsProvider>
             </TosGate>
           </AuthProvider>
