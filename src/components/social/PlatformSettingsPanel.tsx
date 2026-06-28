@@ -52,26 +52,45 @@ export function PlatformSettingsPanel() {
       {SOCIAL_PLATFORMS.map((platform) => {
         const s = byPlatform[platform];
         const Icon = PLATFORM_META[platform].icon;
+        const profileField = PLATFORM_TO_PROFILE_FIELD[platform];
+        const profileUrl = (profileLinks[profileField] ?? "") as string;
+        const enabled = s?.enabled ?? false;
+        const hasData = !!hasDataByPlatform[platform];
+        const status = computeStatus({ url: profileUrl, enabled, hasData });
         return (
           <Card key={platform} className="p-5 space-y-4">
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Icon className={`h-5 w-5 ${PLATFORM_META[platform].color}`} />
                 <h3 className="text-base font-semibold">{PLATFORM_META[platform].label}</h3>
+                <StatusBadge status={status} />
               </div>
               <div className="flex items-center gap-2">
                 <Label htmlFor={`${platform}-enabled`} className="text-xs text-muted-foreground">
-                  Enabled
+                  Tracking
                 </Label>
-                <Switch
-                  id={`${platform}-enabled`}
-                  checked={s?.enabled ?? false}
-                  onCheckedChange={(v) =>
-                    upsert.mutate({ platform, enabled: v, ...(s ? {} : { pillars: [] }) })
-                  }
-                />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Switch
+                        id={`${platform}-enabled`}
+                        checked={enabled}
+                        onCheckedChange={(v) =>
+                          upsert.mutate({ platform, enabled: v, ...(s ? {} : { pillars: [] }) })
+                        }
+                      />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {enabled ? "Turn off to stop tracking metrics for this account" : "Turn on to start tracking follower growth and posts"}
+                  </TooltipContent>
+                </Tooltip>
               </div>
             </div>
+
+            <LinkedAccountRow platform={platform} url={profileUrl} />
+
+
 
             <div className="grid sm:grid-cols-3 gap-3">
               <div className="space-y-1.5">
