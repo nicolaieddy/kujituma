@@ -444,6 +444,12 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
       }
 
       p.success("Aggregate analytics imported", `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries`);
+      onComplete?.([{
+        file: file?.name ?? "Aggregate export",
+        kind: "aggregate",
+        status: "imported",
+        detail: `${parsed.daily.length} daily rows · ${parsed.followerTotals.length} follower entries${parsed.currentFollowers != null ? ` · ${parsed.currentFollowers} total followers` : ""}`,
+      }]);
       reset();
       onClose();
     } catch (e) {
