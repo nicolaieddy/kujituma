@@ -3032,6 +3032,53 @@ export type Database = {
         }
         Relationships: []
       }
+      social_import_history: {
+        Row: {
+          action: string
+          created_at: string
+          file_name: string | null
+          id: string
+          kind: string
+          platform: string
+          post_id: string | null
+          post_url: string | null
+          summary: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          kind: string
+          platform: string
+          post_id?: string | null
+          post_url?: string | null
+          summary?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          kind?: string
+          platform?: string
+          post_id?: string | null
+          post_url?: string | null
+          summary?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_import_history_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "social_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_platform_settings: {
         Row: {
           created_at: string
