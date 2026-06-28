@@ -323,6 +323,17 @@ export function McpSection() {
               { name: "network_bulk_log_interactions", desc: "Log one interaction across many contacts" },
               { name: "network_enrich_contact", desc: "Propose enrichment from social profiles" },
               { name: "network_apply_enrichment", desc: "Apply confirmed enrichment fields" },
+              { name: "list_social_posts", desc: "List social posts (filter by status/platform/pillar/date)" },
+              { name: "get_social_post", desc: "One post + full metrics history" },
+              { name: "create_social_post", desc: "Create a new social post draft" },
+              { name: "update_social_post", desc: "Update post fields (status, platforms, pillars, etc.)" },
+              { name: "delete_social_post", desc: "Delete a post and its metrics" },
+              { name: "log_social_metrics", desc: "Upsert a metrics snapshot for a post on a date" },
+              { name: "log_follower_count", desc: "Log account-level followers for a platform on a date" },
+              { name: "get_follower_growth", desc: "Follower series + pace vs the configured target" },
+              { name: "get_social_analytics", desc: "Top posts, pillar engagement averages" },
+              { name: "get_social_platform_settings", desc: "Per-platform targets, deadlines, pillars, enabled" },
+              { name: "update_social_platform_settings", desc: "Edit per-platform target/deadline/pillars/enabled" },
             ].map((tool) => (
               <div
                 key={tool.name}
