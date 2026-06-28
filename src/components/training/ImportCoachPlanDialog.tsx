@@ -25,11 +25,11 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
   const queryClient = useQueryClient();
   const [mode, setMode] = useState<Mode>("text");
   const [text, setText] = useState("");
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
   const [replace, setReplace] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const reset = () => { setText(""); setFile(null); };
+  const reset = () => { setText(""); setFiles([]); };
 
   const handleClose = (next: boolean) => {
     if (busy) return;
