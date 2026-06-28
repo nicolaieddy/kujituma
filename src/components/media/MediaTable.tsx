@@ -233,11 +233,25 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
                       <div className="font-medium flex items-center gap-2">
                         {m.featured && <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />}
                         {m.is_public ? <Globe className="h-3 w-3 text-emerald-600" /> : <Lock className="h-3 w-3 text-muted-foreground" />}
-                        <span className="line-clamp-1">{m.title}</span>
+                        {m.url ? (
+                          <a
+                            href={m.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className="line-clamp-1 hover:underline hover:text-primary"
+                          >
+                            {m.title}
+                          </a>
+                        ) : (
+                          <span className="line-clamp-1">{m.title}</span>
+                        )}
                       </div>
                       {m.tags?.length ? (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {m.tags.slice(0, 4).map((t) => <Badge key={t} variant="secondary" className="text-[10px] py-0">{t}</Badge>)}
+                        <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                          {m.tags.slice(0, 4).map((t) => (
+                            <span key={t} className="text-[10px] text-muted-foreground">#{t}</span>
+                          ))}
                         </div>
                       ) : null}
                     </TableCell>
