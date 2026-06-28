@@ -8,6 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { Upload, CalendarIcon, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, type SocialPlatform } from "@/lib/social";
+import { CompactNumber } from "./CompactNumber";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { AggregateImportDialog } from "./AggregateImportDialog";
