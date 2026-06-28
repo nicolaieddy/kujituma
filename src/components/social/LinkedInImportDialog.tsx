@@ -30,6 +30,7 @@ interface Props {
   onClose: () => void;
   defaultPostId?: string | null;
   defaultUrl?: string;
+  initialFile?: File | null;
 }
 
 interface Parsed {
@@ -133,7 +134,7 @@ function normalizeLiUrl(raw: string | null | undefined): string | null {
   }
 }
 
-export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "" }: Props) {
+export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
   const { values = [] } = useValues();
@@ -218,6 +219,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     setValueIds((cur) => cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]);
 
   useEffect(() => { if (!open) reset(); /* eslint-disable-next-line */ }, [open]);
+  useEffect(() => { if (open && initialFile) { handleFile(initialFile); } /* eslint-disable-next-line */ }, [open, initialFile]);
 
   const commit = async () => {
     if (!parsed) return;
