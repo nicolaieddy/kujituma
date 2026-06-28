@@ -1821,6 +1821,152 @@ export type Database = {
           },
         ]
       }
+      media_candidates: {
+        Row: {
+          approved_mention_id: string | null
+          archived_url: string | null
+          confidence: number | null
+          created_at: string
+          date: string | null
+          featured: boolean
+          id: string
+          outlet: string | null
+          raw_snippet: string | null
+          review_status: Database["public"]["Enums"]["media_review_status"]
+          sentiment: Database["public"]["Enums"]["media_sentiment"] | null
+          source: Database["public"]["Enums"]["media_source"]
+          status: Database["public"]["Enums"]["media_status"] | null
+          summary: string | null
+          tags: string[]
+          title: string
+          type: Database["public"]["Enums"]["media_type"] | null
+          updated_at: string
+          url: string | null
+          url_status: Database["public"]["Enums"]["media_url_status"] | null
+          user_id: string
+        }
+        Insert: {
+          approved_mention_id?: string | null
+          archived_url?: string | null
+          confidence?: number | null
+          created_at?: string
+          date?: string | null
+          featured?: boolean
+          id?: string
+          outlet?: string | null
+          raw_snippet?: string | null
+          review_status?: Database["public"]["Enums"]["media_review_status"]
+          sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
+          source?: Database["public"]["Enums"]["media_source"]
+          status?: Database["public"]["Enums"]["media_status"] | null
+          summary?: string | null
+          tags?: string[]
+          title: string
+          type?: Database["public"]["Enums"]["media_type"] | null
+          updated_at?: string
+          url?: string | null
+          url_status?: Database["public"]["Enums"]["media_url_status"] | null
+          user_id: string
+        }
+        Update: {
+          approved_mention_id?: string | null
+          archived_url?: string | null
+          confidence?: number | null
+          created_at?: string
+          date?: string | null
+          featured?: boolean
+          id?: string
+          outlet?: string | null
+          raw_snippet?: string | null
+          review_status?: Database["public"]["Enums"]["media_review_status"]
+          sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
+          source?: Database["public"]["Enums"]["media_source"]
+          status?: Database["public"]["Enums"]["media_status"] | null
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          type?: Database["public"]["Enums"]["media_type"] | null
+          updated_at?: string
+          url?: string | null
+          url_status?: Database["public"]["Enums"]["media_url_status"] | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "media_candidates_approved_mention_id_fkey"
+            columns: ["approved_mention_id"]
+            isOneToOne: false
+            referencedRelation: "media_mentions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      media_mentions: {
+        Row: {
+          archived_url: string | null
+          created_at: string
+          date: string
+          featured: boolean
+          id: string
+          is_public: boolean
+          outlet: string
+          sentiment: Database["public"]["Enums"]["media_sentiment"] | null
+          source: Database["public"]["Enums"]["media_source"]
+          status: Database["public"]["Enums"]["media_status"]
+          summary: string | null
+          tags: string[]
+          title: string
+          type: Database["public"]["Enums"]["media_type"]
+          updated_at: string
+          url: string | null
+          url_status: Database["public"]["Enums"]["media_url_status"]
+          user_id: string
+          year: number | null
+        }
+        Insert: {
+          archived_url?: string | null
+          created_at?: string
+          date: string
+          featured?: boolean
+          id?: string
+          is_public?: boolean
+          outlet?: string
+          sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
+          source?: Database["public"]["Enums"]["media_source"]
+          status?: Database["public"]["Enums"]["media_status"]
+          summary?: string | null
+          tags?: string[]
+          title: string
+          type?: Database["public"]["Enums"]["media_type"]
+          updated_at?: string
+          url?: string | null
+          url_status?: Database["public"]["Enums"]["media_url_status"]
+          user_id: string
+          year?: number | null
+        }
+        Update: {
+          archived_url?: string | null
+          created_at?: string
+          date?: string
+          featured?: boolean
+          id?: string
+          is_public?: boolean
+          outlet?: string
+          sentiment?: Database["public"]["Enums"]["media_sentiment"] | null
+          source?: Database["public"]["Enums"]["media_source"]
+          status?: Database["public"]["Enums"]["media_status"]
+          summary?: string | null
+          tags?: string[]
+          title?: string
+          type?: Database["public"]["Enums"]["media_type"]
+          updated_at?: string
+          url?: string | null
+          url_status?: Database["public"]["Enums"]["media_url_status"]
+          user_id?: string
+          year?: number | null
+        }
+        Relationships: []
+      }
       monthly_distance_aggregates: {
         Row: {
           created_at: string
@@ -5003,6 +5149,21 @@ export type Database = {
     Enums: {
       app_role: "admin" | "moderator" | "user"
       goal_value_link_source: "ai" | "user"
+      media_review_status: "pending" | "approved" | "rejected"
+      media_sentiment: "positive" | "neutral" | "negative"
+      media_source: "manual" | "google-alert" | "mcp-agent" | "import"
+      media_status: "Published" | "Upcoming" | "Draft"
+      media_type:
+        | "Article"
+        | "Video"
+        | "Article + Video"
+        | "Podcast"
+        | "Panel / Speaking"
+        | "Press Conference"
+        | "Interview"
+        | "Quote"
+        | "Social"
+      media_url_status: "verified" | "verify" | "needs-url" | "no-url" | "dead"
       objective_resolution: "none" | "completed" | "deprioritized" | "abandoned"
       social_platform: "linkedin" | "x" | "instagram" | "tiktok"
       social_status:
@@ -5144,6 +5305,22 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "moderator", "user"],
       goal_value_link_source: ["ai", "user"],
+      media_review_status: ["pending", "approved", "rejected"],
+      media_sentiment: ["positive", "neutral", "negative"],
+      media_source: ["manual", "google-alert", "mcp-agent", "import"],
+      media_status: ["Published", "Upcoming", "Draft"],
+      media_type: [
+        "Article",
+        "Video",
+        "Article + Video",
+        "Podcast",
+        "Panel / Speaking",
+        "Press Conference",
+        "Interview",
+        "Quote",
+        "Social",
+      ],
+      media_url_status: ["verified", "verify", "needs-url", "no-url", "dead"],
       objective_resolution: ["none", "completed", "deprioritized", "abandoned"],
       social_platform: ["linkedin", "x", "instagram", "tiktok"],
       social_status: [

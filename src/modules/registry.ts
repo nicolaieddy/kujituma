@@ -131,6 +131,23 @@ export const MODULE_REGISTRY: ModuleDefinition[] = [
       "social_post_values",
     ],
   },
+  {
+    id: "media",
+    name: "Media",
+    tagline: "Track every press mention in one place — with a shareable public press page.",
+    description:
+      "Your single source of truth for media mentions. Filterable table, dashboard by year/type/outlet, CSV/XLSX bulk import, a review inbox for agent-discovered candidates, archive snapshots, and a shareable public press page.",
+    coverEmoji: "📰",
+    category: "productivity",
+    tier: "free",
+    status: "available",
+    surfaces: {
+      pages: ["Dedicated Media page (/media)", "Public press page (/press/:userId)"],
+      integrations: ["Wayback archive snapshots"],
+      mcpToolPrefixes: ["media_"],
+    },
+    dataTables: ["media_mentions", "media_candidates"],
+  },
 ];
 
 export const getModule = (id: ModuleId): ModuleDefinition | undefined =>

@@ -57,6 +57,8 @@ const Health = lazy(() => import("./pages/Health"));
 const Training = lazy(() => import("./pages/Training"));
 const Network = lazy(() => import("./pages/Network"));
 const Social = lazy(() => import("./pages/Social"));
+const Media = lazy(() => import("./pages/Media"));
+const PublicPress = lazy(() => import("./pages/PublicPress"));
 const LandingPage = lazy(() => import("./pages/LandingPage"));
 const Install = lazy(() => import("./pages/Install"));
 // Rituals content is now integrated into Analytics page
@@ -279,6 +281,15 @@ const AppContent = ({ queryClient }: { queryClient: QueryClient }) => {
                 </RequireModule>
               }
             />
+            <Route
+              path="/media"
+              element={
+                <RequireModule id="media">
+                  <Media />
+                </RequireModule>
+              }
+            />
+            <Route path="/press/:userId" element={<PublicPress />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/admin" element={<Admin />} />
             <Route path="/profile" element={<ProfileEntry />} />
