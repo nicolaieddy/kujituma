@@ -45,14 +45,6 @@ export function MediaTable({ mentions, onEdit, onDelete }: Props) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return mentions.filter((m) => {
-      if (q && !(m.title.toLowerCase().includes(q) || (m.outlet ?? "").toLowerCase().includes(q) || (m.summary ?? "").toLowerCase().includes(q) || m.tags?.some((t) => t.toLowerCase().includes(q)))) return false;
-      if (year !== "all" && String(m.year) !== year) return false;
-      if (type !== "all" && m.type !== type) return false;
-      if (status !== "all" && m.status !== status) return false;
-      if (needsUrlOnly && m.url_status !== "needs-url") return false;
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
     const list = mentions.filter((m) => {
       if (q && !(m.title.toLowerCase().includes(q) || (m.outlet ?? "").toLowerCase().includes(q) || (m.summary ?? "").toLowerCase().includes(q) || m.tags?.some((t) => t.toLowerCase().includes(q)))) return false;
       if (year !== "all" && String(m.year) !== year) return false;
