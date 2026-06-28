@@ -40,6 +40,7 @@ export default function Social() {
           { id: "pipeline", label: "Pipeline", icon: LayoutGrid },
           { id: "calendar", label: "Calendar", icon: CalendarIcon },
           { id: "analytics", label: "Analytics", icon: BarChart3 },
+          { id: "growth", label: "Growth", icon: TrendingUp },
           { id: "setup", label: "Setup", icon: SettingsIcon },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
@@ -60,6 +61,7 @@ export default function Social() {
       {view === "pipeline" && <PipelineBoard onOpenPost={openEditor} onCreate={openCreate} />}
       {view === "calendar" && <SocialCalendar onOpenPost={openEditor} />}
       {view === "analytics" && <SocialAnalytics />}
+      {view === "growth" && <CumulativeGrowthChart />}
       {view === "setup" && <PlatformSettingsPanel />}
 
       <PostEditorDrawer
