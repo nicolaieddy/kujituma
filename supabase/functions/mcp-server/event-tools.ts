@@ -159,7 +159,7 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
     },
     handler: async (args: any) => {
       const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
-      for (const k of ["event_type", "title", "start_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location"]) {
+      for (const k of ["event_type", "title", "start_date", "description", "body_part", "race_distance", "race_result", "race_priority", "location", "linked_activity_id"]) {
         if (args[k] !== undefined) upd[k] = args[k] === "" ? null : args[k];
       }
       if (args.end_date !== undefined) upd.end_date = args.end_date === "" ? null : args.end_date;
