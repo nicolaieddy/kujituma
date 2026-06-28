@@ -191,24 +191,26 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           <TabsContent value="image" className="space-y-2">
             <ImportDropzone
               accept="image/png,image/jpeg,image/webp,image/heic"
-              selected={file}
-              onClear={() => setFile(null)}
-              onFiles={(fs) => setFile(fs[0])}
+              multiple
+              selected={files}
+              onClear={() => setFiles([])}
+              onFiles={(fs) => setFiles(fs)}
               busy={busy}
-              label="Drop a screenshot or click to browse"
-              hint="PNG, JPG, WEBP, or HEIC — max 20 MB"
+              label="Drop screenshots or click to browse"
+              hint="PNG, JPG, WEBP, or HEIC — max 20 MB each. Multiple files supported."
             />
           </TabsContent>
 
           <TabsContent value="document" className="space-y-2">
             <ImportDropzone
               accept=".pdf,.doc,.docx,.txt,.md"
-              selected={file}
-              onClear={() => setFile(null)}
-              onFiles={(fs) => setFile(fs[0])}
+              multiple
+              selected={files}
+              onClear={() => setFiles([])}
+              onFiles={(fs) => setFiles(fs)}
               busy={busy}
-              label="Drop a document or click to browse"
-              hint="PDF works best — max 20 MB"
+              label="Drop documents or click to browse"
+              hint="PDF works best — max 20 MB each. Multiple files supported."
             />
           </TabsContent>
         </Tabs>
