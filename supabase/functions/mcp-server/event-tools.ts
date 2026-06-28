@@ -79,7 +79,12 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         end_date: { type: "string", description: "YYYY-MM-DD, optional for ranges" },
         description: { type: "string" },
         severity: { type: "number", description: "1-5 (injury/illness)" },
-        body_part: { type: "string" },
+        body_part: { type: "string", description: "Legacy free-text body part. Prefer `body_parts` for new entries." },
+        body_parts: BODY_PART_SCHEMA,
+        issue_category: {
+          type: "string",
+          description: "Injury/illness only: 'niggle' (minor — training through) | 'injury' (significant) | 'illness' (sick).",
+        },
         race_distance: { type: "string" },
         race_result: { type: "string" },
         race_priority: { type: "string", description: "A | B | C" },
@@ -101,6 +106,17 @@ export function registerTrainingEventTools(mcp: McpServer, supabase: Supabase, u
         if (args[k] !== undefined && args[k] !== "") insert[k] = args[k];
       }
       if (args.severity !== undefined) insert.severity = args.severity;
+
+      if (args.event_type === "injury_illness") {
+        if (args.issue_category !== undefined && args.issue_category !== "") {
+          if (!(ISSUE_CATEGORIES as readonly string[]).includes(args.issue_category)) {
+            return { content: [{ type: "text" as const, text: `issue_category must be one of: ${ISSUE_CATEGORIES.join(", ")}` }] };
+          }
+          insert.issue_category = args.issue_category;
+        }
+        const parts = sanitizeBodyParts(args.body_parts);
+        if (parts) insert.body_parts = parts;
+      }
 
       const { data, error } = await supabase.from("training_events").insert(insert).select().single();
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
