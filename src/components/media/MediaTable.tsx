@@ -65,15 +65,16 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
       if (status !== "all" && m.status !== status) return false;
       if (needsUrlOnly && m.url_status !== "needs-url") return false;
       if (urlStatus !== "all" && m.url_status !== urlStatus) return false;
+      if (selectedTags.length > 0 && !selectedTags.every((t) => m.tags?.includes(t))) return false;
       return true;
     });
-  const sorted = [...list];
+    const sorted = [...list];
     if (sort === "date-desc") sorted.sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
     else if (sort === "date-asc") sorted.sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""));
     else if (sort === "updated-desc") sorted.sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""));
     else if (sort === "relevance") sorted.sort((a, b) => relevanceScore(b) - relevanceScore(a));
     return sorted;
-  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, sort]);
+  }, [mentions, search, year, type, status, urlStatus, needsUrlOnly, selectedTags, sort]);
 
   const sortLabels: Record<string, string> = {
     "date-desc": "Newest first",
