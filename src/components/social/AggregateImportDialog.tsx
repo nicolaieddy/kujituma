@@ -194,7 +194,51 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
     setPlatform(defaultPlatform);
   };
 
-  const handleFile = async (f: File) => {
+  const handleFiles = async (files: File[]) => {
+    if (files.length === 1) {
+      await handleSingleFile(files[0]);
+      return;
+    }
+    // Multi-file: parse + commit each sequentially with aggregated toast
+    if (!user) return;
+    const p = createImportProgress(`Importing ${files.length} aggregate exports…`);
+    let okCount = 0;
+    let failCount = 0;
+    let totalDaily = 0;
+    let totalFollowers = 0;
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const f = files[i];
+        p.update(`Processing ${f.name} (${i + 1}/${files.length})…`);
+        try {
+          const buffer = await f.arrayBuffer();
+          const data = parseWorkbook(buffer, platform);
+          await commitParsed(data, f.name);
+          okCount++;
+          totalDaily += data.daily.length;
+          totalFollowers += data.followerTotals.length;
+        } catch (err) {
+          console.error("[aggregate-import] file failed", f.name, err);
+          failCount++;
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["social-follower-growth"] });
+      qc.invalidateQueries({ queryKey: ["social-platform-settings"] });
+      qc.invalidateQueries({ queryKey: ["social-daily-account-metrics"] });
+      const desc = `${totalDaily} daily rows · ${totalFollowers} follower entries${failCount ? ` · ${failCount} failed` : ""}`;
+      if (okCount > 0) {
+        p.success(`${okCount} of ${files.length} imported`, desc);
+      } else {
+        p.error("No files imported", desc);
+      }
+      reset();
+      onClose();
+    } catch (e) {
+      p.error("Import failed", describeError(e));
+    }
+  };
+
+  const handleSingleFile = async (f: File) => {
     setFile(f);
     setParsing(true);
     const p = createImportProgress(`Parsing ${f.name}…`);
@@ -210,6 +254,77 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
       setParsing(false);
     }
   };
+
+  /** Pure commit using a parsed payload — no React state writes. */
+  const commitParsed = async (data: ParsedAggregate, fileName: string | null) => {
+    if (!user) throw new Error("Not signed in");
+    const dailyRows = data.daily.map((d) => ({
+      platform: data.platform,
+      date: d.date,
+      impressions: d.impressions ?? null,
+      engagements: d.engagements ?? null,
+      new_followers: d.new_followers ?? null,
+      source: "linkedin_aggregate_xlsx",
+    }));
+    if (dailyRows.length > 0) await upsertDaily.mutateAsync(dailyRows);
+
+    if (data.followerTotals.length > 0) {
+      const payload = data.followerTotals.map((r) => ({
+        user_id: user.id,
+        platform: data.platform,
+        date: r.date,
+        total_followers: r.total_followers,
+        note: "Imported from LinkedIn aggregate export",
+      }));
+      for (let i = 0; i < payload.length; i += 500) {
+        const { error } = await supabase
+          .from("social_follower_growth")
+          .upsert(payload.slice(i, i + 500), { onConflict: "user_id,platform,date" });
+        if (error) throw error;
+      }
+    }
+
+    if (data.currentFollowers != null) {
+      await upsertSettings.mutateAsync({
+        platform: data.platform,
+        current_followers_cached: data.currentFollowers,
+      });
+      if (data.followersAsOf) {
+        await supabase
+          .from("social_follower_growth")
+          .upsert(
+            {
+              user_id: user.id,
+              platform: data.platform,
+              date: data.followersAsOf,
+              total_followers: data.currentFollowers,
+              note: "Anchor: 'Total followers on' value from aggregate export",
+            },
+            { onConflict: "user_id,platform,date" },
+          );
+      }
+    }
+
+    try {
+      await logImport.mutateAsync({
+        platform: data.platform,
+        kind: "linkedin_aggregate",
+        action: "updated",
+        post_id: null,
+        post_url: null,
+        file_name: fileName,
+        summary: {
+          daily_rows: data.daily.length,
+          follower_entries: data.followerTotals.length,
+          current_followers: data.currentFollowers,
+          range: data.rangeLabel,
+        },
+      });
+    } catch (logErr) {
+      console.warn("[social-import-history] log failed", logErr);
+    }
+  };
+
 
   const commit = async () => {
     if (!parsed || !user) return;
