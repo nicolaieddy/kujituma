@@ -25,9 +25,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useTrainingEvents, type TrainingEventType } from "@/hooks/useTrainingEvents";
+import { useTrainingEvents, type TrainingEventType, type IssueCategory } from "@/hooks/useTrainingEvents";
 import { parseLocalDate } from "@/utils/dateUtils";
 import { cn } from "@/lib/utils";
+import { BodyPartsPicker } from "./BodyPartsPicker";
+import { ISSUE_CATEGORY_META, type BodyPartEntry } from "@/lib/bodyParts";
 
 const STORAGE_BUCKET = "fit-files";
 const MAX_FILES = 10;
