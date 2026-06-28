@@ -92,6 +92,13 @@ export const ValuesBulkImportDialog = ({ open, onOpenChange, onImport }: Props) 
           <p className="text-sm text-muted-foreground">
             Paste your "I feel…" list — one value per line. Bullets and dashes are stripped automatically.
           </p>
+          <ImportDropzone
+            accept=".txt,.csv,.md"
+            onFiles={(fs) => handleFile(fs[0])}
+            label="Drop a .txt / .csv file or click to browse"
+            hint="Or paste directly below"
+            className="p-4"
+          />
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
