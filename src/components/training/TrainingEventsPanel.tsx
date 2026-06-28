@@ -572,6 +572,18 @@ export function TrainingEventsPanel() {
                           onChange={(next) => setForm({ ...form, body_parts: next })}
                         />
                       </div>
+
+                      <div className="space-y-1.5">
+                        <Label>Linked workout <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                        <ActivityLinkPicker
+                          value={form.linked_activity_id}
+                          onChange={(id) => setForm({ ...form, linked_activity_id: id })}
+                          anchorDate={form.start_date}
+                        />
+                        <p className="text-[11px] text-muted-foreground">
+                          Link the activity where this happened, if known.
+                        </p>
+                      </div>
                     </div>
                   )}
 
