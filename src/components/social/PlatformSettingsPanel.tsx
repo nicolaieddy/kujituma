@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { X, Plus, Loader2 } from "lucide-react";
+import { X, Plus, Loader2, Upload, FileSpreadsheet } from "lucide-react";
 import { PLATFORM_META, SOCIAL_PLATFORMS } from "@/lib/social";
 import { useSocialPlatformSettings, useUpsertPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useLogFollowerCount } from "@/hooks/useFollowerGrowth";
 import { getLocalDateString } from "@/utils/dateUtils";
+import { AggregateImportDialog } from "./AggregateImportDialog";
 
 export function PlatformSettingsPanel() {
   const { data: settings = [], isLoading } = useSocialPlatformSettings();
