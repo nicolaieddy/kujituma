@@ -13,6 +13,7 @@ export interface SocialPost {
   platforms: SocialPlatform[];
   pillars: string[];
   publish_date: string | null;
+  publish_at: string | null;
   live_url: string | null;
   media: string[];
   trust_check: SocialTrustCheck;
