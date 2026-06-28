@@ -156,6 +156,21 @@ export function MediaEditorDrawer({ open, onOpenChange, mention, onSave }: Props
               onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }}
             />
           </Field>
+          <Field label="Story / Announcement">
+            <Select
+              value={(form.story_id as string | null) ?? "none"}
+              onValueChange={(v) => set("story_id", v === "none" ? null : v)}
+            >
+              <SelectTrigger><SelectValue placeholder="Not grouped" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">— Not grouped</SelectItem>
+                {stories.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.title}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground mt-1">Group multiple articles covering the same announcement. Create stories from the Timeline tab.</p>
+          </Field>
           <div className="grid grid-cols-2 gap-3">
             <ToggleRow label="Featured" checked={form.featured ?? false} onChange={(v) => set("featured", v)} />
             <ToggleRow label="Public" checked={form.is_public ?? false} onChange={(v) => set("is_public", v)} />
