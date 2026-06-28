@@ -3032,6 +3032,69 @@ export type Database = {
         }
         Relationships: []
       }
+      social_goals: {
+        Row: {
+          created_at: string
+          id: string
+          linked_goal_id: string | null
+          metric: string
+          notes: string | null
+          platform: string
+          start_date: string
+          start_value: number
+          status: string
+          target_date: string
+          target_value: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          linked_goal_id?: string | null
+          metric: string
+          notes?: string | null
+          platform: string
+          start_date: string
+          start_value: number
+          status?: string
+          target_date: string
+          target_value: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          linked_goal_id?: string | null
+          metric?: string
+          notes?: string | null
+          platform?: string
+          start_date?: string
+          start_value?: number
+          status?: string
+          target_date?: string
+          target_value?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_goals_linked_goal_id_fkey"
+            columns: ["linked_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goal_values_alignment"
+            referencedColumns: ["goal_id"]
+          },
+          {
+            foreignKeyName: "social_goals_linked_goal_id_fkey"
+            columns: ["linked_goal_id"]
+            isOneToOne: false
+            referencedRelation: "goals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_import_history: {
         Row: {
           action: string
