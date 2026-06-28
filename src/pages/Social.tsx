@@ -16,6 +16,7 @@ import { PageDropOverlay } from "@/components/shared/PageDropOverlay";
 import { GoalProgressStrip } from "@/components/social/GoalProgressStrip";
 import { groupFilesByKind } from "@/lib/social/analyticsSniffer";
 import { cn } from "@/lib/utils";
+import { BetaBadge } from "@/components/shared/BetaBadge";
 
 type View = "pipeline" | "calendar" | "analytics" | "setup";
 
