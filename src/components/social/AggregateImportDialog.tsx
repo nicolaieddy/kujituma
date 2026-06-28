@@ -182,7 +182,6 @@ export function AggregateImportDialog({ open, onClose, defaultPlatform = "linked
   const upsertDaily = useBulkUpsertDailyMetrics();
   const upsertSettings = useUpsertPlatformSettings();
   const logImport = useLogSocialImport();
-  const inputRef = useRef<HTMLInputElement>(null);
   const [platform, setPlatform] = useState<SocialPlatform>(defaultPlatform);
   const [file, setFile] = useState<File | null>(null);
   const [parsed, setParsed] = useState<ParsedAggregate | null>(null);
