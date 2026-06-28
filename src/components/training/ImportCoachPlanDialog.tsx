@@ -136,23 +136,27 @@ export function ImportCoachPlanDialog({ open, onOpenChange, weekStart }: ImportC
           </TabsContent>
 
           <TabsContent value="image" className="space-y-2">
-            <Input
-              type="file"
+            <ImportDropzone
               accept="image/png,image/jpeg,image/webp,image/heic"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              selected={file}
+              onClear={() => setFile(null)}
+              onFiles={(fs) => setFile(fs[0])}
+              busy={busy}
+              label="Drop a screenshot or click to browse"
+              hint="PNG, JPG, WEBP, or HEIC — max 20 MB"
             />
-            <p className="text-xs text-muted-foreground">PNG, JPG, or WEBP. Max 20 MB.</p>
-            {file && <p className="text-xs text-muted-foreground">Selected: {file.name}</p>}
           </TabsContent>
 
           <TabsContent value="document" className="space-y-2">
-            <Input
-              type="file"
-              accept=".pdf,.doc,.docx,.txt,.md,application/pdf"
-              onChange={(e) => setFile(e.target.files?.[0] || null)}
+            <ImportDropzone
+              accept=".pdf,.doc,.docx,.txt,.md"
+              selected={file}
+              onClear={() => setFile(null)}
+              onFiles={(fs) => setFile(fs[0])}
+              busy={busy}
+              label="Drop a document or click to browse"
+              hint="PDF works best — max 20 MB"
             />
-            <p className="text-xs text-muted-foreground">PDF works best. Max 20 MB.</p>
-            {file && <p className="text-xs text-muted-foreground">Selected: {file.name}</p>}
           </TabsContent>
         </Tabs>
 
