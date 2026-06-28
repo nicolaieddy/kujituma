@@ -149,10 +149,41 @@ export const NavigationMenu = ({ onItemClick, isMobile = false }: NavigationMenu
   const overflowHasActive = overflowItems.some((i) => i.section === currentSection);
   const needsMoreMenu = overflowItems.length > 0 || order.length > 0;
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handlePinnedDragEnd = (e: DragEndEvent) => {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
+    const oldIndex = pinned.indexOf(active.id as ModuleId);
+    const newIndex = pinned.indexOf(over.id as ModuleId);
+    if (oldIndex < 0 || newIndex < 0) return;
+    const nextPinned = arrayMove(pinned, oldIndex, newIndex);
+    reorder([...nextPinned, ...overflow]);
+  };
+
   return (
     <nav className="flex items-center space-x-1">
       {CORE_ITEMS.map(renderPill)}
-      {pinnedItems.map(renderPill)}
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handlePinnedDragEnd}>
+        <SortableContext items={pinned} strategy={horizontalListSortingStrategy}>
+          <div className="flex items-center space-x-1">
+            {pinnedItems.map((item) => (
+              <SortablePill
+                key={item.section}
+                id={item.moduleId}
+                item={item}
+                isActive={currentSection === item.section}
+                onClick={() => handleNavigation(item.path)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
 
       {needsMoreMenu && (
         <Popover open={moreOpen} onOpenChange={setMoreOpen}>
