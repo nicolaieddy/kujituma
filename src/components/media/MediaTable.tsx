@@ -127,6 +127,29 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
         </div>
       </div>
 
+      {activeFilters.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-muted-foreground">Active:</span>
+          {activeFilters.map((pill) => (
+            <Badge key={pill.key} variant="secondary" className="gap-1 pr-1 pl-2.5 py-1 text-xs font-medium">
+              {pill.label}
+              <button
+                type="button"
+                onClick={pill.onRemove}
+                disabled={loading}
+                aria-label={`Remove ${pill.label}`}
+                className="inline-flex items-center justify-center rounded-full p-0.5 hover:bg-secondary-foreground/10 disabled:opacity-50"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground" onClick={clearAll} disabled={loading}>
+            Clear all
+          </Button>
+        </div>
+      )}
+
       <div className="rounded-md border">
         <Table>
           <TableHeader>
