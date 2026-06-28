@@ -692,24 +692,44 @@ function ProposalCard({
             />
           </div>
           {e.event_type === "injury_illness" && (
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Body part</Label>
-                <Input
-                  value={e.body_part ?? ""}
-                  onChange={(ev) => onUpdateEvent({ body_part: ev.target.value })}
-                />
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs">Category</Label>
+                  <Select
+                    value={e.issue_category ?? ""}
+                    onValueChange={(v) =>
+                      onUpdateEvent({ issue_category: (v || null) as IssueCategory | null })
+                    }
+                  >
+                    <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(ISSUE_CATEGORY_META) as IssueCategory[]).map((k) => (
+                        <SelectItem key={k} value={k}>
+                          {ISSUE_CATEGORY_META[k].label} — {ISSUE_CATEGORY_META[k].description}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs">Severity (1-5)</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={5}
+                    value={e.severity ?? ""}
+                    onChange={(ev) =>
+                      onUpdateEvent({ severity: ev.target.value ? Number(ev.target.value) : null })
+                    }
+                  />
+                </div>
               </div>
               <div>
-                <Label className="text-xs">Severity (1-5)</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  max={5}
-                  value={e.severity ?? ""}
-                  onChange={(ev) =>
-                    onUpdateEvent({ severity: ev.target.value ? Number(ev.target.value) : null })
-                  }
+                <Label className="text-xs">Body parts</Label>
+                <BodyPartsPicker
+                  value={e.body_parts ?? []}
+                  onChange={(next) => onUpdateEvent({ body_parts: next })}
                 />
               </div>
             </div>
