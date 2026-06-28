@@ -3,9 +3,147 @@ import type { createClient } from "npm:@supabase/supabase-js@2";
 type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
-const TYPES = ["Article","Video","Article + Video","Podcast","Panel / Speaking","Press Conference","Interview","Quote","Social"];
+const TYPES = ["Article","Video","Article + Video","Podcast","Panel / Speaking","Press Conference","Interview","Quote","Social","Profile","Event / Speaking"];
 const STATUSES = ["Published","Upcoming","Draft"];
 const URL_STATUSES = ["verified","verify","needs-url","no-url","dead"];
+const SENTIMENTS = ["positive","neutral","negative"];
+const SOURCES = ["manual","web-scan","google-alert","mcp-agent","import"];
+
+const TRACKING_PARAMS = /^(utm_|fbclid$|gclid$|mc_(cid|eid)$|igshid$|ref$|ref_src$|si$|spm$)/i;
+
+function normalizeUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let s = String(raw).trim();
+  if (!s) return null;
+  if (!/^https?:\/\//i.test(s)) s = "https://" + s;
+  try {
+    const u = new URL(s);
+    u.hostname = u.hostname.toLowerCase().replace(/^www\./, "");
+    const keep: [string, string][] = [];
+    for (const [k, v] of u.searchParams) {
+      if (!TRACKING_PARAMS.test(k)) keep.push([k, v]);
+    }
+    u.search = "";
+    for (const [k, v] of keep) u.searchParams.append(k, v);
+    u.hash = "";
+    let out = u.toString();
+    // strip trailing slash on path-only urls
+    if (u.pathname !== "/" && out.endsWith("/")) out = out.slice(0, -1);
+    if (u.pathname === "/" && out.endsWith("/")) out = out.slice(0, -1);
+    return out.toLowerCase();
+  } catch {
+    return s.toLowerCase().replace(/\/+$/, "");
+  }
+}
+
+function coerceTags(input: unknown): string[] | undefined {
+  if (input === undefined || input === null) return undefined;
+  if (Array.isArray(input)) return input.map((s) => String(s).trim()).filter(Boolean);
+  return String(input).split(/[,;|]/).map((s) => s.trim()).filter(Boolean);
+}
+
+function validateEnum(value: unknown, allowed: string[], field: string): string | null {
+  if (value === undefined || value === null || value === "") return null;
+  const v = String(value);
+  if (!allowed.includes(v)) {
+    throw new Error(`Invalid ${field}: "${v}". Must be one of: ${allowed.join(", ")}`);
+  }
+  return v;
+}
+
+function buildMentionPatch(input: any, opts: { defaultSource?: string } = {}) {
+  const patch: Record<string, any> = {};
+  if (input.title !== undefined) patch.title = String(input.title);
+  if (input.outlet !== undefined) patch.outlet = String(input.outlet ?? "");
+  if (input.date !== undefined && input.date !== null && input.date !== "") {
+    patch.date = String(input.date);
+    const y = new Date(String(input.date)).getUTCFullYear();
+    if (!Number.isNaN(y)) patch.year = y;
+  }
+  if (input.url !== undefined) {
+    patch.url = normalizeUrl(input.url);
+  }
+  const type = validateEnum(input.type, TYPES, "type");
+  if (type) patch.type = type;
+  const status = validateEnum(input.status, STATUSES, "status");
+  if (status) patch.status = status;
+  const sentiment = validateEnum(input.sentiment, SENTIMENTS, "sentiment");
+  if (sentiment) patch.sentiment = sentiment;
+  const urlStatus = validateEnum(input.url_status, URL_STATUSES, "url_status");
+  if (urlStatus) patch.url_status = urlStatus;
+  else if (input.url !== undefined && !input.url_status) {
+    patch.url_status = patch.url ? "verify" : "needs-url";
+  }
+  const source = validateEnum(input.source, SOURCES, "source");
+  if (source) patch.source = source;
+  else if (opts.defaultSource) patch.source = opts.defaultSource;
+  if (input.summary !== undefined) patch.summary = input.summary ? String(input.summary) : null;
+  const tags = coerceTags(input.tags);
+  if (tags !== undefined) patch.tags = tags;
+  if (input.featured !== undefined) patch.featured = Boolean(input.featured);
+  if (input.is_public !== undefined) patch.is_public = Boolean(input.is_public);
+  if (input.archived_url !== undefined) patch.archived_url = input.archived_url ? String(input.archived_url) : null;
+  if (input.news_announcement_group !== undefined) patch.news_announcement_group = input.news_announcement_group ? String(input.news_announcement_group) : null;
+  if (input.article_type_tag !== undefined) patch.article_type_tag = input.article_type_tag ? String(input.article_type_tag) : null;
+  if (input.nicolai_mention_type !== undefined) patch.nicolai_mention_type = input.nicolai_mention_type ? String(input.nicolai_mention_type) : null;
+  if (input.verification_notes !== undefined) patch.verification_notes = input.verification_notes ? String(input.verification_notes) : null;
+  if (input.last_checked !== undefined) patch.last_checked = input.last_checked ? String(input.last_checked) : null;
+  if (input.date_added !== undefined) patch.date_added = input.date_added ? String(input.date_added) : null;
+  return patch;
+}
+
+async function upsertOne(supabase: Supabase, userId: string, input: any, defaultSource = "manual") {
+  const patch = buildMentionPatch(input, { defaultSource });
+  if (!patch.title) throw new Error("title is required");
+  if (!patch.date) throw new Error("date is required");
+  const normUrl: string | null = patch.url ?? null;
+
+  if (normUrl) {
+    // url-based upsert
+    const { data: existing } = await supabase
+      .from("media_mentions")
+      .select("id")
+      .eq("user_id", userId)
+      .ilike("url", normUrl)
+      .maybeSingle();
+    if (existing) {
+      const { data, error } = await supabase
+        .from("media_mentions").update(patch)
+        .eq("id", existing.id).eq("user_id", userId)
+        .select().single();
+      if (error) throw new Error(error.message);
+      return { action: "updated" as const, mention: data };
+    }
+    const { data, error } = await supabase
+      .from("media_mentions").insert({ user_id: userId, ...patch })
+      .select().single();
+    if (error) throw new Error(error.message);
+    return { action: "inserted" as const, mention: data };
+  }
+
+  // soft key: title + outlet + date
+  const { data: soft } = await supabase
+    .from("media_mentions")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("title", patch.title)
+    .eq("outlet", patch.outlet ?? "")
+    .eq("date", patch.date)
+    .maybeSingle();
+  if (soft) {
+    const { data, error } = await supabase
+      .from("media_mentions").update(patch)
+      .eq("id", soft.id).eq("user_id", userId)
+      .select().single();
+    if (error) throw new Error(error.message);
+    return { action: "updated" as const, mention: data };
+  }
+  const { data, error } = await supabase
+    .from("media_mentions").insert({ user_id: userId, ...patch })
+    .select().single();
+  if (error) throw new Error(error.message);
+  return { action: "inserted" as const, mention: data };
+}
 
 export function registerMediaTools(mcp: McpServer, supabase: Supabase, userId: string) {
   mcp.tool("list_media", {
