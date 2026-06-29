@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { ArrowRight } from "lucide-react";
-import { WeeklyObjective } from "@/types/weeklyProgress";
+import { ArrowRight, List, LayoutGrid } from "lucide-react";
+import { WeeklyObjective, ObjectiveStatus } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
 import { AnimatePresence } from "framer-motion";
 import { DndContext, DragEndEvent, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
@@ -11,9 +11,14 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import { ObjectiveItem } from "./ObjectiveItem";
 import { InlineAddObjective } from "./InlineAddObjective";
 import { EmptyObjectivesState } from "./EmptyObjectivesState";
+import { ObjectivesKanbanBoard } from "./ObjectivesKanbanBoard";
 import { useMyObjectivesFeedback } from "@/hooks/useObjectiveFeedback";
 import { useObjectiveCommentCounts } from "@/hooks/useObjectiveComments";
 import { ObjectiveCommentsSheet } from "@/components/accountability/ObjectiveCommentsSheet";
+import { cn } from "@/lib/utils";
+
+const VIEW_STORAGE_KEY = "thisweek.objectives.view";
+type ObjectivesView = "list" | "board";
 
 interface WeeklyObjectivesListProps {
   objectives: WeeklyObjective[];
