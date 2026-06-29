@@ -63,14 +63,14 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
 
   mcp.resource("goals://active", {
     name: "Active Goals",
-    description: "All active (non-paused, non-completed) goals",
+    description: "All active (non-paused, non-done) goals",
     mimeType: "application/json",
     handler: async () => {
       const { data } = await supabase
         .from("goals")
         .select("id, title, description, category, timeframe, status, start_date, target_date, habit_items")
         .eq("user_id", userId)
-        .not("status", "in", '("completed","deprioritized")')
+        .not("status", "in", '("done","deprioritized")')
         .eq("is_paused", false)
         .order("order_index");
       return { text: JSON.stringify(data || [], null, 2) };
