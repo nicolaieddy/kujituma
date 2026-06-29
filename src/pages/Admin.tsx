@@ -150,12 +150,23 @@ const Admin = () => {
         </div>
 
         <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted">
+          <TabsList className="grid w-full grid-cols-3 bg-muted">
             <TabsTrigger value="posts">
               Posts Management
             </TabsTrigger>
             <TabsTrigger value="users">
               Users Overview
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="relative">
+              Feedback
+              {feedbackUnread > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="ml-2 h-5 min-w-5 px-1.5 text-[10px]"
+                >
+                  {feedbackUnread}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -186,6 +197,12 @@ const Admin = () => {
                 onMonthRangeChange={refreshMonthlyData}
               />
               <UsersOverview users={users} onUserDeleted={handleUserDeleted} />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="feedback" className="mt-6 space-y-6">
+            <Suspense fallback={<AdminTabSkeleton />}>
+              <FeedbackInbox />
             </Suspense>
           </TabsContent>
         </Tabs>
