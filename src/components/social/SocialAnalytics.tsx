@@ -552,7 +552,7 @@ function PlatformChip({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-function KpiCard({ label, value, sub, delta }: { label: string; value: React.ReactNode; sub?: string; delta?: number }) {
+function KpiCard({ label, value, sub, delta, source, sourceDetail }: { label: string; value: React.ReactNode; sub?: string; delta?: number; source?: string; sourceDetail?: string }) {
   const TrendIcon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
   const trendClass = delta == null || delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive";
   return (
@@ -564,6 +564,23 @@ function KpiCard({ label, value, sub, delta }: { label: string; value: React.Rea
           {delta != null && <TrendIcon className="h-3 w-3" />}
           <span>{sub}</span>
         </div>
+      )}
+      {source && (
+        <TooltipProvider delayDuration={150}>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="pt-1 flex items-center gap-1 text-[10px] text-muted-foreground/80 cursor-help">
+                <Database className="h-2.5 w-2.5" />
+                <span className="font-mono truncate">{source}</span>
+              </div>
+            </TooltipTrigger>
+            {sourceDetail && (
+              <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                {sourceDetail}
+              </TooltipContent>
+            )}
+          </UITooltip>
+        </TooltipProvider>
       )}
     </Card>
   );
