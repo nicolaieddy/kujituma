@@ -175,7 +175,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
         // Objectives created and completed
         supabase
           .from("weekly_objectives")
-          .select("is_completed", { count: "exact" })
+          .select("status", { count: "exact" })
           .eq("user_id", userId),
         // Daily check-ins
         supabase
@@ -214,12 +214,12 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
       // Calculate goals metrics
       const goals = goalsResult.data || [];
       const goalsCreated = goals.length;
-      const goalsCompleted = goals.filter((g: any) => g.status === "completed").length;
+      const goalsCompleted = goals.filter((g: any) => g.status === "done").length;
 
       // Calculate objectives metrics
       const objectives = objectivesResult.data || [];
       const objectivesCreated = objectives.length;
-      const objectivesCompleted = objectives.filter((o: any) => o.is_completed).length;
+      const objectivesCompleted = objectives.filter((o: any) => o.status === "done").length;
 
       setProductMetrics({
         goalsCreated,
