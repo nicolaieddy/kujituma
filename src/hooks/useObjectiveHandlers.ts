@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { WeeklyObjective, WeeklyProgressPost } from "@/types/weeklyProgress";
+import { WeeklyObjective, WeeklyProgressPost, ObjectiveStatus } from "@/types/weeklyProgress";
 
 interface UseObjectiveHandlersProps {
   currentWeekStart: string;
