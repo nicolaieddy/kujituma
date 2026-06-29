@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { useAdminData } from "@/hooks/useAdminData";
@@ -7,11 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 
+import { Badge } from "@/components/ui/badge";
+import { useAdminFeedbackUnreadCount } from "@/hooks/useAdminFeedbackUnread";
+
 // Lazy load admin components for code splitting
 const PostsManagement = lazy(() => import("@/components/admin/PostsManagement"));
 const UsersOverview = lazy(() => import("@/components/admin/UsersOverview"));
 const UserAnalytics = lazy(() => import("@/components/admin/UserAnalytics"));
 const PostAnalytics = lazy(() => import("@/components/admin/PostAnalytics"));
+const FeedbackInbox = lazy(() => import("@/components/admin/FeedbackInbox"));
 
 // Loading skeleton for admin tabs
 // Loading skeleton for admin tabs content
@@ -113,6 +118,11 @@ const Admin = () => {
     handleUserDeleted
   } = useAdminData();
 
+  const { data: feedbackUnread = 0 } = useAdminFeedbackUnreadCount(isAdmin);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "users" || tabParam === "feedback" ? tabParam : "posts";
+
   if (loading) {
     return <AdminPageSkeleton />;
   }
@@ -143,13 +153,33 @@ const Admin = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="posts" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            const next = new URLSearchParams(searchParams);
+            if (v === "posts") next.delete("tab");
+            else next.set("tab", v);
+            setSearchParams(next, { replace: true });
+          }}
+          className="w-full"
+        >
+          <TabsList className="grid w-full grid-cols-3 bg-muted">
             <TabsTrigger value="posts">
               Posts Management
             </TabsTrigger>
             <TabsTrigger value="users">
               Users Overview
+            </TabsTrigger>
+            <TabsTrigger value="feedback" className="relative">
+              Feedback
+              {feedbackUnread > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="ml-2 h-5 min-w-5 px-1.5 text-[10px]"
+                >
+                  {feedbackUnread}
+                </Badge>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -180,6 +210,12 @@ const Admin = () => {
                 onMonthRangeChange={refreshMonthlyData}
               />
               <UsersOverview users={users} onUserDeleted={handleUserDeleted} />
+            </Suspense>
+          </TabsContent>
+
+          <TabsContent value="feedback" className="mt-6 space-y-6">
+            <Suspense fallback={<AdminTabSkeleton />}>
+              <FeedbackInbox />
             </Suspense>
           </TabsContent>
         </Tabs>

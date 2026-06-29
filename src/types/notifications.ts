@@ -13,7 +13,8 @@ export type NotificationType =
   | 'goal_help_request'
   | 'goal_update_comment'
   | 'partner_objective_feedback'
-  | 'comment_reaction';
+  | 'comment_reaction'
+  | 'feedback_received';
 
 export interface Notification {
   id: string;

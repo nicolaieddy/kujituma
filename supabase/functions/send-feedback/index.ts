@@ -7,9 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const ADMIN_EMAIL = "nicolaieddy@gmail.com";
-const FROM_EMAIL = "Kujituma Feedback <feedback@notify.kujituma.com>";
-
 interface FeedbackPayload {
   message: string;
   page_url?: string;
@@ -27,52 +24,6 @@ function validate(body: unknown): { ok: true; data: FeedbackPayload } | { ok: fa
   return { ok: true, data: { message, page_url, user_agent } };
 }
 
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-async function sendEmail(args: {
-  fromEmail: string;
-  fromName: string;
-  recipientEmail: string;
-  subject: string;
-  htmlBody: string;
-  textBody: string;
-}): Promise<{ ok: boolean; error?: string }> {
-  const apiKey = Deno.env.get("LOVABLE_API_KEY");
-  if (!apiKey) return { ok: false, error: "LOVABLE_API_KEY missing" };
-
-  try {
-    // Lovable Emails API
-    const res = await fetch("https://api.lovable.app/email/v1/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        from: { email: args.fromEmail, name: args.fromName },
-        to: [{ email: args.recipientEmail }],
-        subject: args.subject,
-        html: args.htmlBody,
-        text: args.textBody,
-      }),
-    });
-    if (!res.ok) {
-      const txt = await res.text();
-      return { ok: false, error: `${res.status}: ${txt.slice(0, 300)}` };
-    }
-    return { ok: true };
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -87,7 +38,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Validate user via anon client + JWT
     const userClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -110,7 +60,6 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Get profile for display name
     const { data: profile } = await admin
       .from("profiles")
       .select("display_name, full_name")
@@ -145,56 +94,29 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Send email (best-effort)
-    const subject = `[Kujituma Feedback] from ${displayName}`;
-    const text = [
-      `From: ${displayName} <${userEmail ?? "no-email"}>`,
-      `User ID: ${user.id}`,
-      `Page: ${parsed.data.page_url ?? "n/a"}`,
-      `UA: ${parsed.data.user_agent ?? "n/a"}`,
-      ``,
-      parsed.data.message,
-    ].join("\n");
-    const html = `
-      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#111">
-        <h2 style="margin:0 0 12px">New Kujituma Feedback</h2>
-        <p style="margin:0 0 4px"><strong>From:</strong> ${escapeHtml(displayName)} ${
-      userEmail ? `&lt;${escapeHtml(userEmail)}&gt;` : ""
-    }</p>
-        <p style="margin:0 0 4px"><strong>User ID:</strong> ${escapeHtml(user.id)}</p>
-        <p style="margin:0 0 4px"><strong>Page:</strong> ${escapeHtml(parsed.data.page_url ?? "n/a")}</p>
-        <p style="margin:0 0 16px;color:#666;font-size:12px"><strong>UA:</strong> ${escapeHtml(
-          parsed.data.user_agent ?? "n/a",
-        )}</p>
-        <div style="white-space:pre-wrap;background:#f7f7f8;border-radius:8px;padding:16px;border:1px solid #eee">${escapeHtml(
-          parsed.data.message,
-        )}</div>
-      </div>`;
+    // Notify all admins in-app
+    const { data: admins } = await admin
+      .from("user_roles")
+      .select("user_id")
+      .eq("role", "admin");
 
-    const emailResult = await sendEmail({
-      fromEmail: "feedback@notify.kujituma.com",
-      fromName: "Kujituma Feedback",
-      recipientEmail: ADMIN_EMAIL,
-      subject,
-      htmlBody: html,
-      textBody: text,
-    });
-
-    if (emailResult.ok) {
-      await admin
-        .from("feedback_submissions")
-        .update({ emailed_at: new Date().toISOString() })
-        .eq("id", inserted.id);
-    } else {
-      console.error("email send failed", emailResult.error);
-      await admin
-        .from("feedback_submissions")
-        .update({ email_error: emailResult.error ?? "unknown" })
-        .eq("id", inserted.id);
+    if (admins && admins.length > 0) {
+      const preview = parsed.data.message.length > 120
+        ? parsed.data.message.slice(0, 117) + "..."
+        : parsed.data.message;
+      const notifRows = admins.map((a: { user_id: string }) => ({
+        user_id: a.user_id,
+        type: "feedback_received",
+        message: `New feedback from ${displayName}: ${preview}`,
+        triggered_by_user_id: user.id,
+        is_read: false,
+      }));
+      const { error: notifErr } = await admin.from("notifications").insert(notifRows);
+      if (notifErr) console.error("notification insert error", notifErr);
     }
 
     return new Response(
-      JSON.stringify({ ok: true, id: inserted.id, emailed: emailResult.ok }),
+      JSON.stringify({ ok: true, id: inserted.id, emailed: false }),
       {
         status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
