@@ -40,12 +40,12 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const weekKey = week_start || getMondayOfWeek(new Date());
       const { data, error } = await supabase
         .from("weekly_objectives")
-        .select("id, text, is_completed, goal_id, order_index, scheduled_day, scheduled_time")
+        .select("id, text, status, goal_id, order_index, scheduled_day, scheduled_time")
         .eq("user_id", userId)
         .eq("week_start", weekKey)
         .order("order_index", { ascending: true });
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
-      const completed = data?.filter((o: any) => o.is_completed).length || 0;
+      const completed = data?.filter((o: any) => o.status === "done").length || 0;
       return {
         content: [{ type: "text" as const, text: `Week ${weekKey}: ${completed}/${data?.length || 0} completed\n\n${JSON.stringify(data, null, 2)}` }],
       };
