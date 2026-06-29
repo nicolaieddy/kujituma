@@ -77,13 +77,13 @@ export class HabitStreaksService {
     // Build weekly history
     const weeklyHistory: WeeklyCompletion[] = goalObjectives.map(obj => ({
       weekStart: obj.week_start,
-      isCompleted: obj.is_completed,
+      isCompleted: obj.status === 'done',
       objectiveId: obj.id
     }));
 
     // Calculate completion stats
     const totalWeeks = goalObjectives.length;
-    const completedWeeks = goalObjectives.filter(obj => obj.is_completed).length;
+    const completedWeeks = goalObjectives.filter(obj => obj.status === 'done').length;
     const completionRate = totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0;
 
     // Calculate current streak (consecutive completed weeks from most recent)
