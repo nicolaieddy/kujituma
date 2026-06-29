@@ -88,7 +88,7 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
     if (open && !hasRequestedInsight && lastWeekObjectives.length > 0) {
       setHasRequestedInsight(true);
       generateInsights({
-        objectives: lastWeekObjectives.map(o => ({ text: o.text, is_completed: o.is_completed })),
+        objectives: lastWeekObjectives.map(o => ({ text: o.text, is_completed: o.status === 'done' })),
         lastWeekReflection: lastWeekPlanning?.last_week_reflection || undefined,
         lastWeekIntention: lastWeekPlanning?.week_intention || undefined,
         progressNotes: lastWeekProgress?.notes || undefined,
