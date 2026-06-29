@@ -3,14 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Play, CheckCircle, Target, Calendar, ListChecks, MessageCircle } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { PartnerGoal } from "@/services/accountabilityService";
 import { format } from "date-fns";
 import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { GoalCommentsSheet } from "./GoalCommentsSheet";
 import { useGoalCommentCounts } from "@/hooks/useGoalComments";
-import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
+import { KanbanBoard, type KanbanColumnDef } from "@/components/kanban/KanbanBoard";
 
 interface PartnerGoalWithCounts extends PartnerGoal {
   objectives_count?: number;
