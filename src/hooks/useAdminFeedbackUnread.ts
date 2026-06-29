@@ -9,7 +9,8 @@ export function useAdminFeedbackUnreadCount(enabled: boolean) {
       const { count, error } = await supabase
         .from("feedback_submissions")
         .select("id", { count: "exact", head: true })
-        .eq("is_read", false);
+        .eq("is_read", false)
+        .eq("is_resolved", false);
       if (error) throw error;
       return count ?? 0;
     },
