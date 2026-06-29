@@ -125,7 +125,7 @@ export function ObjectivesKanbanBoard({
   };
 
   return (
-    <KanbanBoard<WeeklyObjective, ObjectiveStatus>
+    <KanbanBoard
       columns={columns}
       items={sortedObjectives}
       getId={(o) => o.id}
