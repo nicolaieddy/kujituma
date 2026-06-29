@@ -372,6 +372,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
             isWeekCompleted={isReadOnly}
             isCreating={isCreating}
             onToggleObjective={handleToggleObjective}
+            onSetObjectiveStatus={handleSetObjectiveStatus}
             onUpdateObjectiveText={handleUpdateObjectiveText}
             onUpdateObjectiveGoal={handleUpdateObjectiveGoal}
             onDeleteObjective={handleDeleteObjective}
