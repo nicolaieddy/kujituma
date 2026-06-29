@@ -142,7 +142,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
             `Objectives: ${done}/${obj.length} (${obj.length ? Math.round((done / obj.length) * 100) : 0}%)`,
             `Check-ins: ${ci.length} | Habit completions: ${habRes.data?.length || 0}`,
             `Avg mood: ${avgMood}/5`,
-            `Goals: ${goals.filter((g: any) => g.status === "in_progress").length} active, ${goals.filter((g: any) => g.status === "completed").length} done`,
+            `Goals: ${goals.filter((g: any) => g.status === "in_progress").length} active, ${goals.filter((g: any) => g.status === "done").length} done`,
             `Categories: ${Object.entries(cats).map(([c, n]) => `${c}(${n})`).join(", ")}`,
           ].join("\n"),
         }],
