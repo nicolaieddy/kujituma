@@ -116,7 +116,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const startD = start_date || toDateStr(new Date(Date.now() - 30 * 86400000));
 
       const [objRes, ciRes, habRes, goalRes] = await Promise.all([
-        supabase.from("weekly_objectives").select("id, is_completed").eq("user_id", userId).gte("week_start", startD).lte("week_start", endD),
+        supabase.from("weekly_objectives").select("id, status").eq("user_id", userId).gte("week_start", startD).lte("week_start", endD),
         supabase.from("daily_check_ins").select("id, mood_rating, energy_level").eq("user_id", userId).gte("check_in_date", startD).lte("check_in_date", endD),
         supabase.from("habit_completions").select("id").eq("user_id", userId).gte("completion_date", startD).lte("completion_date", endD),
         supabase.from("goals").select("id, title, status, category").eq("user_id", userId).not("status", "eq", "deprioritized"),
@@ -125,7 +125,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const obj = objRes.data || [];
       const ci = ciRes.data || [];
       const goals = goalRes.data || [];
-      const done = obj.filter((o: any) => o.is_completed).length;
+      const done = obj.filter((o: any) => o.status === "done").length;
       const moodVals = ci.filter((c: any) => c.mood_rating).map((c: any) => c.mood_rating);
       const avgMood = moodVals.length ? (moodVals.reduce((a: number, b: number) => a + b, 0) / moodVals.length).toFixed(1) : "N/A";
 
