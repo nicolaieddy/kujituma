@@ -32,7 +32,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
         text,
         week_start: weekKey,
         order_index: (existing?.[0]?.order_index ?? -1) + 1,
-        is_completed: false,
+        status: "not_started",
       };
       if (goal_id) insertData.goal_id = goal_id;
       if (scheduled_day) insertData.scheduled_day = scheduled_day;
