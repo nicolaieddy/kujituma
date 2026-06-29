@@ -175,7 +175,7 @@ const UserDetailDrawer = ({ user, open, onOpenChange, onUserDeleted }: UserDetai
         // Objectives created and completed
         supabase
           .from("weekly_objectives")
-          .select("is_completed", { count: "exact" })
+          .select("status", { count: "exact" })
           .eq("user_id", userId),
         // Daily check-ins
         supabase
