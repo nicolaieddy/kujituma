@@ -3,14 +3,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Clock, Play, CheckCircle, Target, Calendar, ListChecks, MessageCircle } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { PartnerGoal } from "@/services/accountabilityService";
 import { format } from "date-fns";
 import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { GoalCommentsSheet } from "./GoalCommentsSheet";
 import { useGoalCommentCounts } from "@/hooks/useGoalComments";
-import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
+import { KanbanBoard, type KanbanColumnDef } from "@/components/kanban/KanbanBoard";
 
 interface PartnerGoalWithCounts extends PartnerGoal {
   objectives_count?: number;
@@ -23,24 +22,27 @@ interface PartnerGoalsKanbanProps {
 
 type GoalStatus = 'not_started' | 'in_progress' | 'completed';
 
-const COLUMNS = [
+const COLUMNS: KanbanColumnDef<GoalStatus>[] = [
   {
-    status: 'not_started' as GoalStatus,
-    title: 'Not Started',
+    id: "not_started",
+    title: "Not Started",
     icon: Clock,
-    accentDot: 'bg-muted-foreground/50',
+    accentDot: "bg-muted-foreground/50",
+    emptyMessage: "No not started goals",
   },
   {
-    status: 'in_progress' as GoalStatus,
-    title: 'In Progress',
+    id: "in_progress",
+    title: "In Progress",
     icon: Play,
-    accentDot: 'bg-amber-500',
+    accentDot: "bg-amber-500",
+    emptyMessage: "No in progress goals",
   },
   {
-    status: 'completed' as GoalStatus,
-    title: 'Completed',
+    id: "completed",
+    title: "Completed",
     icon: CheckCircle,
-    accentDot: 'bg-emerald-500',
+    accentDot: "bg-emerald-500",
+    emptyMessage: "No completed goals",
   },
 ];
 
@@ -125,19 +127,11 @@ const PartnerGoalCard = ({
 };
 
 export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
-  const isMobile = useIsMobile();
   const [commentsGoalId, setCommentsGoalId] = useState<string | null>(null);
   const [commentsGoalTitle, setCommentsGoalTitle] = useState('');
 
   const goalIds = goals.map((g) => g.id);
   const commentCounts = useGoalCommentCounts(goalIds);
-
-  // Group goals by status
-  const goalsByStatus: Record<GoalStatus, PartnerGoalWithCounts[]> = {
-    not_started: goals.filter(g => g.status === 'not_started'),
-    in_progress: goals.filter(g => g.status === 'in_progress'),
-    completed: goals.filter(g => g.status === 'completed'),
-  };
 
   const totalGoals = goals.length;
 
@@ -152,37 +146,24 @@ export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-        {COLUMNS.map((column) => {
-          const columnGoals = goalsByStatus[column.status];
-          return (
-            <KanbanColumnShell
-              key={column.status}
-              title={column.title}
-              icon={column.icon}
-              accentDot={column.accentDot}
-              count={columnGoals.length}
-              isEmpty={columnGoals.length === 0}
-              emptyIcon={column.icon}
-              emptyMessage={`No ${column.title.toLowerCase()} goals`}
-            >
-              <div className="space-y-3">
-                {columnGoals.map((goal) => (
-                  <PartnerGoalCard
-                    key={goal.id}
-                    goal={goal}
-                    commentCount={commentCounts[goal.id] ?? 0}
-                    onCommentClick={() => {
-                      setCommentsGoalId(goal.id);
-                      setCommentsGoalTitle(goal.title);
-                    }}
-                  />
-                ))}
-              </div>
-            </KanbanColumnShell>
-          );
-        })}
-      </div>
+      <KanbanBoard<PartnerGoalWithCounts, GoalStatus>
+        readOnly
+        columns={COLUMNS}
+        items={goals}
+        getId={(g) => g.id}
+        getStatus={(g) => g.status as GoalStatus}
+        renderCard={(goal) => (
+          <PartnerGoalCard
+            goal={goal}
+            commentCount={commentCounts[goal.id] ?? 0}
+            onCommentClick={() => {
+              setCommentsGoalId(goal.id);
+              setCommentsGoalTitle(goal.title);
+            }}
+          />
+        )}
+      />
+
 
 
       {commentsGoalId && (

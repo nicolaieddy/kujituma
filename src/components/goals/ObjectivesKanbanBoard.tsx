@@ -1,33 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
-import {
-  DndContext,
-  DragOverlay,
-  PointerSensor,
-  KeyboardSensor,
-  useSensor,
-  useSensors,
-  closestCorners,
-  useDroppable,
-  type DragStartEvent,
-  type DragEndEvent,
-  type DragOverEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  useSortable,
-  verticalListSortingStrategy,
-  sortableKeyboardCoordinates,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Target, Pencil, X, Clock } from "lucide-react";
+import { useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { GripVertical, Target, Pencil, X, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { WeeklyObjective, ObjectiveStatus } from "@/types/weeklyProgress";
 import type { Goal } from "@/types/goals";
 import { STATUS_COLUMNS, STATUS_META, deriveStatus } from "@/lib/objectiveStatus";
-import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
+import {
+  KanbanBoard,
+  type KanbanColumnDef,
+  type RenderColumnBodyArgs,
+} from "@/components/kanban/KanbanBoard";
 
 interface Props {
   objectives: WeeklyObjective[];
@@ -52,323 +35,132 @@ export function ObjectivesKanbanBoard({
   onDeleteObjective,
   pendingUpdateIds = new Set(),
 }: Props) {
-  // Optimistic local copy so cards snap immediately on drop.
-  const [local, setLocal] = useState<WeeklyObjective[]>(objectives);
-  const [activeId, setActiveId] = useState<string | null>(null);
-
-  useEffect(() => {
-    setLocal(objectives);
-  }, [objectives]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
-  );
-
   const goalById = useMemo(() => {
     const m = new Map<string, Goal>();
     for (const g of goals) m.set(g.id, g);
     return m;
   }, [goals]);
 
-  // status -> goalId -> objectives[] (sorted by order_index)
-  const grouped = useMemo(() => {
-    const map: Record<ObjectiveStatus, Map<string, WeeklyObjective[]>> = {
-      not_started: new Map(),
-      in_progress: new Map(),
-      done: new Map(),
-    };
-    const sorted = [...local].sort(
-      (a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)
-    );
-    for (const o of sorted) {
-      const s = deriveStatus(o);
-      const key = o.goal_id ?? UNLINKED_KEY;
-      const bucket = map[s].get(key) ?? [];
-      bucket.push(o);
-      map[s].set(key, bucket);
-    }
-    return map;
-  }, [local]);
-
-  const idsByColumn = useMemo(() => {
-    const out: Record<ObjectiveStatus, string[]> = {
-      not_started: [],
-      in_progress: [],
-      done: [],
-    };
-    for (const status of STATUS_COLUMNS) {
-      for (const [, items] of grouped[status]) {
-        for (const i of items) out[status].push(i.id);
-      }
-    }
-    return out;
-  }, [grouped]);
-
-  function findColumn(id: string): ObjectiveStatus | null {
-    if ((STATUS_COLUMNS as string[]).includes(id)) return id as ObjectiveStatus;
-    const obj = local.find((o) => o.id === id);
-    return obj ? deriveStatus(obj) : null;
-  }
-
-  function handleDragStart(e: DragStartEvent) {
-    setActiveId(String(e.active.id));
-  }
-
-  function handleDragOver(e: DragOverEvent) {
-    const { active, over } = e;
-    if (!over) return;
-    const activeIdStr = String(active.id);
-    const overIdStr = String(over.id);
-    const activeCol = findColumn(activeIdStr);
-    const overCol = findColumn(overIdStr);
-    if (!activeCol || !overCol || activeCol === overCol) return;
-    // Move card into the new column optimistically (it will land at the end).
-    setLocal((curr) => {
-      const idx = curr.findIndex((o) => o.id === activeIdStr);
-      if (idx === -1) return curr;
-      const next = [...curr];
-      next[idx] = { ...next[idx], status: overCol };
-      return next;
-    });
-  }
-
-  function handleDragEnd(e: DragEndEvent) {
-    const { active, over } = e;
-    setActiveId(null);
-    if (!over) return;
-    const activeIdStr = String(active.id);
-    const overIdStr = String(over.id);
-
-    const activeObj = local.find((o) => o.id === activeIdStr);
-    if (!activeObj) return;
-
-    const overCol = findColumn(overIdStr);
-    if (!overCol) return;
-    const originalStatus = deriveStatus(
-      objectives.find((o) => o.id === activeIdStr) ?? activeObj
-    );
-
-    // Reorder within the column (over an id, not a column drop zone)
-    let nextLocal = local;
-    if (overIdStr !== overCol && overIdStr !== activeIdStr) {
-      const oldIdx = local.findIndex((o) => o.id === activeIdStr);
-      const newIdx = local.findIndex((o) => o.id === overIdStr);
-      if (oldIdx !== -1 && newIdx !== -1) {
-        nextLocal = arrayMove(local, oldIdx, newIdx);
-        setLocal(nextLocal);
-      }
-    }
-
-    // Persist order across the whole list (consistent with list-view reorder)
-    if (onReorderObjectives) {
-      onReorderObjectives(
-        nextLocal.map((o, i) => ({ id: o.id, order_index: i }))
-      );
-    }
-
-    // Persist status change if column changed
-    if (overCol !== originalStatus) {
-      onChangeStatus(activeIdStr, overCol);
-    }
-  }
-
-  const activeObjective = activeId
-    ? local.find((o) => o.id === activeId) ?? null
-    : null;
-
-  return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={closestCorners}
-      onDragStart={handleDragStart}
-      onDragOver={handleDragOver}
-      onDragEnd={handleDragEnd}
-    >
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-        {STATUS_COLUMNS.map((status) => (
-          <KanbanColumn
-            key={status}
-            status={status}
-            groups={grouped[status]}
-            goalById={goalById}
-            isWeekCompleted={isWeekCompleted}
-            onEditObjective={onEditObjective}
-            onDeleteObjective={onDeleteObjective}
-            pendingUpdateIds={pendingUpdateIds}
-            itemIds={idsByColumn[status]}
-          />
-        ))}
-      </div>
-
-      <DragOverlay>
-        {activeObjective ? (
-          <KanbanCardShell
-            objective={activeObjective}
-            goalTitle={
-              activeObjective.goal_id
-                ? goalById.get(activeObjective.goal_id)?.title ?? null
-                : null
-            }
-            dragging
-          />
-        ) : null}
-      </DragOverlay>
-    </DndContext>
+  const sortedObjectives = useMemo(
+    () => [...objectives].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0)),
+    [objectives],
   );
-}
 
-/* -------------------- Column -------------------- */
+  const columns: KanbanColumnDef<ObjectiveStatus>[] = STATUS_COLUMNS.map((status) => {
+    const meta = STATUS_META[status];
+    const emptyMessage =
+      status === "not_started"
+        ? "Drop or add objectives here"
+        : status === "in_progress"
+        ? "Nothing in progress"
+        : "Nothing done yet";
+    return {
+      id: status,
+      title: meta.label,
+      accentDot: meta.dot,
+      emptyMessage,
+    };
+  });
 
-interface ColumnProps {
-  status: ObjectiveStatus;
-  groups: Map<string, WeeklyObjective[]>;
-  goalById: Map<string, Goal>;
-  itemIds: string[];
-  isWeekCompleted: boolean;
-  onEditObjective?: (o: WeeklyObjective) => void;
-  onDeleteObjective?: (id: string) => void;
-  pendingUpdateIds: Set<string>;
-}
-
-function KanbanColumn({
-  status,
-  groups,
-  goalById,
-  itemIds,
-  isWeekCompleted,
-  onEditObjective,
-  onDeleteObjective,
-  pendingUpdateIds,
-}: ColumnProps) {
-  const meta = STATUS_META[status];
-  const { setNodeRef, isOver } = useDroppable({ id: status });
-  const total = itemIds.length;
-
-  // Stable goal order: by Goal.order_index if present, then title, with unlinked last.
-  const sortedGroupKeys = useMemo(() => {
-    const keys = Array.from(groups.keys());
-    return keys.sort((a, b) => {
-      if (a === UNLINKED_KEY) return 1;
-      if (b === UNLINKED_KEY) return -1;
-      const ga = goalById.get(a);
-      const gb = goalById.get(b);
-      const ta = ga?.title ?? "";
-      const tb = gb?.title ?? "";
-      return ta.localeCompare(tb);
-    });
-  }, [groups, goalById]);
-
-  const emptyMessage =
-    status === "not_started"
-      ? "Drop or add objectives here"
-      : status === "in_progress"
-      ? "Nothing in progress"
-      : "Nothing done yet";
-
-  return (
-    <KanbanColumnShell
-      droppableRef={setNodeRef}
-      isOver={isOver}
-      title={meta.label}
-      accentDot={meta.dot}
-      count={total}
-      isEmpty={total === 0}
-      emptyMessage={emptyMessage}
-    >
-      <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-        <div className="space-y-3">
-          <AnimatePresence mode="popLayout">
-            {sortedGroupKeys.map((goalKey) => {
-              const items = groups.get(goalKey) ?? [];
-              const goal = goalKey === UNLINKED_KEY ? null : goalById.get(goalKey);
-              const groupLabel = goal?.title ?? "Unlinked";
-              return (
-                <div key={goalKey} className="space-y-1.5">
-                  <div className="flex items-center gap-1.5 px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
-                    <Target className="h-3 w-3" />
-                    <span className="truncate">{groupLabel}</span>
-                    <span className="text-muted-foreground/70">· {items.length}</span>
-                  </div>
-                  {items.map((o) => (
-                    <SortableKanbanCard
-                      key={o.id}
-                      objective={o}
-                      goalTitle={goal?.title ?? null}
-                      isWeekCompleted={isWeekCompleted}
-                      isPending={pendingUpdateIds.has(o.id)}
-                      onEdit={onEditObjective ? () => onEditObjective(o) : undefined}
-                      onDelete={onDeleteObjective ? () => onDeleteObjective(o.id) : undefined}
-                    />
-                  ))}
-                </div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-      </SortableContext>
-    </KanbanColumnShell>
-  );
-}
-
-/* -------------------- Card -------------------- */
-
-interface SortableCardProps {
-  objective: WeeklyObjective;
-  goalTitle: string | null;
-  isWeekCompleted: boolean;
-  isPending: boolean;
-  onEdit?: () => void;
-  onDelete?: () => void;
-}
-
-function SortableKanbanCard({
-  objective,
-  goalTitle,
-  isWeekCompleted,
-  isPending,
-  onEdit,
-  onDelete,
-}: SortableCardProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: objective.id, disabled: isWeekCompleted });
-  const style = {
-    transform: CSS.Translate.toString(transform),
-    transition,
-    opacity: isDragging ? 0.4 : 1,
-  };
-
-  return (
+  const renderCard = (o: WeeklyObjective, { dragging }: { dragging: boolean }) => (
     <motion.div
       layout
-      ref={setNodeRef}
-      style={style}
       initial={{ opacity: 0, y: 4 }}
-      animate={{ opacity: isDragging ? 0.4 : 1, y: 0 }}
+      animate={{ opacity: dragging ? 0.4 : 1, y: 0 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.15 }}
     >
       <KanbanCardShell
-        objective={objective}
-        goalTitle={goalTitle}
-        dragging={isDragging}
-        isPending={isPending}
-        onEdit={onEdit}
-        onDelete={onDelete}
-        dragHandleProps={!isWeekCompleted ? { ...attributes, ...listeners } : undefined}
+        objective={o}
+        goalTitle={o.goal_id ? goalById.get(o.goal_id)?.title ?? null : null}
+        dragging={dragging}
+        isPending={pendingUpdateIds.has(o.id)}
+        showHandle={!isWeekCompleted}
+        onEdit={onEditObjective ? () => onEditObjective(o) : undefined}
+        onDelete={onDeleteObjective ? () => onDeleteObjective(o.id) : undefined}
       />
     </motion.div>
   );
+
+  const renderColumnBody = ({
+    items,
+    renderCard: renderOne,
+  }: RenderColumnBodyArgs<WeeklyObjective, ObjectiveStatus>) => {
+    // Group by goal_id within the column.
+    const groups = new Map<string, WeeklyObjective[]>();
+    for (const o of items) {
+      const key = o.goal_id ?? UNLINKED_KEY;
+      const bucket = groups.get(key) ?? [];
+      bucket.push(o);
+      groups.set(key, bucket);
+    }
+    const sortedGroupKeys = Array.from(groups.keys()).sort((a, b) => {
+      if (a === UNLINKED_KEY) return 1;
+      if (b === UNLINKED_KEY) return -1;
+      const ta = goalById.get(a)?.title ?? "";
+      const tb = goalById.get(b)?.title ?? "";
+      return ta.localeCompare(tb);
+    });
+    return (
+      <div className="space-y-3">
+        <AnimatePresence mode="popLayout">
+          {sortedGroupKeys.map((goalKey) => {
+            const groupItems = groups.get(goalKey) ?? [];
+            const goal = goalKey === UNLINKED_KEY ? null : goalById.get(goalKey);
+            const groupLabel = goal?.title ?? "Unlinked";
+            return (
+              <div key={goalKey} className="space-y-1.5">
+                <div className="flex items-center gap-1.5 px-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+                  <Target className="h-3 w-3" />
+                  <span className="truncate">{groupLabel}</span>
+                  <span className="text-muted-foreground/70">· {groupItems.length}</span>
+                </div>
+                {groupItems.map((o) => renderOne(o))}
+              </div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
+  return (
+    <KanbanBoard<WeeklyObjective, ObjectiveStatus>
+      columns={columns}
+      items={sortedObjectives}
+      getId={(o) => o.id}
+      getStatus={(o) => deriveStatus(o)}
+      renderCard={renderCard}
+      renderColumnBody={renderColumnBody}
+      disabled={isWeekCompleted}
+      onMove={(id, _from, to) => {
+        onChangeStatus(id, to);
+      }}
+      onReorder={(_col, _ids, allOrdered) => {
+        if (!onReorderObjectives) return;
+        onReorderObjectives(allOrdered.map((o, i) => ({ id: o.id, order_index: i })));
+      }}
+      renderDragOverlay={(o) => (
+        <KanbanCardShell
+          objective={o}
+          goalTitle={o.goal_id ? goalById.get(o.goal_id)?.title ?? null : null}
+          dragging
+        />
+      )}
+    />
+  );
 }
+
+/* -------------------- Card -------------------- */
 
 interface CardShellProps {
   objective: WeeklyObjective;
   goalTitle: string | null;
   dragging?: boolean;
   isPending?: boolean;
+  showHandle?: boolean;
   onEdit?: () => void;
   onDelete?: () => void;
-  dragHandleProps?: Record<string, unknown>;
 }
 
 function KanbanCardShell({
@@ -376,9 +168,9 @@ function KanbanCardShell({
   goalTitle,
   dragging,
   isPending,
+  showHandle,
   onEdit,
   onDelete,
-  dragHandleProps,
 }: CardShellProps) {
   const status = deriveStatus(objective);
   const meta = STATUS_META[status];
@@ -388,25 +180,23 @@ function KanbanCardShell({
         "group relative rounded-md border border-border bg-background border-l-2 p-2.5 shadow-sm",
         meta.accent,
         dragging && "shadow-lg ring-1 ring-primary/30",
-        status === "done" && "opacity-80"
+        status === "done" && "opacity-80",
       )}
     >
       <div className="flex items-start gap-2">
-        {dragHandleProps && (
-          <button
-            type="button"
-            {...dragHandleProps}
-            className="mt-0.5 text-muted-foreground/60 hover:text-foreground cursor-grab active:cursor-grabbing"
+        {showHandle && (
+          <span
+            className="mt-0.5 text-muted-foreground/60 cursor-grab active:cursor-grabbing"
             aria-label="Drag"
           >
             <GripVertical className="h-3.5 w-3.5" />
-          </button>
+          </span>
         )}
         <div className="flex-1 min-w-0">
           <p
             className={cn(
               "text-sm text-foreground break-words leading-snug",
-              status === "done" && "line-through decoration-muted-foreground"
+              status === "done" && "line-through decoration-muted-foreground",
             )}
           >
             {objective.text}
@@ -435,7 +225,11 @@ function KanbanCardShell({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={onEdit}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                 aria-label="Edit"
               >
@@ -447,7 +241,11 @@ function KanbanCardShell({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={onDelete}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
                 className="h-6 w-6 p-0 text-muted-foreground hover:text-foreground"
                 aria-label="Delete"
               >
