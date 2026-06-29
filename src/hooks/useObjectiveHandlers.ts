@@ -49,6 +49,11 @@ export const useObjectiveHandlers = ({
     updateObjective(id, { is_completed: !isCompleted });
   }, [updateObjective]);
 
+  const handleSetObjectiveStatus = useCallback((id: string, status: ObjectiveStatus) => {
+    // DB trigger keeps is_completed in sync with status.
+    updateObjective(id, { status });
+  }, [updateObjective]);
+
   const handleUpdateObjectiveText = useCallback((id: string, text: string) => {
     updateObjective(id, { text });
   }, [updateObjective]);
