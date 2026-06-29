@@ -174,6 +174,15 @@ export const ObjectiveItem = memo(({
             />
           )}
           
+          {!isWeekCompleted && onSetObjectiveStatus && !isEditing && (
+            <div className="hidden sm:flex items-center">
+              <ObjectiveStatusPill
+                objective={objective}
+                onChange={(status) => onSetObjectiveStatus(objective.id, status)}
+              />
+            </div>
+          )}
+
           {!isWeekCompleted && (
             <ObjectiveActions
               objective={objective}
