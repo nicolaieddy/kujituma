@@ -236,7 +236,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
         id: { type: "string", description: "Goal ID" },
         title: { type: "string", description: "New title" },
         description: { type: "string", description: "New description" },
-        status: { type: "string", description: "not_started, in_progress, completed, deprioritized" },
+        status: { type: "string", description: "not_started, in_progress, done, deprioritized" },
         is_paused: { type: "boolean", description: "Pause/unpause the goal" },
         category: { type: "string", description: "New category" },
       },
@@ -248,7 +248,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
       if (description !== undefined) upd.description = description;
       if (status !== undefined) {
         upd.status = status;
-        if (status === "completed") upd.completed_at = new Date().toISOString();
+        if (status === "done") upd.completed_at = new Date().toISOString();
         if (status === "deprioritized") upd.deprioritized_at = new Date().toISOString();
       }
       if (is_paused !== undefined) {
