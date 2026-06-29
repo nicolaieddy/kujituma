@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Target, Edit2, Check, RotateCcw, Pencil, X, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import { WeeklyObjective } from "@/types/weeklyProgress";
+import { WeeklyObjective, ObjectiveStatus } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
 import { celebrateSuccess } from "@/utils/confetti";
 import { ObjectiveTimeBlocker } from "@/components/habits/ObjectiveTimeBlocker";
@@ -14,6 +14,7 @@ import { ObjectiveFeedbackIndicator } from "@/components/thisweek/ObjectiveFeedb
 import { ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
 import { usePendingSyncIds } from "@/hooks/usePendingSyncIds";
 import { PendingSyncChip, pendingSyncAccent } from "@/components/pwa/PendingSyncChip";
+import { ObjectiveStatusPill } from "./ObjectiveStatusPill";
 import { cn } from "@/lib/utils";
 
 interface GroupedGoals {
