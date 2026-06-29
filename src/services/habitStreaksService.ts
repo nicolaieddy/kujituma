@@ -102,7 +102,7 @@ export class HabitStreaksService {
       // Skip future weeks
       if (isAfter(objWeekStart, currentWeekStart)) continue;
       
-      if (obj.is_completed) {
+      if (obj.status === 'done') {
         currentStreak++;
       } else {
         // If current week is not completed yet, continue checking
@@ -123,7 +123,7 @@ export class HabitStreaksService {
     );
 
     for (const obj of ascendingObjectives) {
-      if (obj.is_completed) {
+      if (obj.status === 'done') {
         tempStreak++;
         longestStreak = Math.max(longestStreak, tempStreak);
       } else {
@@ -132,7 +132,7 @@ export class HabitStreaksService {
     }
 
     // Find last completed week
-    const lastCompleted = sortedObjectives.find(obj => obj.is_completed);
+    const lastCompleted = sortedObjectives.find(obj => obj.status === 'done');
     const lastCompletedWeek = lastCompleted ? lastCompleted.week_start : null;
 
     return {
