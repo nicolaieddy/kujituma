@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { WeeklyProgressService } from "@/services/weeklyProgressService";
-import { WeeklyObjective, WeeklyProgressPost } from "@/types/weeklyProgress";
+import { WeeklyObjective, WeeklyProgressPost, ObjectiveStatus } from "@/types/weeklyProgress";
 
 interface UseObjectiveHandlersProps {
   currentWeekStart: string;
@@ -47,6 +47,11 @@ export const useObjectiveHandlers = ({
 
   const handleToggleObjective = useCallback((id: string, isCompleted: boolean) => {
     updateObjective(id, { is_completed: !isCompleted });
+  }, [updateObjective]);
+
+  const handleSetObjectiveStatus = useCallback((id: string, status: ObjectiveStatus) => {
+    // DB trigger keeps is_completed in sync with status.
+    updateObjective(id, { status });
   }, [updateObjective]);
 
   const handleUpdateObjectiveText = useCallback((id: string, text: string) => {
@@ -114,6 +119,7 @@ export const useObjectiveHandlers = ({
     handleUpdateObjectiveGoal,
     handleAddObjective,
     handleToggleObjective,
+    handleSetObjectiveStatus,
     handleUpdateObjectiveText,
     handleDeleteObjective,
     handleReorderObjectives,

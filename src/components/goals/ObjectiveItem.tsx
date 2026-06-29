@@ -5,7 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
 import { Target, Edit2, Check, RotateCcw, Pencil, X, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import { WeeklyObjective } from "@/types/weeklyProgress";
+import { WeeklyObjective, ObjectiveStatus } from "@/types/weeklyProgress";
 import { Goal } from "@/types/goals";
 import { celebrateSuccess } from "@/utils/confetti";
 import { ObjectiveTimeBlocker } from "@/components/habits/ObjectiveTimeBlocker";
@@ -14,6 +14,7 @@ import { ObjectiveFeedbackIndicator } from "@/components/thisweek/ObjectiveFeedb
 import { ObjectiveFeedback } from "@/hooks/useObjectiveFeedback";
 import { usePendingSyncIds } from "@/hooks/usePendingSyncIds";
 import { PendingSyncChip, pendingSyncAccent } from "@/components/pwa/PendingSyncChip";
+import { ObjectiveStatusPill } from "./ObjectiveStatusPill";
 import { cn } from "@/lib/utils";
 
 interface GroupedGoals {
@@ -41,6 +42,7 @@ interface ObjectiveItemProps {
   commentCount?: number;
   unreadCount?: number;
   onToggleObjective: (id: string, isCompleted: boolean) => void;
+  onSetObjectiveStatus?: (id: string, status: ObjectiveStatus) => void;
   onEditObjective: (objective: WeeklyObjective) => void;
   onEditingTextChange: (text: string) => void;
   onSaveEdit: (objectiveId: string) => void;
@@ -74,6 +76,7 @@ export const ObjectiveItem = memo(({
   commentCount = 0,
   unreadCount = 0,
   onToggleObjective,
+  onSetObjectiveStatus,
   onEditObjective,
   onEditingTextChange,
   onSaveEdit,
@@ -171,6 +174,15 @@ export const ObjectiveItem = memo(({
             />
           )}
           
+          {!isWeekCompleted && onSetObjectiveStatus && !isEditing && (
+            <div className="hidden sm:flex items-center">
+              <ObjectiveStatusPill
+                objective={objective}
+                onChange={(status) => onSetObjectiveStatus(objective.id, status)}
+              />
+            </div>
+          )}
+
           {!isWeekCompleted && (
             <ObjectiveActions
               objective={objective}
