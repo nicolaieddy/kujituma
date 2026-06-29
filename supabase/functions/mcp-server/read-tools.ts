@@ -18,7 +18,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
         .from("goals")
         .select("id, title, description, category, timeframe, status, start_date, target_date, habit_items, is_recurring, recurrence_frequency, visibility")
         .eq("user_id", userId)
-        .not("status", "in", '("completed","deprioritized")')
+        .not("status", "in", '("done","deprioritized")')
         .eq("is_paused", false)
         .order("order_index", { ascending: true });
       if (timeframe) query = query.eq("timeframe", timeframe);
