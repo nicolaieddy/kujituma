@@ -27,7 +27,7 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
         } : null,
         goals: {
           active: goals.filter((g: any) => g.status === "in_progress").length,
-          completed: goals.filter((g: any) => g.status === "completed").length,
+          completed: goals.filter((g: any) => g.status === "done").length,
           total: goals.length,
         },
       };
