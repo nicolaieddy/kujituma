@@ -45,6 +45,7 @@ export interface CreateWeeklyObjectiveData {
 export interface UpdateWeeklyObjectiveData {
   text?: string;
   is_completed?: boolean;
+  status?: ObjectiveStatus;
   goal_id?: string | null;
   order_index?: number;
   scheduled_day?: string | null;
