@@ -1,13 +1,4 @@
 import { useMemo, useState, useEffect, useRef } from "react";
-import {
-  DndContext, DragOverlay, PointerSensor, KeyboardSensor, useSensor, useSensors,
-  closestCorners, type DragStartEvent, type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext, useSortable, verticalListSortingStrategy, sortableKeyboardCoordinates, arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { useDroppable } from "@dnd-kit/core";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,7 +7,11 @@ import { useSocialPosts, useUpsertSocialPost, type SocialPost } from "@/hooks/us
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { PostCard } from "./PostCard";
 import { BOARD_ORDER, STATUS_META, toBoardStatus, type BoardStatus } from "@/lib/social";
-import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
+import {
+  KanbanBoard,
+  type KanbanColumnDef,
+  type RenderColumnBodyArgs,
+} from "@/components/kanban/KanbanBoard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -27,7 +22,6 @@ interface Props {
 
 const DENSITY_KEY = "social.pipeline.density";
 
-/** Build a `datetime-local`-friendly string for a given Date in local time. */
 function toLocalInputValue(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -39,10 +33,8 @@ function defaultScheduleValue(post: SocialPost): string {
     if (!isNaN(d.getTime())) return toLocalInputValue(d);
   }
   if (post.publish_date) {
-    // Combine existing date with a sensible default time (9:00 local).
     return `${post.publish_date}T09:00`;
   }
-  // Default: tomorrow 09:00 local.
   const t = new Date();
   t.setDate(t.getDate() + 1);
   t.setHours(9, 0, 0, 0);
@@ -58,103 +50,50 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
     if (typeof window === "undefined") return "comfortable";
     return (localStorage.getItem(DENSITY_KEY) as any) ?? "comfortable";
   });
-  useEffect(() => { localStorage.setItem(DENSITY_KEY, density); }, [density]);
+  useEffect(() => {
+    localStorage.setItem(DENSITY_KEY, density);
+  }, [density]);
 
-  const [activeId, setActiveId] = useState<string | null>(null);
-  // Local optimistic view so cards snap immediately on drop.
-  const [localPosts, setLocalPosts] = useState<SocialPost[]>(posts);
-  // Track the post id awaiting a publish_at before committing the move to Scheduled.
-  // `originalStatus` is held so Cancel can revert in-place.
+  // Pending schedule prompt — the moved post stays in the Scheduled column
+  // optimistically (KanbanBoard handles that) while we ask for date+time.
   const [pendingSchedule, setPendingSchedule] = useState<{
     postId: string;
     originalStatus: BoardStatus;
     value: string;
   } | null>(null);
 
-  useEffect(() => {
-    // Only sync from server when no pending edit is in flight (avoid clobbering UX).
-    if (!pendingSchedule) setLocalPosts(posts);
-  }, [posts, pendingSchedule]);
+  // While a schedule prompt is open, freeze the source so the optimistic
+  // placement isn't clobbered by a refetch.
+  const frozenPostsRef = useRef<SocialPost[] | null>(null);
+  if (pendingSchedule && !frozenPostsRef.current) {
+    frozenPostsRef.current = posts.map((p) =>
+      p.id === pendingSchedule.postId ? { ...p, status: "scheduled" } : p,
+    );
+  }
+  if (!pendingSchedule && frozenPostsRef.current) {
+    frozenPostsRef.current = null;
+  }
+  const sourcePosts = frozenPostsRef.current ?? posts;
 
-  const grouped = useMemo(() => {
-    const map: Record<BoardStatus, SocialPost[]> = { idea: [], drafting: [], scheduled: [], published: [] };
-    for (const p of localPosts) map[toBoardStatus(p.status)].push(p);
-    return map;
-  }, [localPosts]);
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  const columns: KanbanColumnDef<BoardStatus>[] = useMemo(
+    () =>
+      BOARD_ORDER.map((status) => ({
+        id: status,
+        title: STATUS_META[status].label,
+        accentDot: "bg-foreground/40",
+        emptyMessage: "Drop here",
+      })),
+    [],
   );
 
-  const findContainer = (id: string): BoardStatus | null => {
-    if ((BOARD_ORDER as string[]).includes(id)) return id as BoardStatus;
-    const post = localPosts.find((p) => p.id === id);
-    return post ? toBoardStatus(post.status) : null;
-  };
-
-  const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
-
-  const onDragEnd = (e: DragEndEvent) => {
-    setActiveId(null);
-    const { active, over } = e;
-    if (!over) return;
-    const activeId = String(active.id);
-    const overId = String(over.id);
-    const from = findContainer(activeId);
-    const to = findContainer(overId);
-    if (!from || !to) return;
-
-    const moved = localPosts.find((p) => p.id === activeId);
-    if (!moved) return;
-
-    if (from === to) {
-      // reorder within column (display-only; ordering not persisted yet)
-      const ids = grouped[from].map((p) => p.id);
-      const oldIdx = ids.indexOf(activeId);
-      const newIdx = ids.indexOf(overId);
-      if (oldIdx === -1 || newIdx === -1 || oldIdx === newIdx) return;
-      const reorderedIds = arrayMove(ids, oldIdx, newIdx);
-      const reordered = reorderedIds.map((id) => grouped[from].find((p) => p.id === id)!);
-      const others = localPosts.filter((p) => toBoardStatus(p.status) !== from);
-      setLocalPosts([...others, ...reordered]);
-      return;
-    }
-
-    // Cross-column move into Scheduled. If we don't yet have a publish_at,
-    // park the card in Scheduled in a "pending" state and ask for date+time
-    // inline before persisting. If we already have one, just move.
-    if (to === "scheduled" && !moved.publish_at) {
-      setLocalPosts((prev) => prev.map((p) => (p.id === activeId ? { ...p, status: "scheduled" } : p)));
-      setPendingSchedule({
-        postId: activeId,
-        originalStatus: from,
-        value: defaultScheduleValue(moved),
-      });
-      return;
-    }
-
-    // Default cross-column move — optimistic + persist.
-    const newStatus: BoardStatus = to;
-    setLocalPosts((prev) => prev.map((p) => (p.id === activeId ? { ...p, status: newStatus } : p)));
-    upsert.mutate({
-      id: moved.id,
-      title: moved.title,
-      status: newStatus,
-    });
-  };
-
   const cancelPending = () => {
-    if (!pendingSchedule) return;
-    const { postId, originalStatus } = pendingSchedule;
-    setLocalPosts((prev) => prev.map((p) => (p.id === postId ? { ...p, status: originalStatus } : p)));
     setPendingSchedule(null);
   };
 
-  const confirmPending = async () => {
+  const confirmPending = () => {
     if (!pendingSchedule) return;
     const { postId, value } = pendingSchedule;
-    const moved = localPosts.find((p) => p.id === postId);
+    const moved = sourcePosts.find((p) => p.id === postId);
     if (!moved) {
       setPendingSchedule(null);
       return;
@@ -164,11 +103,9 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
       toast.error("Pick a valid date and time");
       return;
     }
-    const isoDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
-    setLocalPosts((prev) =>
-      prev.map((p) => (p.id === postId ? { ...p, status: "scheduled", publish_at: dt.toISOString(), publish_date: isoDate } : p)),
-    );
-    setPendingSchedule(null);
+    const isoDate = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(
+      dt.getDate(),
+    ).padStart(2, "0")}`;
     upsert.mutate({
       id: moved.id,
       title: moved.title,
@@ -176,7 +113,31 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
       publish_at: dt.toISOString(),
       publish_date: isoDate,
     });
+    setPendingSchedule(null);
   };
+
+  const renderColumnBody = ({
+    column,
+    items,
+    renderCard,
+  }: RenderColumnBodyArgs<SocialPost, BoardStatus>) => (
+    <div className="space-y-2">
+      {items.map((p) =>
+        pendingSchedule && pendingSchedule.postId === p.id && column.id === "scheduled" ? (
+          <PendingScheduleCard
+            key={p.id}
+            post={p}
+            value={pendingSchedule.value}
+            onChange={(v) => setPendingSchedule((s) => (s ? { ...s, value: v } : s))}
+            onConfirm={confirmPending}
+            onCancel={cancelPending}
+          />
+        ) : (
+          <div key={p.id}>{renderCard(p)}</div>
+        ),
+      )}
+    </div>
+  );
 
   if (isLoading) {
     return <Card className="p-8 text-center text-sm text-muted-foreground">Loading…</Card>;
@@ -193,8 +154,6 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
     );
   }
 
-  const activePost = activeId ? localPosts.find((p) => p.id === activeId) : null;
-
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-end">
@@ -204,7 +163,9 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
             onClick={() => setDensity("compact")}
             className={cn(
               "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
-              density === "compact" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+              density === "compact"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             aria-pressed={density === "compact"}
           >
@@ -215,7 +176,9 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
             onClick={() => setDensity("comfortable")}
             className={cn(
               "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
-              density === "comfortable" ? "bg-muted text-foreground" : "text-muted-foreground hover:text-foreground",
+              density === "comfortable"
+                ? "bg-muted text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
             aria-pressed={density === "comfortable"}
           >
@@ -224,123 +187,49 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
         </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCorners}
-        onDragStart={onDragStart}
-        onDragEnd={onDragEnd}
-      >
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {BOARD_ORDER.map((status) => (
-            <Column
-              key={status}
-              status={status}
-              posts={grouped[status]}
-              latest={latest}
-              density={density}
-              onOpenPost={onOpenPost}
-              pendingSchedule={pendingSchedule}
-              onPendingChange={(v) => setPendingSchedule((s) => (s ? { ...s, value: v } : s))}
-              onConfirmPending={confirmPending}
-              onCancelPending={cancelPending}
+      <KanbanBoard<SocialPost, BoardStatus>
+        columns={columns}
+        items={sourcePosts}
+        getId={(p) => p.id}
+        getStatus={(p) => toBoardStatus(p.status)}
+        gridClassName="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+        renderCard={(post, { dragging }) => (
+          <PostCard
+            post={post}
+            latestMetric={latest[post.id]}
+            onClick={() => onOpenPost(post.id)}
+            compact={density === "compact"}
+            dragging={dragging}
+          />
+        )}
+        renderColumnBody={renderColumnBody}
+        renderDragOverlay={(post) => (
+          <div className="rotate-1 opacity-95">
+            <PostCard
+              post={post}
+              latestMetric={latest[post.id]}
+              onClick={() => {}}
+              compact={density === "compact"}
+              dragging
             />
-          ))}
-        </div>
-
-        <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
-          {activePost ? (
-            <div className="rotate-1 opacity-95">
-              <PostCard
-                post={activePost}
-                latestMetric={latest[activePost.id]}
-                onClick={() => {}}
-                compact={density === "compact"}
-                dragging
-              />
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    </div>
-  );
-}
-
-function Column({
-  status, posts, latest, density, onOpenPost,
-  pendingSchedule, onPendingChange, onConfirmPending, onCancelPending,
-}: {
-  status: BoardStatus;
-  posts: SocialPost[];
-  latest: Record<string, any>;
-  density: "compact" | "comfortable";
-  onOpenPost: (id: string) => void;
-  pendingSchedule: { postId: string; originalStatus: BoardStatus; value: string } | null;
-  onPendingChange: (v: string) => void;
-  onConfirmPending: () => void;
-  onCancelPending: () => void;
-}) {
-  const meta = STATUS_META[status];
-  const { setNodeRef, isOver } = useDroppable({ id: status });
-
-  return (
-    <KanbanColumnShell
-      droppableRef={setNodeRef}
-      isOver={isOver}
-      title={meta.label}
-      accentDot="bg-foreground/40"
-      count={posts.length}
-      isEmpty={posts.length === 0}
-      emptyMessage="Drop here"
-    >
-      <SortableContext items={posts.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-        <div className="space-y-2">
-          {posts.map((p) =>
-            pendingSchedule && pendingSchedule.postId === p.id && status === "scheduled" ? (
-              <PendingScheduleCard
-                key={p.id}
-                post={p}
-                value={pendingSchedule.value}
-                onChange={onPendingChange}
-                onConfirm={onConfirmPending}
-                onCancel={onCancelPending}
-              />
-            ) : (
-              <SortableCard
-                key={p.id}
-                post={p}
-                latestMetric={latest[p.id]}
-                density={density}
-                onOpenPost={onOpenPost}
-              />
-            ),
-          )}
-        </div>
-      </SortableContext>
-    </KanbanColumnShell>
-  );
-}
-
-function SortableCard({
-  post, latestMetric, density, onOpenPost,
-}: {
-  post: SocialPost;
-  latestMetric: any;
-  density: "compact" | "comfortable";
-  onOpenPost: (id: string) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: post.id });
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0 : 1, // hide original; overlay shows during drag
-  };
-  return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <PostCard
-        post={post}
-        latestMetric={latestMetric}
-        onClick={() => onOpenPost(post.id)}
-        compact={density === "compact"}
+          </div>
+        )}
+        onMove={(_id, from, to, item) => {
+          // Intercept moves into Scheduled when no publish_at — prompt inline.
+          if (to === "scheduled" && !item.publish_at) {
+            setPendingSchedule({
+              postId: item.id,
+              originalStatus: from,
+              value: defaultScheduleValue(item),
+            });
+            return false;
+          }
+          upsert.mutate({
+            id: item.id,
+            title: item.title,
+            status: to,
+          });
+        }}
       />
     </div>
   );
@@ -355,7 +244,11 @@ function validateScheduleValue(value: string): { valid: boolean; error: string |
 }
 
 function PendingScheduleCard({
-  post, value, onChange, onConfirm, onCancel,
+  post,
+  value,
+  onChange,
+  onConfirm,
+  onCancel,
 }: {
   post: SocialPost;
   value: string;
@@ -391,7 +284,10 @@ function PendingScheduleCard({
         ref={inputRef}
         type="datetime-local"
         value={value}
-        onChange={(e) => { setTouched(true); onChange(e.target.value); }}
+        onChange={(e) => {
+          setTouched(true);
+          onChange(e.target.value);
+        }}
         onBlur={() => setTouched(true)}
         aria-invalid={showError}
         aria-describedby={showError ? `sched-err-${post.id}` : undefined}
@@ -401,7 +297,10 @@ function PendingScheduleCard({
             setTouched(true);
             if (valid) onConfirm();
           }
-          if (e.key === "Escape") { e.preventDefault(); onCancel(); }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            onCancel();
+          }
         }}
         className={cn(
           "h-8 text-xs",
@@ -420,7 +319,10 @@ function PendingScheduleCard({
         <Button
           size="sm"
           className="h-7 px-2 text-xs gap-1"
-          onClick={() => { setTouched(true); if (valid) onConfirm(); }}
+          onClick={() => {
+            setTouched(true);
+            if (valid) onConfirm();
+          }}
           disabled={!valid}
         >
           <Check className="h-3 w-3" /> Schedule
