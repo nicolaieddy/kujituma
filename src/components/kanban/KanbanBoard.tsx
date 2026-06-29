@@ -180,15 +180,11 @@ export function KanbanBoard<TItem, TStatus extends string>({
     }
 
     // Reorder persistence for the destination column.
-    if (onReorder) {
-      const colIds = nextLocal
-        .filter((i) => getStatus(i) === toCol || getId(i) === aId)
-        .filter((i) => {
-          // After the optimistic over-handler, the moved item already has toCol status.
-          return getStatus(i) === toCol;
-        })
-        .map((i) => getId(i));
-      onReorder(toCol, colIds);
+    const didReorder = nextLocal !== local;
+    const wasCrossColumn = !!fromCol && fromCol !== toCol;
+    if (onReorder && (didReorder || wasCrossColumn)) {
+      const colIds = nextLocal.filter((i) => getStatus(i) === toCol).map((i) => getId(i));
+      onReorder(toCol, colIds, nextLocal);
     }
   };
 
