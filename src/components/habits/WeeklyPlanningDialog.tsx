@@ -105,7 +105,7 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
 
   const handleRefreshInsight = () => {
     generateInsights({
-      objectives: lastWeekObjectives.map(o => ({ text: o.text, is_completed: o.is_completed })),
+      objectives: lastWeekObjectives.map(o => ({ text: o.text, is_completed: o.status === 'done' })),
       lastWeekReflection: lastWeekPlanning?.last_week_reflection || undefined,
       lastWeekIntention: lastWeekPlanning?.week_intention || undefined,
       progressNotes: lastWeekProgress?.notes || undefined,
