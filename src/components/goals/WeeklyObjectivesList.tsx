@@ -49,6 +49,7 @@ export const WeeklyObjectivesList = ({
   isWeekCompleted,
   isCreating,
   onToggleObjective,
+  onSetObjectiveStatus,
   onUpdateObjectiveText,
   onUpdateObjectiveGoal,
   onDeleteObjective,
@@ -66,6 +67,15 @@ export const WeeklyObjectivesList = ({
 }: WeeklyObjectivesListProps) => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [view, setView] = useState<ObjectivesView>(() => {
+    if (typeof window === "undefined") return "list";
+    return (localStorage.getItem(VIEW_STORAGE_KEY) as ObjectivesView) || "list";
+  });
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(VIEW_STORAGE_KEY, view);
+    }
+  }, [view]);
   const [editingObjectiveId, setEditingObjectiveId] = useState<string | null>(null);
   const [editingText, setEditingText] = useState("");
   const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
