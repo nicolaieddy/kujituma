@@ -117,6 +117,8 @@ const Admin = () => {
     handleUserDeleted
   } = useAdminData();
 
+  const { data: feedbackUnread = 0 } = useAdminFeedbackUnreadCount(isAdmin);
+
   if (loading) {
     return <AdminPageSkeleton />;
   }
