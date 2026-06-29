@@ -187,12 +187,12 @@ export const WeeklyPlanningDialog = ({ open, onOpenChange, weekStart }: WeeklyPl
           <div className="space-y-2 max-h-[120px] overflow-y-auto">
             {currentWeekObjectives.slice(0, 5).map((obj) => (
               <div key={obj.id} className="flex items-center gap-2 text-sm">
-                {obj.is_completed ? (
+                {obj.status === 'done' ? (
                   <CheckCircle className="h-4 w-4 text-primary shrink-0" />
                 ) : (
                   <Circle className="h-4 w-4 text-muted-foreground shrink-0" />
                 )}
-                <span className={obj.is_completed ? "line-through text-muted-foreground" : ""}>
+                <span className={obj.status === 'done' ? "line-through text-muted-foreground" : ""}>
                   {obj.text}
                 </span>
               </div>
