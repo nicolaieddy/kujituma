@@ -59,8 +59,9 @@ export interface KanbanBoardProps<TItem, TStatus extends string> {
    * so callers can prompt for extra info before persisting themselves).
    */
   onMove?: (itemId: string, from: TStatus, to: TStatus, item: TItem) => boolean | void;
-  /** Called when items in a column are reordered. Receives the column's new ordered ids. */
-  onReorder?: (columnId: TStatus, orderedIds: string[]) => void;
+  /** Called when items in a column are reordered. Receives the column's new ordered ids
+   *  plus a snapshot of the full local item list (for boards that persist a global order). */
+  onReorder?: (columnId: TStatus, orderedIds: string[], allOrderedItems: TItem[]) => void;
 
   renderDragOverlay?: (item: TItem) => ReactNode;
 
