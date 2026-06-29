@@ -44,20 +44,20 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
   });
 
   mcp.tool("update_objective", {
-    description: "Update a weekly objective (mark complete/incomplete, change text)",
+    description: "Update a weekly objective (mark done/in_progress/not_started, change text)",
     inputSchema: {
       type: "object",
       properties: {
         id: { type: "string", description: "Objective ID" },
         text: { type: "string", description: "New text" },
-        is_completed: { type: "boolean", description: "Completed?" },
+        status: { type: "string", description: "not_started, in_progress, done" },
       },
       required: ["id"],
     },
-    handler: async ({ id, text, is_completed }: { id: string; text?: string; is_completed?: boolean }) => {
+    handler: async ({ id, text, status }: { id: string; text?: string; status?: "not_started" | "in_progress" | "done" }) => {
       const upd: Record<string, unknown> = { updated_at: new Date().toISOString() };
       if (text !== undefined) upd.text = text;
-      if (is_completed !== undefined) upd.is_completed = is_completed;
+      if (status !== undefined) upd.status = status;
 
       const { data, error } = await supabase
         .from("weekly_objectives")
@@ -67,7 +67,7 @@ export function registerWriteTools(mcp: McpServer, supabase: Supabase, userId: s
         .select()
         .single();
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
-      return { content: [{ type: "text" as const, text: `✅ "${data.text}" — ${data.is_completed ? "done ✓" : "in progress"}` }] };
+      return { content: [{ type: "text" as const, text: `✅ "${data.text}" — ${data.status === "done" ? "done ✓" : data.status}` }] };
     },
   });
 
