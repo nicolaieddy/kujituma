@@ -16,6 +16,7 @@ import { useSocialPosts, useUpsertSocialPost, type SocialPost } from "@/hooks/us
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { PostCard } from "./PostCard";
 import { BOARD_ORDER, STATUS_META, toBoardStatus, type BoardStatus } from "@/lib/social";
+import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
