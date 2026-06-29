@@ -1,10 +1,13 @@
 
+export type ObjectiveStatus = 'not_started' | 'in_progress' | 'done';
+
 export interface WeeklyObjective {
   id: string;
   user_id: string;
   goal_id: string | null;
   text: string;
   is_completed: boolean;
+  status: ObjectiveStatus;
   week_start: string;
   order_index?: number;
   scheduled_day?: string | null;
