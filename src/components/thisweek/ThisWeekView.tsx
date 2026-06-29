@@ -401,7 +401,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       )}
 
       {/* Show incomplete objectives reflection - only Friday 6pm through Sunday when there are incomplete objectives */}
-      {isCurrentWeek && !isReadOnly && isEndOfWeekTime && objectives && objectives.some(obj => !obj.is_completed) && (
+      {isCurrentWeek && !isReadOnly && isEndOfWeekTime && objectives && objectives.some(obj => obj.status !== 'done') && (
         <EndOfWeekReflection
           objectives={objectives}
           incompleteReflections={incompleteReflections}
