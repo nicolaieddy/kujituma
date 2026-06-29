@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info, Database } from "lucide-react";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, type SocialPlatform,
