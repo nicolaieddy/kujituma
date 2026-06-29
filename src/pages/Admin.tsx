@@ -153,7 +153,16 @@ const Admin = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="posts" className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            const next = new URLSearchParams(searchParams);
+            if (v === "posts") next.delete("tab");
+            else next.set("tab", v);
+            setSearchParams(next, { replace: true });
+          }}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-3 bg-muted">
             <TabsTrigger value="posts">
               Posts Management
