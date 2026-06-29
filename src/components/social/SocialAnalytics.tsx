@@ -10,7 +10,8 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info, Database } from "lucide-react";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
   PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, type SocialPlatform,
@@ -328,21 +329,29 @@ export function SocialAnalytics() {
           value={<CompactNumber value={kpis.totalFollowers} />}
           delta={kpis.followersDelta}
           sub={kpis.followersDelta !== 0 ? `${kpis.followersDelta > 0 ? "+" : ""}${kpis.followersDelta.toLocaleString()} in range` : "no change in range"}
+          source="social_follower_growth"
+          sourceDetail="Latest total in range minus value at range start. Sourced from logged counts and aggregate-export anchors."
         />
         <KpiCard
           label="Total impressions"
           value={<CompactNumber value={kpis.totalImpr} />}
           sub={`across ${visiblePlatforms.length} platform${visiblePlatforms.length === 1 ? "" : "s"}`}
+          source="social_daily_account_metrics"
+          sourceDetail="Sum of daily impressions in range. Imported from LinkedIn aggregate analytics (deduped per day)."
         />
         <KpiCard
           label="Engagement rate"
           value={kpis.engRate != null ? formatEngagementRate(kpis.engRate) : "—"}
           sub={`${kpis.totalEng.toLocaleString()} engagements`}
+          source="social_daily_account_metrics"
+          sourceDetail="Engagements ÷ impressions over the selected range. Both come from imported aggregate analytics."
         />
         <KpiCard
           label="Posts published"
           value={kpis.postsInRange.toString()}
           sub="in range"
+          source="social_posts"
+          sourceDetail="Count of posts with status = published and publish_date in the selected range."
         />
       </div>
 
@@ -543,7 +552,7 @@ function PlatformChip({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-function KpiCard({ label, value, sub, delta }: { label: string; value: React.ReactNode; sub?: string; delta?: number }) {
+function KpiCard({ label, value, sub, delta, source, sourceDetail }: { label: string; value: React.ReactNode; sub?: string; delta?: number; source?: string; sourceDetail?: string }) {
   const TrendIcon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
   const trendClass = delta == null || delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive";
   return (
@@ -555,6 +564,23 @@ function KpiCard({ label, value, sub, delta }: { label: string; value: React.Rea
           {delta != null && <TrendIcon className="h-3 w-3" />}
           <span>{sub}</span>
         </div>
+      )}
+      {source && (
+        <TooltipProvider delayDuration={150}>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="pt-1 flex items-center gap-1 text-[10px] text-muted-foreground/80 cursor-help">
+                <Database className="h-2.5 w-2.5" />
+                <span className="font-mono truncate">{source}</span>
+              </div>
+            </TooltipTrigger>
+            {sourceDetail && (
+              <TooltipContent side="bottom" className="max-w-[240px] text-xs">
+                {sourceDetail}
+              </TooltipContent>
+            )}
+          </UITooltip>
+        </TooltipProvider>
       )}
     </Card>
   );
