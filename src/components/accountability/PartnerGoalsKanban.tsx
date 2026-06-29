@@ -22,24 +22,27 @@ interface PartnerGoalsKanbanProps {
 
 type GoalStatus = 'not_started' | 'in_progress' | 'completed';
 
-const COLUMNS = [
+const COLUMNS: KanbanColumnDef<GoalStatus>[] = [
   {
-    status: 'not_started' as GoalStatus,
-    title: 'Not Started',
+    id: "not_started",
+    title: "Not Started",
     icon: Clock,
-    accentDot: 'bg-muted-foreground/50',
+    accentDot: "bg-muted-foreground/50",
+    emptyMessage: "No not started goals",
   },
   {
-    status: 'in_progress' as GoalStatus,
-    title: 'In Progress',
+    id: "in_progress",
+    title: "In Progress",
     icon: Play,
-    accentDot: 'bg-amber-500',
+    accentDot: "bg-amber-500",
+    emptyMessage: "No in progress goals",
   },
   {
-    status: 'completed' as GoalStatus,
-    title: 'Completed',
+    id: "completed",
+    title: "Completed",
     icon: CheckCircle,
-    accentDot: 'bg-emerald-500',
+    accentDot: "bg-emerald-500",
+    emptyMessage: "No completed goals",
   },
 ];
 
