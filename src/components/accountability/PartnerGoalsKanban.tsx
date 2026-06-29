@@ -10,6 +10,7 @@ import { getCategoryConfig, CustomCategoryIcon } from "@/types/customCategories"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { GoalCommentsSheet } from "./GoalCommentsSheet";
 import { useGoalCommentCounts } from "@/hooks/useGoalComments";
+import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
 
 interface PartnerGoalWithCounts extends PartnerGoal {
   objectives_count?: number;
@@ -27,20 +28,20 @@ const COLUMNS = [
     status: 'not_started' as GoalStatus,
     title: 'Not Started',
     icon: Clock,
-    color: 'bg-secondary text-secondary-foreground'
+    accentDot: 'bg-muted-foreground/50',
   },
   {
     status: 'in_progress' as GoalStatus,
     title: 'In Progress',
     icon: Play,
-    color: 'bg-accent text-accent-foreground'
+    accentDot: 'bg-amber-500',
   },
   {
     status: 'completed' as GoalStatus,
     title: 'Completed',
     icon: CheckCircle,
-    color: 'bg-primary/10 text-primary'
-  }
+    accentDot: 'bg-emerald-500',
+  },
 ];
 
 const PartnerGoalCard = ({
