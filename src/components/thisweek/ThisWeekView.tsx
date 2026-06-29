@@ -204,6 +204,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
     handleUpdateObjectiveGoal,
     handleAddObjective,
     handleToggleObjective,
+    handleSetObjectiveStatus,
     handleUpdateObjectiveText,
     handleDeleteObjective,
     handleReorderObjectives,
