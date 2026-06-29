@@ -1,12 +1,10 @@
 import { Goal, GoalStatus } from "@/types/goals";
-import { Badge } from "@/components/ui/badge";
 import { Clock, Play, CheckCircle } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DndContext,
   DragEndEvent,
   DragOverEvent,
-  DragStartEvent,
   PointerSensor,
   useSensor,
   useSensors,
@@ -15,7 +13,8 @@ import {
 } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { SortableGoalCard } from "./SortableGoalCard";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
+import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
 
 interface GoalsKanbanProps {
   goalsByStatus: {
@@ -32,10 +31,10 @@ interface GoalsKanbanProps {
 
 type BoardStatus = 'not_started' | 'in_progress' | 'completed';
 
-const COLUMNS: { status: BoardStatus; title: string; icon: typeof Clock; color: string }[] = [
-  { status: 'not_started', title: 'Not Started', icon: Clock, color: 'bg-secondary text-secondary-foreground' },
-  { status: 'in_progress', title: 'In Progress', icon: Play, color: 'bg-accent text-accent-foreground' },
-  { status: 'completed', title: 'Completed', icon: CheckCircle, color: 'bg-primary/10 text-primary' },
+const COLUMNS: { status: BoardStatus; title: string; icon: typeof Clock; accentDot: string }[] = [
+  { status: 'not_started', title: 'Not Started', icon: Clock, accentDot: 'bg-muted-foreground/50' },
+  { status: 'in_progress', title: 'In Progress', icon: Play, accentDot: 'bg-amber-500' },
+  { status: 'completed', title: 'Completed', icon: CheckCircle, accentDot: 'bg-emerald-500' },
 ];
 
 type LocalState = Record<BoardStatus, Goal[]>;
@@ -53,10 +52,9 @@ function findColumn(state: LocalState, id: string): BoardStatus | null {
 const KanbanColumn = ({
   status,
   title,
-  icon: IconComponent,
-  color,
+  icon,
+  accentDot,
   goals,
-  isMobile,
   onEdit,
   onDelete,
   onStatusChange,
@@ -65,9 +63,8 @@ const KanbanColumn = ({
   status: GoalStatus;
   title: string;
   icon: typeof Clock;
-  color: string;
+  accentDot: string;
   goals: Goal[];
-  isMobile: boolean;
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
   onStatusChange: (id: string, status: GoalStatus) => void;
@@ -76,40 +73,32 @@ const KanbanColumn = ({
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <div className="space-y-4">
-      <div className={`flex items-center justify-between ${isMobile ? 'py-3 px-4 bg-muted rounded-lg' : ''}`}>
-        <div className="flex items-center gap-2">
-          <IconComponent className={`${isMobile ? 'h-4 w-4' : 'h-5 w-5'} text-foreground`} />
-          <h3 className={`${isMobile ? 'text-base' : 'text-lg'} font-semibold text-foreground font-heading`}>{title}</h3>
-        </div>
-        <Badge className={`${color} text-xs shadow-sm`}>{goals.length}</Badge>
-      </div>
-
+    <KanbanColumnShell
+      droppableRef={setNodeRef}
+      isOver={isOver}
+      title={title}
+      icon={icon}
+      accentDot={accentDot}
+      count={goals.length}
+      isEmpty={goals.length === 0}
+      emptyIcon={icon}
+      emptyMessage={`No ${title.toLowerCase()} goals yet`}
+    >
       <SortableContext items={goals.map((g) => g.id)} strategy={verticalListSortingStrategy}>
-        <div
-          ref={setNodeRef}
-          className={`space-y-3 rounded-lg transition-colors ${isMobile ? 'min-h-[200px]' : 'min-h-[300px]'} ${isOver ? 'bg-primary/5 ring-1 ring-primary/30' : ''}`}
-        >
-          {goals.length === 0 ? (
-            <div className={`glass-card border-2 border-dashed rounded-lg ${isMobile ? 'p-6' : 'p-8'} text-center hover:border-primary/30 transition-colors`}>
-              <IconComponent className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} text-muted-foreground mx-auto mb-2`} />
-              <p className="text-muted-foreground text-sm">No {title.toLowerCase()} goals yet</p>
-            </div>
-          ) : (
-            goals.map((goal) => (
-              <SortableGoalCard
-                key={goal.id}
-                goal={goal}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onStatusChange={onStatusChange}
-                onClick={onGoalClick}
-              />
-            ))
-          )}
+        <div className="space-y-3">
+          {goals.map((goal) => (
+            <SortableGoalCard
+              key={goal.id}
+              goal={goal}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onStatusChange={onStatusChange}
+              onClick={onGoalClick}
+            />
+          ))}
         </div>
       </SortableContext>
-    </div>
+    </KanbanColumnShell>
   );
 };
 
