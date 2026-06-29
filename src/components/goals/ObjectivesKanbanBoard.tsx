@@ -259,35 +259,25 @@ function KanbanColumn({
     });
   }, [groups, goalById]);
 
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "flex flex-col rounded-lg border border-border bg-muted/30 min-h-[200px] transition-colors",
-        isOver && "bg-accent/40 ring-1 ring-primary/40"
-      )}
-    >
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-        <div className="flex items-center gap-2">
-          <span className={cn("h-2 w-2 rounded-full", meta.dot)} />
-          <h3 className="text-sm font-semibold text-foreground">{meta.label}</h3>
-        </div>
-        <Badge variant="secondary" className="text-[10px] h-5 px-2">
-          {total}
-        </Badge>
-      </div>
+  const emptyMessage =
+    status === "not_started"
+      ? "Drop or add objectives here"
+      : status === "in_progress"
+      ? "Nothing in progress"
+      : "Nothing done yet";
 
+  return (
+    <KanbanColumnShell
+      droppableRef={setNodeRef}
+      isOver={isOver}
+      title={meta.label}
+      accentDot={meta.dot}
+      count={total}
+      isEmpty={total === 0}
+      emptyMessage={emptyMessage}
+    >
       <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 p-2 space-y-3">
-          {total === 0 && (
-            <div className="text-center text-xs text-muted-foreground py-6 px-2">
-              {status === "not_started"
-                ? "Drop or add objectives here"
-                : status === "in_progress"
-                ? "Nothing in progress"
-                : "Nothing done yet"}
-            </div>
-          )}
+        <div className="space-y-3">
           <AnimatePresence mode="popLayout">
             {sortedGroupKeys.map((goalKey) => {
               const items = groups.get(goalKey) ?? [];
@@ -317,7 +307,7 @@ function KanbanColumn({
           </AnimatePresence>
         </div>
       </SortableContext>
-    </div>
+    </KanbanColumnShell>
   );
 }
 
