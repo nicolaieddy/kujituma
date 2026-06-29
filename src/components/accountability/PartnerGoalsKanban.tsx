@@ -127,19 +127,11 @@ const PartnerGoalCard = ({
 };
 
 export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
-  const isMobile = useIsMobile();
   const [commentsGoalId, setCommentsGoalId] = useState<string | null>(null);
   const [commentsGoalTitle, setCommentsGoalTitle] = useState('');
 
   const goalIds = goals.map((g) => g.id);
   const commentCounts = useGoalCommentCounts(goalIds);
-
-  // Group goals by status
-  const goalsByStatus: Record<GoalStatus, PartnerGoalWithCounts[]> = {
-    not_started: goals.filter(g => g.status === 'not_started'),
-    in_progress: goals.filter(g => g.status === 'in_progress'),
-    completed: goals.filter(g => g.status === 'completed'),
-  };
 
   const totalGoals = goals.length;
 
@@ -154,37 +146,24 @@ export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
-        {COLUMNS.map((column) => {
-          const columnGoals = goalsByStatus[column.status];
-          return (
-            <KanbanColumnShell
-              key={column.status}
-              title={column.title}
-              icon={column.icon}
-              accentDot={column.accentDot}
-              count={columnGoals.length}
-              isEmpty={columnGoals.length === 0}
-              emptyIcon={column.icon}
-              emptyMessage={`No ${column.title.toLowerCase()} goals`}
-            >
-              <div className="space-y-3">
-                {columnGoals.map((goal) => (
-                  <PartnerGoalCard
-                    key={goal.id}
-                    goal={goal}
-                    commentCount={commentCounts[goal.id] ?? 0}
-                    onCommentClick={() => {
-                      setCommentsGoalId(goal.id);
-                      setCommentsGoalTitle(goal.title);
-                    }}
-                  />
-                ))}
-              </div>
-            </KanbanColumnShell>
-          );
-        })}
-      </div>
+      <KanbanBoard<PartnerGoalWithCounts, GoalStatus>
+        readOnly
+        columns={COLUMNS}
+        items={goals}
+        getId={(g) => g.id}
+        getStatus={(g) => g.status as GoalStatus}
+        renderCard={(goal) => (
+          <PartnerGoalCard
+            goal={goal}
+            commentCount={commentCounts[goal.id] ?? 0}
+            onCommentClick={() => {
+              setCommentsGoalId(goal.id);
+              setCommentsGoalTitle(goal.title);
+            }}
+          />
+        )}
+      />
+
 
 
       {commentsGoalId && (
