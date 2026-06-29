@@ -7,11 +7,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { OfflineFallback } from "@/components/pwa/OfflineFallback";
 
+import { Badge } from "@/components/ui/badge";
+import { useAdminFeedbackUnreadCount } from "@/hooks/useAdminFeedbackUnread";
+
 // Lazy load admin components for code splitting
 const PostsManagement = lazy(() => import("@/components/admin/PostsManagement"));
 const UsersOverview = lazy(() => import("@/components/admin/UsersOverview"));
 const UserAnalytics = lazy(() => import("@/components/admin/UserAnalytics"));
 const PostAnalytics = lazy(() => import("@/components/admin/PostAnalytics"));
+const FeedbackInbox = lazy(() => import("@/components/admin/FeedbackInbox"));
 
 // Loading skeleton for admin tabs
 // Loading skeleton for admin tabs content
