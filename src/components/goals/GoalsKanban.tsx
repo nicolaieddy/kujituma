@@ -40,9 +40,9 @@ const COLUMNS: { status: BoardStatus; title: string; icon: typeof Clock; color: 
 
 type LocalState = Record<BoardStatus, Goal[]>;
 
-function findColumn(state: LocalState, id: string): GoalStatus | null {
-  if ((["not_started", "in_progress", "completed"] as GoalStatus[]).includes(id as GoalStatus)) {
-    return id as GoalStatus;
+function findColumn(state: LocalState, id: string): BoardStatus | null {
+  if ((["not_started", "in_progress", "completed"] as BoardStatus[]).includes(id as BoardStatus)) {
+    return id as BoardStatus;
   }
   for (const col of COLUMNS) {
     if (state[col.status].some((g) => g.id === id)) return col.status;
