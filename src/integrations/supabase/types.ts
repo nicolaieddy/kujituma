@@ -973,9 +973,11 @@ export type Database = {
           emailed_at: string | null
           id: string
           is_read: boolean
+          is_resolved: boolean
           message: string
           page_url: string | null
           read_at: string | null
+          resolved_at: string | null
           user_agent: string | null
           user_email: string | null
           user_id: string | null
@@ -986,9 +988,11 @@ export type Database = {
           emailed_at?: string | null
           id?: string
           is_read?: boolean
+          is_resolved?: boolean
           message: string
           page_url?: string | null
           read_at?: string | null
+          resolved_at?: string | null
           user_agent?: string | null
           user_email?: string | null
           user_id?: string | null
@@ -999,9 +1003,11 @@ export type Database = {
           emailed_at?: string | null
           id?: string
           is_read?: boolean
+          is_resolved?: boolean
           message?: string
           page_url?: string | null
           read_at?: string | null
+          resolved_at?: string | null
           user_agent?: string | null
           user_email?: string | null
           user_id?: string | null
