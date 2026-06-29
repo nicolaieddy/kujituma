@@ -110,6 +110,9 @@ export const NotificationItem = ({ notification, onMarkRead, onMarkAsRead, pendi
           destination = '/feed';
         }
         break;
+      case 'feedback_received':
+        destination = '/admin?tab=feedback';
+        break;
       default:
         if (notification.related_post_id) {
           destination = `/feed?post=${notification.related_post_id}`;
