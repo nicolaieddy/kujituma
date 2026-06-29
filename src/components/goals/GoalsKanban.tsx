@@ -67,7 +67,7 @@ export const GoalsKanban = ({
   );
 
   return (
-    <KanbanBoard<Goal, BoardStatus>
+    <KanbanBoard
       columns={COLUMNS}
       items={items}
       getId={(g) => g.id}

@@ -187,7 +187,7 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
         </div>
       </div>
 
-      <KanbanBoard<SocialPost, BoardStatus>
+      <KanbanBoard
         columns={columns}
         items={sourcePosts}
         getId={(p) => p.id}

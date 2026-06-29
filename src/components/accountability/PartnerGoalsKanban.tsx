@@ -146,7 +146,7 @@ export const PartnerGoalsKanban = ({ goals }: PartnerGoalsKanbanProps) => {
 
   return (
     <>
-      <KanbanBoard<PartnerGoalWithCounts, GoalStatus>
+      <KanbanBoard
         readOnly
         columns={COLUMNS}
         items={goals}
