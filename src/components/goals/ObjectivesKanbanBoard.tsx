@@ -23,11 +23,11 @@ import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Target, Pencil, X, Clock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import type { WeeklyObjective, ObjectiveStatus } from "@/types/weeklyProgress";
 import type { Goal } from "@/types/goals";
 import { STATUS_COLUMNS, STATUS_META, deriveStatus } from "@/lib/objectiveStatus";
+import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
 
 interface Props {
   objectives: WeeklyObjective[];
