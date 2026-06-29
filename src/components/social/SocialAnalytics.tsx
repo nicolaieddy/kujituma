@@ -329,21 +329,29 @@ export function SocialAnalytics() {
           value={<CompactNumber value={kpis.totalFollowers} />}
           delta={kpis.followersDelta}
           sub={kpis.followersDelta !== 0 ? `${kpis.followersDelta > 0 ? "+" : ""}${kpis.followersDelta.toLocaleString()} in range` : "no change in range"}
+          source="social_follower_growth"
+          sourceDetail="Latest total in range minus value at range start. Sourced from logged counts and aggregate-export anchors."
         />
         <KpiCard
           label="Total impressions"
           value={<CompactNumber value={kpis.totalImpr} />}
           sub={`across ${visiblePlatforms.length} platform${visiblePlatforms.length === 1 ? "" : "s"}`}
+          source="social_daily_account_metrics"
+          sourceDetail="Sum of daily impressions in range. Imported from LinkedIn aggregate analytics (deduped per day)."
         />
         <KpiCard
           label="Engagement rate"
           value={kpis.engRate != null ? formatEngagementRate(kpis.engRate) : "—"}
           sub={`${kpis.totalEng.toLocaleString()} engagements`}
+          source="social_daily_account_metrics"
+          sourceDetail="Engagements ÷ impressions over the selected range. Both come from imported aggregate analytics."
         />
         <KpiCard
           label="Posts published"
           value={kpis.postsInRange.toString()}
           sub="in range"
+          source="social_posts"
+          sourceDetail="Count of posts with status = published and publish_date in the selected range."
         />
       </div>
 
