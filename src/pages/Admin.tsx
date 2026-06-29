@@ -119,6 +119,9 @@ const Admin = () => {
   } = useAdminData();
 
   const { data: feedbackUnread = 0 } = useAdminFeedbackUnreadCount(isAdmin);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get("tab");
+  const activeTab = tabParam === "users" || tabParam === "feedback" ? tabParam : "posts";
 
   if (loading) {
     return <AdminPageSkeleton />;
