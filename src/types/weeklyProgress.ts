@@ -6,7 +6,6 @@ export interface WeeklyObjective {
   user_id: string;
   goal_id: string | null;
   text: string;
-  is_completed: boolean;
   status: ObjectiveStatus;
   week_start: string;
   order_index?: number;
@@ -44,7 +43,6 @@ export interface CreateWeeklyObjectiveData {
 
 export interface UpdateWeeklyObjectiveData {
   text?: string;
-  is_completed?: boolean;
   status?: ObjectiveStatus;
   goal_id?: string | null;
   order_index?: number;

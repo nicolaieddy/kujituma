@@ -39,8 +39,8 @@ export const ObjectivesList = ({
             return (
               <div key={objective.id} className="flex items-center gap-3 group">
                 <Checkbox
-                  checked={objective.is_completed}
-                  onCheckedChange={() => onToggleObjective(objective.id, objective.is_completed)}
+                  checked={objective.status === 'done'}
+                  onCheckedChange={() => onToggleObjective(objective.id, objective.status === 'done')}
                   className="mt-1 flex-shrink-0"
                 />
                 <div className="flex-1">
@@ -48,7 +48,7 @@ export const ObjectivesList = ({
                     value={objective.text}
                     onChange={(e) => onUpdateObjectiveText(objective.id, e.target.value)}
                     className={`bg-transparent border-none text-white p-0 h-auto ${
-                      objective.is_completed ? 'line-through text-white/60' : ''
+                      objective.status === 'done' ? 'line-through text-white/60' : ''
                     }`}
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {

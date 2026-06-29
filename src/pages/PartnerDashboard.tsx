@@ -335,7 +335,7 @@ const PartnerDashboard = () => {
     );
   }
 
-  const completedObjectives = weeklyObjectives.filter(o => o.is_completed).length;
+  const completedObjectives = weeklyObjectives.filter(o => o.status === 'done').length;
   const totalObjectives = weeklyObjectives.length;
   const progressPercentage = totalObjectives > 0 ? Math.round((completedObjectives / totalObjectives) * 100) : 0;
 
@@ -616,13 +616,13 @@ const PartnerDashboard = () => {
                         key={objective.id}
                         className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 hover:bg-muted/70 transition-colors group"
                       >
-                        {objective.is_completed ? (
+                        {objective.status === 'done' ? (
                           <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
                         ) : (
                           <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <span className={`text-sm ${objective.is_completed ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                          <span className={`text-sm ${objective.status === 'done' ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
                             {objective.text}
                           </span>
                           {objective.goal?.title && (

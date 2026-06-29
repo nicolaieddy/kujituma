@@ -228,7 +228,7 @@ export const useWeekTransition = (displayedWeekStart: string) => {
     setIsForceOpen(true);
   }, []);
 
-  const incompleteObjectives = lastWeekObjectives.filter((obj) => !obj.is_completed);
+  const incompleteObjectives = lastWeekObjectives.filter((obj) => obj.status !== 'done');
 
   return {
     // Data

@@ -111,12 +111,12 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
   // Calculate objectives stats with comparison
   const objectivesStats = useMemo(() => {
     const total = quarterObjectives?.length || 0;
-    const completed = quarterObjectives?.filter(o => o.is_completed).length || 0;
+    const completed = quarterObjectives?.filter(o => o.status === 'done').length || 0;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     
     // Previous quarter stats
     const prevTotal = prevQuarterObjectives?.length || 0;
-    const prevCompleted = prevQuarterObjectives?.filter(o => o.is_completed).length || 0;
+    const prevCompleted = prevQuarterObjectives?.filter(o => o.status === 'done').length || 0;
     const prevPercentage = prevTotal > 0 ? Math.round((prevCompleted / prevTotal) * 100) : 0;
     
     // Calculate difference
@@ -148,13 +148,13 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
       
       if (existing) {
         existing.total += 1;
-        if (obj.is_completed) existing.completed += 1;
+        if (obj.status === 'done') existing.completed += 1;
       } else {
         const goal = goals.find(g => g.id === goalId);
         goalMap.set(goalId, {
           goalTitle: goal?.title || 'Unlinked Objectives',
           total: 1,
-          completed: obj.is_completed ? 1 : 0
+          completed: obj.status === 'done' ? 1 : 0
         });
       }
     });
@@ -177,7 +177,7 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
       
       if (existing) {
         existing.total += 1;
-        if (obj.is_completed) existing.completed += 1;
+        if (obj.status === 'done') existing.completed += 1;
       } else {
         // Format week label (e.g., "Jan 6")
         const date = new Date(weekStart + 'T00:00:00');
@@ -186,7 +186,7 @@ export const QuarterlyReviewDialog = ({ open, onOpenChange }: QuarterlyReviewDia
           week: weekStart,
           weekLabel,
           total: 1,
-          completed: obj.is_completed ? 1 : 0
+          completed: obj.status === 'done' ? 1 : 0
         });
       }
     });

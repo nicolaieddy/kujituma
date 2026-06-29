@@ -31,7 +31,7 @@ export const useCategoryFocus = () => {
       // Fetch objectives with their goals
       const { data: objectives } = await supabase
         .from('weekly_objectives')
-        .select('id, is_completed, goal_id, goals(category)')
+        .select('id, status, goal_id, goals(category)')
         .eq('user_id', user.id);
 
       if (!goals || !objectives) return [];
@@ -80,7 +80,7 @@ export const useCategoryFocus = () => {
         }
         const stats = categoryStats.get(category)!;
         stats.totalObjectives++;
-        if (obj.is_completed) {
+        if (obj.status === 'done') {
           stats.completedObjectives++;
         }
       });

@@ -69,11 +69,11 @@ export const useAISuggestions = ({
     setHasFetchedSuggestions(true);
     
     const incompleteFromPast = (allObjectives || [])
-      .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+      .filter(o => o.status !== 'done' && o.week_start !== currentWeekStart)
       .map(o => ({ text: o.text, weekStart: o.week_start }));
     
     const completedRecently = (allObjectives || [])
-      .filter(o => o.is_completed)
+      .filter(o => o.status === 'done')
       .slice(0, 10)
       .map(o => ({ text: o.text }));
     
@@ -100,11 +100,11 @@ export const useAISuggestions = ({
   const handleRefreshSuggestions = useCallback(() => {
     try {
       const incompleteFromPast = (allObjectives || [])
-        .filter(o => !o.is_completed && o.week_start !== currentWeekStart)
+        .filter(o => o.status !== 'done' && o.week_start !== currentWeekStart)
         .map(o => ({ text: o.text, weekStart: o.week_start }));
       
       const completedRecently = (allObjectives || [])
-        .filter(o => o.is_completed)
+        .filter(o => o.status === 'done')
         .slice(0, 10)
         .map(o => ({ text: o.text }));
       

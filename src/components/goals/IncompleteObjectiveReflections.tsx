@@ -11,7 +11,7 @@ export const IncompleteObjectiveReflections = ({
   progressPost,
 }: IncompleteObjectiveReflectionsProps) => {
   const incompleteReflections = progressPost?.incomplete_reflections || {};
-  const incompleteObjectives = objectives.filter(obj => !obj.is_completed);
+  const incompleteObjectives = objectives.filter(obj => obj.status !== 'done');
   
   // Only show if there are saved reflections
   const hasReflections = Object.keys(incompleteReflections).some(

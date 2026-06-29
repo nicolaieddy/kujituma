@@ -61,7 +61,7 @@ export const HabitsDueThisWeek = ({
     return {
       ...habit,
       objective: matchingObjective,
-      isCompletedThisWeek: matchingObjective?.is_completed ?? false
+      isCompletedThisWeek: matchingObjective?.status === 'done'
     };
   });
 

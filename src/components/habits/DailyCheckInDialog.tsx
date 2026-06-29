@@ -361,7 +361,7 @@ export const DailyCheckInDialog = ({ open, onOpenChange }: DailyCheckInDialogPro
 
   const handleObjectiveToggle = (objectiveId: string, currentCompleted: boolean) => {
     hapticSelection();
-    updateObjective(objectiveId, { is_completed: !currentCompleted });
+    updateObjective(objectiveId, { status: currentCompleted ? 'not_started' : 'done' });
   };
 
   const getHabitChecked = (habitItemId: string): boolean => {

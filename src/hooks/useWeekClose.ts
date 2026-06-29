@@ -84,8 +84,8 @@ export const useWeekClose = ({
     },
   });
 
-  const incompleteObjectives = objectives.filter(obj => !obj.is_completed);
-  const completedObjectives = objectives.filter(obj => obj.is_completed);
+  const incompleteObjectives = objectives.filter(obj => obj.status !== 'done');
+  const completedObjectives = objectives.filter(obj => obj.status === 'done');
 
   const closeWeek = (carryOverIds: string[]) => {
     closeWeekMutation.mutate({ carryOverIds });

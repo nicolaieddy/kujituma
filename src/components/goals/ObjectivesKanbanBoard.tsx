@@ -128,7 +128,7 @@ export function ObjectivesKanbanBoard({
       const idx = curr.findIndex((o) => o.id === activeIdStr);
       if (idx === -1) return curr;
       const next = [...curr];
-      next[idx] = { ...next[idx], status: overCol, is_completed: overCol === "done" };
+      next[idx] = { ...next[idx], status: overCol };
       return next;
     });
   }
