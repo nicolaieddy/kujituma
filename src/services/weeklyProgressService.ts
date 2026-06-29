@@ -338,9 +338,9 @@ export class WeeklyProgressService {
     // Any of these should NOT appear as carry-over candidates.
     const { data: resolvedRows, error: resolvedError } = await supabase
       .from('weekly_objectives')
-      .select('text, goal_id, is_completed, resolution')
+      .select('text, goal_id, status, resolution')
       .eq('user_id', userId)
-      .or('is_completed.eq.true,resolution.neq.none');
+      .or('status.eq.done,resolution.neq.none');
 
     if (resolvedError) throw resolvedError;
 
@@ -355,7 +355,7 @@ export class WeeklyProgressService {
       .from('weekly_objectives')
       .select('*')
       .eq('user_id', userId)
-      .eq('is_completed', false)
+      .neq('status', 'done')
       .eq('resolution', 'none')
       .lt('week_start', currentWeekStart)
       .order('week_start', { ascending: false })
@@ -418,7 +418,7 @@ export class WeeklyProgressService {
       resolved_at: new Date().toISOString(),
     };
     if (resolution === 'completed') {
-      patch.is_completed = true;
+      patch.status = 'done';
     }
 
     const { error } = await supabase
@@ -496,7 +496,6 @@ export class WeeklyProgressService {
       goal_id: obj.goal_id,
       text: obj.text,
       week_start: newWeekStart,
-      is_completed: false
     }));
 
     // Idempotency: skip any that already exist in the target week
@@ -568,7 +567,6 @@ export class WeeklyProgressService {
       goal_id: obj.goal_id,
       text: obj.text,
       week_start: targetWeekMap.get(obj.id) || '',
-      is_completed: false
     })).filter(obj => obj.week_start); // Filter out any without a target week
 
     // Check which objectives already exist in target weeks to avoid duplicate key errors

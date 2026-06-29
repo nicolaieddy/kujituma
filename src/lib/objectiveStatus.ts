@@ -27,10 +27,13 @@ export const STATUS_META: Record<
 };
 
 /**
- * Derive status from a row even if the column isn't populated yet
- * (defensive — DB trigger keeps these in sync, but pre-fetch caches may lag).
+ * Status is the single source of truth. This wrapper exists for legacy
+ * call sites and to gracefully default missing values to 'not_started'.
  */
-export function deriveStatus(o: Pick<WeeklyObjective, "status" | "is_completed">): ObjectiveStatus {
-  if (o.status) return o.status;
-  return o.is_completed ? "done" : "not_started";
+export function deriveStatus(o: Pick<WeeklyObjective, "status">): ObjectiveStatus {
+  return o.status ?? "not_started";
+}
+
+export function isObjectiveDone(o: Pick<WeeklyObjective, "status">): boolean {
+  return o.status === "done";
 }

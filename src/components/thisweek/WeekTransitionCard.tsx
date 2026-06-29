@@ -69,8 +69,8 @@ export const WeekTransitionCard = ({
 
   // Compute stats — include moved objectives in the denominator
   const movedCount = countMovedObjectives(lastWeekReflections);
-  const completedObjectives = lastWeekObjectives.filter(obj => obj.is_completed);
-  const incompleteObjectives = lastWeekObjectives.filter(obj => !obj.is_completed);
+  const completedObjectives = lastWeekObjectives.filter(obj => obj.status === 'done');
+  const incompleteObjectives = lastWeekObjectives.filter(obj => obj.status !== 'done');
   const totalOriginal = lastWeekObjectives.length + movedCount;
   const completionRate = totalOriginal > 0 
     ? Math.round((completedObjectives.length / totalOriginal) * 100) 

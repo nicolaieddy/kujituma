@@ -67,7 +67,7 @@ export const useAnalyticsSummary = () => {
       // Fetch objectives with goal info
       const { data: objectives } = await supabase
         .from('weekly_objectives')
-        .select('id, is_completed, week_start, goal_id, goals(id, title, category)')
+        .select('id, status, week_start, goal_id, goals(id, title, category)')
         .eq('user_id', user.id)
         .order('week_start', { ascending: false });
 
@@ -89,11 +89,11 @@ export const useAnalyticsSummary = () => {
 
       // Basic stats
       const totalObjectives = objectives.length;
-      const completedObjectives = objectives.filter(o => o.is_completed).length;
+      const completedObjectives = objectives.filter(o => o.status === 'done').length;
       const completionRate = totalObjectives > 0 ? (completedObjectives / totalObjectives) * 100 : 0;
 
       // Goals stats
-      const goalsCompleted = goals.filter(g => g.status === 'completed').length;
+      const goalsCompleted = goals.filter(g => g.status === 'done').length;
       const goalsInProgress = goals.filter(g => g.status === 'in_progress').length;
 
       // Group by week
@@ -105,7 +105,7 @@ export const useAnalyticsSummary = () => {
         }
         const data = weekMap.get(week)!;
         data.total++;
-        if (obj.is_completed) data.completed++;
+        if (obj.status === 'done') data.completed++;
       });
 
       const activeWeeks = weekMap.size;
@@ -142,7 +142,7 @@ export const useAnalyticsSummary = () => {
         }
         const data = categoryMap.get(category)!;
         data.total++;
-        if (obj.is_completed) data.completed++;
+        if (obj.status === 'done') data.completed++;
       });
 
       const categoryBreakdown: CategoryBreakdown[] = Array.from(categoryMap.entries())

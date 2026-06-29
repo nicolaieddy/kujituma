@@ -84,7 +84,7 @@ export const useWeeklyObjectives = (currentWeekStart: string) => {
     updateMutation.mutate({ id, data });
     
     // Check for streak milestone asynchronously after completing
-    if (data.is_completed === true) {
+    if (data.status === 'done') {
       HabitStreaksService.checkStreakMilestone(id)
         .then((milestoneCheck) => {
           if (milestoneCheck?.isMilestone) {

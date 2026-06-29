@@ -77,13 +77,13 @@ export class HabitStreaksService {
     // Build weekly history
     const weeklyHistory: WeeklyCompletion[] = goalObjectives.map(obj => ({
       weekStart: obj.week_start,
-      isCompleted: obj.is_completed,
+      isCompleted: obj.status === 'done',
       objectiveId: obj.id
     }));
 
     // Calculate completion stats
     const totalWeeks = goalObjectives.length;
-    const completedWeeks = goalObjectives.filter(obj => obj.is_completed).length;
+    const completedWeeks = goalObjectives.filter(obj => obj.status === 'done').length;
     const completionRate = totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0;
 
     // Calculate current streak (consecutive completed weeks from most recent)
@@ -102,7 +102,7 @@ export class HabitStreaksService {
       // Skip future weeks
       if (isAfter(objWeekStart, currentWeekStart)) continue;
       
-      if (obj.is_completed) {
+      if (obj.status === 'done') {
         currentStreak++;
       } else {
         // If current week is not completed yet, continue checking
@@ -123,7 +123,7 @@ export class HabitStreaksService {
     );
 
     for (const obj of ascendingObjectives) {
-      if (obj.is_completed) {
+      if (obj.status === 'done') {
         tempStreak++;
         longestStreak = Math.max(longestStreak, tempStreak);
       } else {
@@ -132,7 +132,7 @@ export class HabitStreaksService {
     }
 
     // Find last completed week
-    const lastCompleted = sortedObjectives.find(obj => obj.is_completed);
+    const lastCompleted = sortedObjectives.find(obj => obj.status === 'done');
     const lastCompletedWeek = lastCompleted ? lastCompleted.week_start : null;
 
     return {

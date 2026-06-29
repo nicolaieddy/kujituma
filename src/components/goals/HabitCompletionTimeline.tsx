@@ -90,7 +90,7 @@ export const HabitCompletionTimeline = memo(({ goal, objectives }: HabitCompleti
       } else if (isFuture) {
         status = goal.is_paused ? 'paused' : 'future';
       } else if (objective) {
-        status = objective.is_completed ? 'completed' : (isCurrent ? 'pending' : 'missed');
+        status = objective.status === 'done' ? 'completed' : (isCurrent ? 'pending' : 'missed');
       } else {
         // No objective exists - check if it should have been created based on frequency
         status = isCurrent ? 'pending' : 'not_due';

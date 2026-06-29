@@ -63,7 +63,7 @@ export function useEnsureTrainingWeeklyObjective(weekStart: string) {
     (async () => {
       const { data: existing } = await supabase
         .from("weekly_objectives")
-        .select("id, text, is_completed")
+        .select("id, text, status")
         .eq("user_id", user.id)
         .eq("week_start", weekStart)
         .eq("goal_id", defaultGoalId!)
@@ -72,21 +72,23 @@ export function useEnsureTrainingWeeklyObjective(weekStart: string) {
 
       if (cancelled) return;
 
+      const desiredStatus = shouldComplete ? "done" : "not_started";
+
       if (!existing) {
         await supabase.from("weekly_objectives").insert({
           user_id: user.id,
           week_start: weekStart,
           goal_id: defaultGoalId,
           text: desiredText,
-          is_completed: shouldComplete,
+          status: desiredStatus,
         });
       } else if (
         existing.text !== desiredText ||
-        existing.is_completed !== shouldComplete
+        existing.status !== desiredStatus
       ) {
         await supabase
           .from("weekly_objectives")
-          .update({ text: desiredText, is_completed: shouldComplete })
+          .update({ text: desiredText, status: desiredStatus })
           .eq("id", existing.id);
       }
 

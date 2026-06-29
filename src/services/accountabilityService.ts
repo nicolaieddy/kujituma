@@ -53,7 +53,7 @@ export interface PartnerGoal {
 export interface PartnerWeeklyObjective {
   id: string;
   text: string;
-  is_completed: boolean;
+  status: 'not_started' | 'in_progress' | 'done';
   week_start: string;
   goal_id: string | null;
   scheduled_day: string | null;
@@ -362,7 +362,7 @@ class AccountabilityService {
 
     const { data, error } = await supabase
       .from('weekly_objectives')
-      .select('id, text, is_completed, week_start, goal_id, scheduled_day, scheduled_time, goal:goals(title)')
+      .select('id, text, status, week_start, goal_id, scheduled_day, scheduled_time, goal:goals(title)')
       .eq('user_id', partnerId)
       .eq('week_start', weekStart)
       .order('order_index', { ascending: true });
@@ -930,7 +930,7 @@ class AccountabilityService {
     const goalIds = habitGoals.map(g => g.id);
     const { data: objectives, error: objError } = await supabase
       .from('weekly_objectives')
-      .select('id, is_completed, week_start, goal_id')
+      .select('id, status, week_start, goal_id')
       .eq('user_id', partnerId)
       .in('goal_id', goalIds)
       .order('week_start', { ascending: false });
@@ -951,12 +951,12 @@ class AccountabilityService {
       // Build weekly history
       const weeklyHistory = goalObjectives.slice(0, 8).map(obj => ({
         weekStart: obj.week_start,
-        isCompleted: obj.is_completed,
+        isCompleted: obj.status === 'done',
       }));
 
       // Calculate completion stats
       const totalWeeks = goalObjectives.length;
-      const completedWeeks = goalObjectives.filter(obj => obj.is_completed).length;
+      const completedWeeks = goalObjectives.filter(obj => obj.status === 'done').length;
       const completionRate = totalWeeks > 0 ? Math.round((completedWeeks / totalWeeks) * 100) : 0;
 
       // Calculate current streak
@@ -969,7 +969,7 @@ class AccountabilityService {
         const objWeekStart = new Date(obj.week_start);
         if (objWeekStart > currentWeekStart) continue;
         
-        if (obj.is_completed) {
+        if (obj.status === 'done') {
           currentStreak++;
         } else {
           if (format(objWeekStart, 'yyyy-MM-dd') === format(currentWeekStart, 'yyyy-MM-dd')) {

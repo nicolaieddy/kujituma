@@ -96,6 +96,8 @@ export const ObjectiveItem = memo(({
   const pendingSyncIds = usePendingSyncIds("weekly_objectives");
   const isPendingSync = pendingSyncIds.has(objective.id);
 
+  const isDone = objective.status === 'done';
+
   return (
     <SortableObjectiveItem id={objective.id}>
       <motion.div
@@ -109,9 +111,9 @@ export const ObjectiveItem = memo(({
           {isPendingSync && <PendingSyncChip className="mt-1 sm:mt-0" />}
           <div className="relative mt-0.5 sm:mt-0 flex-shrink-0">
             <Checkbox
-              checked={objective.is_completed}
+              checked={isDone}
               onCheckedChange={(checked) => {
-                onToggleObjective(objective.id, objective.is_completed);
+                onToggleObjective(objective.id, isDone);
                 if (checked) {
                   celebrateSuccess();
                 }
@@ -119,7 +121,7 @@ export const ObjectiveItem = memo(({
               disabled={isWeekCompleted}
               className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary transition-all"
             />
-            {objective.is_completed && (
+            {isDone && (
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -249,13 +251,13 @@ const ObjectiveContent = ({
   <div className="flex-1 px-1 sm:px-2 py-1 transition-all duration-300 text-foreground min-w-0">
     <div className="flex flex-wrap items-start sm:items-center gap-1 sm:gap-2">
       <span className={`text-sm sm:text-base break-words ${
-        objective.is_completed 
+        objective.status === 'done'
           ? 'line-through decoration-2 decoration-muted-foreground' 
           : ''
       } transition-all duration-300`}>
         {objective.text}
       </span>
-      {objective.is_completed && (
+      {objective.status === 'done' && (
         <span className="text-primary font-medium">✨ Complete!</span>
       )}
       

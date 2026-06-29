@@ -4657,7 +4657,6 @@ export type Database = {
           created_at: string
           goal_id: string | null
           id: string
-          is_completed: boolean
           order_index: number | null
           resolution: Database["public"]["Enums"]["objective_resolution"]
           resolved_at: string | null
@@ -4673,7 +4672,6 @@ export type Database = {
           created_at?: string
           goal_id?: string | null
           id?: string
-          is_completed?: boolean
           order_index?: number | null
           resolution?: Database["public"]["Enums"]["objective_resolution"]
           resolved_at?: string | null
@@ -4689,7 +4687,6 @@ export type Database = {
           created_at?: string
           goal_id?: string | null
           id?: string
-          is_completed?: boolean
           order_index?: number | null
           resolution?: Database["public"]["Enums"]["objective_resolution"]
           resolved_at?: string | null
@@ -5162,10 +5159,10 @@ export type Database = {
         Args: { _user_id: string; _week_start: string }
         Returns: {
           id: string
-          is_completed: boolean
           objective_id: string
           objective_text: string
           rank: number
+          status: Database["public"]["Enums"]["objective_status"]
         }[]
       }
       get_safe_check_in_data: {

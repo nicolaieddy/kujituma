@@ -4,7 +4,7 @@ import { STATUS_META, deriveStatus } from "@/lib/objectiveStatus";
 import type { ObjectiveStatus, WeeklyObjective } from "@/types/weeklyProgress";
 
 interface Props {
-  objective: Pick<WeeklyObjective, "status" | "is_completed">;
+  objective: Pick<WeeklyObjective, "status">;
   disabled?: boolean;
   onChange: (status: ObjectiveStatus) => void;
   size?: "sm" | "md";

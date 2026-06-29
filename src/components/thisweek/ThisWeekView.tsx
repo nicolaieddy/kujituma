@@ -247,7 +247,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
   const movedCount = countMovedObjectives(incompleteReflectionsData);
 
   // Computed values — include moved objectives in the denominator
-  const completedCount = objectives?.filter(obj => obj.is_completed).length || 0;
+  const completedCount = objectives?.filter(obj => obj.status === 'done').length || 0;
   const totalCount = (objectives?.length || 0) + movedCount;
 
   // Loading state
@@ -401,7 +401,7 @@ export const ThisWeekView = ({ weekStart, onNavigateWeek }: ThisWeekViewProps) =
       )}
 
       {/* Show incomplete objectives reflection - only Friday 6pm through Sunday when there are incomplete objectives */}
-      {isCurrentWeek && !isReadOnly && isEndOfWeekTime && objectives && objectives.some(obj => !obj.is_completed) && (
+      {isCurrentWeek && !isReadOnly && isEndOfWeekTime && objectives && objectives.some(obj => obj.status !== 'done') && (
         <EndOfWeekReflection
           objectives={objectives}
           incompleteReflections={incompleteReflections}

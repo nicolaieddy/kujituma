@@ -102,7 +102,7 @@ export const GoalDetailObjectivesSection = ({
   };
 
   const handleToggleObjective = (id: string, isCompleted: boolean) => {
-    updateObjective(id, { is_completed: !isCompleted });
+    updateObjective(id, { status: isCompleted ? 'not_started' : 'done' });
   };
 
   const handleStartEditObjective = (objective: any) => {
@@ -222,7 +222,7 @@ export const GoalDetailObjectivesSection = ({
       earliest: format(parseISO(earliest), 'MMM d, yyyy'),
       latest: format(parseISO(latest), 'MMM d, yyyy'),
       totalCount: objectives.length,
-      completedCount: objectives.filter(o => o.is_completed).length,
+      completedCount: objectives.filter(o => o.status === 'done').length,
     };
   };
 
