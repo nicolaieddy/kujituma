@@ -76,6 +76,7 @@ export const ObjectiveItem = memo(({
   commentCount = 0,
   unreadCount = 0,
   onToggleObjective,
+  onSetObjectiveStatus,
   onEditObjective,
   onEditingTextChange,
   onSaveEdit,
