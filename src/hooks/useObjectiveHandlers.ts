@@ -119,6 +119,7 @@ export const useObjectiveHandlers = ({
     handleUpdateObjectiveGoal,
     handleAddObjective,
     handleToggleObjective,
+    handleSetObjectiveStatus,
     handleUpdateObjectiveText,
     handleDeleteObjective,
     handleReorderObjectives,
