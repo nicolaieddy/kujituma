@@ -16,6 +16,7 @@ import { useSocialPosts, useUpsertSocialPost, type SocialPost } from "@/hooks/us
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { PostCard } from "./PostCard";
 import { BOARD_ORDER, STATUS_META, toBoardStatus, type BoardStatus } from "@/lib/social";
+import { KanbanColumnShell } from "@/components/kanban/KanbanColumnShell";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -282,54 +283,40 @@ function Column({
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
   return (
-    <div className="flex flex-col rounded-lg bg-muted/30 border border-border/60 min-h-[200px]">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border/60">
-        <div className="flex items-center gap-2">
-          <span className="h-1.5 w-1.5 rounded-full bg-foreground/40" />
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-foreground/80">
-            {meta.label}
-          </h3>
-        </div>
-        <span className="text-[11px] text-muted-foreground tabular-nums">{posts.length}</span>
-      </div>
-
+    <KanbanColumnShell
+      droppableRef={setNodeRef}
+      isOver={isOver}
+      title={meta.label}
+      accentDot="bg-foreground/40"
+      count={posts.length}
+      isEmpty={posts.length === 0}
+      emptyMessage="Drop here"
+    >
       <SortableContext items={posts.map((p) => p.id)} strategy={verticalListSortingStrategy}>
-        <div
-          ref={setNodeRef}
-          className={cn(
-            "flex-1 p-2 space-y-2 transition-colors rounded-b-lg",
-            isOver && "bg-primary/5",
-          )}
-        >
-          {posts.length === 0 ? (
-            <div className="h-full min-h-[120px] flex items-center justify-center text-[11px] text-muted-foreground/70">
-              Drop here
-            </div>
-          ) : (
-            posts.map((p) =>
-              pendingSchedule && pendingSchedule.postId === p.id && status === "scheduled" ? (
-                <PendingScheduleCard
-                  key={p.id}
-                  post={p}
-                  value={pendingSchedule.value}
-                  onChange={onPendingChange}
-                  onConfirm={onConfirmPending}
-                  onCancel={onCancelPending}
-                />
-              ) : (
-                <SortableCard
-                  key={p.id}
-                  post={p}
-                  latestMetric={latest[p.id]}
-                  density={density}
-                  onOpenPost={onOpenPost}
-                />
-              ),
-            )
+        <div className="space-y-2">
+          {posts.map((p) =>
+            pendingSchedule && pendingSchedule.postId === p.id && status === "scheduled" ? (
+              <PendingScheduleCard
+                key={p.id}
+                post={p}
+                value={pendingSchedule.value}
+                onChange={onPendingChange}
+                onConfirm={onConfirmPending}
+                onCancel={onCancelPending}
+              />
+            ) : (
+              <SortableCard
+                key={p.id}
+                post={p}
+                latestMetric={latest[p.id]}
+                density={density}
+                onOpenPost={onOpenPost}
+              />
+            ),
           )}
         </div>
       </SortableContext>
-    </div>
+    </KanbanColumnShell>
   );
 }
 

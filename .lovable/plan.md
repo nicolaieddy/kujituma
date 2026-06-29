@@ -1,71 +1,81 @@
+## Goal
 
-# Standardize status keys across boards
+Three boards (Goals, Objectives, Social Pipeline) currently render column headers, count badges, and empty states in three different ways. Unify the **presentation shell** so every board looks and behaves the same, without changing DnD logic, status vocabulary, or board-specific cards.
 
-Unify on `'done'` as the canonical "finished" status across both `goals` and `weekly_objectives`, and remove the redundant `is_completed` boolean. Social Pipeline keeps its domain-specific stages and is out of scope.
+## Current divergence
 
-## End state
+| Board | Header | Badge | Empty state |
+|---|---|---|---|
+| Goals | icon + heading, no border | colored `Badge` (varies per status) | dashed bordered card with icon + "No {x} goals yet" |
+| Objectives | colored dot + label, bottom border | secondary `Badge`, h-5 | small centered text per status ("Drop or add…", "Nothing in progress", "Nothing done yet") |
+| Social Pipeline | small dot + uppercase label, bottom border | plain `<span>` number, no badge | "Drop here" muted text |
 
-| Surface | Status enum |
-|---|---|
-| `goals.status` | `not_started` \| `in_progress` \| `done` |
-| `weekly_objectives.status` | `not_started` \| `in_progress` \| `done` |
-| `weekly_objectives.is_completed` | **removed** |
-| Shared TS type | `BoardStatus = 'not_started' \| 'in_progress' \| 'done'` |
-| Social Pipeline | unchanged (own column ids) |
+Column container styling differs too: Goals has no wrapper, Objectives/Social wrap in `bg-muted/30` rounded card.
 
-## Phase 1 — Database migration
+## Proposed approach
 
-Single migration, transactional:
+Create one shared primitive that owns the **column chrome only** (wrapper, header, count badge, empty state, drop highlight). Each board keeps its own DnD wiring, sorting, and card rendering — they just pass children into the shell.
 
-1. `ALTER TYPE goal_status RENAME VALUE 'completed' TO 'done'` (Postgres supports this in-place; no row rewrite).
-2. Update goal-side SQL: any function/trigger filtering on `'completed'` (status auto-promotion trigger, `goal_status_history` logic, RLS predicates if any).
-3. Replace every read of `weekly_objectives.is_completed` with `status = 'done'` inside SQL functions, then `ALTER TABLE weekly_objectives DROP COLUMN is_completed`.
-4. Drop the sync trigger that maintained `is_completed`.
-5. Re-grant nothing (no new tables).
+### New file: `src/components/kanban/KanbanColumnShell.tsx`
 
-## Phase 2 — Code sweep
+```tsx
+interface KanbanColumnShellProps {
+  // Identity (passed to useDroppable by the parent — shell does NOT call useDroppable)
+  droppableRef: (el: HTMLElement | null) => void;
+  isOver: boolean;
 
-Single source of truth in `src/lib/objectiveStatus.ts` (already exists): export `BoardStatus`, status→column map, and `isDone(status)` helper. Re-export from `src/types/goals.ts` so goals use the same union.
+  // Header
+  title: string;
+  icon?: LucideIcon;          // optional accent icon
+  accentDot?: string;         // tailwind class for colored dot (e.g. "bg-emerald-500")
+  count: number;
 
-Replace, in this order:
+  // Empty state
+  emptyMessage: string;       // board supplies its own copy
+  emptyIcon?: LucideIcon;
 
-**A. Goals: `'completed'` → `'done'`** (~15 files)
-- `src/types/goals.ts`, `src/hooks/useGoals.ts`, `src/services/weeklyProgressService.ts`
-- `src/components/goals/{GoalsKanban,GoalCard,GoalDetailModal,GoalSearchFilter,OrganizedGoalsView,HabitCompletionTimeline}.tsx`
-- `src/components/accountability/{PartnerGoalsKanban,PartnerGoalCard}.tsx`
-- `src/components/profile/ProfileGoals.tsx`, `src/components/admin/UserDetailDrawer.tsx`
-- `src/hooks/{useProfileStats,useAnalyticsSummary,useCarryOverObjectives}.ts`
-- `src/utils/quarterUtils.ts`, `src/components/rituals/PlanningTrendsChart.tsx`, `src/components/habits/QuarterlyReviewDialog.tsx`
-- MCP: `supabase/functions/mcp-server/{read-tools,write-tools,training-tools,resources-prompts}.ts`
+  // Body
+  children: React.ReactNode;  // SortableContext + cards from parent
+  className?: string;
+}
+```
 
-**B. Objectives: `is_completed` → `status === 'done'`** (~30 files, ~120 references)
-- Services: `weeklyProgressService`, `habitStreaksService`, `accountabilityService`
-- Hooks: `useWeeklyPlanning`, `useWeeklyObjectives`, `useWeeklyDashboardData`, `useWeekTransition`, `useCategoryFocus`, `useWeekClose`, `useAnalyticsSummary`, `useAISuggestions`, `useQuarterlyReview`, `useObjectiveMutations`, `useObjectiveHandlers`, `useEnsureTrainingWeeklyObjective`, `useWeeklyInsights`
-- Components: `ThisWeekView`, `WeekTransitionCard`, `HistoricalWeekSummary`, `HabitsDueThisWeek`, `ObjectiveItem`, `ObjectiveStatusPill`, `GoalDetailObjectivesSection`, `IncompleteObjectiveReflections`, `PreviousWeekSummary`, `HabitCompletionTimeline`, `WeeklySessionDetailModal`, `WeeklyPlanningTab`, `StreakHistoryChart`, `QuarterlyReviewsTab`, `QuarterlyReviewDialog`, `WeeklyPlanningHistory`, `QuarterlyReviewsHistory`, `WeeklyPlanningDialog`, `UserDetailDrawer`, `PartnerDashboard`
-- Edge functions: `weekly-insights`, `mcp-server/*`
-- `src/types/{weeklyProgress,habits}.ts`
+Visual contract (one consistent look, mobile-aware):
+- Wrapper: `flex flex-col rounded-lg border border-border bg-muted/30 min-h-[200px] md:min-h-[300px]`
+- Header: `flex items-center justify-between px-3 py-2 border-b border-border`
+  - Left: optional dot + optional icon + `<h3 className="text-sm font-semibold">`
+  - Right: `<Badge variant="secondary" className="text-[10px] h-5 px-2 tabular-nums">{count}</Badge>`
+- Drop area: `flex-1 p-2 transition-colors` + `bg-primary/5 ring-1 ring-primary/30` when `isOver`
+- Empty state: centered `text-xs text-muted-foreground py-6` with optional icon above
 
-Mutation sites that previously wrote `is_completed: true/false` now write only `status: 'done' | 'in_progress' | 'not_started'`.
+### Wiring per board
 
-## Phase 3 — Verification
+1. **`GoalsKanban.tsx`** — replace inline column markup with `<KanbanColumnShell>`. Drop the dashed-card empty state in favor of the standard one. Keep `useDroppable`, `SortableContext`, and `SortableGoalCard` in the parent.
+2. **`ObjectivesKanbanBoard.tsx`** — replace the inline `<div className="flex flex-col rounded-lg…">` + header with `<KanbanColumnShell>`. Keep the per-goal grouping logic inside the children. Collapse the three per-status empty messages to one ("No objectives in this column" — or keep per-status via a small map passed in).
+3. **`PipelineBoard.tsx` Column** — replace its custom header/badge/empty with `<KanbanColumnShell>`. Density toggle, pending-schedule card, and DnD stay untouched.
+4. **`PartnerGoalsKanban.tsx`** — same swap (read-only board).
 
-1. `tsgo` typecheck — Supabase types regenerate after the migration; any stale `'completed'` literal on goals or `is_completed` reference becomes a compile error. Treat the typecheck as the completeness gate.
-2. `rg "'completed'" src/ supabase/functions/` and `rg "is_completed" src/ supabase/functions/` must return zero hits (outside `integrations/supabase/types.ts`, which is auto-generated).
-3. Manual smoke via Playwright: mark a goal done, mark an objective done from list view, drag an objective across columns in the Kanban, verify the Done count in This Week and the analytics radar.
+### What is NOT changing
 
-## Risk & rollback
+- DnD logic, sensors, collision detection, optimistic state — untouched.
+- Status enums and column ordering — untouched (Goals stays `not_started|in_progress|completed`, Objectives stays `…|done`, Social stays `idea|drafting|scheduled|published`).
+- Card components (`SortableGoalCard`, `KanbanCardShell`, `PostCard`) — untouched.
+- Social's density toggle and pending-schedule inline editor — untouched.
 
-- **Risk:** any string-literal comparison missed becomes a silent no-op (button does nothing). Mitigation: the shared `BoardStatus` union + typecheck catches all of them at compile time. Goal `status` is already a discriminated union from generated types — same protection.
-- **Rollback:** `ALTER TYPE goal_status RENAME VALUE 'done' TO 'completed'` and re-add the `is_completed` column with a backfill from `status`. Cheap.
+## Files touched
 
-## Out of scope
+- **New:** `src/components/kanban/KanbanColumnShell.tsx`
+- **Edit:** `src/components/goals/GoalsKanban.tsx`
+- **Edit:** `src/components/goals/ObjectivesKanbanBoard.tsx`
+- **Edit:** `src/components/social/PipelineBoard.tsx`
+- **Edit:** `src/components/accountability/PartnerGoalsKanban.tsx`
 
-- Social Pipeline (different domain).
-- Extracting the shared `<KanbanBoard>` primitive — that's the next plan.
-- Any UI/visual changes.
+## Verification
 
-## Order of operations
+- `tsgo` typecheck clean.
+- Visual smoke test of all 4 boards: header, badge, empty column, drop highlight all identical.
+- Drag a card across columns in each board — behavior unchanged.
 
-1. Run the migration (Phase 1). Wait for types to regenerate.
-2. Code sweep (Phase 2) in one pass — typecheck will guide.
-3. Verify (Phase 3).
+## Open question
+
+Empty-state copy: one generic string ("Nothing here yet") or per-status copy passed in by each board? Recommendation: per-board copy, so Goals can say "No completed goals yet" and Social can say "Drop here" — the shell just renders whatever string it's given.
