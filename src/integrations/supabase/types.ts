@@ -4663,6 +4663,7 @@ export type Database = {
           resolved_at: string | null
           scheduled_day: string | null
           scheduled_time: string | null
+          status: Database["public"]["Enums"]["objective_status"]
           text: string
           updated_at: string
           user_id: string
@@ -4678,6 +4679,7 @@ export type Database = {
           resolved_at?: string | null
           scheduled_day?: string | null
           scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["objective_status"]
           text: string
           updated_at?: string
           user_id: string
@@ -4693,6 +4695,7 @@ export type Database = {
           resolved_at?: string | null
           scheduled_day?: string | null
           scheduled_time?: string | null
+          status?: Database["public"]["Enums"]["objective_status"]
           text?: string
           updated_at?: string
           user_id?: string
@@ -5320,6 +5323,7 @@ export type Database = {
         | "Event / Speaking"
       media_url_status: "verified" | "verify" | "needs-url" | "no-url" | "dead"
       objective_resolution: "none" | "completed" | "deprioritized" | "abandoned"
+      objective_status: "not_started" | "in_progress" | "done"
       social_platform: "linkedin" | "x" | "instagram" | "tiktok"
       social_status:
         | "idea"
@@ -5485,6 +5489,7 @@ export const Constants = {
       ],
       media_url_status: ["verified", "verify", "needs-url", "no-url", "dead"],
       objective_resolution: ["none", "completed", "deprioritized", "abandoned"],
+      objective_status: ["not_started", "in_progress", "done"],
       social_platform: ["linkedin", "x", "instagram", "tiktok"],
       social_status: [
         "idea",
