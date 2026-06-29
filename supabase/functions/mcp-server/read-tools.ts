@@ -382,14 +382,14 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const weekEnd = getWeekEnd(weekKey);
 
       const [objRes, habRes, ciRes, planRes] = await Promise.all([
-        supabase.from("weekly_objectives").select("id, is_completed").eq("user_id", userId).eq("week_start", weekKey),
+        supabase.from("weekly_objectives").select("id, status").eq("user_id", userId).eq("week_start", weekKey),
         supabase.from("habit_completions").select("id").eq("user_id", userId).gte("completion_date", weekKey).lte("completion_date", weekEnd),
         supabase.from("daily_check_ins").select("id, check_in_date").eq("user_id", userId).gte("check_in_date", weekKey).lte("check_in_date", weekEnd),
         supabase.from("weekly_planning_sessions").select("id, is_completed, week_intention").eq("user_id", userId).eq("week_start", weekKey).maybeSingle(),
       ]);
 
       const objs = objRes.data || [];
-      const done = objs.filter((o: any) => o.is_completed).length;
+      const done = objs.filter((o: any) => o.status === "done").length;
       const pct = objs.length ? Math.round((done / objs.length) * 100) : 0;
 
       return {
