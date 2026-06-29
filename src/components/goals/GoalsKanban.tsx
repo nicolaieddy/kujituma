@@ -30,13 +30,15 @@ interface GoalsKanbanProps {
   onReorder?: (goalId: string, newOrderIndex: number) => void;
 }
 
-const COLUMNS: { status: GoalStatus; title: string; icon: typeof Clock; color: string }[] = [
+type BoardStatus = 'not_started' | 'in_progress' | 'completed';
+
+const COLUMNS: { status: BoardStatus; title: string; icon: typeof Clock; color: string }[] = [
   { status: 'not_started', title: 'Not Started', icon: Clock, color: 'bg-secondary text-secondary-foreground' },
   { status: 'in_progress', title: 'In Progress', icon: Play, color: 'bg-accent text-accent-foreground' },
   { status: 'completed', title: 'Completed', icon: CheckCircle, color: 'bg-primary/10 text-primary' },
 ];
 
-type LocalState = Record<GoalStatus, Goal[]>;
+type LocalState = Record<BoardStatus, Goal[]>;
 
 function findColumn(state: LocalState, id: string): GoalStatus | null {
   if ((["not_started", "in_progress", "completed"] as GoalStatus[]).includes(id as GoalStatus)) {
