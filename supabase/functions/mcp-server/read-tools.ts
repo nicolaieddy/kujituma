@@ -18,7 +18,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
         .from("goals")
         .select("id, title, description, category, timeframe, status, start_date, target_date, habit_items, is_recurring, recurrence_frequency, visibility")
         .eq("user_id", userId)
-        .not("status", "in", '("completed","deprioritized")')
+        .not("status", "in", '("done","deprioritized")')
         .eq("is_paused", false)
         .order("order_index", { ascending: true });
       if (timeframe) query = query.eq("timeframe", timeframe);
@@ -40,12 +40,12 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const weekKey = week_start || getMondayOfWeek(new Date());
       const { data, error } = await supabase
         .from("weekly_objectives")
-        .select("id, text, is_completed, goal_id, order_index, scheduled_day, scheduled_time")
+        .select("id, text, status, goal_id, order_index, scheduled_day, scheduled_time")
         .eq("user_id", userId)
         .eq("week_start", weekKey)
         .order("order_index", { ascending: true });
       if (error) return { content: [{ type: "text" as const, text: `Error: ${error.message}` }] };
-      const completed = data?.filter((o: any) => o.is_completed).length || 0;
+      const completed = data?.filter((o: any) => o.status === "done").length || 0;
       return {
         content: [{ type: "text" as const, text: `Week ${weekKey}: ${completed}/${data?.length || 0} completed\n\n${JSON.stringify(data, null, 2)}` }],
       };
@@ -116,7 +116,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const startD = start_date || toDateStr(new Date(Date.now() - 30 * 86400000));
 
       const [objRes, ciRes, habRes, goalRes] = await Promise.all([
-        supabase.from("weekly_objectives").select("id, is_completed").eq("user_id", userId).gte("week_start", startD).lte("week_start", endD),
+        supabase.from("weekly_objectives").select("id, status").eq("user_id", userId).gte("week_start", startD).lte("week_start", endD),
         supabase.from("daily_check_ins").select("id, mood_rating, energy_level").eq("user_id", userId).gte("check_in_date", startD).lte("check_in_date", endD),
         supabase.from("habit_completions").select("id").eq("user_id", userId).gte("completion_date", startD).lte("completion_date", endD),
         supabase.from("goals").select("id, title, status, category").eq("user_id", userId).not("status", "eq", "deprioritized"),
@@ -125,7 +125,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const obj = objRes.data || [];
       const ci = ciRes.data || [];
       const goals = goalRes.data || [];
-      const done = obj.filter((o: any) => o.is_completed).length;
+      const done = obj.filter((o: any) => o.status === "done").length;
       const moodVals = ci.filter((c: any) => c.mood_rating).map((c: any) => c.mood_rating);
       const avgMood = moodVals.length ? (moodVals.reduce((a: number, b: number) => a + b, 0) / moodVals.length).toFixed(1) : "N/A";
 
@@ -142,7 +142,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
             `Objectives: ${done}/${obj.length} (${obj.length ? Math.round((done / obj.length) * 100) : 0}%)`,
             `Check-ins: ${ci.length} | Habit completions: ${habRes.data?.length || 0}`,
             `Avg mood: ${avgMood}/5`,
-            `Goals: ${goals.filter((g: any) => g.status === "in_progress").length} active, ${goals.filter((g: any) => g.status === "completed").length} done`,
+            `Goals: ${goals.filter((g: any) => g.status === "in_progress").length} active, ${goals.filter((g: any) => g.status === "done").length} done`,
             `Categories: ${Object.entries(cats).map(([c, n]) => `${c}(${n})`).join(", ")}`,
           ].join("\n"),
         }],
@@ -186,7 +186,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     handler: async ({ goal_id }: { goal_id: string }) => {
       const [goalRes, objRes] = await Promise.all([
         supabase.from("goals").select("*").eq("id", goal_id).eq("user_id", userId).single(),
-        supabase.from("weekly_objectives").select("id, text, is_completed, week_start, scheduled_day").eq("user_id", userId).eq("goal_id", goal_id).order("week_start", { ascending: false }).limit(20),
+        supabase.from("weekly_objectives").select("id, text, status, week_start, scheduled_day").eq("user_id", userId).eq("goal_id", goal_id).order("week_start", { ascending: false }).limit(20),
       ]);
       if (goalRes.error) return { content: [{ type: "text" as const, text: `Error: ${goalRes.error.message}` }] };
       return {
@@ -382,14 +382,14 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
       const weekEnd = getWeekEnd(weekKey);
 
       const [objRes, habRes, ciRes, planRes] = await Promise.all([
-        supabase.from("weekly_objectives").select("id, is_completed").eq("user_id", userId).eq("week_start", weekKey),
+        supabase.from("weekly_objectives").select("id, status").eq("user_id", userId).eq("week_start", weekKey),
         supabase.from("habit_completions").select("id").eq("user_id", userId).gte("completion_date", weekKey).lte("completion_date", weekEnd),
         supabase.from("daily_check_ins").select("id, check_in_date").eq("user_id", userId).gte("check_in_date", weekKey).lte("check_in_date", weekEnd),
         supabase.from("weekly_planning_sessions").select("id, is_completed, week_intention").eq("user_id", userId).eq("week_start", weekKey).maybeSingle(),
       ]);
 
       const objs = objRes.data || [];
-      const done = objs.filter((o: any) => o.is_completed).length;
+      const done = objs.filter((o: any) => o.status === "done").length;
       const pct = objs.length ? Math.round((done / objs.length) * 100) : 0;
 
       return {

@@ -27,7 +27,7 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
         } : null,
         goals: {
           active: goals.filter((g: any) => g.status === "in_progress").length,
-          completed: goals.filter((g: any) => g.status === "completed").length,
+          completed: goals.filter((g: any) => g.status === "done").length,
           total: goals.length,
         },
       };
@@ -43,12 +43,12 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
       const weekKey = getMondayOfWeek(new Date());
       const weekEnd = getWeekEnd(weekKey);
       const [objRes, habRes, ciRes] = await Promise.all([
-        supabase.from("weekly_objectives").select("id, text, is_completed, goal_id, scheduled_day").eq("user_id", userId).eq("week_start", weekKey).order("order_index"),
+        supabase.from("weekly_objectives").select("id, text, status, goal_id, scheduled_day").eq("user_id", userId).eq("week_start", weekKey).order("order_index"),
         supabase.from("habit_completions").select("id").eq("user_id", userId).gte("completion_date", weekKey).lte("completion_date", weekEnd),
         supabase.from("daily_check_ins").select("check_in_date").eq("user_id", userId).gte("check_in_date", weekKey).lte("check_in_date", weekEnd),
       ]);
       const objs = objRes.data || [];
-      const done = objs.filter((o: any) => o.is_completed).length;
+      const done = objs.filter((o: any) => o.status === "done").length;
       return {
         text: JSON.stringify({
           week_start: weekKey,
@@ -63,14 +63,14 @@ export function registerResources(mcp: McpServer, supabase: Supabase, userId: st
 
   mcp.resource("goals://active", {
     name: "Active Goals",
-    description: "All active (non-paused, non-completed) goals",
+    description: "All active (non-paused, non-done) goals",
     mimeType: "application/json",
     handler: async () => {
       const { data } = await supabase
         .from("goals")
         .select("id, title, description, category, timeframe, status, start_date, target_date, habit_items")
         .eq("user_id", userId)
-        .not("status", "in", '("completed","deprioritized")')
+        .not("status", "in", '("done","deprioritized")')
         .eq("is_paused", false)
         .order("order_index");
       return { text: JSON.stringify(data || [], null, 2) };
