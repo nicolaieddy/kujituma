@@ -186,7 +186,7 @@ export function registerReadTools(mcp: McpServer, supabase: Supabase, userId: st
     handler: async ({ goal_id }: { goal_id: string }) => {
       const [goalRes, objRes] = await Promise.all([
         supabase.from("goals").select("*").eq("id", goal_id).eq("user_id", userId).single(),
-        supabase.from("weekly_objectives").select("id, text, is_completed, week_start, scheduled_day").eq("user_id", userId).eq("goal_id", goal_id).order("week_start", { ascending: false }).limit(20),
+        supabase.from("weekly_objectives").select("id, text, status, week_start, scheduled_day").eq("user_id", userId).eq("goal_id", goal_id).order("week_start", { ascending: false }).limit(20),
       ]);
       if (goalRes.error) return { content: [{ type: "text" as const, text: `Error: ${goalRes.error.message}` }] };
       return {
