@@ -250,7 +250,20 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
                       {m.tags?.length ? (
                         <div className="mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
                           {m.tags.slice(0, 4).map((t) => (
-                            <span key={t} className="text-[10px] font-normal text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-default">#{t}</span>
+                            m.url ? (
+                              <a
+                                key={t}
+                                href={m.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="text-[10px] font-normal text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+                              >
+                                #{t}
+                              </a>
+                            ) : (
+                              <span key={t} className="text-[10px] font-normal text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-default">#{t}</span>
+                            )
                           ))}
                         </div>
                       ) : null}
