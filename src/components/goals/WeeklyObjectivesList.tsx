@@ -26,6 +26,7 @@ interface WeeklyObjectivesListProps {
   isWeekCompleted: boolean;
   isCreating: boolean;
   onToggleObjective: (id: string, isCompleted: boolean) => void;
+  onSetObjectiveStatus?: (id: string, status: ObjectiveStatus) => void;
   onUpdateObjectiveText: (id: string, text: string) => void;
   onUpdateObjectiveGoal: (id: string, goalId: string | null) => void;
   onDeleteObjective: (id: string) => void;
