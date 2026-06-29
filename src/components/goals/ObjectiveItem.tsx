@@ -42,6 +42,7 @@ interface ObjectiveItemProps {
   commentCount?: number;
   unreadCount?: number;
   onToggleObjective: (id: string, isCompleted: boolean) => void;
+  onSetObjectiveStatus?: (id: string, status: ObjectiveStatus) => void;
   onEditObjective: (objective: WeeklyObjective) => void;
   onEditingTextChange: (text: string) => void;
   onSaveEdit: (objectiveId: string) => void;
