@@ -229,13 +229,14 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const [body, setBody] = useState("");
   const [pillars, setPillars] = useState<string[]>([]);
   const [valueIds, setValueIds] = useState<string[]>([]);
+  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
 
   const NEW_POST = "__new__";
 
   const liPillars = settings.find((s) => s.platform === "linkedin")?.pillars ?? [];
 
   const reset = () => {
-    setFile(null); setParsed(null);
+    setFile(null); setParsed(null); setCandidates([]);
     setSelectedPostId(defaultPostId); setAsOf(getLocalDateString());
     setTitle(""); setBody(""); setPillars([]); setValueIds([]);
   };
