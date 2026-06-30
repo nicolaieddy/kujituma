@@ -265,7 +265,7 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     }
   };
 
-  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
+
 
   const handleFile = async (f: File) => {
     setFile(f);
