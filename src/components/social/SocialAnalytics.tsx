@@ -429,7 +429,14 @@ export function SocialAnalytics() {
               <ComposedChart data={impressionsSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
                 <XAxis dataKey="period" tickFormatter={(v) => format(new Date(v), bucket === "month" ? "MMM yy" : "d MMM")} tick={{ fontSize: 11 }} />
-                <YAxis tickFormatter={(v) => formatCompact(Number(v))} tick={{ fontSize: 11 }} />
+                <YAxis
+                  tickFormatter={(v) => formatCompact(Number(v))}
+                  tick={{ fontSize: 11 }}
+                  domain={([dataMin, dataMax]: [number, number]) =>
+                    paddedYDomain([dataMin, dataMax], { minPad: 1, zeroFloor: true })
+                  }
+                  allowDataOverflow={false}
+                />
                 <Tooltip
                   contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", fontSize: 12 }}
                   labelFormatter={(l) => format(new Date(l as string), bucket === "month" ? "MMMM yyyy" : bucket === "week" ? "'Week of' d MMM" : "d MMM yyyy")}
