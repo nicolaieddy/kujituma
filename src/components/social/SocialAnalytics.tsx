@@ -14,7 +14,7 @@ import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info, Database } from
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, type SocialPlatform,
+  PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, paddedYDomain, type SocialPlatform,
 } from "@/lib/social";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
