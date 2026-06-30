@@ -334,6 +334,7 @@ export function McpSection() {
               { name: "get_social_analytics", desc: "Top posts, pillar engagement averages" },
               { name: "get_social_platform_settings", desc: "Per-platform targets, deadlines, pillars, enabled" },
               { name: "update_social_platform_settings", desc: "Edit per-platform target/deadline/pillars/enabled" },
+              { name: "get_social_handles", desc: "Saved profile URLs/handles per platform — feed scrapers/APIs to pull live metrics" },
               { name: "list_media", desc: "List media mentions (filter year/type/tag/status)" },
               { name: "search_media", desc: "Search title/outlet/summary/tags" },
               { name: "get_media_stats", desc: "Totals, by year, by type, top outlets" },
