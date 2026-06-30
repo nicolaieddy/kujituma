@@ -701,8 +701,45 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
               </div>
             </Card>
 
+            {candidates.length > 0 && (
+              <Card className="p-3 space-y-2 border-amber-500/40 bg-amber-500/5">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-amber-600" />
+                  Possible match{candidates.length === 1 ? "" : "es"} — none had a LinkedIn URL set
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Pick one to attach these metrics (and save the URL on it), or choose <em>Create new post</em> below.
+                </p>
+                <div className="space-y-1.5">
+                  {candidates.map((c) => {
+                    const active = selectedPostId === c.postId;
+                    return (
+                      <button
+                        key={c.postId}
+                        type="button"
+                        onClick={() => setSelectedPostId(c.postId)}
+                        className={`w-full text-left rounded-md border px-2.5 py-2 transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:bg-muted/60"
+                        }`}
+                      >
+                        <div className="text-xs font-medium truncate">{c.title}</div>
+                        <div className="text-[10.5px] text-muted-foreground mt-0.5">
+                          {c.publish_date ? `Published ${c.publish_date}` : "No publish date"}
+                          {Number.isFinite(c.daysDiff) && ` · ${Math.round(c.daysDiff)}d apart`}
+                          {c.similarity > 0 && ` · ${Math.round(c.similarity * 100)}% title match`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
             <div className="space-y-1.5">
               <Label>Post target</Label>
+
               <Select
                 value={selectedPostId ?? NEW_POST}
                 onValueChange={(v) => setSelectedPostId(v === NEW_POST ? NEW_POST : v || null)}
