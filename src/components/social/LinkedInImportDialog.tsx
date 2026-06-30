@@ -365,6 +365,30 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
             }
           }
 
+          // Fall back to fuzzy match (date + title similarity) for posts
+          // without a live_url yet — same logic the single-file path uses.
+          if (!postId) {
+            const cands = findCandidateMatches(posts as any, data, { maxDaysDiff: 3 });
+            // Auto-link only when there's exactly one strong candidate; otherwise
+            // create a new post so the user can merge manually if needed.
+            if (cands.length === 1 && cands[0].daysDiff <= 3) {
+              postId = cands[0].postId;
+              // Backfill live_url on the matched post so future imports match by URL.
+              if (data.postUrl) {
+                try {
+                  await supabase
+                    .from("social_posts")
+                    .update({ live_url: data.postUrl })
+                    .eq("id", postId)
+                    .is("live_url", null);
+                } catch (urlErr) {
+                  console.warn("[linkedin-multi] backfill live_url failed", urlErr);
+                }
+              }
+            }
+          }
+
+
           let finalTitle = "";
           if (!postId) {
             // Auto-create — scrape title/body
