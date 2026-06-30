@@ -64,7 +64,7 @@ export function formatCompact(n: number | null | undefined): string {
  *    so a nearly-flat line is visible.
  *  - For wider ranges, pad by a smaller ratio so context is preserved.
  *  - Always keeps at least minPad units of padding so tiny values don't stick to the axis.
- *  - Returns [0, "auto"] when there is no meaningful data.
+ *  - Falls back to [0, 1] when there is no meaningful data.
  */
 export function paddedYDomain(
   [dataMin, dataMax]: [number, number],
@@ -74,18 +74,20 @@ export function paddedYDomain(
     smallPadRatio?: number;
     minPad?: number;
     zeroFloor?: boolean;
+    fallbackMax?: number;
   } = {}
-): [number, number] | [number, "auto"] {
+): [number, number] {
   const {
     padRatio = 0.08,
     smallRangeThreshold = 0.2,
     smallPadRatio = 0.5,
     minPad = 1,
     zeroFloor = true,
+    fallbackMax = 1,
   } = options;
 
   if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax) || (dataMax === 0 && dataMin === 0)) {
-    return [0, "auto"];
+    return [0, fallbackMax];
   }
 
   let min = dataMin;
