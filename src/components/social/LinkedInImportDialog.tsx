@@ -264,9 +264,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     }
   };
 
+  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
+
   const handleFile = async (f: File) => {
     setFile(f);
     setParsing(true);
+    setCandidates([]);
     const tid = toast.loading(`Parsing ${f.name}…`);
     try {
       const buffer = await f.arrayBuffer();
@@ -275,6 +278,48 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
 
       if (!data.postUrl && data.impressions == null && data.reactions == null) {
         toast.error("Couldn't find any LinkedIn metrics in this file", {
+          id: tid,
+          description: "Make sure you're uploading the 'Single Post Analytics' .xlsx export.",
+        });
+        return;
+      }
+
+      if (data.postUrl && !defaultPostId) {
+        const target = normalizeLiUrl(data.postUrl);
+        const match = posts.find((p) => normalizeLiUrl(p.live_url) === target);
+        if (match) {
+          setSelectedPostId(match.id);
+          toast.success("Matched an existing post — re-importing will update it", { id: tid });
+        } else {
+          const cands = findCandidateMatches(posts as any, data);
+          setCandidates(cands);
+          if (cands.length > 0) {
+            // Default to top candidate so we never silently create a duplicate.
+            setSelectedPostId(cands[0].postId);
+            const top = cands[0];
+            toast.success(
+              `Found ${cands.length} possible match${cands.length === 1 ? "" : "es"} — confirm before importing`,
+              {
+                id: tid,
+                description: `Top: "${top.title}" (${Math.round(top.daysDiff)}d apart, ${Math.round(top.similarity * 100)}% title match)`,
+              },
+            );
+          } else {
+            setSelectedPostId(NEW_POST);
+            toast.success("No similar post — fetching details to create a new one", { id: tid });
+            scrapeViaFirecrawl(data.postUrl);
+          }
+        }
+      } else {
+        toast.success("Parsed export", { id: tid });
+      }
+    } catch (e: any) {
+      console.error("[linkedin-import] parse", e);
+      toast.error("Couldn't parse file", { id: tid, description: e?.message ?? String(e) });
+    } finally {
+      setParsing(false);
+    }
+  };
           id: tid,
           description: "Make sure you're uploading the 'Single Post Analytics' .xlsx export.",
         });
