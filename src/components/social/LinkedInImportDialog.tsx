@@ -320,33 +320,6 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
       setParsing(false);
     }
   };
-          id: tid,
-          description: "Make sure you're uploading the 'Single Post Analytics' .xlsx export.",
-        });
-        return;
-      }
-
-      if (data.postUrl && !defaultPostId) {
-        const target = normalizeLiUrl(data.postUrl);
-        const match = posts.find((p) => normalizeLiUrl(p.live_url) === target);
-        if (match) {
-          setSelectedPostId(match.id);
-          toast.success("Matched an existing post — re-importing will update it", { id: tid });
-        } else {
-          setSelectedPostId(NEW_POST);
-          toast.success("Parsed export — fetching post details…", { id: tid });
-          scrapeViaFirecrawl(data.postUrl);
-        }
-      } else {
-        toast.success("Parsed export", { id: tid });
-      }
-    } catch (e: any) {
-      console.error("[linkedin-import] parse", e);
-      toast.error("Couldn't parse file", { id: tid, description: e?.message ?? String(e) });
-    } finally {
-      setParsing(false);
-    }
-  };
 
   /** Auto-process many files: parse, match-or-create, attach metrics. No prompts. */
   const handleMultiFiles = async (files: File[]) => {
