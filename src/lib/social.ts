@@ -59,6 +59,54 @@ export function formatCompact(n: number | null | undefined): string {
   return `${parseFloat(v.toFixed(2))}M`;
 }
 
+/** Compute a Y-axis domain that keeps series from touching the top/bottom edges.
+ *  - For tiny relative ranges (relSpan < smallRangeThreshold), pad by a large ratio of the span
+ *    so a nearly-flat line is visible.
+ *  - For wider ranges, pad by a smaller ratio so context is preserved.
+ *  - Always keeps at least minPad units of padding so tiny values don't stick to the axis.
+ *  - Falls back to [0, 1] when there is no meaningful data.
+ */
+export function paddedYDomain(
+  [dataMin, dataMax]: [number, number],
+  options: {
+    padRatio?: number;
+    smallRangeThreshold?: number;
+    smallPadRatio?: number;
+    minPad?: number;
+    zeroFloor?: boolean;
+    fallbackMax?: number;
+  } = {}
+): [number, number] {
+  const {
+    padRatio = 0.08,
+    smallRangeThreshold = 0.2,
+    smallPadRatio = 0.5,
+    minPad = 1,
+    zeroFloor = true,
+    fallbackMax = 1,
+  } = options;
+
+  if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax) || (dataMax === 0 && dataMin === 0)) {
+    return [0, fallbackMax];
+  }
+
+  let min = dataMin;
+  let max = dataMax;
+  const span = max - min;
+  const relSpan = max > 0 ? span / max : 0;
+  const ratio = relSpan < smallRangeThreshold ? smallPadRatio : padRatio;
+  const pad = Math.max(span * ratio, max * 0.02, minPad);
+
+  if (zeroFloor && min >= 0) {
+    min = Math.max(0, min - pad);
+  } else {
+    min -= pad;
+  }
+  max += pad;
+
+  return [min, max];
+}
+
 
 export interface PaceComputation {
   current: number | null;
