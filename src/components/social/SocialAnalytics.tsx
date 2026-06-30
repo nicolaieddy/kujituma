@@ -380,19 +380,9 @@ export function SocialAnalytics() {
                 <YAxis
                   tickFormatter={(v) => formatCompact(Number(v))}
                   tick={{ fontSize: 11 }}
-                  domain={([dataMin, dataMax]: [number, number]) => {
-                    if (!Number.isFinite(dataMin) || !Number.isFinite(dataMax) || dataMax <= 0) return [0, "auto"] as any;
-                    const span = dataMax - dataMin;
-                    // If totals barely move, zoom in to ±5% of the value range; otherwise show some context.
-                    const relSpan = span / dataMax;
-                    if (relSpan < 0.2) {
-                      const pad = Math.max(dataMax * 0.02, span * 0.5, 1);
-                      const lo = Math.max(0, Math.floor((dataMin - pad) / 100) * 100);
-                      const hi = Math.ceil((dataMax + pad) / 100) * 100;
-                      return [lo, hi];
-                    }
-                    return [0, Math.ceil(dataMax * 1.05 / 100) * 100];
-                  }}
+                  domain={([dataMin, dataMax]: [number, number]) =>
+                    paddedYDomain([dataMin, dataMax], { minPad: 1, zeroFloor: true })
+                  }
                   allowDataOverflow={false}
                 />
                 <Tooltip
