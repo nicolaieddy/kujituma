@@ -345,4 +345,80 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
       return { content: [{ type: "text" as const, text: `✅ Updated ${data.platform} settings` }] };
     },
   });
+
+  // ── Social handles (profile URLs) ────────────────────
+  mcp.tool("get_social_handles", {
+    description:
+      "Return the user's saved social account URLs/handles (LinkedIn, X/Twitter, Instagram, TikTok, YouTube) from their profile, alongside which platforms are tracked in the Social module and current follower counts. Use this to discover which accounts/handles to pull metrics for before calling external scrapers/APIs.",
+    inputSchema: { type: "object", properties: {} },
+    handler: async () => {
+      const [{ data: profile, error: pErr }, { data: settings }] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("linkedin_url, twitter_url, instagram_url, tiktok_url, youtube_url")
+          .eq("id", userId)
+          .maybeSingle(),
+        supabase
+          .from("social_platform_settings")
+          .select("platform, enabled, follower_target, target_deadline, current_followers_cached")
+          .eq("user_id", userId),
+      ]);
+      if (pErr) return { content: [{ type: "text" as const, text: `Error: ${pErr.message}` }] };
+
+      const settingsByPlatform = new Map((settings ?? []).map((s: any) => [s.platform, s]));
+      const extractHandle = (url: string | null | undefined, platform: string): string | null => {
+        if (!url) return null;
+        try {
+          const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+          const path = u.pathname.replace(/^\/+|\/+$/g, "");
+          if (platform === "linkedin") {
+            const m = path.match(/^in\/([^/]+)/i) ?? path.match(/^company\/([^/]+)/i);
+            return m ? m[1] : path || null;
+          }
+          if (platform === "youtube") {
+            const m = path.match(/^(@[^/]+)/) ?? path.match(/^(c|channel|user)\/([^/]+)/);
+            return m ? (m[2] ?? m[1]) : path || null;
+          }
+          // x, instagram, tiktok: first path segment
+          const seg = path.split("/")[0] ?? "";
+          return seg ? seg.replace(/^@/, "") : null;
+        } catch {
+          return null;
+        }
+      };
+
+      const fields: Array<{ platform: string; field: string; url: string | null | undefined }> = [
+        { platform: "linkedin", field: "linkedin_url", url: profile?.linkedin_url },
+        { platform: "x", field: "twitter_url", url: profile?.twitter_url },
+        { platform: "instagram", field: "instagram_url", url: profile?.instagram_url },
+        { platform: "tiktok", field: "tiktok_url", url: profile?.tiktok_url },
+        { platform: "youtube", field: "youtube_url", url: profile?.youtube_url },
+      ];
+
+      const handles = fields
+        .filter((f) => f.url && String(f.url).trim())
+        .map((f) => {
+          const s: any = settingsByPlatform.get(f.platform);
+          return {
+            platform: f.platform,
+            url: f.url,
+            handle: extractHandle(f.url, f.platform),
+            tracked_in_social_module: !!s?.enabled,
+            current_followers_cached: s?.current_followers_cached ?? null,
+            follower_target: s?.follower_target ?? null,
+            target_deadline: s?.target_deadline ?? null,
+          };
+        });
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            handles,
+            note: "Use `handle` or `url` with an external scraper/API to fetch live metrics, then feed results back via `log_social_metrics` (per post) or `log_follower_count` (account-level).",
+          }, null, 2),
+        }],
+      };
+    },
+  });
 }
