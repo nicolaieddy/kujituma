@@ -371,7 +371,37 @@ export function SocialAnalytics() {
         </div>
         {followerSeries.length === 0 ? (
           <EmptyState text="No follower history in this range. Log counts in Setup or import an aggregate export." />
-        ) : (
+        ) : (() => {
+          // Compute the true total min/max across visible platforms per period, because
+          // Recharts' stacked-area dataMin is always 0 (the stack baseline) and would
+          // otherwise prevent any "zoom in" on a near-flat trend.
+          let totalMin = Infinity;
+          let totalMax = -Infinity;
+          for (const row of followerSeries) {
+            let sum = 0;
+            for (const p of visiblePlatforms) sum += Number((row as any)[p] ?? 0);
+            // Include goal pace so the dashed line never escapes the plot.
+            if (showGoalLine) {
+              for (const g of activeFollowerGoals) {
+                const gv = Number((row as any)[`goal_${g.id}`]);
+                if (Number.isFinite(gv)) {
+                  if (gv < totalMin) totalMin = gv;
+                  if (gv > totalMax) totalMax = gv;
+                }
+              }
+            }
+            if (sum < totalMin) totalMin = sum;
+            if (sum > totalMax) totalMax = sum;
+          }
+          if (!Number.isFinite(totalMin) || !Number.isFinite(totalMax)) {
+            totalMin = 0; totalMax = 1;
+          }
+          const [yMin, yMax] = paddedYDomain([totalMin, totalMax], { minPad: 1, zeroFloor: false });
+          // When only one platform is visible we can drop the stack and start the area
+          // fill from the bottom of the chart (baseValue="dataMin"), so the visible
+          // band actually reflects the y-axis range instead of flooding from zero.
+          const singlePlatform = visiblePlatforms.length === 1;
+          return (
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={followerSeries} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -380,9 +410,7 @@ export function SocialAnalytics() {
                 <YAxis
                   tickFormatter={(v) => formatCompact(Number(v))}
                   tick={{ fontSize: 11 }}
-                  domain={([dataMin, dataMax]: [number, number]) =>
-                    paddedYDomain([dataMin, dataMax], { minPad: 1, zeroFloor: true })
-                  }
+                  domain={[yMin, yMax]}
                   allowDataOverflow={false}
                 />
                 <Tooltip
@@ -404,7 +432,15 @@ export function SocialAnalytics() {
                   return PLATFORM_META[n as SocialPlatform]?.label ?? n;
                 }} />
                 {visiblePlatforms.map((p) => (
-                  <Area key={p} type="monotone" dataKey={p} stackId="f" stroke={PLATFORM_META[p].hex} fill={PLATFORM_META[p].hex} fillOpacity={0.65} />
+                  <Area
+                    key={p}
+                    type="monotone"
+                    dataKey={p}
+                    {...(singlePlatform ? { baseValue: "dataMin" as const } : { stackId: "f" })}
+                    stroke={PLATFORM_META[p].hex}
+                    fill={PLATFORM_META[p].hex}
+                    fillOpacity={0.65}
+                  />
                 ))}
                 {showGoalLine && activeFollowerGoals.map((g) => (
                   <Line key={g.id} type="linear" dataKey={`goal_${g.id}`} stroke={PLATFORM_META[g.platform].hex} strokeDasharray="5 4" strokeWidth={2} dot={false} connectNulls isAnimationActive={false} />
@@ -412,7 +448,8 @@ export function SocialAnalytics() {
               </ComposedChart>
             </ResponsiveContainer>
           </div>
-        )}
+          );
+        })()}
       </Card>
 
       {/* ───── Impressions stacked area ───── */}
