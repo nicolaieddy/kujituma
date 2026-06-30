@@ -139,6 +139,75 @@ function normalizeLiUrl(raw: string | null | undefined): string | null {
   }
 }
 
+/** Word-token Jaccard similarity between two titles (0..1). */
+function titleSimilarity(a: string, b: string): number {
+  const tok = (s: string) =>
+    new Set(
+      s.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 3),
+    );
+  const A = tok(a), B = tok(b);
+  if (A.size === 0 || B.size === 0) return 0;
+  let inter = 0;
+  for (const w of A) if (B.has(w)) inter++;
+  return inter / (A.size + B.size - inter);
+}
+
+interface CandidateMatch {
+  postId: string;
+  title: string;
+  publish_date: string | null;
+  daysDiff: number;
+  similarity: number;
+  score: number;
+}
+
+/**
+ * Find existing LinkedIn posts that could be the same one as this .xlsx export,
+ * even when live_url is missing. Filters out posts already pinned to a different URL.
+ * Ranks by (date proximity desc, title similarity desc).
+ */
+function findCandidateMatches(
+  posts: Array<{ id: string; title: string; platforms: string[]; live_url: string | null; publish_date: string | null }>,
+  parsed: { postUrl: string | null; postDate: string | null },
+  options: { maxDaysDiff?: number; limit?: number } = {},
+): CandidateMatch[] {
+  const { maxDaysDiff = 7, limit = 5 } = options;
+  const targetUrl = normalizeLiUrl(parsed.postUrl);
+  const slugTitle = parsed.postUrl ? titleFromSlug(parsed.postUrl) : "";
+  const parsedTime = parsed.postDate ? new Date(parsed.postDate).getTime() : null;
+
+  const out: CandidateMatch[] = [];
+  for (const p of posts) {
+    if (!p.platforms?.includes("linkedin")) continue;
+    // Skip posts already locked to a different LinkedIn URL.
+    const pUrl = normalizeLiUrl(p.live_url);
+    if (pUrl && targetUrl && pUrl !== targetUrl) continue;
+    if (pUrl && !targetUrl) continue;
+
+    const pTime = p.publish_date ? new Date(p.publish_date).getTime() : null;
+    const daysDiff =
+      parsedTime != null && pTime != null
+        ? Math.abs(parsedTime - pTime) / 86_400_000
+        : Number.POSITIVE_INFINITY;
+    if (daysDiff > maxDaysDiff) continue;
+
+    const sim = slugTitle ? titleSimilarity(slugTitle, p.title || "") : 0;
+    const dateScore = 1 / (1 + daysDiff);
+    out.push({
+      postId: p.id,
+      title: p.title || "Untitled",
+      publish_date: p.publish_date,
+      daysDiff,
+      similarity: sim,
+      score: dateScore * 0.7 + sim * 0.3,
+    });
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
 export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null, initialFiles = null, onComplete }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
@@ -160,13 +229,14 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
   const [body, setBody] = useState("");
   const [pillars, setPillars] = useState<string[]>([]);
   const [valueIds, setValueIds] = useState<string[]>([]);
+  const [candidates, setCandidates] = useState<CandidateMatch[]>([]);
 
   const NEW_POST = "__new__";
 
   const liPillars = settings.find((s) => s.platform === "linkedin")?.pillars ?? [];
 
   const reset = () => {
-    setFile(null); setParsed(null);
+    setFile(null); setParsed(null); setCandidates([]);
     setSelectedPostId(defaultPostId); setAsOf(getLocalDateString());
     setTitle(""); setBody(""); setPillars([]); setValueIds([]);
   };
@@ -195,9 +265,12 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
     }
   };
 
+
+
   const handleFile = async (f: File) => {
     setFile(f);
     setParsing(true);
+    setCandidates([]);
     const tid = toast.loading(`Parsing ${f.name}…`);
     try {
       const buffer = await f.arrayBuffer();
@@ -219,9 +292,24 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
           setSelectedPostId(match.id);
           toast.success("Matched an existing post — re-importing will update it", { id: tid });
         } else {
-          setSelectedPostId(NEW_POST);
-          toast.success("Parsed export — fetching post details…", { id: tid });
-          scrapeViaFirecrawl(data.postUrl);
+          const cands = findCandidateMatches(posts as any, data);
+          setCandidates(cands);
+          if (cands.length > 0) {
+            // Default to top candidate so we never silently create a duplicate.
+            setSelectedPostId(cands[0].postId);
+            const top = cands[0];
+            toast.success(
+              `Found ${cands.length} possible match${cands.length === 1 ? "" : "es"} — confirm before importing`,
+              {
+                id: tid,
+                description: `Top: "${top.title}" (${Math.round(top.daysDiff)}d apart, ${Math.round(top.similarity * 100)}% title match)`,
+              },
+            );
+          } else {
+            setSelectedPostId(NEW_POST);
+            toast.success("No similar post — fetching details to create a new one", { id: tid });
+            scrapeViaFirecrawl(data.postUrl);
+          }
         }
       } else {
         toast.success("Parsed export", { id: tid });
@@ -276,6 +364,30 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
               postId = (existing ?? []).find((r: any) => normalizeLiUrl(r.live_url) === target)?.id ?? null;
             }
           }
+
+          // Fall back to fuzzy match (date + title similarity) for posts
+          // without a live_url yet — same logic the single-file path uses.
+          if (!postId) {
+            const cands = findCandidateMatches(posts as any, data, { maxDaysDiff: 3 });
+            // Auto-link only when there's exactly one strong candidate; otherwise
+            // create a new post so the user can merge manually if needed.
+            if (cands.length === 1 && cands[0].daysDiff <= 3) {
+              postId = cands[0].postId;
+              // Backfill live_url on the matched post so future imports match by URL.
+              if (data.postUrl) {
+                try {
+                  await supabase
+                    .from("social_posts")
+                    .update({ live_url: data.postUrl })
+                    .eq("id", postId)
+                    .is("live_url", null);
+                } catch (urlErr) {
+                  console.warn("[linkedin-multi] backfill live_url failed", urlErr);
+                }
+              }
+            }
+          }
+
 
           let finalTitle = "";
           if (!postId) {
@@ -455,6 +567,21 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         for (const vid of valueIds) {
           await setPostValue.mutateAsync({ post_id: saved.id, value_id: vid, weight: 1 });
         }
+      } else {
+        // User picked an existing post from suggestions/dropdown — backfill
+        // live_url so subsequent imports match this post by URL automatically.
+        const matched = posts.find((p) => p.id === postId);
+        if (matched && !matched.live_url && parsed.postUrl) {
+          try {
+            await supabase
+              .from("social_posts")
+              .update({ live_url: parsed.postUrl })
+              .eq("id", postId)
+              .is("live_url", null);
+          } catch (urlErr) {
+            console.warn("[linkedin-import] backfill live_url failed", urlErr);
+          }
+        }
       }
 
       if (!postId) { toast.error("Pick a post to attach this snapshot to", { id: tid }); return; }
@@ -574,8 +701,45 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
               </div>
             </Card>
 
+            {candidates.length > 0 && (
+              <Card className="p-3 space-y-2 border-amber-500/40 bg-amber-500/5">
+                <div className="text-xs font-medium flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-amber-600" />
+                  Possible match{candidates.length === 1 ? "" : "es"} — none had a LinkedIn URL set
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Pick one to attach these metrics (and save the URL on it), or choose <em>Create new post</em> below.
+                </p>
+                <div className="space-y-1.5">
+                  {candidates.map((c) => {
+                    const active = selectedPostId === c.postId;
+                    return (
+                      <button
+                        key={c.postId}
+                        type="button"
+                        onClick={() => setSelectedPostId(c.postId)}
+                        className={`w-full text-left rounded-md border px-2.5 py-2 transition-colors ${
+                          active
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:bg-muted/60"
+                        }`}
+                      >
+                        <div className="text-xs font-medium truncate">{c.title}</div>
+                        <div className="text-[10.5px] text-muted-foreground mt-0.5">
+                          {c.publish_date ? `Published ${c.publish_date}` : "No publish date"}
+                          {Number.isFinite(c.daysDiff) && ` · ${Math.round(c.daysDiff)}d apart`}
+                          {c.similarity > 0 && ` · ${Math.round(c.similarity * 100)}% title match`}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </Card>
+            )}
+
             <div className="space-y-1.5">
               <Label>Post target</Label>
+
               <Select
                 value={selectedPostId ?? NEW_POST}
                 onValueChange={(v) => setSelectedPostId(v === NEW_POST ? NEW_POST : v || null)}
