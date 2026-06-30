@@ -12,7 +12,8 @@ import { SearchEmpty } from "@/components/illustrations";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { URL_STATUS_COLOR, MEDIA_TYPES, MEDIA_STATUSES, MEDIA_URL_STATUSES, type MediaMention } from "@/hooks/media/useMedia";
+import { URL_STATUS_COLOR, MEDIA_TYPES, MEDIA_STATUSES, MEDIA_URL_STATUSES, useUpdateMention, type MediaMention } from "@/hooks/media/useMedia";
+import { toast } from "sonner";
 
 interface Props {
   mentions: MediaMention[];
@@ -23,6 +24,7 @@ interface Props {
 
 export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Props) {
   const [search, setSearch] = useState("");
+  const updateMention = useUpdateMention();
   const [year, setYear] = useState<string>("all");
   const [type, setType] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
@@ -271,9 +273,45 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
                     <TableCell className="text-sm">{m.outlet}</TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{m.type}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className="text-xs">{m.status}</Badge></TableCell>
-                    <TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1.5">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded border ${URL_STATUS_COLOR[m.url_status]}`}>{m.url_status}</span>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className={`text-[10px] px-1.5 py-0.5 rounded border cursor-pointer hover:opacity-80 transition-opacity ${URL_STATUS_COLOR[m.url_status]}`}
+                              title="Change link state"
+                            >
+                              {m.url_status}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent align="start" className="w-44 p-1">
+                            <div className="text-[10px] uppercase tracking-wide text-muted-foreground px-2 py-1">Link state</div>
+                            {MEDIA_URL_STATUSES.map((s) => (
+                              <button
+                                key={s}
+                                type="button"
+                                disabled={updateMention.isPending}
+                                onClick={() => {
+                                  if (s === m.url_status) return;
+                                  updateMention.mutate(
+                                    { id: m.id, patch: { url_status: s } },
+                                    {
+                                      onSuccess: () => toast.success(`Marked as ${s}`),
+                                      onError: (e: any) => toast.error(e?.message ?? "Failed to update"),
+                                    },
+                                  );
+                                  // close popover by blurring active element
+                                  (document.activeElement as HTMLElement | null)?.blur?.();
+                                }}
+                                className={`w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded text-xs text-left hover:bg-muted transition-colors ${s === m.url_status ? "font-semibold" : ""}`}
+                              >
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded border ${URL_STATUS_COLOR[s]}`}>{s}</span>
+                                {s === m.url_status && <Check className="h-3.5 w-3.5 text-muted-foreground" />}
+                              </button>
+                            ))}
+                          </PopoverContent>
+                        </Popover>
                         {m.url ? (
                           <a href={m.url} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="text-muted-foreground hover:text-foreground">
                             <ExternalLink className="h-3.5 w-3.5" />
@@ -282,6 +320,7 @@ export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Prop
                       </div>
                     </TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
+
                       <div className="flex gap-1 justify-end">
                         <Button size="icon" variant="ghost" onClick={() => onEdit(m)}><Pencil className="h-3.5 w-3.5" /></Button>
                         <Button size="icon" variant="ghost" onClick={() => onDelete(m)}><Trash2 className="h-3.5 w-3.5" /></Button>
