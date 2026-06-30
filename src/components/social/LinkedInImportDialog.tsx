@@ -139,6 +139,75 @@ function normalizeLiUrl(raw: string | null | undefined): string | null {
   }
 }
 
+/** Word-token Jaccard similarity between two titles (0..1). */
+function titleSimilarity(a: string, b: string): number {
+  const tok = (s: string) =>
+    new Set(
+      s.toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .filter((w) => w.length >= 3),
+    );
+  const A = tok(a), B = tok(b);
+  if (A.size === 0 || B.size === 0) return 0;
+  let inter = 0;
+  for (const w of A) if (B.has(w)) inter++;
+  return inter / (A.size + B.size - inter);
+}
+
+interface CandidateMatch {
+  postId: string;
+  title: string;
+  publish_date: string | null;
+  daysDiff: number;
+  similarity: number;
+  score: number;
+}
+
+/**
+ * Find existing LinkedIn posts that could be the same one as this .xlsx export,
+ * even when live_url is missing. Filters out posts already pinned to a different URL.
+ * Ranks by (date proximity desc, title similarity desc).
+ */
+function findCandidateMatches(
+  posts: Array<{ id: string; title: string; platforms: string[]; live_url: string | null; publish_date: string | null }>,
+  parsed: { postUrl: string | null; postDate: string | null },
+  options: { maxDaysDiff?: number; limit?: number } = {},
+): CandidateMatch[] {
+  const { maxDaysDiff = 7, limit = 5 } = options;
+  const targetUrl = normalizeLiUrl(parsed.postUrl);
+  const slugTitle = parsed.postUrl ? titleFromSlug(parsed.postUrl) : "";
+  const parsedTime = parsed.postDate ? new Date(parsed.postDate).getTime() : null;
+
+  const out: CandidateMatch[] = [];
+  for (const p of posts) {
+    if (!p.platforms?.includes("linkedin")) continue;
+    // Skip posts already locked to a different LinkedIn URL.
+    const pUrl = normalizeLiUrl(p.live_url);
+    if (pUrl && targetUrl && pUrl !== targetUrl) continue;
+    if (pUrl && !targetUrl) continue;
+
+    const pTime = p.publish_date ? new Date(p.publish_date).getTime() : null;
+    const daysDiff =
+      parsedTime != null && pTime != null
+        ? Math.abs(parsedTime - pTime) / 86_400_000
+        : Number.POSITIVE_INFINITY;
+    if (daysDiff > maxDaysDiff) continue;
+
+    const sim = slugTitle ? titleSimilarity(slugTitle, p.title || "") : 0;
+    const dateScore = 1 / (1 + daysDiff);
+    out.push({
+      postId: p.id,
+      title: p.title || "Untitled",
+      publish_date: p.publish_date,
+      daysDiff,
+      similarity: sim,
+      score: dateScore * 0.7 + sim * 0.3,
+    });
+  }
+  return out.sort((a, b) => b.score - a.score).slice(0, limit);
+}
+
 export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defaultUrl = "", initialFile = null, initialFiles = null, onComplete }: Props) {
   const { data: posts = [] } = useSocialPosts();
   const { data: settings = [] } = useSocialPlatformSettings();
