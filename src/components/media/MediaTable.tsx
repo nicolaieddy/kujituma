@@ -24,6 +24,7 @@ interface Props {
 
 export function MediaTable({ mentions, onEdit, onDelete, loading = false }: Props) {
   const [search, setSearch] = useState("");
+  const updateMention = useUpdateMention();
   const [year, setYear] = useState<string>("all");
   const [type, setType] = useState<string>("all");
   const [status, setStatus] = useState<string>("all");
