@@ -567,6 +567,21 @@ export function LinkedInImportDialog({ open, onClose, defaultPostId = null, defa
         for (const vid of valueIds) {
           await setPostValue.mutateAsync({ post_id: saved.id, value_id: vid, weight: 1 });
         }
+      } else {
+        // User picked an existing post from suggestions/dropdown — backfill
+        // live_url so subsequent imports match this post by URL automatically.
+        const matched = posts.find((p) => p.id === postId);
+        if (matched && !matched.live_url && parsed.postUrl) {
+          try {
+            await supabase
+              .from("social_posts")
+              .update({ live_url: parsed.postUrl })
+              .eq("id", postId)
+              .is("live_url", null);
+          } catch (urlErr) {
+            console.warn("[linkedin-import] backfill live_url failed", urlErr);
+          }
+        }
       }
 
       if (!postId) { toast.error("Pick a post to attach this snapshot to", { id: tid }); return; }
