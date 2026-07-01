@@ -78,20 +78,6 @@ const emptyForm: FormState = {
   goal_id: null,
 };
 
-const emptyForm: FormState = {
-  title: "",
-  body: "",
-  status: "idea",
-  platforms: [],
-  pillars: [],
-  publish_date: "",
-  live_url: "",
-  trust_check: "not_checked",
-  hold: false,
-  review_notes: "",
-  retro: "",
-  goal_id: null,
-};
 
 export function PostEditorDrawer({ open, postId, onClose }: Props) {
   const { data: post } = useSocialPost(postId);
@@ -113,6 +99,8 @@ export function PostEditorDrawer({ open, postId, onClose }: Props) {
         pillars: post.pillars ?? [],
         publish_date: post.publish_date ?? "",
         live_url: post.live_url ?? "",
+        media_type: (post.media_type ?? "") as SocialMediaType | "",
+        media_focus: (post.media_focus ?? "") as SocialMediaFocus | "",
         trust_check: post.trust_check,
         hold: post.hold,
         review_notes: post.review_notes ?? "",
