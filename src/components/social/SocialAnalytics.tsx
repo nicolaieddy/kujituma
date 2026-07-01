@@ -544,6 +544,7 @@ export function SocialAnalytics() {
           sub={kpis.followersDelta !== 0 ? `${kpis.followersDelta > 0 ? "+" : ""}${kpis.followersDelta.toLocaleString()} in range` : "no change in range"}
           source="social_follower_growth"
           sourceDetail="Latest total in range minus value at range start. Sourced from logged counts and aggregate-export anchors."
+          definition="Latest total followers across selected platforms. Formula: last follower count in range minus first follower count in range."
         />
         <KpiCard
           label="Total impressions"
@@ -551,6 +552,7 @@ export function SocialAnalytics() {
           sub={`across ${visiblePlatforms.length} platform${visiblePlatforms.length === 1 ? "" : "s"}`}
           source="social_daily_account_metrics"
           sourceDetail="Sum of daily impressions in range. Imported from LinkedIn aggregate analytics (deduped per day)."
+          definition="Sum of daily account-level impressions across selected platforms and date range."
         />
         <KpiCard
           label="Engagement rate"
@@ -558,6 +560,7 @@ export function SocialAnalytics() {
           sub={`${kpis.totalEng.toLocaleString()} engagements`}
           source="social_daily_account_metrics"
           sourceDetail="Engagements ÷ impressions over the selected range. Both come from imported aggregate analytics."
+          definition="Engagement rate = total engagements ÷ total impressions. Measures how much audience interaction your impressions generated."
         />
         <KpiCard
           label="Posts published"
@@ -565,6 +568,7 @@ export function SocialAnalytics() {
           sub="in range"
           source="social_posts"
           sourceDetail="Count of posts with status = published and publish_date in the selected range."
+          definition="Count of posts with status = published and a publish_date within the selected range and filters."
         />
         <KpiCard
           label="Tracked-post coverage"
@@ -582,6 +586,7 @@ export function SocialAnalytics() {
           }
           source="social_post_metrics ÷ social_daily_account_metrics"
           sourceDetail="Sum of the latest cumulative impressions on posts published in range, divided by total account impressions in range. Uses MAX per post — never SUM across snapshots — so deltas aren't double-counted. Coverage over 100% means account totals lag behind per-post totals (import newer aggregate data)."
+          definition="Coverage = Σ latest cumulative impressions per tracked post ÷ Σ daily account impressions in range. Can exceed 100% when per-post totals outlast the date range or account data is lagging."
         />
       </div>
 
@@ -919,12 +924,28 @@ function PlatformChip({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-function KpiCard({ label, value, sub, delta, source, sourceDetail }: { label: string; value: React.ReactNode; sub?: string; delta?: number; source?: string; sourceDetail?: string }) {
+function KpiCard({ label, value, sub, delta, source, sourceDetail, definition }: { label: string; value: React.ReactNode; sub?: string; delta?: number; source?: string; sourceDetail?: string; definition?: string }) {
   const TrendIcon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
   const trendClass = delta == null || delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive";
   return (
     <Card className="p-4 space-y-1">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      {definition ? (
+        <TooltipProvider delayDuration={150}>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground cursor-help flex items-center gap-1">
+                {label}
+                <Info className="h-3 w-3" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[260px] text-xs">
+              {definition}
+            </TooltipContent>
+          </UITooltip>
+        </TooltipProvider>
+      ) : (
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      )}
       <div className="text-2xl font-semibold tabular-nums">{value}</div>
       {sub && (
         <div className={cn("text-[11px] flex items-center gap-1", trendClass)}>
