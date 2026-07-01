@@ -331,7 +331,7 @@ export function McpSection() {
              { name: "log_social_metrics", desc: "Upsert a metrics snapshot for a post on a date" },
               { name: "log_follower_count", desc: "Log account-level followers for a platform on a date" },
               { name: "get_follower_growth", desc: "Follower series + pace vs the configured target" },
-              { name: "get_social_analytics", desc: "Top posts, pillar engagement averages" },
+              { name: "get_social_analytics", desc: "Top posts + averages rolled up by pillar, media_type, and media_focus" },
               { name: "get_social_platform_settings", desc: "Per-platform targets, deadlines, pillars, enabled" },
               { name: "update_social_platform_settings", desc: "Edit per-platform target/deadline/pillars/enabled" },
               { name: "get_social_handles", desc: "Saved profile URLs/handles per platform — feed scrapers/APIs to pull live metrics" },
