@@ -73,6 +73,47 @@ function inRange(iso: string, from: Date, to: Date) {
   return t >= from.setHours(0,0,0,0) && t <= to.setHours(23,59,59,999);
 }
 
+// ───────── Coverage cache ─────────
+// Module-scoped LRU cache so toggling back to a previously-viewed
+// (platform × date range × media filter) combo returns instantly
+// without recomputing over the full posts/metrics arrays.
+type CoverageStats = {
+  totalImpr: number;
+  trackedImpr: number;
+  postsWithMetrics: number;
+  coverage: number | null;
+};
+const COVERAGE_CACHE_MAX = 64;
+const coverageCache = new Map<string, CoverageStats>();
+function cacheGet(key: string): CoverageStats | undefined {
+  const v = coverageCache.get(key);
+  if (v !== undefined) {
+    // refresh LRU order
+    coverageCache.delete(key);
+    coverageCache.set(key, v);
+  }
+  return v;
+}
+function cacheSet(key: string, val: CoverageStats) {
+  coverageCache.set(key, val);
+  if (coverageCache.size > COVERAGE_CACHE_MAX) {
+    const oldest = coverageCache.keys().next().value as string | undefined;
+    if (oldest !== undefined) coverageCache.delete(oldest);
+  }
+}
+// Monotonic id per object identity — lets us key on data-ref without
+// serializing large arrays/objects.
+const refIds = new WeakMap<object, number>();
+let refCounter = 0;
+function refId(obj: object | null | undefined): number {
+  if (!obj) return 0;
+  const existing = refIds.get(obj);
+  if (existing !== undefined) return existing;
+  const id = ++refCounter;
+  refIds.set(obj, id);
+  return id;
+}
+
 export function SocialAnalytics() {
   const { data: settings = [] } = useSocialPlatformSettings();
   const { data: growth = [] } = useFollowerGrowth();
