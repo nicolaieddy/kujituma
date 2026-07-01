@@ -327,6 +327,154 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
     },
   });
 
+  // ── Content-type trends ──────────────────────────────
+  mcp.tool("get_content_type_trends", {
+    description:
+      "Performance trend for posts matching a media_type and/or media_focus over a date range. Returns time-bucketed averages (engagement rate, impressions, reactions, comments) for the matching cohort plus a comparison against all other posts in the same range — useful for deciding what format to double down on. Uses each post's latest cumulative snapshot (never sums across snapshots).",
+    inputSchema: {
+      type: "object",
+      properties: {
+        media_type: { type: "string", description: `Optional. One of: ${MEDIA_TYPES.join(", ")}` },
+        media_focus: { type: "string", description: `Optional. One of: ${MEDIA_FOCUSES.join(", ")}` },
+        platform: { type: "string", description: `Optional. One of: ${PLATFORMS.join(", ")}` },
+        from_date: { type: "string", description: "YYYY-MM-DD, filters posts by publish_date >=" },
+        to_date: { type: "string", description: "YYYY-MM-DD, filters posts by publish_date <=" },
+        bucket: { type: "string", description: "week (default) or month" },
+      },
+    },
+    handler: async (args: any) => {
+      const bucket = args.bucket === "month" ? "month" : "week";
+      const matchesFilter = (p: any, m: any) => {
+        if (args.media_type && p.media_type !== args.media_type) return false;
+        if (args.media_focus && p.media_focus !== args.media_focus) return false;
+        if (args.platform && m.platform !== args.platform) return false;
+        return true;
+      };
+
+      // Pull posts published in range and their latest metric per post.
+      let postQ = supabase
+        .from("social_posts")
+        .select("id,title,platforms,pillars,publish_date,media_type,media_focus,live_url,status")
+        .eq("user_id", userId)
+        .eq("status", "published");
+      if (args.from_date) postQ = postQ.gte("publish_date", args.from_date);
+      if (args.to_date) postQ = postQ.lte("publish_date", args.to_date);
+      const { data: posts, error: pErr } = await postQ;
+      if (pErr) return { content: [{ type: "text" as const, text: `Error: ${pErr.message}` }] };
+
+      const { data: latest, error: lErr } = await supabase
+        .from("social_post_latest_metrics").select("*").eq("user_id", userId);
+      if (lErr) return { content: [{ type: "text" as const, text: `Error: ${lErr.message}` }] };
+
+      const latestByPost = new Map<string, any>();
+      for (const m of (latest ?? [])) {
+        // Keep the row with the highest engagement_rate per post (matches UI behavior).
+        const prev = latestByPost.get(m.post_id);
+        if (!prev || Number(m.engagement_rate ?? 0) > Number(prev.engagement_rate ?? 0)) {
+          latestByPost.set(m.post_id, m);
+        }
+      }
+
+      const bucketOf = (iso: string) => {
+        const d = new Date(iso);
+        if (bucket === "month") return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-01`;
+        // ISO week starting Monday
+        const day = d.getUTCDay() || 7;
+        d.setUTCDate(d.getUTCDate() - (day - 1));
+        return d.toISOString().slice(0, 10);
+      };
+
+      type Agg = { posts: number; er_sum: number; impr_sum: number; reac_sum: number; comm_sum: number };
+      const empty = (): Agg => ({ posts: 0, er_sum: 0, impr_sum: 0, reac_sum: 0, comm_sum: 0 });
+      const add = (a: Agg, m: any) => {
+        a.posts += 1;
+        a.er_sum += Number(m.engagement_rate ?? 0);
+        a.impr_sum += Number(m.impressions ?? 0);
+        a.reac_sum += Number(m.reactions ?? 0);
+        a.comm_sum += Number(m.comments ?? 0);
+      };
+      const summarize = (a: Agg) => a.posts === 0 ? null : {
+        posts: a.posts,
+        avg_engagement_rate: a.er_sum / a.posts,
+        avg_impressions: a.impr_sum / a.posts,
+        avg_reactions: a.reac_sum / a.posts,
+        avg_comments: a.comm_sum / a.posts,
+        total_impressions: a.impr_sum,
+      };
+
+      const cohortBuckets = new Map<string, Agg>();
+      const baselineBuckets = new Map<string, Agg>();
+      const cohortTotals = empty();
+      const baselineTotals = empty();
+      const cohortPosts: any[] = [];
+
+      for (const post of (posts ?? [])) {
+        const m = latestByPost.get(post.id);
+        if (!m) continue;                        // no metrics yet
+        if (!post.publish_date) continue;
+        if (args.platform && !(post.platforms ?? []).includes(args.platform)) continue;
+        const key = bucketOf(post.publish_date);
+        const inCohort = matchesFilter(post, m);
+        const target = inCohort ? cohortBuckets : baselineBuckets;
+        if (!target.has(key)) target.set(key, empty());
+        add(target.get(key)!, m);
+        add(inCohort ? cohortTotals : baselineTotals, m);
+        if (inCohort) {
+          cohortPosts.push({
+            id: post.id,
+            title: post.title,
+            publish_date: post.publish_date,
+            platform: m.platform,
+            media_type: post.media_type,
+            media_focus: post.media_focus,
+            live_url: post.live_url,
+            engagement_rate: m.engagement_rate,
+            impressions: m.impressions,
+            reactions: m.reactions,
+            comments: m.comments,
+          });
+        }
+      }
+
+      const keys = Array.from(new Set([...cohortBuckets.keys(), ...baselineBuckets.keys()])).sort();
+      const series = keys.map((k) => ({
+        bucket_start: k,
+        cohort: summarize(cohortBuckets.get(k) ?? empty()),
+        baseline: summarize(baselineBuckets.get(k) ?? empty()),
+      }));
+
+      cohortPosts.sort((a, b) => Number(b.engagement_rate ?? 0) - Number(a.engagement_rate ?? 0));
+      const cohortSummary = summarize(cohortTotals);
+      const baselineSummary = summarize(baselineTotals);
+      const lift = (cohortSummary && baselineSummary && baselineSummary.avg_engagement_rate > 0)
+        ? cohortSummary.avg_engagement_rate / baselineSummary.avg_engagement_rate - 1
+        : null;
+
+      return {
+        content: [{
+          type: "text" as const,
+          text: JSON.stringify({
+            filter: {
+              media_type: args.media_type ?? null,
+              media_focus: args.media_focus ?? null,
+              platform: args.platform ?? null,
+              from_date: args.from_date ?? null,
+              to_date: args.to_date ?? null,
+              bucket,
+            },
+            cohort: cohortSummary,
+            baseline: baselineSummary,
+            engagement_rate_lift_vs_baseline: lift,
+            series,
+            top_cohort_posts: cohortPosts.slice(0, 10),
+            bottom_cohort_posts: cohortPosts.slice(-5).reverse(),
+            note: "Each post contributes once via its latest cumulative snapshot; ER lift = cohort avg ER ÷ baseline avg ER − 1. Baseline = all other published posts in range (with metrics) that don't match the filter.",
+          }, null, 2),
+        }],
+      };
+    },
+  });
+
   // ── Platform settings (incl. targets) ────────────────
   mcp.tool("get_social_platform_settings", {
     description: "List per-platform settings: enabled flag, follower_target, target_deadline, pillars, current_followers_cached. Targets are user-set, never hardcoded.",
