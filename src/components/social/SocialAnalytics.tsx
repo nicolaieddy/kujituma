@@ -86,6 +86,23 @@ export function SocialAnalytics() {
   const [custom, setCustom] = useState<DateRange | undefined>();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<Set<SocialMediaType>>(new Set());
+  const [mediaFocusFilter, setMediaFocusFilter] = useState<Set<SocialMediaFocus>>(new Set());
+
+  const toggleInSet = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
+    const next = new Set(set);
+    if (next.has(val)) next.delete(val); else next.add(val);
+    setter(next);
+  };
+
+  // A post matches the media filters if either filter is empty (=all)
+  // or the post's tag is included in the selected set.
+  const postMatchesMediaFilters = (p: { media_type?: string | null; media_focus?: string | null }) => {
+    if (mediaTypeFilter.size > 0 && !mediaTypeFilter.has((p.media_type ?? "") as SocialMediaType)) return false;
+    if (mediaFocusFilter.size > 0 && !mediaFocusFilter.has((p.media_focus ?? "") as SocialMediaFocus)) return false;
+    return true;
+  };
+  const mediaFiltersActive = mediaTypeFilter.size > 0 || mediaFocusFilter.size > 0;
 
   const enabled = settings.filter((s) => s.enabled).map((s) => s.platform);
   const enabledPlatforms: SocialPlatform[] = useMemo(() => {
