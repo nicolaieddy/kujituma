@@ -552,6 +552,7 @@ export function SocialAnalytics() {
           sub={`across ${visiblePlatforms.length} platform${visiblePlatforms.length === 1 ? "" : "s"}`}
           source="social_daily_account_metrics"
           sourceDetail="Sum of daily impressions in range. Imported from LinkedIn aggregate analytics (deduped per day)."
+          definition="Sum of daily account-level impressions across selected platforms and date range."
         />
         <KpiCard
           label="Engagement rate"
