@@ -729,3 +729,114 @@ function EmptyState({ text }: { text: string }) {
     </div>
   );
 }
+
+type MediaBreakdownRow = {
+  key: string;
+  posts: number;
+  impressions: number;
+  reach: number;
+  avg_engagement_rate: number | null;
+};
+
+type RankMetric = "impressions" | "reach" | "engagement_rate";
+
+function MediaBreakdownCard({
+  title,
+  subtitle,
+  rows,
+  labelFor,
+  emptyText,
+}: {
+  title: string;
+  subtitle: string;
+  rows: MediaBreakdownRow[];
+  labelFor: (key: string) => string;
+  emptyText: string;
+}) {
+  const [metric, setMetric] = useState<RankMetric>("impressions");
+
+  const sorted = useMemo(() => {
+    const val = (r: MediaBreakdownRow) =>
+      metric === "impressions" ? r.impressions
+        : metric === "reach" ? r.reach
+        : (r.avg_engagement_rate ?? -1);
+    return [...rows].sort((a, b) => val(b) - val(a));
+  }, [rows, metric]);
+
+  const max = useMemo(() => {
+    const val = (r: MediaBreakdownRow) =>
+      metric === "impressions" ? r.impressions
+        : metric === "reach" ? r.reach
+        : (r.avg_engagement_rate ?? 0);
+    return Math.max(0, ...sorted.map(val));
+  }, [sorted, metric]);
+
+  const tabs: { key: RankMetric; label: string }[] = [
+    { key: "impressions", label: "Impressions" },
+    { key: "reach", label: "Reach" },
+    { key: "engagement_rate", label: "Eng. rate" },
+  ];
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setMetric(t.key)}
+              className={cn(
+                "px-2 py-1 text-[11px] rounded-sm font-medium transition-colors",
+                metric === t.key ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {sorted.length === 0 ? (
+        <EmptyState text={emptyText} />
+      ) : (
+        <ul className="space-y-2">
+          {sorted.map((r, i) => {
+            const rawValue =
+              metric === "impressions" ? r.impressions
+                : metric === "reach" ? r.reach
+                : (r.avg_engagement_rate ?? 0);
+            const pct = max > 0 ? (rawValue / max) * 100 : 0;
+            const valueLabel =
+              metric === "engagement_rate"
+                ? (r.avg_engagement_rate != null ? formatEngagementRate(r.avg_engagement_rate) : "—")
+                : (rawValue > 0 ? <CompactNumber value={rawValue} /> : "—");
+            return (
+              <li key={r.key} className="space-y-1">
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <div className="min-w-0 flex-1 flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground tabular-nums w-4 text-right">{i + 1}</span>
+                    <span className="font-medium truncate">{labelFor(r.key)}</span>
+                    <span className="text-[11px] text-muted-foreground shrink-0">
+                      · {r.posts} post{r.posts === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <span className="font-semibold tabular-nums">{valueLabel}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary/80 rounded-full transition-all"
+                    style={{ width: `${Math.max(2, pct)}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}
