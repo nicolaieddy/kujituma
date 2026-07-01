@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import type { SocialPlatform, SocialStatus, SocialTrustCheck } from "@/lib/social";
+import type { SocialPlatform, SocialStatus, SocialTrustCheck, SocialMediaType, SocialMediaFocus } from "@/lib/social";
 
 export interface SocialPost {
   id: string;
@@ -16,6 +16,8 @@ export interface SocialPost {
   publish_at: string | null;
   live_url: string | null;
   media: string[];
+  media_type: SocialMediaType | null;
+  media_focus: SocialMediaFocus | null;
   trust_check: SocialTrustCheck;
   hold: boolean;
   reviewer_id: string | null;
