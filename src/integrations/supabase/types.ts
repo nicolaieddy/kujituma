@@ -3568,6 +3568,8 @@ export type Database = {
           id: string
           live_url: string | null
           media: string[]
+          media_focus: string | null
+          media_type: string | null
           pillars: string[]
           platforms: Database["public"]["Enums"]["social_platform"][]
           publish_at: string | null
@@ -3589,6 +3591,8 @@ export type Database = {
           id?: string
           live_url?: string | null
           media?: string[]
+          media_focus?: string | null
+          media_type?: string | null
           pillars?: string[]
           platforms?: Database["public"]["Enums"]["social_platform"][]
           publish_at?: string | null
@@ -3610,6 +3614,8 @@ export type Database = {
           id?: string
           live_url?: string | null
           media?: string[]
+          media_focus?: string | null
+          media_type?: string | null
           pillars?: string[]
           platforms?: Database["public"]["Enums"]["social_platform"][]
           publish_at?: string | null

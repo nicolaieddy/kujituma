@@ -38,6 +38,25 @@ export const TRUST_CHECK_META: Record<SocialTrustCheck, { label: string; tone: s
   not_checked: { label: "Not checked", tone: "bg-muted text-muted-foreground" },
 };
 
+export type SocialMediaType = "none" | "photo" | "video" | "carousel" | "graphic";
+export type SocialMediaFocus = "self" | "flyer" | "product" | "team" | "other";
+
+export const MEDIA_TYPE_META: Record<SocialMediaType, { label: string }> = {
+  none:     { label: "No media (text only)" },
+  photo:    { label: "Photo" },
+  video:    { label: "Video" },
+  carousel: { label: "Carousel / multi-image" },
+  graphic:  { label: "Graphic / flyer" },
+};
+
+export const MEDIA_FOCUS_META: Record<SocialMediaFocus, { label: string }> = {
+  self:    { label: "Me / personal" },
+  flyer:   { label: "Flyer / promo" },
+  product: { label: "Product / screenshot" },
+  team:    { label: "Team / people" },
+  other:   { label: "Other" },
+};
+
 export function formatEngagementRate(rate: number | null | undefined): string {
   if (rate == null || !isFinite(Number(rate))) return "—";
   return `${(Number(rate) * 100).toFixed(2)}%`;
