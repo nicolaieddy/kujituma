@@ -393,7 +393,60 @@ export function SocialAnalytics() {
             );
           })}
         </div>
+
+        {/* Media type / focus filters — apply to post-level KPIs, Top posts. */}
+        <div className="basis-full flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">Media type</span>
+            <PlatformChip active={mediaTypeFilter.size === 0} onClick={() => setMediaTypeFilter(new Set())}>
+              All
+            </PlatformChip>
+            {(Object.keys(MEDIA_TYPE_META) as SocialMediaType[]).map((k) => (
+              <PlatformChip
+                key={k}
+                active={mediaTypeFilter.has(k)}
+                onClick={() => toggleInSet(mediaTypeFilter, k, setMediaTypeFilter)}
+              >
+                {MEDIA_TYPE_META[k].label}
+              </PlatformChip>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">Media focus</span>
+            <PlatformChip active={mediaFocusFilter.size === 0} onClick={() => setMediaFocusFilter(new Set())}>
+              All
+            </PlatformChip>
+            {(Object.keys(MEDIA_FOCUS_META) as SocialMediaFocus[]).map((k) => (
+              <PlatformChip
+                key={k}
+                active={mediaFocusFilter.has(k)}
+                onClick={() => toggleInSet(mediaFocusFilter, k, setMediaFocusFilter)}
+              >
+                {MEDIA_FOCUS_META[k].label}
+              </PlatformChip>
+            ))}
+          </div>
+          {mediaFiltersActive && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs gap-1 ml-auto"
+              onClick={() => { setMediaTypeFilter(new Set()); setMediaFocusFilter(new Set()); }}
+            >
+              <X className="h-3 w-3" /> Clear media filters
+            </Button>
+          )}
+        </div>
       </Card>
+
+      {mediaFiltersActive && (
+        <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div>
+            Media filters narrow <strong className="text-foreground">Posts published</strong>, <strong className="text-foreground">Tracked-post coverage</strong>, and <strong className="text-foreground">Top posts</strong>. Account-level charts (followers, total impressions, engagement rate) can't be filtered because aggregate analytics aren't tagged per post.
+          </div>
+        </div>
+      )}
 
       {/* ───── KPI strip ───── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
