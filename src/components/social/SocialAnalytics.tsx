@@ -195,14 +195,32 @@ export function SocialAnalytics() {
     }
     const engRate = totalImpr > 0 ? totalEng / totalImpr : null;
 
-    const postsInRange = posts.filter((p) =>
+    const postsInRangeList = posts.filter((p) =>
       p.status === "published" && p.publish_date &&
       inRange(p.publish_date, new Date(from), new Date(to)) &&
       (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)),
-    ).length;
+    );
+    const postsInRange = postsInRangeList.length;
 
-    return { totalFollowers, followersDelta, totalImpr, totalEng, engRate, postsInRange };
-  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter]);
+    // Coverage: what % of account impressions in the range is explained
+    // by the tracked posts published in that range. Uses the latest
+    // cumulative snapshot per tracked post (MAX per post — never SUM
+    // across snapshots — so we don't double-count deltas).
+    let trackedImpr = 0;
+    let postsWithMetrics = 0;
+    for (const p of postsInRangeList) {
+      const m = latest[p.id];
+      if (m && (m.impressions ?? 0) > 0) {
+        if (platformFilter === "all" || m.platform === platformFilter) {
+          trackedImpr += m.impressions ?? 0;
+          postsWithMetrics += 1;
+        }
+      }
+    }
+    const coverage = totalImpr > 0 ? trackedImpr / totalImpr : null;
+
+    return { totalFollowers, followersDelta, totalImpr, totalEng, engRate, postsInRange, trackedImpr, postsWithMetrics, coverage };
+  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, latest]);
 
   // ───────── Per-platform breakdown rows ─────────
   const breakdown = useMemo(() => {
@@ -323,7 +341,7 @@ export function SocialAnalytics() {
       </Card>
 
       {/* ───── KPI strip ───── */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <KpiCard
           label="Total followers"
           value={<CompactNumber value={kpis.totalFollowers} />}
@@ -352,6 +370,19 @@ export function SocialAnalytics() {
           sub="in range"
           source="social_posts"
           sourceDetail="Count of posts with status = published and publish_date in the selected range."
+        />
+        <KpiCard
+          label="Tracked-post coverage"
+          value={kpis.coverage != null ? `${Math.round(kpis.coverage * 100)}%` : "—"}
+          sub={
+            kpis.coverage != null
+              ? `${formatCompact(kpis.trackedImpr)} of ${formatCompact(kpis.totalImpr)} · ${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
+              : kpis.totalImpr === 0
+                ? "no account impressions in range"
+                : `${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
+          }
+          source="social_post_metrics ÷ social_daily_account_metrics"
+          sourceDetail="Sum of the latest cumulative impressions on posts published in range, divided by total account impressions in range. Uses MAX per post — never SUM across snapshots — so deltas aren't double-counted. Coverage over 100% means account totals lag behind per-post totals (import newer aggregate data)."
         />
       </div>
 
