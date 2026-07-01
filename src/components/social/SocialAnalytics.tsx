@@ -570,11 +570,15 @@ export function SocialAnalytics() {
           label="Tracked-post coverage"
           value={kpis.coverage != null ? `${Math.round(kpis.coverage * 100)}%` : "—"}
           sub={
-            kpis.coverage != null
-              ? `${formatCompact(kpis.trackedImpr)} of ${formatCompact(kpis.totalImpr)} · ${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
-              : kpis.totalImpr === 0
-                ? "no account impressions in range"
-                : `${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
+            kpis.postsInRange === 0
+              ? mediaFiltersActive
+                ? "no posts match the selected media filters"
+                : "no posts published in this range"
+              : kpis.coverage != null
+                ? `${formatCompact(kpis.trackedImpr)} of ${formatCompact(kpis.totalImpr)} · ${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
+                : kpis.totalImpr === 0
+                  ? "no account impressions in range"
+                  : `${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
           }
           source="social_post_metrics ÷ social_daily_account_metrics"
           sourceDetail="Sum of the latest cumulative impressions on posts published in range, divided by total account impressions in range. Uses MAX per post — never SUM across snapshots — so deltas aren't double-counted. Coverage over 100% means account totals lag behind per-post totals (import newer aggregate data)."
