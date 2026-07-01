@@ -107,6 +107,14 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
     localStorage.setItem(DENSITY_KEY, density);
   }, [density]);
 
+  // Filter & sort state
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("date-desc");
+  const [statusFilters, setStatusFilters] = useState<BoardStatus[]>([]);
+  const [platformFilters, setPlatformFilters] = useState<SocialPlatform[]>([]);
+  const [mediaTypeFilters, setMediaTypeFilters] = useState<SocialMediaType[]>([]);
+
+
   // Pending schedule prompt — the moved post stays in the Scheduled column
   // optimistically (KanbanBoard handles that) while we ask for date+time.
   const [pendingSchedule, setPendingSchedule] = useState<{
