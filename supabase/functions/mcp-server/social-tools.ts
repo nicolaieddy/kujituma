@@ -4,7 +4,8 @@ type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
 const PLATFORMS = ["linkedin", "x", "instagram", "tiktok"] as const;
-const STATUSES = ["idea", "drafting", "in_review", "ready", "scheduled", "published"] as const;
+const MEDIA_TYPES = ["none", "photo", "video", "carousel", "graphic"] as const;
+const MEDIA_FOCUSES = ["self", "flyer", "product", "team", "other"] as const;
 
 function asArray<T = string>(v: unknown): T[] | undefined {
   if (v === undefined) return undefined;
