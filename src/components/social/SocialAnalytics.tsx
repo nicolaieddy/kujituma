@@ -586,6 +586,7 @@ export function SocialAnalytics() {
           }
           source="social_post_metrics ÷ social_daily_account_metrics"
           sourceDetail="Sum of the latest cumulative impressions on posts published in range, divided by total account impressions in range. Uses MAX per post — never SUM across snapshots — so deltas aren't double-counted. Coverage over 100% means account totals lag behind per-post totals (import newer aggregate data)."
+          definition="Coverage = Σ latest cumulative impressions per tracked post ÷ Σ daily account impressions in range. Can exceed 100% when per-post totals outlast the date range or account data is lagging."
         />
       </div>
 
