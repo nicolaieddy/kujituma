@@ -14,7 +14,9 @@ import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info, Database } from
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, paddedYDomain, type SocialPlatform,
+  PLATFORM_META, SOCIAL_PLATFORMS, formatCompact, formatEngagementRate, paddedYDomain,
+  MEDIA_TYPE_META, MEDIA_FOCUS_META,
+  type SocialPlatform, type SocialMediaType, type SocialMediaFocus,
 } from "@/lib/social";
 import { useSocialPlatformSettings } from "@/hooks/useSocialPlatformSettings";
 import { useFollowerGrowth } from "@/hooks/useFollowerGrowth";
@@ -272,6 +274,40 @@ export function SocialAnalytics() {
   const activeFollowerGoals = goals.filter((g) =>
     g.status === "active" && g.metric === "followers" && visiblePlatforms.includes(g.platform),
   );
+
+  // ───────── Media type / focus breakdown ─────────
+  // For each media_type / media_focus value we roll up the LATEST cumulative
+  // snapshot per post — never sum across snapshots, so deltas aren't double-counted.
+  const mediaBreakdown = useMemo(() => {
+    const build = <K extends "media_type" | "media_focus">(key: K) => {
+      const acc = new Map<string, { posts: number; impressions: number; reach: number; er_sum: number; er_count: number }>();
+      for (const p of posts) {
+        if (p.status !== "published" || !p.publish_date) continue;
+        if (!inRange(p.publish_date, new Date(from), new Date(to))) continue;
+        if (platformFilter !== "all" && !(p.platforms ?? []).includes(platformFilter)) continue;
+        const raw = (p as any)[key];
+        if (!raw) continue;
+        const m = latest[p.id];
+        if (!m) continue;
+        if (platformFilter !== "all" && m.platform !== platformFilter) continue;
+        const bucket = acc.get(raw) ?? { posts: 0, impressions: 0, reach: 0, er_sum: 0, er_count: 0 };
+        bucket.posts += 1;
+        bucket.impressions += m.impressions ?? 0;
+        bucket.reach += m.reach ?? 0;
+        if (m.engagement_rate != null) { bucket.er_sum += m.engagement_rate; bucket.er_count += 1; }
+        acc.set(raw, bucket);
+      }
+      return Array.from(acc.entries()).map(([k, v]) => ({
+        key: k,
+        posts: v.posts,
+        impressions: v.impressions,
+        reach: v.reach,
+        avg_engagement_rate: v.er_count > 0 ? v.er_sum / v.er_count : null,
+      }));
+    };
+    return { media_type: build("media_type"), media_focus: build("media_focus") };
+  }, [posts, latest, from, to, platformFilter]);
+
 
   return (
     <div className="space-y-6">
@@ -581,6 +617,24 @@ export function SocialAnalytics() {
         )}
       </Card>
 
+      {/* ───── Media type / focus breakdown ───── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <MediaBreakdownCard
+          title="Media type"
+          subtitle="Photo · Video · Carousel · Graphic"
+          rows={mediaBreakdown.media_type}
+          labelFor={(k) => MEDIA_TYPE_META[k as SocialMediaType]?.label ?? k}
+          emptyText="Tag posts with a media type in the editor to see this ranking."
+        />
+        <MediaBreakdownCard
+          title="Media focus"
+          subtitle="Me · Flyer · Product · Team · Other"
+          rows={mediaBreakdown.media_focus}
+          labelFor={(k) => MEDIA_FOCUS_META[k as SocialMediaFocus]?.label ?? k}
+          emptyText="Tag posts with a media focus in the editor to see this ranking."
+        />
+      </div>
+
       {/* ───── Goals progress ───── */}
       <AnalyticsGoalsSection />
 
@@ -673,5 +727,116 @@ function EmptyState({ text }: { text: string }) {
     <div className="h-32 flex items-center justify-center text-sm text-muted-foreground text-center px-4">
       {text}
     </div>
+  );
+}
+
+type MediaBreakdownRow = {
+  key: string;
+  posts: number;
+  impressions: number;
+  reach: number;
+  avg_engagement_rate: number | null;
+};
+
+type RankMetric = "impressions" | "reach" | "engagement_rate";
+
+function MediaBreakdownCard({
+  title,
+  subtitle,
+  rows,
+  labelFor,
+  emptyText,
+}: {
+  title: string;
+  subtitle: string;
+  rows: MediaBreakdownRow[];
+  labelFor: (key: string) => string;
+  emptyText: string;
+}) {
+  const [metric, setMetric] = useState<RankMetric>("impressions");
+
+  const sorted = useMemo(() => {
+    const val = (r: MediaBreakdownRow) =>
+      metric === "impressions" ? r.impressions
+        : metric === "reach" ? r.reach
+        : (r.avg_engagement_rate ?? -1);
+    return [...rows].sort((a, b) => val(b) - val(a));
+  }, [rows, metric]);
+
+  const max = useMemo(() => {
+    const val = (r: MediaBreakdownRow) =>
+      metric === "impressions" ? r.impressions
+        : metric === "reach" ? r.reach
+        : (r.avg_engagement_rate ?? 0);
+    return Math.max(0, ...sorted.map(val));
+  }, [sorted, metric]);
+
+  const tabs: { key: RankMetric; label: string }[] = [
+    { key: "impressions", label: "Impressions" },
+    { key: "reach", label: "Reach" },
+    { key: "engagement_rate", label: "Eng. rate" },
+  ];
+
+  return (
+    <Card className="p-4 space-y-3">
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="font-semibold">{title}</h3>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <div className="flex items-center gap-0.5 bg-muted rounded-md p-0.5">
+          {tabs.map((t) => (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setMetric(t.key)}
+              className={cn(
+                "px-2 py-1 text-[11px] rounded-sm font-medium transition-colors",
+                metric === t.key ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      {sorted.length === 0 ? (
+        <EmptyState text={emptyText} />
+      ) : (
+        <ul className="space-y-2">
+          {sorted.map((r, i) => {
+            const rawValue =
+              metric === "impressions" ? r.impressions
+                : metric === "reach" ? r.reach
+                : (r.avg_engagement_rate ?? 0);
+            const pct = max > 0 ? (rawValue / max) * 100 : 0;
+            const valueLabel =
+              metric === "engagement_rate"
+                ? (r.avg_engagement_rate != null ? formatEngagementRate(r.avg_engagement_rate) : "—")
+                : (rawValue > 0 ? <CompactNumber value={rawValue} /> : "—");
+            return (
+              <li key={r.key} className="space-y-1">
+                <div className="flex items-baseline justify-between gap-2 text-sm">
+                  <div className="min-w-0 flex-1 flex items-center gap-2">
+                    <span className="text-[11px] text-muted-foreground tabular-nums w-4 text-right">{i + 1}</span>
+                    <span className="font-medium truncate">{labelFor(r.key)}</span>
+                    <span className="text-[11px] text-muted-foreground shrink-0">
+                      · {r.posts} post{r.posts === 1 ? "" : "s"}
+                    </span>
+                  </div>
+                  <span className="font-semibold tabular-nums">{valueLabel}</span>
+                </div>
+                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full bg-primary/80 rounded-full transition-all"
+                    style={{ width: `${Math.max(2, pct)}%` }}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
   );
 }
