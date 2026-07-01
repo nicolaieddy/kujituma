@@ -4,6 +4,7 @@ type Supabase = ReturnType<typeof createClient>;
 type McpServer = any;
 
 const PLATFORMS = ["linkedin", "x", "instagram", "tiktok"] as const;
+const STATUSES = ["idea", "drafting", "in_review", "ready", "scheduled", "published"] as const;
 const MEDIA_TYPES = ["none", "photo", "video", "carousel", "graphic"] as const;
 const MEDIA_FOCUSES = ["self", "flyer", "product", "team", "other"] as const;
 
@@ -87,6 +88,8 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
         goal_id: { type: "string" },
         review_notes: { type: "string" },
         retro: { type: "string" },
+        media_type: { type: "string", description: `One of: ${MEDIA_TYPES.join(", ")}` },
+        media_focus: { type: "string", description: `Subject of the media. One of: ${MEDIA_FOCUSES.join(", ")}` },
       },
       required: ["title"],
     },
@@ -95,7 +98,7 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
         user_id: userId,
         title: args.title,
       };
-      for (const k of ["body", "status", "publish_date", "live_url", "trust_check", "goal_id", "review_notes", "retro"]) {
+      for (const k of ["body", "status", "publish_date", "live_url", "trust_check", "goal_id", "review_notes", "retro", "media_type", "media_focus"]) {
         if (args[k] !== undefined && args[k] !== "") insert[k] = args[k];
       }
       if (args.hold !== undefined) insert.hold = args.hold;
@@ -128,12 +131,14 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
         goal_id: { type: "string" },
         review_notes: { type: "string" },
         retro: { type: "string" },
+        media_type: { type: "string", description: `One of: ${MEDIA_TYPES.join(", ")}` },
+        media_focus: { type: "string", description: `Subject of the media. One of: ${MEDIA_FOCUSES.join(", ")}` },
       },
       required: ["id"],
     },
     handler: async (args: any) => {
       const upd: Record<string, unknown> = {};
-      for (const k of ["title", "body", "status", "publish_date", "live_url", "trust_check", "goal_id", "review_notes", "retro"]) {
+      for (const k of ["title", "body", "status", "publish_date", "live_url", "trust_check", "goal_id", "review_notes", "retro", "media_type", "media_focus"]) {
         if (args[k] !== undefined) upd[k] = args[k] === "" ? null : args[k];
       }
       if (args.hold !== undefined) upd.hold = args.hold;
