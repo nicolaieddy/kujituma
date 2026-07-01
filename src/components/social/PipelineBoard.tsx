@@ -2,11 +2,45 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Rows3, Rows2, Check, X, CalendarClock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Plus,
+  Rows3,
+  Rows2,
+  Check,
+  X,
+  CalendarClock,
+  Search,
+  SlidersHorizontal,
+  ChevronDown,
+} from "lucide-react";
 import { useSocialPosts, useUpsertSocialPost, type SocialPost } from "@/hooks/useSocialPosts";
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { PostCard } from "./PostCard";
-import { BOARD_ORDER, STATUS_META, toBoardStatus, type BoardStatus } from "@/lib/social";
+import {
+  BOARD_ORDER,
+  STATUS_META,
+  toBoardStatus,
+  type BoardStatus,
+  SOCIAL_PLATFORMS,
+  PLATFORM_META,
+  type SocialPlatform,
+  type SocialMediaType,
+  MEDIA_TYPE_META,
+} from "@/lib/social";
 import {
   KanbanBoard,
   type KanbanColumnDef,
@@ -14,6 +48,7 @@ import {
 } from "@/components/kanban/KanbanBoard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
 
 interface Props {
   onOpenPost: (id: string) => void;
@@ -41,6 +76,24 @@ function defaultScheduleValue(post: SocialPost): string {
   return toLocalInputValue(t);
 }
 
+type SortMode = "date-desc" | "date-asc" | "engagement-desc" | "impressions-desc" | "reactions-desc";
+
+const SORT_LABELS: Record<SortMode, string> = {
+  "date-desc": "Newest first",
+  "date-asc": "Oldest first",
+  "engagement-desc": "Highest engagement rate",
+  "impressions-desc": "Most impressions",
+  "reactions-desc": "Most reactions",
+};
+
+const MEDIA_TYPES: SocialMediaType[] = ["none", "photo", "video", "carousel", "graphic"];
+
+function getPostSortDate(post: SocialPost): number {
+  const t = post.publish_at || (post.publish_date ? `${post.publish_date}T09:00` : post.created_at);
+  return new Date(t).getTime() || 0;
+}
+
+
 export function PipelineBoard({ onOpenPost, onCreate }: Props) {
   const { data: posts = [], isLoading } = useSocialPosts();
   const { data: latest = {} } = useLatestMetricsByPost();
@@ -53,6 +106,14 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
   useEffect(() => {
     localStorage.setItem(DENSITY_KEY, density);
   }, [density]);
+
+  // Filter & sort state
+  const [search, setSearch] = useState("");
+  const [sortMode, setSortMode] = useState<SortMode>("date-desc");
+  const [statusFilters, setStatusFilters] = useState<BoardStatus[]>([]);
+  const [platformFilters, setPlatformFilters] = useState<SocialPlatform[]>([]);
+  const [mediaTypeFilters, setMediaTypeFilters] = useState<SocialMediaType[]>([]);
+
 
   // Pending schedule prompt — the moved post stays in the Scheduled column
   // optimistically (KanbanBoard handles that) while we ask for date+time.
@@ -75,6 +136,44 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
   }
   const sourcePosts = frozenPostsRef.current ?? posts;
 
+  const filteredPosts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    let list = sourcePosts.filter((p) => {
+      if (query) {
+        const haystack = `${p.title ?? ""} ${p.body ?? ""}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (statusFilters.length > 0 && !statusFilters.includes(toBoardStatus(p.status))) return false;
+      if (platformFilters.length > 0 && !p.platforms.some((pl) => platformFilters.includes(pl as SocialPlatform))) return false;
+      if (mediaTypeFilters.length > 0 && !mediaTypeFilters.includes(p.media_type ?? "none")) return false;
+      return true;
+    });
+
+    list = [...list].sort((a, b) => {
+      const ma = latest[a.id];
+      const mb = latest[b.id];
+      switch (sortMode) {
+        case "date-asc":
+          return getPostSortDate(a) - getPostSortDate(b);
+        case "date-desc":
+          return getPostSortDate(b) - getPostSortDate(a);
+        case "engagement-desc":
+          return (mb?.engagement_rate ?? 0) - (ma?.engagement_rate ?? 0);
+        case "impressions-desc":
+          return (mb?.impressions ?? 0) - (ma?.impressions ?? 0);
+        case "reactions-desc":
+          return (mb?.reactions ?? 0) - (ma?.reactions ?? 0);
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [sourcePosts, search, sortMode, statusFilters, platformFilters, mediaTypeFilters, latest]);
+
+  const activeFiltersCount = statusFilters.length + platformFilters.length + mediaTypeFilters.length;
+  const hasFilters = activeFiltersCount > 0 || search.trim().length > 0;
+
   const columns: KanbanColumnDef<BoardStatus>[] = useMemo(
     () =>
       BOARD_ORDER.map((status) => ({
@@ -85,6 +184,7 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
       })),
     [],
   );
+
 
   const cancelPending = () => {
     setPendingSchedule(null);
@@ -154,42 +254,119 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
     );
   }
 
+  if (filteredPosts.length === 0 && hasFilters) {
+    return (
+      <Card className="p-10 text-center space-y-3">
+        <div className="text-sm font-medium">No posts match your filters</div>
+        <div className="text-xs text-muted-foreground max-w-sm mx-auto">
+          Try clearing or loosening your search, status, platform, or media type filters.
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSearch("");
+            setStatusFilters([]);
+            setPlatformFilters([]);
+            setMediaTypeFilters([]);
+          }}
+          className="gap-2"
+        >
+          <X className="h-4 w-4" /> Clear filters
+        </Button>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end">
-        <div className="inline-flex items-center gap-0.5 rounded-md border bg-background p-0.5">
-          <button
-            type="button"
-            onClick={() => setDensity("compact")}
-            className={cn(
-              "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
-              density === "compact"
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-pressed={density === "compact"}
-          >
-            <Rows3 className="h-3.5 w-3.5" /> Compact
-          </button>
-          <button
-            type="button"
-            onClick={() => setDensity("comfortable")}
-            className={cn(
-              "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
-              density === "comfortable"
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-pressed={density === "comfortable"}
-          >
-            <Rows2 className="h-3.5 w-3.5" /> Comfortable
-          </button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[12rem] max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search posts…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 pl-8 text-xs"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        <FilterPopover
+          label="Status"
+          options={BOARD_ORDER.map((s) => ({ value: s, label: STATUS_META[s].label }))}
+          selected={statusFilters}
+          onChange={setStatusFilters}
+        />
+        <FilterPopover
+          label="Platform"
+          options={SOCIAL_PLATFORMS.map((p) => ({ value: p, label: PLATFORM_META[p].label }))}
+          selected={platformFilters}
+          onChange={setPlatformFilters}
+        />
+        <FilterPopover
+          label="Media"
+          options={MEDIA_TYPES.map((m) => ({ value: m, label: MEDIA_TYPE_META[m].label }))}
+          selected={mediaTypeFilters}
+          onChange={setMediaTypeFilters}
+        />
+
+        <div className="ml-auto flex items-center gap-2">
+          <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+            <SelectTrigger className="h-8 w-fit gap-2 text-xs px-2.5" aria-label="Sort posts">
+              <span className="text-muted-foreground">Sort:</span>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortMode[]).map((mode) => (
+                <SelectItem key={mode} value={mode} className="text-xs">
+                  {SORT_LABELS[mode]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="inline-flex items-center gap-0.5 rounded-md border bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => setDensity("compact")}
+              className={cn(
+                "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
+                density === "compact"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-pressed={density === "compact"}
+            >
+              <Rows3 className="h-3.5 w-3.5" /> Compact
+            </button>
+            <button
+              type="button"
+              onClick={() => setDensity("comfortable")}
+              className={cn(
+                "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
+                density === "comfortable"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-pressed={density === "comfortable"}
+            >
+              <Rows2 className="h-3.5 w-3.5" /> Comfortable
+            </button>
+          </div>
         </div>
       </div>
 
       <KanbanBoard
         columns={columns}
-        items={sourcePosts}
+        items={filteredPosts}
         getId={(p) => p.id}
         getStatus={(p) => toBoardStatus(p.status)}
         gridClassName="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
@@ -202,6 +379,7 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
             dragging={dragging}
           />
         )}
+
         renderColumnBody={renderColumnBody}
         renderDragOverlay={(post) => (
           <div className="rotate-1 opacity-95">
@@ -232,6 +410,88 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
         }}
       />
     </div>
+  );
+}
+
+function FilterPopover<T extends string>({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  selected: T[];
+  onChange: (values: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const active = selected.length;
+
+  const toggle = (value: T) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter((v) => v !== value));
+    } else {
+      onChange([...selected, value]);
+    }
+  };
+
+  const clear = () => onChange([]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "h-8 px-2.5 rounded-md border text-xs inline-flex items-center gap-1.5 transition-colors",
+            active
+              ? "bg-primary/10 border-primary/30 text-primary"
+              : "bg-background hover:bg-muted text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <SlidersHorizontal className="h-3 w-3" />
+          {label}
+          {active > 0 && (
+            <Badge variant="secondary" className="h-4 px-1 text-[10px] font-medium">
+              {active}
+            </Badge>
+          )}
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2" align="start">
+        <div className="space-y-1.5">
+          {options.map((opt) => {
+            const checked = selected.includes(opt.value);
+            return (
+              <label
+                key={opt.value}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs cursor-pointer hover:bg-muted transition-colors"
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={() => toggle(opt.value)}
+                  id={`${label}-${opt.value}`}
+                />
+                <span className={cn("flex-1", checked && "font-medium")}>{opt.label}</span>
+              </label>
+            );
+          })}
+          {active > 0 && (
+            <>
+              <div className="h-px bg-border/60 my-1" />
+              <button
+                type="button"
+                onClick={clear}
+                className="w-full px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm text-left transition-colors"
+              >
+                Clear {label.toLowerCase()}
+              </button>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
