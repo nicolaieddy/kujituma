@@ -282,11 +282,12 @@ export function SocialAnalytics() {
     return posts
       .filter((p) => platformFilter === "all" || (p.platforms ?? []).includes(platformFilter))
       .filter((p) => !p.publish_date || inRange(p.publish_date, new Date(from), new Date(to)))
+      .filter((p) => postMatchesMediaFilters(p as any))
       .map((p) => ({ post: p, metric: latest[p.id] }))
       .filter((x) => x.metric && (x.metric.engagement_rate ?? 0) > 0)
       .sort((a, b) => (b.metric!.engagement_rate ?? 0) - (a.metric!.engagement_rate ?? 0))
       .slice(0, 10);
-  }, [posts, latest, platformFilter, from, to]);
+  }, [posts, latest, platformFilter, from, to, mediaTypeFilter, mediaFocusFilter]);
 
   const rangeLabel = `${format(from, "d MMM")} – ${format(to, "d MMM yyyy")}`;
   const activeFollowerGoals = goals.filter((g) =>
