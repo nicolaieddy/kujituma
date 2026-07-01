@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info, Database } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, CalendarIcon, X, Info, Database, FilterX } from "lucide-react";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
@@ -570,11 +570,15 @@ export function SocialAnalytics() {
           label="Tracked-post coverage"
           value={kpis.coverage != null ? `${Math.round(kpis.coverage * 100)}%` : "—"}
           sub={
-            kpis.coverage != null
-              ? `${formatCompact(kpis.trackedImpr)} of ${formatCompact(kpis.totalImpr)} · ${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
-              : kpis.totalImpr === 0
-                ? "no account impressions in range"
-                : `${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
+            kpis.postsInRange === 0
+              ? mediaFiltersActive
+                ? "no posts match the selected media filters"
+                : "no posts published in this range"
+              : kpis.coverage != null
+                ? `${formatCompact(kpis.trackedImpr)} of ${formatCompact(kpis.totalImpr)} · ${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
+                : kpis.totalImpr === 0
+                  ? "no account impressions in range"
+                  : `${kpis.postsWithMetrics}/${kpis.postsInRange} posts with metrics`
           }
           source="social_post_metrics ÷ social_daily_account_metrics"
           sourceDetail="Sum of the latest cumulative impressions on posts published in range, divided by total account impressions in range. Uses MAX per post — never SUM across snapshots — so deltas aren't double-counted. Coverage over 100% means account totals lag behind per-post totals (import newer aggregate data)."
@@ -606,6 +610,24 @@ export function SocialAnalytics() {
         </div>
       </Card>
 
+      {mediaFiltersActive && kpis.postsInRange === 0 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-md border border-dashed bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <FilterX className="h-4 w-4" />
+            <span>
+              No posts match your selected media filters in this date range. Clear the filters to see all posts.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 shrink-0"
+            onClick={() => { setMediaTypeFilter(new Set()); setMediaFocusFilter(new Set()); }}
+          >
+            <X className="h-3 w-3" /> Clear media filters
+          </Button>
+        </div>
+      )}
 
       <Card className="p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -808,14 +830,22 @@ export function SocialAnalytics() {
           subtitle="Photo · Video · Carousel · Graphic"
           rows={mediaBreakdown.media_type}
           labelFor={(k) => MEDIA_TYPE_META[k as SocialMediaType]?.label ?? k}
-          emptyText="Tag posts with a media type in the editor to see this ranking."
+          emptyText={
+            mediaFiltersActive
+              ? "No posts match the selected media filters in this range. Try adjusting the filters."
+              : "Tag posts with a media type in the editor to see this ranking."
+          }
         />
         <MediaBreakdownCard
           title="Media focus"
           subtitle="Me · Flyer · Product · Team · Other"
           rows={mediaBreakdown.media_focus}
           labelFor={(k) => MEDIA_FOCUS_META[k as SocialMediaFocus]?.label ?? k}
-          emptyText="Tag posts with a media focus in the editor to see this ranking."
+          emptyText={
+            mediaFiltersActive
+              ? "No posts match the selected media filters in this range. Try adjusting the filters."
+              : "Tag posts with a media focus in the editor to see this ranking."
+          }
         />
       </div>
 
@@ -826,7 +856,24 @@ export function SocialAnalytics() {
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Top posts by engagement rate</h3>
         {topPosts.length === 0 ? (
-          <EmptyState text="No posts with metrics in this range." />
+          <FilterEmptyState
+            text={
+              kpis.postsInRange === 0
+                ? platformFilter !== "all" && !mediaFiltersActive
+                  ? `No posts on ${PLATFORM_META[platformFilter].label} in this range.`
+                  : mediaFiltersActive
+                    ? "No posts match the selected media filters in this date range."
+                    : "No posts with metrics in this range."
+                : "No matching posts have engagement metrics yet. Import post metrics to see top performers."
+            }
+            action={
+              mediaFiltersActive ? (
+                <ClearFiltersButton
+                  onClick={() => { setMediaTypeFilter(new Set()); setMediaFocusFilter(new Set()); }}
+                />
+              ) : undefined
+            }
+          />
         ) : (
           <div className="divide-y divide-border">
             {topPosts.map(({ post, metric }) => {
@@ -911,6 +958,26 @@ function EmptyState({ text }: { text: string }) {
     <div className="h-32 flex items-center justify-center text-sm text-muted-foreground text-center px-4">
       {text}
     </div>
+  );
+}
+
+function FilterEmptyState({ text, action }: { text: string; action?: React.ReactNode }) {
+  return (
+    <div className="h-32 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground text-center px-4">
+      <div className="flex items-center gap-2">
+        <FilterX className="h-4 w-4" />
+        <span>{text}</span>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function ClearFiltersButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button size="sm" variant="outline" className="gap-1.5" onClick={onClick}>
+      <X className="h-3 w-3" /> Clear media filters
+    </Button>
   );
 }
 
