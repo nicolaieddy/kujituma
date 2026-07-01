@@ -919,12 +919,28 @@ function PlatformChip({ active, onClick, children }: { active: boolean; onClick:
   );
 }
 
-function KpiCard({ label, value, sub, delta, source, sourceDetail }: { label: string; value: React.ReactNode; sub?: string; delta?: number; source?: string; sourceDetail?: string }) {
+function KpiCard({ label, value, sub, delta, source, sourceDetail, definition }: { label: string; value: React.ReactNode; sub?: string; delta?: number; source?: string; sourceDetail?: string; definition?: string }) {
   const TrendIcon = delta == null || delta === 0 ? Minus : delta > 0 ? TrendingUp : TrendingDown;
   const trendClass = delta == null || delta === 0 ? "text-muted-foreground" : delta > 0 ? "text-emerald-600" : "text-destructive";
   return (
     <Card className="p-4 space-y-1">
-      <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      {definition ? (
+        <TooltipProvider delayDuration={150}>
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground cursor-help flex items-center gap-1">
+                {label}
+                <Info className="h-3 w-3" />
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-[260px] text-xs">
+              {definition}
+            </TooltipContent>
+          </UITooltip>
+        </TooltipProvider>
+      ) : (
+        <div className="text-[11px] uppercase tracking-wide text-muted-foreground">{label}</div>
+      )}
       <div className="text-2xl font-semibold tabular-nums">{value}</div>
       {sub && (
         <div className={cn("text-[11px] flex items-center gap-1", trendClass)}>
