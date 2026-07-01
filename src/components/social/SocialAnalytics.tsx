@@ -217,7 +217,8 @@ export function SocialAnalytics() {
     const postsInRangeList = posts.filter((p) =>
       p.status === "published" && p.publish_date &&
       inRange(p.publish_date, new Date(from), new Date(to)) &&
-      (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)),
+      (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)) &&
+      postMatchesMediaFilters(p as any),
     );
     const postsInRange = postsInRangeList.length;
 
@@ -239,7 +240,7 @@ export function SocialAnalytics() {
     const coverage = totalImpr > 0 ? trackedImpr / totalImpr : null;
 
     return { totalFollowers, followersDelta, totalImpr, totalEng, engRate, postsInRange, trackedImpr, postsWithMetrics, coverage };
-  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, latest]);
+  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, latest, mediaTypeFilter, mediaFocusFilter]);
 
   // ───────── Per-platform breakdown rows ─────────
   const breakdown = useMemo(() => {
