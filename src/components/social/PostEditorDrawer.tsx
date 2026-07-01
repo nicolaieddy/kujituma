@@ -14,16 +14,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import {
   PLATFORM_META,
   STATUS_META,
   BOARD_ORDER,
   TRUST_CHECK_META,
+  MEDIA_TYPE_META,
+  MEDIA_FOCUS_META,
   type SocialPlatform,
   type SocialStatus,
   type SocialTrustCheck,
+  type SocialMediaType,
+  type SocialMediaFocus,
 } from "@/lib/social";
 import {
   useDeleteSocialPost,
@@ -48,12 +52,31 @@ interface FormState {
   pillars: string[];
   publish_date: string;
   live_url: string;
+  media_type: SocialMediaType | "";
+  media_focus: SocialMediaFocus | "";
   trust_check: SocialTrustCheck;
   hold: boolean;
   review_notes: string;
   retro: string;
   goal_id: string | null;
 }
+
+const emptyForm: FormState = {
+  title: "",
+  body: "",
+  status: "idea",
+  platforms: [],
+  pillars: [],
+  publish_date: "",
+  live_url: "",
+  media_type: "",
+  media_focus: "",
+  trust_check: "not_checked",
+  hold: false,
+  review_notes: "",
+  retro: "",
+  goal_id: null,
+};
 
 const emptyForm: FormState = {
   title: "",
