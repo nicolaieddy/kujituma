@@ -2,11 +2,45 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Rows3, Rows2, Check, X, CalendarClock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Plus,
+  Rows3,
+  Rows2,
+  Check,
+  X,
+  CalendarClock,
+  Search,
+  SlidersHorizontal,
+  ChevronDown,
+} from "lucide-react";
 import { useSocialPosts, useUpsertSocialPost, type SocialPost } from "@/hooks/useSocialPosts";
 import { useLatestMetricsByPost } from "@/hooks/useSocialMetrics";
 import { PostCard } from "./PostCard";
-import { BOARD_ORDER, STATUS_META, toBoardStatus, type BoardStatus } from "@/lib/social";
+import {
+  BOARD_ORDER,
+  STATUS_META,
+  toBoardStatus,
+  type BoardStatus,
+  SOCIAL_PLATFORMS,
+  PLATFORM_META,
+  type SocialPlatform,
+  type SocialMediaType,
+  MEDIA_TYPE_META,
+} from "@/lib/social";
 import {
   KanbanBoard,
   type KanbanColumnDef,
@@ -14,6 +48,7 @@ import {
 } from "@/components/kanban/KanbanBoard";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
 
 interface Props {
   onOpenPost: (id: string) => void;
