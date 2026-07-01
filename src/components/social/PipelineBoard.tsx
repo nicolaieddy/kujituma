@@ -76,6 +76,24 @@ function defaultScheduleValue(post: SocialPost): string {
   return toLocalInputValue(t);
 }
 
+type SortMode = "date-desc" | "date-asc" | "engagement-desc" | "impressions-desc" | "reactions-desc";
+
+const SORT_LABELS: Record<SortMode, string> = {
+  "date-desc": "Newest first",
+  "date-asc": "Oldest first",
+  "engagement-desc": "Highest engagement rate",
+  "impressions-desc": "Most impressions",
+  "reactions-desc": "Most reactions",
+};
+
+const MEDIA_TYPES: SocialMediaType[] = ["none", "photo", "video", "carousel", "graphic"];
+
+function getPostSortDate(post: SocialPost): number {
+  const t = post.publish_at || (post.publish_date ? `${post.publish_date}T09:00` : post.created_at);
+  return new Date(t).getTime() || 0;
+}
+
+
 export function PipelineBoard({ onOpenPost, onCreate }: Props) {
   const { data: posts = [], isLoading } = useSocialPosts();
   const { data: latest = {} } = useLatestMetricsByPost();
