@@ -494,7 +494,32 @@ export function SocialAnalytics() {
         />
       </div>
 
-      {/* ───── Followers stacked area ───── */}
+      {/* ───── Calculation details ───── */}
+      <Card className="p-3 border-dashed bg-muted/20">
+        <div className="flex items-start gap-2">
+          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0 text-muted-foreground" />
+          <div className="space-y-1 text-xs text-muted-foreground">
+            <p className="font-medium text-foreground">How coverage is calculated</p>
+            <p>
+              <span className="font-medium">Coverage =</span>{" "}
+              <span className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">Σ latest cumulative impressions per tracked post in range</span>
+              {" ÷ "}
+              <span className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">Σ daily account impressions in range</span>
+            </p>
+            <p>
+              <span className="font-medium">Numerator:</span> For each published post in the date range, we take the latest cumulative snapshot from <span className="font-mono text-[11px]">social_post_metrics</span> (MAX per post). We never sum across multiple snapshots for the same post, so deltas are not double-counted.
+            </p>
+            <p>
+              <span className="font-medium">Denominator:</span> Sum of account-level daily impressions from <span className="font-mono text-[11px]">social_daily_account_metrics</span> for the selected range and platform(s).
+            </p>
+            <p>
+              <span className="font-medium">Why coverage can exceed 100%:</span> Per-post impressions are cumulative and live longer than the selected date range. If a post published in the range keeps accumulating impressions after the period ends, the numerator can outpace the denominator. It also happens when account-level analytics haven't been imported recently and are lagging behind the per-post totals.
+            </p>
+          </div>
+        </div>
+      </Card>
+
+
       <Card className="p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
