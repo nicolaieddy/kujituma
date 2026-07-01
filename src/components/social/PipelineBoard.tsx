@@ -414,6 +414,88 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
   );
 }
 
+function FilterPopover<T extends string>({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: { value: T; label: string }[];
+  selected: T[];
+  onChange: (values: T[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const active = selected.length;
+
+  const toggle = (value: T) => {
+    if (selected.includes(value)) {
+      onChange(selected.filter((v) => v !== value));
+    } else {
+      onChange([...selected, value]);
+    }
+  };
+
+  const clear = () => onChange([]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "h-8 px-2.5 rounded-md border text-xs inline-flex items-center gap-1.5 transition-colors",
+            active
+              ? "bg-primary/10 border-primary/30 text-primary"
+              : "bg-background hover:bg-muted text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <SlidersHorizontal className="h-3 w-3" />
+          {label}
+          {active > 0 && (
+            <Badge variant="secondary" className="h-4 px-1 text-[10px] font-medium">
+              {active}
+            </Badge>
+          )}
+          <ChevronDown className="h-3 w-3 text-muted-foreground" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-48 p-2" align="start">
+        <div className="space-y-1.5">
+          {options.map((opt) => {
+            const checked = selected.includes(opt.value);
+            return (
+              <label
+                key={opt.value}
+                className="flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs cursor-pointer hover:bg-muted transition-colors"
+              >
+                <Checkbox
+                  checked={checked}
+                  onCheckedChange={() => toggle(opt.value)}
+                  id={`${label}-${opt.value}`}
+                />
+                <span className={cn("flex-1", checked && "font-medium")}>{opt.label}</span>
+              </label>
+            );
+          })}
+          {active > 0 && (
+            <>
+              <div className="h-px bg-border/60 my-1" />
+              <button
+                type="button"
+                onClick={clear}
+                className="w-full px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm text-left transition-colors"
+              >
+                Clear {label.toLowerCase()}
+              </button>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function validateScheduleValue(value: string): { valid: boolean; error: string | null } {
   if (!value) return { valid: false, error: "Pick a date and time" };
   const d = new Date(value);
