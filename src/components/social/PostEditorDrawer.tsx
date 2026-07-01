@@ -164,6 +164,8 @@ export function PostEditorDrawer({ open, postId, onClose }: Props) {
       pillars: form.pillars,
       publish_date: form.publish_date || null,
       live_url: form.live_url.trim() || null,
+      media_type: form.media_type || null,
+      media_focus: form.media_focus || null,
       trust_check: form.trust_check,
       hold: form.hold,
       review_notes: form.review_notes || null,
@@ -305,13 +307,65 @@ export function PostEditorDrawer({ open, postId, onClose }: Props) {
 
             <div className="space-y-1.5">
               <Label>Live URL <span className="text-muted-foreground font-normal">(after publishing)</span></Label>
-              <Input
-                type="url"
-                value={form.live_url}
-                onChange={(e) => setForm({ ...form, live_url: e.target.value })}
-                placeholder="https://…"
-                maxLength={500}
-              />
+              <div className="flex gap-2">
+                <Input
+                  type="url"
+                  value={form.live_url}
+                  onChange={(e) => setForm({ ...form, live_url: e.target.value })}
+                  placeholder="https://…"
+                  maxLength={500}
+                />
+                {form.live_url.trim() && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    asChild
+                    title="Open post in new tab"
+                  >
+                    <a href={form.live_url.trim()} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Media type</Label>
+                <Select
+                  value={form.media_type || "none"}
+                  onValueChange={(v) =>
+                    setForm({ ...form, media_type: v === "none" ? "" : (v as SocialMediaType) })
+                  }
+                >
+                  <SelectTrigger><SelectValue placeholder="No media" /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.keys(MEDIA_TYPE_META) as SocialMediaType[]).map((t) => (
+                      <SelectItem key={t} value={t}>{MEDIA_TYPE_META[t].label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Media focus</Label>
+                <Select
+                  value={form.media_focus || "__none"}
+                  onValueChange={(v) =>
+                    setForm({ ...form, media_focus: v === "__none" ? "" : (v as SocialMediaFocus) })
+                  }
+                  disabled={!form.media_type || form.media_type === "none"}
+                >
+                  <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none">—</SelectItem>
+                    {(Object.keys(MEDIA_FOCUS_META) as SocialMediaFocus[]).map((t) => (
+                      <SelectItem key={t} value={t}>{MEDIA_FOCUS_META[t].label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
