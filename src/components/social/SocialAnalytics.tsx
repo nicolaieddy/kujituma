@@ -914,6 +914,26 @@ function EmptyState({ text }: { text: string }) {
   );
 }
 
+function FilterEmptyState({ text, action }: { text: string; action?: React.ReactNode }) {
+  return (
+    <div className="h-32 flex flex-col items-center justify-center gap-3 text-sm text-muted-foreground text-center px-4">
+      <div className="flex items-center gap-2">
+        <FilterX className="h-4 w-4" />
+        <span>{text}</span>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function ClearFiltersButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button size="sm" variant="outline" className="gap-1.5" onClick={onClick}>
+      <X className="h-3 w-3" /> Clear media filters
+    </Button>
+  );
+}
+
 type MediaBreakdownRow = {
   key: string;
   posts: number;
