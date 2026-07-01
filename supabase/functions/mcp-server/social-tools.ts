@@ -288,7 +288,7 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
       const { data: latest } = await supabase
         .from("social_post_latest_metrics").select("*").eq("user_id", userId);
       const { data: posts } = await supabase
-        .from("social_posts").select("id,title,platforms,pillars,publish_date,status").eq("user_id", userId);
+        .from("social_posts").select("id,title,platforms,pillars,publish_date,status,media_type,media_focus,live_url").eq("user_id", userId);
       const postMap = new Map((posts ?? []).map((p: any) => [p.id, p]));
       let rows = (latest ?? []).map((m: any) => ({ ...m, post: postMap.get(m.post_id) }))
         .filter((r) => r.post);
@@ -296,18 +296,34 @@ export function registerSocialTools(mcp: McpServer, supabase: Supabase, userId: 
       if (args.from_date) rows = rows.filter((r) => r.metrics_as_of >= args.from_date);
       if (args.to_date) rows = rows.filter((r) => r.metrics_as_of <= args.to_date);
       const top = [...rows].sort((a, b) => (b.engagement_rate ?? 0) - (a.engagement_rate ?? 0)).slice(0, 20);
-      const byPillar: Record<string, { count: number; total_er: number }> = {};
-      for (const r of rows) {
-        for (const p of (r.post?.pillars ?? [])) {
-          byPillar[p] ??= { count: 0, total_er: 0 };
-          byPillar[p].count += 1;
-          byPillar[p].total_er += Number(r.engagement_rate ?? 0);
+      const rollup = (key: "pillars" | "media_type" | "media_focus") => {
+        const acc: Record<string, { count: number; total_er: number; total_impressions: number }> = {};
+        for (const r of rows) {
+          const vals = key === "pillars"
+            ? (r.post?.pillars ?? [])
+            : (r.post?.[key] ? [r.post[key]] : []);
+          for (const v of vals) {
+            acc[v] ??= { count: 0, total_er: 0, total_impressions: 0 };
+            acc[v].count += 1;
+            acc[v].total_er += Number(r.engagement_rate ?? 0);
+            acc[v].total_impressions += Number(r.impressions ?? 0);
+          }
         }
-      }
-      const pillar_avg = Object.entries(byPillar)
-        .map(([pillar, v]) => ({ pillar, avg_engagement_rate: v.total_er / v.count, posts: v.count }))
-        .sort((a, b) => b.avg_engagement_rate - a.avg_engagement_rate);
-      return { content: [{ type: "text" as const, text: JSON.stringify({ top_posts: top, pillar_avg }, null, 2) }] };
+        return Object.entries(acc)
+          .map(([k, v]) => ({
+            [key === "pillars" ? "pillar" : key]: k,
+            posts: v.count,
+            avg_engagement_rate: v.total_er / v.count,
+            avg_impressions: v.total_impressions / v.count,
+          }))
+          .sort((a: any, b: any) => b.avg_engagement_rate - a.avg_engagement_rate);
+      };
+      return { content: [{ type: "text" as const, text: JSON.stringify({
+        top_posts: top,
+        pillar_avg: rollup("pillars"),
+        media_type_avg: rollup("media_type"),
+        media_focus_avg: rollup("media_focus"),
+      }, null, 2) }] };
     },
   });
 
