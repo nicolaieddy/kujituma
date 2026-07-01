@@ -617,6 +617,24 @@ export function SocialAnalytics() {
         )}
       </Card>
 
+      {/* ───── Media type / focus breakdown ───── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <MediaBreakdownCard
+          title="Media type"
+          subtitle="Photo · Video · Carousel · Graphic"
+          rows={mediaBreakdown.media_type}
+          labelFor={(k) => MEDIA_TYPE_META[k as SocialMediaType]?.label ?? k}
+          emptyText="Tag posts with a media type in the editor to see this ranking."
+        />
+        <MediaBreakdownCard
+          title="Media focus"
+          subtitle="Me · Flyer · Product · Team · Other"
+          rows={mediaBreakdown.media_focus}
+          labelFor={(k) => MEDIA_FOCUS_META[k as SocialMediaFocus]?.label ?? k}
+          emptyText="Tag posts with a media focus in the editor to see this ranking."
+        />
+      </div>
+
       {/* ───── Goals progress ───── */}
       <AnalyticsGoalsSection />
 
