@@ -254,42 +254,120 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
     );
   }
 
+  if (filteredPosts.length === 0 && hasFilters) {
+    return (
+      <Card className="p-10 text-center space-y-3">
+        <div className="text-sm font-medium">No posts match your filters</div>
+        <div className="text-xs text-muted-foreground max-w-sm mx-auto">
+          Try clearing or loosening your search, status, platform, or media type filters.
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => {
+            setSearch("");
+            setStatusFilters([]);
+            setPlatformFilters([]);
+            setMediaTypeFilters([]);
+          }}
+          className="gap-2"
+        >
+          <X className="h-4 w-4" /> Clear filters
+        </Button>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end">
-        <div className="inline-flex items-center gap-0.5 rounded-md border bg-background p-0.5">
-          <button
-            type="button"
-            onClick={() => setDensity("compact")}
-            className={cn(
-              "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
-              density === "compact"
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-pressed={density === "compact"}
-          >
-            <Rows3 className="h-3.5 w-3.5" /> Compact
-          </button>
-          <button
-            type="button"
-            onClick={() => setDensity("comfortable")}
-            className={cn(
-              "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
-              density === "comfortable"
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-            aria-pressed={density === "comfortable"}
-          >
-            <Rows2 className="h-3.5 w-3.5" /> Comfortable
-          </button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[12rem] max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search posts…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 pl-8 text-xs"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+
+        <FilterPopover
+          label="Status"
+          options={BOARD_ORDER.map((s) => ({ value: s, label: STATUS_META[s].label }))}
+          selected={statusFilters}
+          onChange={setStatusFilters}
+        />
+        <FilterPopover
+          label="Platform"
+          options={SOCIAL_PLATFORMS.map((p) => ({ value: p, label: PLATFORM_META[p].label }))}
+          selected={platformFilters}
+          onChange={setPlatformFilters}
+        />
+        <FilterPopover
+          label="Media"
+          options={MEDIA_TYPES.map((m) => ({ value: m, label: MEDIA_TYPE_META[m].label }))}
+          selected={mediaTypeFilters}
+          onChange={setMediaTypeFilters}
+        />
+
+        <div className="ml-auto flex items-center gap-2">
+          <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
+            <SelectTrigger className="h-8 w-fit gap-2 text-xs px-2.5" aria-label="Sort posts">
+              <span className="text-muted-foreground">Sort:</span>
+              <SelectValue />
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </SelectTrigger>
+            <SelectContent>
+              {(Object.keys(SORT_LABELS) as SortMode[]).map((mode) => (
+                <SelectItem key={mode} value={mode} className="text-xs">
+                  {SORT_LABELS[mode]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="inline-flex items-center gap-0.5 rounded-md border bg-background p-0.5">
+            <button
+              type="button"
+              onClick={() => setDensity("compact")}
+              className={cn(
+                "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
+                density === "compact"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-pressed={density === "compact"}
+            >
+              <Rows3 className="h-3.5 w-3.5" /> Compact
+            </button>
+            <button
+              type="button"
+              onClick={() => setDensity("comfortable")}
+              className={cn(
+                "h-7 px-2 rounded text-xs inline-flex items-center gap-1.5 transition-colors",
+                density === "comfortable"
+                  ? "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              aria-pressed={density === "comfortable"}
+            >
+              <Rows2 className="h-3.5 w-3.5" /> Comfortable
+            </button>
+          </div>
         </div>
       </div>
 
       <KanbanBoard
         columns={columns}
-        items={sourcePosts}
+        items={filteredPosts}
         getId={(p) => p.id}
         getStatus={(p) => toBoardStatus(p.status)}
         gridClassName="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
@@ -302,6 +380,7 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
             dragging={dragging}
           />
         )}
+
         renderColumnBody={renderColumnBody}
         renderDragOverlay={(post) => (
           <div className="rotate-1 opacity-95">
