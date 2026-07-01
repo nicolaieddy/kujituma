@@ -323,7 +323,6 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
             <SelectTrigger className="h-8 w-fit gap-2 text-xs px-2.5" aria-label="Sort posts">
               <span className="text-muted-foreground">Sort:</span>
               <SelectValue />
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
             </SelectTrigger>
             <SelectContent>
               {(Object.keys(SORT_LABELS) as SortMode[]).map((mode) => (
