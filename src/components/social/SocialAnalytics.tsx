@@ -86,6 +86,23 @@ export function SocialAnalytics() {
   const [custom, setCustom] = useState<DateRange | undefined>();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [platformFilter, setPlatformFilter] = useState<PlatformFilter>("all");
+  const [mediaTypeFilter, setMediaTypeFilter] = useState<Set<SocialMediaType>>(new Set());
+  const [mediaFocusFilter, setMediaFocusFilter] = useState<Set<SocialMediaFocus>>(new Set());
+
+  const toggleInSet = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
+    const next = new Set(set);
+    if (next.has(val)) next.delete(val); else next.add(val);
+    setter(next);
+  };
+
+  // A post matches the media filters if either filter is empty (=all)
+  // or the post's tag is included in the selected set.
+  const postMatchesMediaFilters = (p: { media_type?: string | null; media_focus?: string | null }) => {
+    if (mediaTypeFilter.size > 0 && !mediaTypeFilter.has((p.media_type ?? "") as SocialMediaType)) return false;
+    if (mediaFocusFilter.size > 0 && !mediaFocusFilter.has((p.media_focus ?? "") as SocialMediaFocus)) return false;
+    return true;
+  };
+  const mediaFiltersActive = mediaTypeFilter.size > 0 || mediaFocusFilter.size > 0;
 
   const enabled = settings.filter((s) => s.enabled).map((s) => s.platform);
   const enabledPlatforms: SocialPlatform[] = useMemo(() => {
@@ -200,7 +217,8 @@ export function SocialAnalytics() {
     const postsInRangeList = posts.filter((p) =>
       p.status === "published" && p.publish_date &&
       inRange(p.publish_date, new Date(from), new Date(to)) &&
-      (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)),
+      (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)) &&
+      postMatchesMediaFilters(p as any),
     );
     const postsInRange = postsInRangeList.length;
 
@@ -222,7 +240,7 @@ export function SocialAnalytics() {
     const coverage = totalImpr > 0 ? trackedImpr / totalImpr : null;
 
     return { totalFollowers, followersDelta, totalImpr, totalEng, engRate, postsInRange, trackedImpr, postsWithMetrics, coverage };
-  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, latest]);
+  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, latest, mediaTypeFilter, mediaFocusFilter]);
 
   // ───────── Per-platform breakdown rows ─────────
   const breakdown = useMemo(() => {
@@ -264,11 +282,12 @@ export function SocialAnalytics() {
     return posts
       .filter((p) => platformFilter === "all" || (p.platforms ?? []).includes(platformFilter))
       .filter((p) => !p.publish_date || inRange(p.publish_date, new Date(from), new Date(to)))
+      .filter((p) => postMatchesMediaFilters(p as any))
       .map((p) => ({ post: p, metric: latest[p.id] }))
       .filter((x) => x.metric && (x.metric.engagement_rate ?? 0) > 0)
       .sort((a, b) => (b.metric!.engagement_rate ?? 0) - (a.metric!.engagement_rate ?? 0))
       .slice(0, 10);
-  }, [posts, latest, platformFilter, from, to]);
+  }, [posts, latest, platformFilter, from, to, mediaTypeFilter, mediaFocusFilter]);
 
   const rangeLabel = `${format(from, "d MMM")} – ${format(to, "d MMM yyyy")}`;
   const activeFollowerGoals = goals.filter((g) =>
@@ -374,7 +393,60 @@ export function SocialAnalytics() {
             );
           })}
         </div>
+
+        {/* Media type / focus filters — apply to post-level KPIs, Top posts. */}
+        <div className="basis-full flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 border-t">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">Media type</span>
+            <PlatformChip active={mediaTypeFilter.size === 0} onClick={() => setMediaTypeFilter(new Set())}>
+              All
+            </PlatformChip>
+            {(Object.keys(MEDIA_TYPE_META) as SocialMediaType[]).map((k) => (
+              <PlatformChip
+                key={k}
+                active={mediaTypeFilter.has(k)}
+                onClick={() => toggleInSet(mediaTypeFilter, k, setMediaTypeFilter)}
+              >
+                {MEDIA_TYPE_META[k].label}
+              </PlatformChip>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground mr-1">Media focus</span>
+            <PlatformChip active={mediaFocusFilter.size === 0} onClick={() => setMediaFocusFilter(new Set())}>
+              All
+            </PlatformChip>
+            {(Object.keys(MEDIA_FOCUS_META) as SocialMediaFocus[]).map((k) => (
+              <PlatformChip
+                key={k}
+                active={mediaFocusFilter.has(k)}
+                onClick={() => toggleInSet(mediaFocusFilter, k, setMediaFocusFilter)}
+              >
+                {MEDIA_FOCUS_META[k].label}
+              </PlatformChip>
+            ))}
+          </div>
+          {mediaFiltersActive && (
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs gap-1 ml-auto"
+              onClick={() => { setMediaTypeFilter(new Set()); setMediaFocusFilter(new Set()); }}
+            >
+              <X className="h-3 w-3" /> Clear media filters
+            </Button>
+          )}
+        </div>
       </Card>
+
+      {mediaFiltersActive && (
+        <div className="flex items-start gap-2 rounded-md border border-dashed bg-muted/30 px-3 py-2 text-[11px] text-muted-foreground">
+          <Info className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+          <div>
+            Media filters narrow <strong className="text-foreground">Posts published</strong>, <strong className="text-foreground">Tracked-post coverage</strong>, and <strong className="text-foreground">Top posts</strong>. Account-level charts (followers, total impressions, engagement rate) can't be filtered because aggregate analytics aren't tagged per post.
+          </div>
+        </div>
+      )}
 
       {/* ───── KPI strip ───── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
