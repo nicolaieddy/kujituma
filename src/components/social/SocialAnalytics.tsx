@@ -560,6 +560,7 @@ export function SocialAnalytics() {
           sub={`${kpis.totalEng.toLocaleString()} engagements`}
           source="social_daily_account_metrics"
           sourceDetail="Engagements ÷ impressions over the selected range. Both come from imported aggregate analytics."
+          definition="Engagement rate = total engagements ÷ total impressions. Measures how much audience interaction your impressions generated."
         />
         <KpiCard
           label="Posts published"
