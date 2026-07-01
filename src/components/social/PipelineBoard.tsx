@@ -136,6 +136,44 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
   }
   const sourcePosts = frozenPostsRef.current ?? posts;
 
+  const filteredPosts = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    let list = sourcePosts.filter((p) => {
+      if (query) {
+        const haystack = `${p.title ?? ""} ${p.body ?? ""}`.toLowerCase();
+        if (!haystack.includes(query)) return false;
+      }
+      if (statusFilters.length > 0 && !statusFilters.includes(toBoardStatus(p.status))) return false;
+      if (platformFilters.length > 0 && !p.platforms.some((pl) => platformFilters.includes(pl as SocialPlatform))) return false;
+      if (mediaTypeFilters.length > 0 && !mediaTypeFilters.includes(p.media_type ?? "none")) return false;
+      return true;
+    });
+
+    list = [...list].sort((a, b) => {
+      const ma = latest[a.id];
+      const mb = latest[b.id];
+      switch (sortMode) {
+        case "date-asc":
+          return getPostSortDate(a) - getPostSortDate(b);
+        case "date-desc":
+          return getPostSortDate(b) - getPostSortDate(a);
+        case "engagement-desc":
+          return (mb?.engagement_rate ?? 0) - (ma?.engagement_rate ?? 0);
+        case "impressions-desc":
+          return (mb?.impressions ?? 0) - (ma?.impressions ?? 0);
+        case "reactions-desc":
+          return (mb?.reactions ?? 0) - (ma?.reactions ?? 0);
+        default:
+          return 0;
+      }
+    });
+
+    return list;
+  }, [sourcePosts, search, sortMode, statusFilters, platformFilters, mediaTypeFilters, latest]);
+
+  const activeFiltersCount = statusFilters.length + platformFilters.length + mediaTypeFilters.length;
+  const hasFilters = activeFiltersCount > 0 || search.trim().length > 0;
+
   const columns: KanbanColumnDef<BoardStatus>[] = useMemo(
     () =>
       BOARD_ORDER.map((status) => ({
@@ -146,6 +184,7 @@ export function PipelineBoard({ onOpenPost, onCreate }: Props) {
       })),
     [],
   );
+
 
   const cancelPending = () => {
     setPendingSchedule(null);
