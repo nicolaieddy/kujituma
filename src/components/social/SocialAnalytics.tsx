@@ -610,6 +610,24 @@ export function SocialAnalytics() {
         </div>
       </Card>
 
+      {mediaFiltersActive && kpis.postsInRange === 0 && (
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 rounded-md border border-dashed bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <FilterX className="h-4 w-4" />
+            <span>
+              No posts match your selected media filters in this date range. Clear the filters to see all posts.
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-1.5 shrink-0"
+            onClick={() => { setMediaTypeFilter(new Set()); setMediaFocusFilter(new Set()); }}
+          >
+            <X className="h-3 w-3" /> Clear media filters
+          </Button>
+        </div>
+      )}
 
       <Card className="p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
