@@ -568,6 +568,7 @@ export function SocialAnalytics() {
           sub="in range"
           source="social_posts"
           sourceDetail="Count of posts with status = published and publish_date in the selected range."
+          definition="Count of posts with status = published and a publish_date within the selected range and filters."
         />
         <KpiCard
           label="Tracked-post coverage"
