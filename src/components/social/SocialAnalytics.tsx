@@ -544,6 +544,7 @@ export function SocialAnalytics() {
           sub={kpis.followersDelta !== 0 ? `${kpis.followersDelta > 0 ? "+" : ""}${kpis.followersDelta.toLocaleString()} in range` : "no change in range"}
           source="social_follower_growth"
           sourceDetail="Latest total in range minus value at range start. Sourced from logged counts and aggregate-export anchors."
+          definition="Latest total followers across selected platforms. Formula: last follower count in range minus first follower count in range."
         />
         <KpiCard
           label="Total impressions"
