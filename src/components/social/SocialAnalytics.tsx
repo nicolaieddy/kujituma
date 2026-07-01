@@ -275,6 +275,40 @@ export function SocialAnalytics() {
     g.status === "active" && g.metric === "followers" && visiblePlatforms.includes(g.platform),
   );
 
+  // ───────── Media type / focus breakdown ─────────
+  // For each media_type / media_focus value we roll up the LATEST cumulative
+  // snapshot per post — never sum across snapshots, so deltas aren't double-counted.
+  const mediaBreakdown = useMemo(() => {
+    const build = <K extends "media_type" | "media_focus">(key: K) => {
+      const acc = new Map<string, { posts: number; impressions: number; reach: number; er_sum: number; er_count: number }>();
+      for (const p of posts) {
+        if (p.status !== "published" || !p.publish_date) continue;
+        if (!inRange(p.publish_date, new Date(from), new Date(to))) continue;
+        if (platformFilter !== "all" && !(p.platforms ?? []).includes(platformFilter)) continue;
+        const raw = (p as any)[key];
+        if (!raw) continue;
+        const m = latest[p.id];
+        if (!m) continue;
+        if (platformFilter !== "all" && m.platform !== platformFilter) continue;
+        const bucket = acc.get(raw) ?? { posts: 0, impressions: 0, reach: 0, er_sum: 0, er_count: 0 };
+        bucket.posts += 1;
+        bucket.impressions += m.impressions ?? 0;
+        bucket.reach += m.reach ?? 0;
+        if (m.engagement_rate != null) { bucket.er_sum += m.engagement_rate; bucket.er_count += 1; }
+        acc.set(raw, bucket);
+      }
+      return Array.from(acc.entries()).map(([k, v]) => ({
+        key: k,
+        posts: v.posts,
+        impressions: v.impressions,
+        reach: v.reach,
+        avg_engagement_rate: v.er_count > 0 ? v.er_sum / v.er_count : null,
+      }));
+    };
+    return { media_type: build("media_type"), media_focus: build("media_focus") };
+  }, [posts, latest, from, to, platformFilter]);
+
+
   return (
     <div className="space-y-6">
       {/* ───── Period + Platform filter ───── */}
