@@ -73,6 +73,47 @@ function inRange(iso: string, from: Date, to: Date) {
   return t >= from.setHours(0,0,0,0) && t <= to.setHours(23,59,59,999);
 }
 
+// ───────── Coverage cache ─────────
+// Module-scoped LRU cache so toggling back to a previously-viewed
+// (platform × date range × media filter) combo returns instantly
+// without recomputing over the full posts/metrics arrays.
+type CoverageStats = {
+  totalImpr: number;
+  trackedImpr: number;
+  postsWithMetrics: number;
+  coverage: number | null;
+};
+const COVERAGE_CACHE_MAX = 64;
+const coverageCache = new Map<string, CoverageStats>();
+function cacheGet(key: string): CoverageStats | undefined {
+  const v = coverageCache.get(key);
+  if (v !== undefined) {
+    // refresh LRU order
+    coverageCache.delete(key);
+    coverageCache.set(key, v);
+  }
+  return v;
+}
+function cacheSet(key: string, val: CoverageStats) {
+  coverageCache.set(key, val);
+  if (coverageCache.size > COVERAGE_CACHE_MAX) {
+    const oldest = coverageCache.keys().next().value as string | undefined;
+    if (oldest !== undefined) coverageCache.delete(oldest);
+  }
+}
+// Monotonic id per object identity — lets us key on data-ref without
+// serializing large arrays/objects.
+const refIds = new WeakMap<object, number>();
+let refCounter = 0;
+function refId(obj: object | null | undefined): number {
+  if (!obj) return 0;
+  const existing = refIds.get(obj);
+  if (existing !== undefined) return existing;
+  const id = ++refCounter;
+  refIds.set(obj, id);
+  return id;
+}
+
 export function SocialAnalytics() {
   const { data: settings = [] } = useSocialPlatformSettings();
   const { data: growth = [] } = useFollowerGrowth();
@@ -198,49 +239,95 @@ export function SocialAnalytics() {
   }, [dailyMetrics, visiblePlatforms, from, to]);
 
   // ───────── KPIs ─────────
+  // Coverage is expensive on large post/metric sets: iterate posts,
+  // read cumulative metrics, filter by media tags. Memoize the
+  // (platform × date range × media filter × data-ref) tuple in a
+  // module-scoped LRU so re-selecting a prior view is O(1).
+  const fromKey = from.toISOString().slice(0, 10);
+  const toKey = to.toISOString().slice(0, 10);
+  const mediaTypeKey = mediaTypeFilter.size
+    ? Array.from(mediaTypeFilter).sort().join(",")
+    : "*";
+  const mediaFocusKey = mediaFocusFilter.size
+    ? Array.from(mediaFocusFilter).sort().join(",")
+    : "*";
+  const coverageStats = useMemo<CoverageStats>(() => {
+    const key = [
+      platformFilter,
+      fromKey,
+      toKey,
+      mediaTypeKey,
+      mediaFocusKey,
+      refId(posts),
+      refId(latest),
+      refId(dailyMetrics),
+    ].join("|");
+    const hit = cacheGet(key);
+    if (hit) return hit;
+
+    let totalImpr = 0;
+    for (const m of dailyMetrics) {
+      if (platformFilter !== "all" && m.platform !== platformFilter) continue;
+      if (!inRange(m.date, new Date(from), new Date(to))) continue;
+      totalImpr += m.impressions ?? 0;
+    }
+
+    let trackedImpr = 0;
+    let postsWithMetrics = 0;
+    for (const p of posts) {
+      if (p.status !== "published" || !p.publish_date) continue;
+      if (!inRange(p.publish_date, new Date(from), new Date(to))) continue;
+      if (platformFilter !== "all" && !(p.platforms ?? []).includes(platformFilter)) continue;
+      if (!postMatchesMediaFilters(p as any)) continue;
+      const m = latest[p.id];
+      if (!m || !(m.impressions ?? 0)) continue;
+      if (platformFilter !== "all" && m.platform !== platformFilter) continue;
+      trackedImpr += m.impressions ?? 0;
+      postsWithMetrics += 1;
+    }
+    const coverage = totalImpr > 0 ? trackedImpr / totalImpr : null;
+    const stats: CoverageStats = { totalImpr, trackedImpr, postsWithMetrics, coverage };
+    cacheSet(key, stats);
+    return stats;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [platformFilter, fromKey, toKey, mediaTypeKey, mediaFocusKey, posts, latest, dailyMetrics]);
+
   const kpis = useMemo(() => {
     const last = followerSeries[followerSeries.length - 1];
     const first = followerSeries[0];
     const totalFollowers = last?.__total ?? 0;
     const followersDelta = (last?.__total ?? 0) - (first?.__total ?? 0);
 
-    let totalImpr = 0;
     let totalEng = 0;
     for (const m of dailyMetrics) {
       if (!visiblePlatforms.includes(m.platform)) continue;
       if (!inRange(m.date, new Date(from), new Date(to))) continue;
-      totalImpr += m.impressions ?? 0;
       totalEng += m.engagements ?? 0;
     }
+    const totalImpr = coverageStats.totalImpr;
     const engRate = totalImpr > 0 ? totalEng / totalImpr : null;
 
-    const postsInRangeList = posts.filter((p) =>
+    const postsInRange = posts.filter((p) =>
       p.status === "published" && p.publish_date &&
       inRange(p.publish_date, new Date(from), new Date(to)) &&
       (platformFilter === "all" || (p.platforms ?? []).includes(platformFilter)) &&
       postMatchesMediaFilters(p as any),
-    );
-    const postsInRange = postsInRangeList.length;
+    ).length;
 
-    // Coverage: what % of account impressions in the range is explained
-    // by the tracked posts published in that range. Uses the latest
-    // cumulative snapshot per tracked post (MAX per post — never SUM
-    // across snapshots — so we don't double-count deltas).
-    let trackedImpr = 0;
-    let postsWithMetrics = 0;
-    for (const p of postsInRangeList) {
-      const m = latest[p.id];
-      if (m && (m.impressions ?? 0) > 0) {
-        if (platformFilter === "all" || m.platform === platformFilter) {
-          trackedImpr += m.impressions ?? 0;
-          postsWithMetrics += 1;
-        }
-      }
-    }
-    const coverage = totalImpr > 0 ? trackedImpr / totalImpr : null;
+    return {
+      totalFollowers,
+      followersDelta,
+      totalImpr,
+      totalEng,
+      engRate,
+      postsInRange,
+      trackedImpr: coverageStats.trackedImpr,
+      postsWithMetrics: coverageStats.postsWithMetrics,
+      coverage: coverageStats.coverage,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, mediaTypeKey, mediaFocusKey, coverageStats]);
 
-    return { totalFollowers, followersDelta, totalImpr, totalEng, engRate, postsInRange, trackedImpr, postsWithMetrics, coverage };
-  }, [followerSeries, dailyMetrics, visiblePlatforms, from, to, posts, platformFilter, latest, mediaTypeFilter, mediaFocusFilter]);
 
   // ───────── Per-platform breakdown rows ─────────
   const breakdown = useMemo(() => {
