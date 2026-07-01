@@ -826,7 +826,24 @@ export function SocialAnalytics() {
       <Card className="p-4">
         <h3 className="font-semibold mb-3">Top posts by engagement rate</h3>
         {topPosts.length === 0 ? (
-          <EmptyState text="No posts with metrics in this range." />
+          <FilterEmptyState
+            text={
+              kpis.postsInRange === 0
+                ? platformFilter !== "all" && !mediaFiltersActive
+                  ? `No posts on ${PLATFORM_META[platformFilter].label} in this range.`
+                  : mediaFiltersActive
+                    ? "No posts match the selected media filters in this date range."
+                    : "No posts with metrics in this range."
+                : "No matching posts have engagement metrics yet. Import post metrics to see top performers."
+            }
+            action={
+              mediaFiltersActive ? (
+                <ClearFiltersButton
+                  onClick={() => { setMediaTypeFilter(new Set()); setMediaFocusFilter(new Set()); }}
+                />
+              ) : undefined
+            }
+          />
         ) : (
           <div className="divide-y divide-border">
             {topPosts.map(({ post, metric }) => {
